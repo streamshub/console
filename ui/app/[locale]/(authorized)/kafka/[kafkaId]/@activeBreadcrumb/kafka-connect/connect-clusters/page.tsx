@@ -2,30 +2,31 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   Tooltip,
-} from "@/libs/patternfly/react-core";
-import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
-import { KafkaParams } from "../../../kafka.params";
+} from '@/libs/patternfly/react-core'
+import { HomeIcon } from '@/libs/patternfly/react-icons'
+import { getTranslations } from 'next-intl/server'
+import { KafkaParams } from '../../../kafka.params'
 
-export default function KafkaConnectClustersActiveBreadcrumbPage({
-  params: { kafkaId },
+export default async function KafkaConnectClustersActiveBreadcrumbPage({
+  params: paramsPromise,
 }: {
-  params: KafkaParams;
+  params: Promise<KafkaParams>
 }) {
-  return <KafkaConnectClustersActiveBreadcrumb kafkaId={kafkaId} />;
+  const { kafkaId } = await paramsPromise
+  return <KafkaConnectClustersActiveBreadcrumb kafkaId={kafkaId} />
 }
 
-function KafkaConnectClustersActiveBreadcrumb({
+async function KafkaConnectClustersActiveBreadcrumb({
   kafkaId,
 }: {
-  kafkaId: string;
+  kafkaId: string
 }) {
-  const t = useTranslations();
+  const t = await getTranslations()
 
   return (
-    <Breadcrumb>
+    <Breadcrumb ouiaId={'connect-clusters-breadcrumb'}>
       <BreadcrumbItem key="home" to="/" showDivider>
-        <Tooltip content={t("breadcrumbs.view_all_kafka_clusters")}>
+        <Tooltip content={t('breadcrumbs.view_all_kafka_clusters')}>
           <HomeIcon />
         </Tooltip>
       </BreadcrumbItem>
@@ -34,11 +35,11 @@ function KafkaConnectClustersActiveBreadcrumb({
         to={`/kafka/${kafkaId}/overview`}
         showDivider
       >
-        {t("breadcrumbs.overview")}
+        {t('breadcrumbs.overview')}
       </BreadcrumbItem>
       <BreadcrumbItem showDivider={true}>
-        {t("breadcrumbs.Kafka_connect")}
+        {t('breadcrumbs.Kafka_connect')}
       </BreadcrumbItem>
     </Breadcrumb>
-  );
+  )
 }

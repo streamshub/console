@@ -1,6 +1,6 @@
-"use client";
-import { DateTime } from "@/components/Format/DateTime";
-import { Number } from "@/components/Format/Number";
+'use client'
+import { DateTime } from '@/components/Format/DateTime'
+import { Number } from '@/components/Format/Number'
 import {
   Button,
   Card,
@@ -21,38 +21,38 @@ import {
   Title,
   Tooltip,
   Truncate,
-} from "@/libs/patternfly/react-core";
+} from '@/libs/patternfly/react-core'
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
   HelpIcon,
-} from "@/libs/patternfly/react-icons";
-import { Link } from "@/i18n/routing";
-import { useTranslations } from "next-intl";
-import { ErrorsAndWarnings } from "./components/ErrorsAndWarnings";
-import { updateKafkaCluster } from "@/api/kafka/actions";
-import { useReconciliationContext } from "../ReconciliationContext";
-import { ReconciliationPauseButton } from "./ReconciliationPauseButton";
-import { ReconciliationModal } from "./ReconciliationModal";
-import { ClusterDetail } from "@/api/kafka/schema";
-import { hasPrivilege } from "@/utils/privileges";
-import { useState } from "react";
+} from '@/libs/patternfly/react-icons'
+import { Link } from '@/i18n/routing'
+import { useTranslations } from 'next-intl'
+import { ErrorsAndWarnings } from './components/ErrorsAndWarnings'
+import { updateKafkaCluster } from '@/api/kafka/actions'
+import { useReconciliationContext } from '../ReconciliationContext'
+import { ReconciliationPauseButton } from './ReconciliationPauseButton'
+import { ReconciliationModal } from './ReconciliationModal'
+import { ClusterDetail } from '@/api/kafka/schema'
+import { hasPrivilege } from '@/utils/privileges'
+import { useState } from 'react'
 
 type ClusterCardProps = {
-  kafkaDetail: ClusterDetail | null;
-  brokersOnline?: number;
-  brokersTotal?: number;
-  consumerGroups?: number;
-  kafkaId: string | undefined;
+  kafkaDetail: ClusterDetail | null
+  brokersOnline?: number
+  brokersTotal?: number
+  consumerGroups?: number
+  kafkaId: string | undefined
   messages: Array<{
-    variant: "danger" | "warning";
-    subject: { type: string; name: string; id: string };
-    message: string;
-    date: string;
-  }>;
-  managed: boolean;
-};
+    variant: 'danger' | 'warning'
+    subject: { type: string; name: string; id: string }
+    message: string
+    date: string
+  }>
+  managed: boolean
+}
 
 export function ClusterCard({
   isLoading,
@@ -65,125 +65,132 @@ export function ClusterCard({
   managed,
 }:
   | ({
-      isLoading: false;
+      isLoading: false
     } & ClusterCardProps)
   | ({ isLoading: true } & { [K in keyof ClusterCardProps]?: undefined })) {
-  const t = useTranslations();
+  const t = useTranslations()
 
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
 
-  const { isReconciliationPaused, setReconciliationPaused } =
-    useReconciliationContext();
+  const {
+    isReconciliationPaused,
+    setReconciliationPaused,
+  } = useReconciliationContext()
 
   const resumeReconciliation = async () => {
     if (!kafkaId) {
-      console.log("kafkaId is undefined");
-      return;
+      console.log('kafkaId is undefined')
+      return
     }
 
     try {
-      const response = await updateKafkaCluster(kafkaId, false);
+      const response = await updateKafkaCluster(kafkaId, false)
 
       if (response.errors) {
-        console.log("Unknown error occurred", response.errors);
+        console.log('Unknown error occurred', response.errors)
       } else {
-        setReconciliationPaused(false);
-        setIsModalOpen(false);
+        setReconciliationPaused(false)
+        setIsModalOpen(false)
       }
-    } catch (e: unknown) {
-      console.log("Unknown error occurred");
+    } catch (e) {
+      console.log('Unknown error occurred')
     }
-  };
+  }
 
   const warnings =
-    messages?.filter((m) => m.variant === "warning").length ||
-    0 + (isReconciliationPaused ? 1 : 0);
-  const dangers = messages?.filter((m) => m.variant === "danger").length || 0;
+    messages?.filter((m) => m.variant === 'warning').length ||
+    0 + (isReconciliationPaused ? 1 : 0)
+  const dangers = messages?.filter((m) => m.variant === 'danger').length || 0
 
-  const status = kafkaDetail?.attributes.status ??
-    (brokersOnline == brokersTotal ? "Ready" : "Not Available");
+  const status =
+    kafkaDetail?.attributes.status ??
+    (brokersOnline == brokersTotal ? 'Ready' : 'Not Available')
 
   return (
     <>
-      <Card component={"div"}>
+      <Card component={'div'}>
         <CardBody>
           <Flex>
             <FlexItem>
-              <Title headingLevel={"h2"}>
-                {t("ClusterCard.Kafka_cluster_details")}
+              <Title ouiaId={'kafka-cluster-details'} headingLevel={'h2'}>
+                {t('ClusterCard.Kafka_cluster_details')}
               </Title>
             </FlexItem>
-            { hasPrivilege("UPDATE", kafkaDetail) &&
-              <FlexItem align={{ default: "alignRight" }}>
+            {hasPrivilege('UPDATE', kafkaDetail) && (
+              <FlexItem align={{ default: 'alignRight' }}>
                 <ReconciliationPauseButton
-                  clusterId={kafkaId || ""}
+                  clusterId={kafkaId || ''}
                   managed={managed || false}
                 />
               </FlexItem>
-            }
+            )}
           </Flex>
-          <Flex direction={{ default: "column" }} gap={{ default: "gap" }}>
+          <Flex direction={{ default: 'column' }} gap={{ default: 'gap' }}>
             <Flex
-              flexWrap={{ default: "wrap", sm: "nowrap" }}
-              gap={{ default: "gap" }}
-              justifyContent={{ default: "justifyContentCenter" }}
-              style={{ textAlign: "center" }}
+              flexWrap={{ default: 'wrap', sm: 'nowrap' }}
+              gap={{ default: 'gap' }}
+              justifyContent={{ default: 'justifyContentCenter' }}
+              style={{ textAlign: 'center' }}
             >
               <Flex
-                direction={{ default: "column" }}
-                alignSelf={{ default: "alignSelfCenter" }}
-                style={{ minWidth: "200px" }}
+                direction={{ default: 'column' }}
+                alignSelf={{ default: 'alignSelfCenter' }}
+                style={{ minWidth: '200px' }}
               >
-                <FlexItem className={"pf-v6-u-py-md"}>
+                <FlexItem className={'pf-v6-u-py-md'}>
                   {isLoading ? (
                     <>
-                      <Icon status={"success"}>
-                        <Skeleton shape={"circle"} width={"1rem"} />
+                      <Icon status={'success'}>
+                        <Skeleton shape={'circle'} width={'1rem'} />
                       </Icon>
 
-                      <Skeleton width={"100%"} />
+                      <Skeleton width={'100%'} />
                       <Skeleton
-                        width={"50%"}
-                        height={"0.7rem"}
-                        style={{ display: "inline-block" }}
+                        width={'50%'}
+                        height={'0.7rem'}
+                        style={{ display: 'inline-block' }}
                       />
                     </>
                   ) : (
                     <>
-                      <Icon status={"success"}>
+                      <Icon status={'success'}>
                         {status ? (
                           <CheckCircleIcon />
                         ) : (
-                          <Skeleton shape={"circle"} width={"1rem"} />
+                          <Skeleton shape={'circle'} width={'1rem'} />
                         )}
                       </Icon>
 
-                      <Title headingLevel={"h2"}>{kafkaDetail?.attributes.name ?? "n/a"}</Title>
+                      <Title ouiaId={'kafka-name'} headingLevel={'h2'}>
+                        {kafkaDetail?.attributes.name ?? 'n/a'}
+                      </Title>
 
                       <Content>
-                        <Content component={"small"}>{status}</Content>
+                        <Content ouiaId={'kafka-status'} component={'small'}>
+                          {status}
+                        </Content>
                       </Content>
                     </>
                   )}
                 </FlexItem>
               </Flex>
               <Divider
-                orientation={{ default: "horizontal", sm: "vertical" }}
+                orientation={{ default: 'horizontal', sm: 'vertical' }}
               />
               <Flex
-                direction={{ default: "column" }}
-                alignSelf={{ default: "alignSelfCenter" }}
-                flex={{ default: "flex_1" }}
-                style={{ minWidth: "200px", textAlign: "center" }}
+                direction={{ default: 'column' }}
+                alignSelf={{ default: 'alignSelfCenter' }}
+                flex={{ default: 'flex_1' }}
+                style={{ minWidth: '200px', textAlign: 'center' }}
               >
                 <Grid>
                   <GridItem span={12} xl={4}>
-                    <Link className="pf-v6-u-font-size-xl" href={"./nodes"}>
+                    <Link className="pf-v6-u-font-size-xl" href={'./nodes'}>
                       {isLoading ? (
                         <Skeleton
-                          shape={"circle"}
-                          width={"1.5rem"}
-                          style={{ display: "inline-block" }}
+                          shape={'circle'}
+                          width={'1.5rem'}
+                          style={{ display: 'inline-block' }}
                         />
                       ) : (
                         <>
@@ -193,56 +200,58 @@ export function ClusterCard({
                         </>
                       )}
                     </Link>
-                    <Content>
-                      <Content component={"small"}>
-                        {t("ClusterCard.online_brokers")}
-                      </Content>
+                    <Content component={'small'} ouiaId={'online-brokers'}>
+                      {t('ClusterCard.online_brokers')}
                     </Content>
                   </GridItem>
                   <GridItem span={12} xl={4}>
                     <Link
                       className="pf-v6-u-font-size-xl"
-                      href={"./consumer-groups"}
+                      href={'./consumer-groups'}
                     >
                       {isLoading ? (
                         <Skeleton
-                          shape={"circle"}
-                          width={"1.5rem"}
-                          style={{ display: "inline-block" }}
+                          shape={'circle'}
+                          width={'1.5rem'}
+                          style={{ display: 'inline-block' }}
                         />
                       ) : (
                         <Number value={consumerGroups} />
                       )}
                     </Link>
-                    <Content>
-                      <Content component={"small"}>
-                        {t("ClusterCard.consumer_groups")}
-                      </Content>
+                    <Content ouiaId={'consumer-groups'} component={'small'}>
+                      {t('ClusterCard.consumer_groups')}
                     </Content>
                   </GridItem>
                   <GridItem span={12} xl={4}>
                     <div className="pf-v6-u-font-size-xl">
-                      {isLoading ? <Skeleton /> : <>
-                        { kafkaDetail?.attributes.kafkaVersion ?
+                      {isLoading ? (
+                        <Skeleton />
+                      ) : (
+                        <>
+                          {kafkaDetail?.attributes.kafkaVersion ? (
                             <>
-                                { kafkaDetail?.attributes.kafkaVersion }
-                                {!kafkaDetail?.meta?.managed && <>
-                                    {" "}
-                                    <Tooltip content={t("ClustersTable.version_derived")}>
-                                        <HelpIcon />
-                                    </Tooltip>
-                                    </>
-                                }
+                              {kafkaDetail?.attributes.kafkaVersion}
+                              {!kafkaDetail?.meta?.managed && (
+                                <>
+                                  {' '}
+                                  <Tooltip
+                                    content={t('ClustersTable.version_derived')}
+                                  >
+                                    <HelpIcon />
+                                  </Tooltip>
+                                </>
+                              )}
                             </>
-                            : t("ClustersTable.not_available")
-                        }
+                          ) : (
+                            t('ClustersTable.not_available')
+                          )}
                         </>
-                      }
+                      )}
                     </div>
-                    <Content>
-                      <Content component={"small"}>
-                        {t("ClusterCard.kafka_version")}
-                      </Content>
+
+                    <Content ouiaId={'kafka-version'} component={'small'}>
+                      {t('ClusterCard.kafka_version')}
                     </Content>
                   </GridItem>
                 </Grid>
@@ -252,7 +261,7 @@ export function ClusterCard({
             <FlexItem>
               <ErrorsAndWarnings warnings={warnings} dangers={dangers}>
                 <DataList
-                  aria-label={t("ClusterCard.cluster_errors_and_warnings")}
+                  aria-label={t('ClusterCard.cluster_errors_and_warnings')}
                   isCompact={true}
                 >
                   {isLoading ? (
@@ -283,8 +292,8 @@ export function ClusterCard({
                             <DataListItemCells
                               dataListCells={[
                                 <DataListCell key="name">
-                                  <span id={"no-messages"}>
-                                    {t("ClusterCard.no_messages")}
+                                  <span id={'no-messages'}>
+                                    {t('ClusterCard.no_messages')}
                                   </span>
                                 </DataListCell>,
                               ]}
@@ -305,14 +314,14 @@ export function ClusterCard({
                                 dataListCells={[
                                   <DataListCell
                                     key="name"
-                                    className={"pf-v6-u-text-nowrap"}
+                                    className={'pf-v6-u-text-nowrap'}
                                     width={1}
                                   >
                                     <Icon status={m.variant}>
-                                      {m.variant === "danger" && (
+                                      {m.variant === 'danger' && (
                                         <ExclamationCircleIcon />
                                       )}
-                                      {m.variant === "warning" && (
+                                      {m.variant === 'warning' && (
                                         <ExclamationTriangleIcon />
                                       )}
                                     </Icon>
@@ -322,36 +331,39 @@ export function ClusterCard({
                                   <DataListCell key="message" width={5}>
                                     <div
                                       className={
-                                        "pf-v6-u-display-none pf-v6-u-display-block-on-md"
+                                        'pf-v6-u-display-none pf-v6-u-display-block-on-md'
                                       }
                                     >
                                       <Truncate
                                         content={
                                           m.subject.type ===
-                                          "ReconciliationPaused"
+                                          'ReconciliationPaused'
                                             ? t(
-                                                "reconciliation.reconciliation_paused_warning",
+                                                'reconciliation.reconciliation_paused_warning',
                                               )
                                             : m.message
                                         }
                                       />
                                       {m.subject.type ===
-                                        "ReconciliationPaused" && (
+                                        'ReconciliationPaused' && (
                                         <>
                                           &nbsp;
                                           <Button
+                                            ouiaId={
+                                              'reconciliation-resume-button'
+                                            }
                                             variant="link"
                                             isInline
                                             onClick={() => setIsModalOpen(true)}
                                           >
-                                            {t("reconciliation.resume")}
+                                            {t('reconciliation.resume')}
                                           </Button>
                                         </>
                                       )}
                                     </div>
                                     <div
                                       className={
-                                        "pf-v6-u-display-block pf-v6-u-display-none-on-md"
+                                        'pf-v6-u-display-block pf-v6-u-display-none-on-md'
                                       }
                                     >
                                       {m.message}
@@ -360,7 +372,7 @@ export function ClusterCard({
                                   <DataListCell
                                     key="date"
                                     width={1}
-                                    className={"pf-v6-u-text-nowrap"}
+                                    className={'pf-v6-u-text-nowrap'}
                                   >
                                     <DateTime value={m.date} />
                                   </DataListCell>,
@@ -386,5 +398,5 @@ export function ClusterCard({
         />
       )}
     </>
-  );
+  )
 }

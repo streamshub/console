@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 
-import { TopicsTable as Comp } from "./TopicsTable";
+import { TopicsTable as Comp, TopicsTableColumns } from "./TopicsTable";
+import { fn } from "storybook/test";
 
 export default {
   component: Comp,
@@ -14,6 +15,18 @@ export default {
     includeHidden: false,
     topicsCount: 0,
     showLearningLinks: true,
+    sortProvider: (column) => {
+      const index = TopicsTableColumns.indexOf(column);
+
+      return {
+        sortBy: {
+          index: 0,
+          direction: "asc",
+        },
+        onSort: fn(),
+        columnIndex: index,
+      };
+    },
   },
 } as Meta<typeof Comp>;
 type Story = StoryObj<typeof Comp>;
@@ -93,7 +106,7 @@ export const WithTopics: Story = {
             },
           },
         },
-      ]
+      ],
     },
   },
 };

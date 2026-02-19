@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 
-import { ConsumerGroupsTable as Comp } from "./ConsumerGroupsTable";
+import {
+  ConsumerGroupsTable as Comp,
+  ConsumerGroupColumns,
+} from "./ConsumerGroupsTable";
+import { fn } from "storybook/test";
 
 export default {
   component: Comp,
@@ -8,6 +12,18 @@ export default {
     page: 1,
     perPage: 20,
     consumerGroups: [],
+    sortProvider: (column) => {
+      const index = ConsumerGroupColumns.indexOf(column);
+
+      return {
+        sortBy: {
+          index: 0,
+          direction: "asc",
+        },
+        onSort: fn(),
+        columnIndex: index,
+      };
+    },
   },
 } as Meta<typeof Comp>;
 type Story = StoryObj<typeof Comp>;

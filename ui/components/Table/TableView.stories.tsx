@@ -12,7 +12,8 @@ import {
   sampleToolbarFilters,
 } from "./storybookHelpers";
 import type { TableViewProps } from "./TableView";
-import { DEFAULT_PERPAGE, TableView } from "./TableView";
+import { DEFAULT_PAGE, DEFAULT_PERPAGE, TableView } from "./TableView";
+import { Th } from "@patternfly/react-table";
 
 type TableViewSampleTypeProps = TableViewProps<
   SampleDataType,
@@ -20,17 +21,16 @@ type TableViewSampleTypeProps = TableViewProps<
 > & {
   selectedRow?: number;
 };
+
 const TableViewSampleType = (props: TableViewSampleTypeProps) => (
   <TableView {...props} />
 );
 
-export default {
+const meta: Meta<typeof TableViewSampleType> = {
   component: TableViewSampleType,
   args: {
     ariaLabel: "Table title",
-    minimumColumnWidth: 250,
     selectedRow: 3,
-    expectedLength: 3,
     page: 1,
     perPage: 20,
     itemCount: 397,
@@ -41,38 +41,46 @@ export default {
     onPageChange: fn(),
     onClearAllFilters: fn(),
     onRowClick: fn(),
+    sortProvider: (col) => ({
+      columnIndex: columns.indexOf(col),
+      sortBy: { index: 0, direction: "asc" },
+      onSort: fn(),
+      label: columnLabels[col],
+    }),
   },
   argTypes: {
     data: {
-      table: { disable: true },
-      control: {
-        type: null,
-      },
+      control: false,
     },
+    sortProvider: { control: false },
+    emptyStateNoData: { control: false },
+    emptyStateNoResults: { control: false },
   },
   render: (args) => {
-    const { itemCount, page, perPage = DEFAULT_PERPAGE, data } = args;
+    const {
+      itemCount,
+      page = DEFAULT_PAGE,
+      perPage = DEFAULT_PERPAGE,
+      data,
+    } = args;
+
     const slicedData = useMemo(() => {
-      if (data) {
-        if (data.length > 0) {
-          return new Array(
-            Math.min(perPage, (itemCount || 0) - (page - 1) * perPage),
-          )
-            .fill(0)
-            .map((_, index) => {
-              return data[index % sampleData.length];
-            });
-        }
-        return [];
-      }
-      return data;
+      if (!data) return data;
+      if (data.length === 0) return [];
+
+      return new Array(
+        Math.min(perPage, (itemCount || 0) - (page - 1) * perPage),
+      )
+        .fill(0)
+        .map((_, index) => data[index % sampleData.length]);
     }, [data, itemCount, page, perPage]);
+
     return (
       <TableView
         {...args}
         data={slicedData}
         columns={columns}
-        renderHeader={({ column, Th, key }) => (
+        renderHeader={({ column, key }) => (
           <Th key={key}>{columnLabels[column]}</Th>
         )}
         renderCell={({ column, row, colIndex, Td, key }) => (
@@ -92,8 +100,9 @@ export default {
       />
     );
   },
-} as Meta<typeof TableViewSampleType>;
+};
 
+export default meta;
 type Story = StoryObj<typeof TableViewSampleType>;
 
 export const Example: Story = {

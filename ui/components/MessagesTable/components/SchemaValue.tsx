@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Button,
@@ -6,58 +6,59 @@ import {
   CodeBlock,
   CodeBlockAction,
   CodeBlockCode,
-} from "@/libs/patternfly/react-core";
-import { DownloadIcon } from "@/libs/patternfly/react-icons";
-import { useState } from "react";
+} from '@/libs/patternfly/react-core'
+import { DownloadIcon } from '@/libs/patternfly/react-icons'
+import { useState } from 'react'
 
 export function SchemaValue({
   schema,
   name,
 }: {
-  schema: string;
-  name: string;
+  schema: string
+  name: string
 }) {
-  const [copyStatus, setCopyStatus] = useState<string>("Copy schema");
+  const [copyStatus, setCopyStatus] = useState<string>('Copy schema')
 
   const copyToClipboard = () => {
     navigator.clipboard
       .writeText(schema)
       .then(() => {
-        setCopyStatus("Successfully copied");
-        setTimeout(() => setCopyStatus("Copy schema"), 2000);
+        setCopyStatus('Successfully copied')
+        setTimeout(() => setCopyStatus('Copy schema'), 2000)
       })
       .catch((error) => {
-        console.error("Error copying text to clipboard:", error);
-      });
-  };
+        console.error('Error copying text to clipboard:', error)
+      })
+  }
 
   const onClickDownload = () => {
-    const blob = new Blob([schema], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${name}.text`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+    const blob = new Blob([schema], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${name}.text`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
   const actions = (
     <CodeBlockAction>
-      <ClipboardCopyButton onClick={copyToClipboard} id={"copy-clipboard"}>
+      <ClipboardCopyButton onClick={copyToClipboard} id={'copy-clipboard'}>
         {copyStatus}
       </ClipboardCopyButton>
       <Button
+        ouiaId={'schema-link-button'}
         variant="link"
         onClick={onClickDownload}
         icon={<DownloadIcon />}
       />
     </CodeBlockAction>
-  );
+  )
   return (
     <CodeBlock actions={actions}>
       <CodeBlockCode>{schema}</CodeBlockCode>
     </CodeBlock>
-  );
+  )
 }

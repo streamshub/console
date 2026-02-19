@@ -5,6 +5,7 @@ import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView } from "@/components/Table";
 import { Icon, LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
+import { Th } from "@/libs/patternfly/react-table";
 import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -145,7 +146,7 @@ export function ConsumerGroupsTable({
       }
       ariaLabel={t("ConsumerGroupsTable.title")}
       columns={["name", "state", "lag", "members", "topics"] as const}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "name":
             return (

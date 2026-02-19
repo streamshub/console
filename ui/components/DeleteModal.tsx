@@ -1,4 +1,4 @@
-import type { TextInputProps } from "@/libs/patternfly/react-core";
+import type { TextInputProps } from '@/libs/patternfly/react-core'
 import {
   Button,
   ButtonVariant,
@@ -10,9 +10,9 @@ import {
   ModalHeader,
   ModalVariant,
   TextInput,
-} from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import type { PropsWithChildren } from "react";
+} from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
+import type { PropsWithChildren } from 'react'
 import {
   Children,
   createContext,
@@ -20,36 +20,36 @@ import {
   useContext,
   useEffect,
   useState,
-} from "react";
-import RichText from "./RichText";
+} from 'react'
+import RichText from './RichText'
 
 const ModalContext = createContext<{
-  isDeleteEnabled: boolean;
-  isDeleting: boolean;
-  setDeleteEnabled: (value: boolean) => void;
-}>(null!);
+  isDeleteEnabled: boolean
+  isDeleting: boolean
+  setDeleteEnabled: (value: boolean) => void
+}>(null!)
 
 export type DeleteModalProps = {
   /**
    * Flag to show the modal
    */
-  isModalOpen: boolean;
+  isModalOpen: boolean
   /**
    * Simple text content of the Modal Header, also used for aria-label on the body
    */
-  title: string;
+  title: string
   /**
    * Flag to indicate if an asyncronous delete is in progress. Setting this to
    * `true` will disable all default controls.
    *
    * Note: any custom control will not be impacted by this flag
    */
-  isDeleting: boolean;
+  isDeleting: boolean
   /**
    * OUIA component id. It's strongly suggested to specify it for specialized
    * delete dialogs, eg. the "Delete Kafka instance" dialog
    */
-  ouiaId?: string;
+  ouiaId?: string
   /**
    * The value the user must type to enable the delete button. The text
    * input will always be appended at the end of the modal.
@@ -60,33 +60,33 @@ export type DeleteModalProps = {
    * `undefined` and use the `DeleteModalConfirmation` component in the structure
    * of the `children` property.
    */
-  confirmationValue?: string;
+  confirmationValue?: string
   /**
    * Set this to `true` on Storybook when there are multiple modals open at a time.
    */
-  disableFocusTrap?: boolean;
+  disableFocusTrap?: boolean
   /**
    * The parent container to append the modal to. Defaults to document.body
    */
-  appendTo: () => HTMLElement;
+  appendTo: () => HTMLElement
   /**
    * A callback for when the delete button is clicked.
    */
-  onDelete: () => void;
+  onDelete: () => void
   /**
    * A callback for when the cancel or close button are clicked.
    */
-  onCancel: () => void;
+  onCancel: () => void
   /**
    * To select destructive or non-destructive delete action
    */
-  variant?: "destructive" | "non-destructive";
+  variant?: 'destructive' | 'non-destructive'
   /**
    * Flag to disable delete button in non-destructive delete action
    */
-  isDisabled?: boolean;
-  ariaLabel?: string;
-};
+  isDisabled?: boolean
+  ariaLabel?: string
+}
 
 /**
  * A reusable component to show a dialog that handles deleting something in the
@@ -122,7 +122,7 @@ export type DeleteModalProps = {
 export function DeleteModal(props: PropsWithChildren<DeleteModalProps>) {
   const [isDeleteEnabled, setDeleteEnabled] = useState(
     props.confirmationValue === undefined,
-  );
+  )
   return (
     <ModalContext.Provider
       value={{
@@ -133,7 +133,7 @@ export function DeleteModal(props: PropsWithChildren<DeleteModalProps>) {
     >
       <DeleteModalConnected {...props} />
     </ModalContext.Provider>
-  );
+  )
 }
 
 export function DeleteModalConnected({
@@ -141,7 +141,7 @@ export function DeleteModalConnected({
   title,
   isDeleting,
   confirmationValue,
-  ouiaId = "delete-dialog",
+  ouiaId = 'delete-dialog',
   disableFocusTrap,
   appendTo,
   onDelete,
@@ -151,9 +151,9 @@ export function DeleteModalConnected({
   isDisabled,
   ariaLabel,
 }: PropsWithChildren<DeleteModalProps>) {
-  const t = useTranslations("delete");
+  const t = useTranslations('delete')
 
-  const { isDeleteEnabled } = useContext(ModalContext);
+  const { isDeleteEnabled } = useContext(ModalContext)
   return (
     <Modal
       aria-label={ariaLabel || title}
@@ -167,7 +167,7 @@ export function DeleteModalConnected({
     >
       <ModalHeader
         title={title}
-        titleIconVariant={variant === "non-destructive" ? undefined : "warning"}
+        titleIconVariant={variant === 'non-destructive' ? undefined : 'warning'}
       />
       {Children.toArray(children)
         .filter((f) => f)
@@ -183,72 +183,72 @@ export function DeleteModalConnected({
       )}
       <ModalFooter>
         <Button
-          key={"confirm__button"}
+          key={'confirm__button'}
           variant={
-            variant === "non-destructive"
+            variant === 'non-destructive'
               ? ButtonVariant.primary
               : ButtonVariant.danger
           }
           onClick={onDelete}
           isDisabled={
-            variant === "non-destructive"
+            variant === 'non-destructive'
               ? isDisabled
               : isDeleting || !isDeleteEnabled
           }
           isLoading={isDeleting}
-          ouiaId={"delete"}
+          ouiaId={'delete'}
         >
-          {t("delete")}
+          {t('delete')}
         </Button>
         <Button
-          key={"cancel__button"}
+          key={'cancel__button'}
           variant={ButtonVariant.link}
           onClick={onCancel}
           isDisabled={isDeleting}
-          ouiaId={"cancel"}
+          ouiaId={'cancel'}
         >
-          {t("cancel")}
+          {t('cancel')}
         </Button>
       </ModalFooter>
     </Modal>
-  );
+  )
 }
 
 type DeleteModalConfirmationProps = {
   /**
    * The value the user must type to enable the delete button.
    */
-  requiredConfirmationValue: string;
-};
+  requiredConfirmationValue: string
+}
 
 export function DeleteModalConfirmation({
   requiredConfirmationValue,
 }: DeleteModalConfirmationProps) {
-  const t = useTranslations("delete");
-  const [value, setValue] = useState("");
-  const { isDeleting, setDeleteEnabled } = useContext(ModalContext);
+  const t = useTranslations('delete')
+  const [value, setValue] = useState('')
+  const { isDeleting, setDeleteEnabled } = useContext(ModalContext)
 
   const onChange = useCallback(
     (value: string) => {
-      setValue(value);
-      setDeleteEnabled(value === requiredConfirmationValue);
+      setValue(value)
+      setDeleteEnabled(value === requiredConfirmationValue)
     },
     [requiredConfirmationValue, setDeleteEnabled],
-  );
+  )
 
   useEffect(() => {
-    setDeleteEnabled(value === requiredConfirmationValue);
-  }, [requiredConfirmationValue, setDeleteEnabled, value]);
+    setDeleteEnabled(value === requiredConfirmationValue)
+  }, [requiredConfirmationValue, setDeleteEnabled, value])
 
-  const id = "delete-confirmation-value";
-  let validated: TextInputProps["validated"] = "default";
+  const id = 'delete-confirmation-value'
+  let validated: TextInputProps['validated'] = 'default'
   switch (true) {
     case value && value === requiredConfirmationValue:
-      validated = "success";
-      break;
+      validated = 'success'
+      break
     case value && value !== requiredConfirmationValue:
-      validated = "warning";
-      break;
+      validated = 'warning'
+      break
   }
   return (
     <Form>
@@ -256,7 +256,7 @@ export function DeleteModalConfirmation({
         label={
           <RichText>
             {(tags) =>
-              t.rich("type_value_to_confirm_html", {
+              t.rich('type_value_to_confirm_html', {
                 ...tags,
                 value: requiredConfirmationValue,
               })
@@ -272,12 +272,12 @@ export function DeleteModalConfirmation({
           onChange={(_, value) => onChange(value)}
           validated={validated}
           isDisabled={isDeleting}
-          ouiaId={"delete-confirmation"}
-          aria-label={t("type_value_to_confirm_plain", {
+          ouiaId={'delete-confirmation'}
+          aria-label={t('type_value_to_confirm_plain', {
             value: requiredConfirmationValue,
           })}
         />
       </FormGroup>
     </Form>
-  );
+  )
 }
