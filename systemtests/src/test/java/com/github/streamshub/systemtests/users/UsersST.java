@@ -41,7 +41,6 @@ public class UsersST extends AbstractST {
     @Test
     @TestBucket(VARIOUS_USER_ACLS_BUCKET)
     void testVariousKafkaUsers() {
-        TestCaseConfig tcc = getTestCaseConfig();
         UsersChecks.checkAclTableWithMatchingKafkaUser(tcc, KAFKA_USER_1);
         UsersChecks.checkAclTableWithMatchingKafkaUser(tcc, KAFKA_USER_2);
         UsersChecks.checkAclTableWithMatchingKafkaUser(tcc, KAFKA_USER_3);
