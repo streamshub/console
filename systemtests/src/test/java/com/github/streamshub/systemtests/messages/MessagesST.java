@@ -272,7 +272,7 @@ public class MessagesST extends AbstractST {
         MessagesChecks.checkQueryBarFilter(tcc, EPOCH_FILTER, currentDateTimeUnix, newMessageCount, newMessageText);
 
         LOGGER.info("Filtering messages using Unix query timestamp (earlier)");
-        MessagesChecks.checkQueryBarFilter(tcc, EPOCH_FILTER, earlierDateTimeUnix, oldMessageCount, newMessageText);
+        MessagesChecks.checkQueryBarFilter(tcc, EPOCH_FILTER, earlierDateTimeUnix, oldMessageCount, oldMessageText);
 
         // Verify via UI popover (ISO mode)
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
