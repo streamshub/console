@@ -120,7 +120,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
         // Logout and check user is no longer logged in
-        PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
         tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true));
@@ -204,7 +204,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
         // Logout and check user is no longer logged in
-        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
         // Dev
         tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
@@ -274,7 +274,7 @@ public class AuthST extends AbstractST {
         tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
         // Logout and check user is no longer logged in
-        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
     }
 
     /**
@@ -357,7 +357,7 @@ public class AuthST extends AbstractST {
 
         WaitUtils.waitForClientsSuccess(clients);
         // Logout and check user is no longer logged in
-        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
     }
 
     @BeforeAll
