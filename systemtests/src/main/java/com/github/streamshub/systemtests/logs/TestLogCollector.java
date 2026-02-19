@@ -10,9 +10,6 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
-import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
-import io.fabric8.openshift.api.model.ClusterRole;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.ClusterServiceVersion;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.InstallPlan;
@@ -63,9 +60,6 @@ public class TestLogCollector {
         List<String> resources = new ArrayList<>(List.of(
             HasMetadata.getKind(Service.class),
             HasMetadata.getKind(ConfigMap.class),
-            HasMetadata.getKind(ClusterRole.class),
-            HasMetadata.getKind(ClusterRoleBinding.class),
-            HasMetadata.getKind(RoleBinding.class),
             HasMetadata.getKind(ServiceAccount.class),
             HasMetadata.getKind(Secret.class),
             HasMetadata.getKind(Deployment.class),
