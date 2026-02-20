@@ -187,7 +187,11 @@ public class PwUtils {
         LOGGER.debug("Waiting for locator [{}] to contain text [{}]", selector, text);
         Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
             () -> {
-                String innerText = getTrimmedText(tcc.page().locator(selector).allInnerTexts().toString());
+                // Text might be either inner or a content text
+                String allInnerTexts = tcc.page().locator(selector).allInnerTexts().toString();
+                String innerText = getTrimmedText(allInnerTexts.isEmpty() || allInnerTexts.equals("[null]") ?
+                    tcc.page().locator(selector).allTextContents().toString() : allInnerTexts);
+
                 LOGGER.debug("Current locator text [{}], should contain [{}]", innerText, text);
                 if (innerText.contains(text) ||
                     !exactCase && innerText.toLowerCase(Locale.ROOT).contains(text.toLowerCase(Locale.ROOT))) {
