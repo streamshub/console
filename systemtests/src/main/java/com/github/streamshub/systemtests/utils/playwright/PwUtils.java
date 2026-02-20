@@ -189,7 +189,8 @@ public class PwUtils {
             () -> {
                 String innerText = getTrimmedText(tcc.page().locator(selector).allInnerTexts().toString());
                 LOGGER.debug("Current locator text [{}], should contain [{}]", innerText, text);
-                if (innerText.contains(text) || (!exactCase && innerText.toLowerCase(Locale.ROOT).contains(text.toLowerCase(Locale.ROOT)))) {
+                if (innerText.contains(text) ||
+                    !exactCase && innerText.toLowerCase(Locale.ROOT).contains(text.toLowerCase(Locale.ROOT))) {
                     LOGGER.debug("Current locator text [{}] contains correct text [{}]", innerText, text);
                     return true;
                 }
