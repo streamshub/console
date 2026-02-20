@@ -93,6 +93,7 @@ public class Constants {
     public static final int REGULAR_KAFKA_CONNECT_REPLICAS = 1;
 
     public static final String CONNECT_BUILD_IMAGE_NAME = "st-connect-build";
+    public static final String DEFAULT_SINK_FILE_PATH = "/tmp/test-file-sink.txt";
     public static final int CONNECT_SERVICE_PORT = 8083;
 
     /**

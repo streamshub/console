@@ -35,11 +35,15 @@ import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 public class ConnectST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(ConnectST.class);
 
+    private static final String KAFKA_CONNECT_SRC_NAME = "k-cnct-source";
+    private static final String KAFKA_CONNECT_SINK_NAME = "k-cnct-sink";
+
     @Test
     void testFilterKafkaConnect() {
         LOGGER.info("START");
         TestCaseConfig tcc = getTestCaseConfig();
-        String connectorName = "license-source";
+        String sourceConnectorName = "license-source";
+        String sinkConnectorName = "text-sink";
         String topicPrefix = "my-connector-topic";
         String connectorMessage = "Hello connector!";
 
@@ -48,11 +52,8 @@ public class ConnectST extends AbstractST {
             .getMetadata()
             .getName();
 
-        KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultKafkaConnector(tcc.namespace(), connectorName, tcc.connectName(), 2)
-            .editSpec()
-                .addToConfig("topic", topicName)
-            .endSpec()
-            .build());
+        KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultFileSourceConnector(tcc.namespace(), sourceConnectorName, KAFKA_CONNECT_SRC_NAME, topicName, 2).build());
+        KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultFileSinkConnector(tcc.namespace(), sinkConnectorName, KAFKA_CONNECT_SINK_NAME, topicName, 2).build());
 
         KafkaClients clients = new KafkaClientsBuilder()
             .withNamespaceName(tcc.namespace())
@@ -70,13 +71,17 @@ public class ConnectST extends AbstractST {
 
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
-        KafkaCmdUtils.waitForConnectorInServiceApi(tcc.namespace(), tcc.connectName(), connectorName);
 
+        KafkaCmdUtils.waitForConnectorInServiceApi(tcc.namespace(), KAFKA_CONNECT_SRC_NAME, sourceConnectorName);
+        KafkaCmdUtils.waitForConnectorInServiceApi(tcc.namespace(), KAFKA_CONNECT_SINK_NAME, sinkConnectorName);
 
+        // Filter connectors
         tcc.page().navigate(PwPageUrls.getKafkaConnectorPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, "Kafka Connect", true);
 
-
+        // Filter connect
+        tcc.page().navigate(PwPageUrls.getKafkaConnectPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, "Kafka Connect", true);
         LOGGER.info("STOP");
     }
 
@@ -90,15 +95,22 @@ public class ConnectST extends AbstractST {
         final TestCaseConfig tcc = getTestCaseConfig();
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
-        KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(tcc.namespace(), tcc.connectName(), tcc.kafkaName(), tcc.kafkaUserName());
-        KafkaConnectSetup.allowConnectConsoleNetworkPolicy(tcc.namespace(), tcc.consoleInstanceName(), tcc.connectName());
+        // Deploy two kafka connect clusters
+        KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(tcc.namespace(), KAFKA_CONNECT_SRC_NAME, tcc.kafkaName(), tcc.kafkaUserName(), tcc.consoleInstanceName());
+        KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(tcc.namespace(), KAFKA_CONNECT_SINK_NAME, tcc.kafkaName(), tcc.kafkaUserName(), tcc.consoleInstanceName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName())
                 .editSpec()
                     .addNewKafkaConnectCluster()
-                        .withName(tcc.connectName())
+                        .withName(KAFKA_CONNECT_SRC_NAME)
                         .withNamespace(tcc.namespace())
-                        .withKafkaClusters(tcc.kafkaName())
-                        .withUrl(KafkaConnectResources.url(tcc.connectName(), tcc.namespace(), Constants.CONNECT_SERVICE_PORT))
+                        .withKafkaClusters(tcc.namespace() + "/" + tcc.kafkaName())
+                        .withUrl(KafkaConnectResources.url(KAFKA_CONNECT_SRC_NAME, tcc.namespace(), Constants.CONNECT_SERVICE_PORT))
+                    .endKafkaConnectCluster()
+                    .addNewKafkaConnectCluster()
+                        .withName(KAFKA_CONNECT_SINK_NAME)
+                        .withNamespace(tcc.namespace())
+                        .withKafkaClusters(tcc.namespace() + "/" + tcc.kafkaName())
+                        .withUrl(KafkaConnectResources.url(KAFKA_CONNECT_SINK_NAME, tcc.namespace(), Constants.CONNECT_SERVICE_PORT))
                     .endKafkaConnectCluster()
                 .endSpec()
             .build());

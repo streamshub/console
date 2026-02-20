@@ -59,7 +59,7 @@ public class Environment {
     // Connect
     public static final String ST_FILE_PLUGIN_URL = ENVS.getOrDefault("ST_FILE_PLUGIN_URL",
         "https://repo1.maven.org/maven2/org/apache/kafka/connect-file/" + ST_KAFKA_VERSION + "/connect-file-" + ST_KAFKA_VERSION + ".jar");
-    public static final String CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN = ENVS.getOrDefault("CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN", "");
+    public static final String CONNECT_IMAGE_WITH_FILE_PLUGIN = ENVS.getOrDefault("CONNECT_IMAGE_WITH_FILE_PLUGIN", "");
     public static final String CONNECT_BUILD_IMAGE_PATH = ENVS.getOrDefault("CONNECT_BUILD_IMAGE_PATH", "");
     public static final String CONNECT_BUILD_REGISTRY_SECRET = ENVS.getOrDefault("CONNECT_BUILD_REGISTRY_SECRET", "");
 
