@@ -3,7 +3,11 @@ package com.github.streamshub.systemtests.utils.resourceutils;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.testframe.wait.Wait;
+import io.strimzi.api.kafka.model.connect.KafkaConnectResources;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
@@ -268,5 +272,28 @@ public class KafkaCmdUtils {
         String insertConfigCommand = String.format("echo '%s' > %s", clientsConfig, CLIENTS_CONFIG_FILE_PATH);
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertConfigCommand).out().trim();
         LOGGER.debug("Insert client config resulted in => [{}]", output);
+    }
+
+    public static void waitForConnectorInServiceApi(String namespace, String connectName, String connectorName) {
+        String podName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace, connectName).get(0).getMetadata().getName();
+        String service = KafkaConnectResources.url(connectName, namespace, Constants.CONNECT_SERVICE_PORT);
+        String expectedLog = "\"connector\":\"" + connectorName + "\"";
+
+        Wait.until(String.format("Pod %s/%s to contain log [%s]", namespace, podName, expectedLog),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            () -> {
+                String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespace).execInPod(podName, "/bin/bash", "-c", "curl " + service + "/connectors/" + connectorName).out();
+
+                if (output == null || output.isEmpty()) {
+                    LOGGER.warn("Connector output for connector {}/{} was empty or null", namespace, connectorName);
+                    return false;
+                }
+                if (output.contains(expectedLog)) {
+                    LOGGER.info("Connector output contains expected string {}/{}. Output: [{}]", namespace, expectedLog, output);
+                    return true;
+                }
+                LOGGER.warn("Connector output does not yet contain expected string {}/{}. Output: [{}]", namespace, expectedLog, output);
+                return false;
+            });
     }
 }

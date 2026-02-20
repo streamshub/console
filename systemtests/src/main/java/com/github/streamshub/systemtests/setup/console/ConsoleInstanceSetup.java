@@ -6,6 +6,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.ConsoleSpecBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaClusterBuilder;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
@@ -33,6 +34,7 @@ public class ConsoleInstanceSetup {
             .withMetadata(new ObjectMetaBuilder()
                 .withName(instanceName)
                 .withNamespace(namespaceName)
+                .addToLabels(Labels.CONSOLE_INSTANCE_LABEL, instanceName)
                 .build())
             .withSpec(new ConsoleSpecBuilder()
                 .withHostname(instanceName + "." + ClusterUtils.getClusterDomain())

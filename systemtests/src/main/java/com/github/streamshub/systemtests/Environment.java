@@ -2,8 +2,12 @@ package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
+import com.github.streamshub.systemtests.exceptions.SetupException;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import io.fabric8.kubernetes.api.model.Service;
 import io.skodjob.testframe.enums.InstallType;
 import io.skodjob.testframe.environment.TestEnvironmentVariables;
+import io.skodjob.testframe.resources.KubeResourceManager;
 
 import java.io.IOException;
 
@@ -52,6 +56,12 @@ public class Environment {
     // Kafka
     public static final String TEST_CLIENTS_IMAGE = ENVS.getOrDefault("TEST_CLIENTS_IMAGE", "");
     public static final String ST_KAFKA_VERSION = ENVS.getOrDefault("ST_KAFKA_VERSION", "");
+    // Connect
+    public static final String ST_FILE_PLUGIN_URL = ENVS.getOrDefault("ST_FILE_PLUGIN_URL",
+        "https://repo1.maven.org/maven2/org/apache/kafka/connect-file/" + ST_KAFKA_VERSION + "/connect-file-" + ST_KAFKA_VERSION + ".jar");
+    public static final String CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN = ENVS.getOrDefault("CONNECT_IMAGE_WITH_FILE_SINK_PLUGIN", "");
+    public static final String CONNECT_BUILD_IMAGE_PATH = ENVS.getOrDefault("CONNECT_BUILD_IMAGE_PATH", "");
+    public static final String CONNECT_BUILD_REGISTRY_SECRET = ENVS.getOrDefault("CONNECT_BUILD_REGISTRY_SECRET", "");
 
     public static final String TEST_CLIENTS_PULL_SECRET = ENVS.getOrDefault("TEST_CLIENTS_PULL_SECRET", "");
 
@@ -78,5 +88,28 @@ public class Environment {
 
     public static boolean isTestClientsPullSecretPresent() {
         return !Environment.TEST_CLIENTS_PULL_SECRET.isEmpty();
+    }
+
+    public static String getImageOutputRegistry(String namespaceName, String imageName, String tag) {
+        if (Environment.CONNECT_BUILD_IMAGE_PATH.isEmpty()) {
+            return getImageOutputRegistry() + "/" + namespaceName + "/" + imageName + ":" + tag;
+        }
+        return Environment.CONNECT_BUILD_IMAGE_PATH + ":" + tag;
+    }
+
+    public static String getImageOutputRegistry() {
+        if (ClusterUtils.isOcp()) {
+            return "image-registry.openshift-image-registry.svc:5000";
+        }
+
+        // Note: For minikube clusters you have to deploy internal registry using
+        // `minikube start --insecure-registry '10.0.0.0/24'` and `minikube addons enable registry`
+        Service service = KubeResourceManager.get().kubeClient().getClient().services().inNamespace("kube-system").withName("registry").get();
+
+        if (service == null)    {
+            throw new SetupException("Internal registry Service for pushing newly build images not present.");
+        } else {
+            return service.getSpec().getClusterIP() + ":" + service.getSpec().getPorts().stream().filter(servicePort -> servicePort.getName().equals("http")).findFirst().orElseThrow().getPort();
+        }
     }
 }

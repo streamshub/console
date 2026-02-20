@@ -21,6 +21,10 @@ public class Labels {
     public static final String COLLECT_ST_LOGS = "streamshub-st";
     public static final String APP = "app";
 
+    // ------------
+    // Console
+    // ------------
+    public static final String CONSOLE_INSTANCE_LABEL = "app.kubernetes.io/instance";
 
     // ------------
     // Strimzi
