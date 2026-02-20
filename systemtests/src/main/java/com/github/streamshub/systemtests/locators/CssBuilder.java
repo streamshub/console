@@ -233,6 +233,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentLabel() { return withSubComponent("label"); }
     public CssBuilder withSubComponentExpandableRowContent() { return withSubComponent("expandable-row-content"); }
     public CssBuilder withSubComponentDescription() { return withSubComponent("description"); }
+    public CssBuilder withComponentTabContent() { return withComponent("tab-content"); }
 
     // ------------
     // Layouts

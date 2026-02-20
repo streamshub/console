@@ -3,6 +3,9 @@ package com.github.streamshub.systemtests.utils.playwright;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
 public class PwPageUrls {
     private PwPageUrls() {}
 
@@ -57,5 +60,16 @@ public class PwPageUrls {
 
     public static String getKafkaRebalancePage(TestCaseConfig tcc, String kafkaName) {
         return getNodesPage(tcc, kafkaName) + "/rebalances";
+    }
+
+    public static String getKafkaUsersPage(TestCaseConfig tcc, String kafkaName) {
+        return getKafkaBaseUrl(tcc, kafkaName) + "/kafka-users";
+    }
+
+    public static String getSingleKafkaUserPage(TestCaseConfig tcc, String kafkaName, String namespace, String kafkaUser) {
+        return getKafkaBaseUrl(tcc, kafkaName) + "/kafka-users/" +
+            Base64.getEncoder().encodeToString(namespace.getBytes(StandardCharsets.UTF_8)) +
+            "," +
+            Base64.getEncoder().encodeToString(kafkaUser.getBytes(StandardCharsets.UTF_8));
     }
 }
