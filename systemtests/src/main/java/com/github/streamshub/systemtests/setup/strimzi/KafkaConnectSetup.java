@@ -139,7 +139,7 @@ public class KafkaConnectSetup {
                 .withTasksMax(maxTasks)
                 .withClassName("org.apache.kafka.connect.file.FileStreamSinkConnector")
                 .addToConfig("file", Constants.DEFAULT_SINK_FILE_PATH)
-                .addToConfig("topic", topicName)
+                .addToConfig("topics", topicName)
             .endSpec();
     }
 
