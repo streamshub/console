@@ -164,7 +164,11 @@ public class PwUtils {
     // Wait for text
     // --------------------------
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload) {
-        waitForContainsText(tcc, selector, text, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
+        waitForContainsText(tcc, selector, text, reload, true);
+    }
+
+    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload, boolean exactCase) {
+        waitForContainsText(tcc, selector, text, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload, exactCase);
     }
 
     /**
@@ -179,13 +183,14 @@ public class PwUtils {
      * @param componentLoadTimeout maximum time in milliseconds to wait for the text to appear
      * @param reload if true, reloads the page on each poll when the text is not found
      */
-    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, long componentLoadTimeout, boolean reload) {
+    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, long componentLoadTimeout, boolean reload, boolean exactCase) {
         LOGGER.debug("Waiting for locator [{}] to contain text [{}]", selector, text);
         Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
             () -> {
                 String innerText = getTrimmedText(tcc.page().locator(selector).allInnerTexts().toString());
                 LOGGER.debug("Current locator text [{}], should contain [{}]", innerText, text);
-                if (innerText.contains(text)) {
+                if (innerText.contains(text) ||
+                    !exactCase && innerText.toLowerCase(Locale.ROOT).contains(text.toLowerCase(Locale.ROOT))) {
                     LOGGER.debug("Current locator text [{}] contains correct text [{}]", innerText, text);
                     return true;
                 }
@@ -199,6 +204,27 @@ public class PwUtils {
                 return false;
             },
             () -> LOGGER.error("Locator contains text [{}], it should contain [{}]", getTrimmedText(tcc.page().locator(selector).allInnerTexts().toString()), text)
+        );
+    }
+
+    public static void waitForLocatorContainsText(Locator locator, String text, boolean exactCase) {
+        waitForLocatorContainsText(locator, text, TimeConstants.COMPONENT_LOAD_TIMEOUT, exactCase);
+    }
+
+    public  static void waitForLocatorContainsText(Locator locator, String text, long componentLoadTimeout, boolean exactCase) {
+        Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
+            () -> {
+                String innerText = getTrimmedText(locator.allInnerTexts().toString());
+                LOGGER.debug("Current locator text [{}], should contain [{}]", innerText, text);
+                if (innerText.contains(text) || !exactCase && innerText.toLowerCase(Locale.ROOT).contains(text.toLowerCase(Locale.ROOT))) {
+                    LOGGER.debug("Current locator text [{}] contains correct text [{}]", innerText, text);
+                    return true;
+                }
+
+                LOGGER.debug("Current locator text [{}] does not contain [{}]", innerText, text);
+                return false;
+            },
+            () -> LOGGER.error("Locator contains text [{}], it should contain [{}]", getTrimmedText(locator.allInnerTexts().toString()), text)
         );
     }
 

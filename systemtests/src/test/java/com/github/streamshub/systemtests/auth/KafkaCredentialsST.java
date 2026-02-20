@@ -101,7 +101,7 @@ public class KafkaCredentialsST extends AbstractST {
         PwUtils.waitForContainsText(tcc,
             ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS,
-            PodUtils.getTimeoutForPodOperations(Constants.REGULAR_BROKER_REPLICAS), true);
+            PodUtils.getTimeoutForPodOperations(Constants.REGULAR_BROKER_REPLICAS), true, false);
 
         LOGGER.debug("Verify default Kafka node count on Nodes page");
         tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
