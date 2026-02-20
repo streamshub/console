@@ -79,7 +79,7 @@ public class MessagesPageSelectors {
         .withElementButton().withComponentMenuToggle()
         .build();
 
-    public static final String MPS_TPF_FILTER_WHERE_DROPDOWN_ITEMS = new CssBuilder()
+    public static final String MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS = new CssBuilder()
         .withElementBody().withChild()
         .withElementDiv().withComponentMenu().withChild()
         .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
@@ -103,7 +103,7 @@ public class MessagesPageSelectors {
         .withElementButton().withComponentMenuToggle()
         .build();
 
-    public static final String MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS = MPS_TPF_FILTER_WHERE_DROPDOWN_ITEMS;
+    public static final String MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS = MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS;
 
     public static final String MPS_TPF_PARAMETERS_RETRIEVE_TYPE_BUTTON = new CssBuilder(MPS_TPF_PARAMETERS_SECTION)
         .withChild()
@@ -254,4 +254,56 @@ public class MessagesPageSelectors {
     public static String getTableRowItem(int nthRow, int nthColumn) {
         return new CssBuilder(getTableRowItems(nthRow)).nth(nthColumn).build();
     }
+
+    public static final String MPS_TPF_PARAMETERS_DATE_INPUT = new CssBuilder(MPS_TPF_PARAMETERS_SECTION)
+        .withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentInputGroup().withChild()
+        .withElementDiv().withComponentInputGroup().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withComponentDatePicker().withChild()
+        .withElementDiv().withComponentDatePicker().withSubComponentInput().withChild()
+        .withElementDiv().withComponentInputGroup().withChild()
+        .withElementDiv().withComponentInputGroup().withSubComponentItem().nth(1).withChild()
+        .withElementSpan().withComponentFormControl().withChild()
+        .withElementInput()
+        .build();
+
+    public static final String MPS_TPF_PARAMETERS_DATE_FROM_TIMESTAMP = new CssBuilder(MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS)
+        .withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem().withChild()
+        .withElementSpan().withComponentMenu().withSubComponentItemMain().withChild()
+        .withElementSpan().withComponentMenu().withSubComponentItemText()
+        .build();
+
+    public static final String MPS_TPF_PARAMETERS_DATE_FROM_UNIT_TIMESTAMP = new CssBuilder(MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS)
+        .withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem().withChild()
+        .withElementSpan().withComponentMenu().withSubComponentItemMain().withChild()
+        .withElementSpan().withComponentMenu().withSubComponentItemText()
+        .build();
+
+    public static final String MPS_TPF_PARAMETERS_TIME_INPUT = new CssBuilder(MPS_TPF_PARAMETERS_SECTION)
+        .withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentInputGroup().withChild()
+        .withElementDiv().withComponentInputGroup().withSubComponentItem().nth(2).withChild()
+        .withElementDiv().withComponentDatePicker().withChild()
+        .withElementDiv().withComponentDatePicker().withSubComponentInput().withChild()
+        .withElementDiv().withComponentInputGroup().withChild()
+        .withElementDiv().withComponentInputGroup().withSubComponentItem().withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withChild()
+        .withElementSpan().withComponentFormControl().withChild()
+        .withElementInput()
+        .build();
 }

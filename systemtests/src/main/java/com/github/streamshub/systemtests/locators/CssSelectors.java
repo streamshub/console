@@ -220,4 +220,48 @@ public class CssSelectors {
         .withElementDiv().withComponentEmptyState().withSubComponentTitle().withChild()
         .withElementH1().withComponentEmptyState().withSubComponentTitleText()
         .build();
+
+    // Kafka credentials login page
+
+    public static final String PAGES_KAFKA_CREDENTIALS_NAME_INPUT = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withComponentLogin().withChild()
+        .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
+        .withElementMain().withComponentLogin().withSubComponentMain().withChild()
+        .withElementDiv().withComponentLogin().withSubComponentMainBody().withChild()
+        .withElementForm().withComponentForm().withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().nth(1).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
+        .withElementSpan().withComponentFormControl().withChild()
+        .withElementInput()
+        .build();
+
+    public static final String PAGES_KAFKA_CREDENTIALS_PASSWORD_INPUT = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withComponentLogin().withChild()
+        .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
+        .withElementMain().withComponentLogin().withSubComponentMain().withChild()
+        .withElementDiv().withComponentLogin().withSubComponentMainBody().withChild()
+        .withElementForm().withComponentForm().withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().nth(2).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
+        .withElementSpan().withComponentFormControl().withChild()
+        .withElementInput()
+        .build();
+
+    public static final String PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withComponentLogin().withChild()
+        .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
+        .withElementMain().withComponentLogin().withSubComponentMain().withChild()
+        .withElementDiv().withComponentLogin().withSubComponentMainBody().withChild()
+        .withElementForm().withComponentForm().withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().nth(3).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
+        .withElementDiv().withComponentForm().withSubComponentActions().withChild()
+        .withElementButton().withComponentButton()
+        .build();
 }

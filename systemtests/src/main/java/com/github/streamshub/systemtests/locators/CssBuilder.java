@@ -167,6 +167,7 @@ public class CssBuilder {
     public CssBuilder withComponentPanel() { return withComponent("panel"); }
     public CssBuilder withComponentForm() { return withComponent("form"); }
     public CssBuilder withComponentRadio() { return withComponent("radio"); }
+    public CssBuilder withComponentDatePicker() { return withComponent("date-picker"); }
 
     // ----------------
     // Sub-components
