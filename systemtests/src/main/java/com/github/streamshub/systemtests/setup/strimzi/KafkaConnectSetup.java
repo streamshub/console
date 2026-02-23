@@ -22,7 +22,7 @@ import io.strimzi.api.kafka.model.connect.build.PluginBuilder;
 import io.strimzi.api.kafka.model.connector.KafkaConnectorBuilder;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Random;
+import java.util.UUID;
 
 public class KafkaConnectSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaConnectSetup.class);
@@ -153,7 +153,7 @@ public class KafkaConnectSetup {
                     .build())
                 .build();
 
-            final String imageFullPath = Environment.getImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, String.valueOf(new Random().nextInt(Integer.MAX_VALUE)));
+            final String imageFullPath = Environment.getImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, String.valueOf(Math.abs(UUID.randomUUID().hashCode())));
 
             return kafkaConnectBuilder
                 .editOrNewSpec()
