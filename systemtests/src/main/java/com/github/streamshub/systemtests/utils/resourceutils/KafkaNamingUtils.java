@@ -16,7 +16,7 @@ public class KafkaNamingUtils {
     }
 
     public static String kafkaConnectName(String namespaceName) {
-        return Constants.KAFKA__CONNECT_CLUSTER_PREFIX + "-" + hashStub(namespaceName);
+        return Constants.KAFKA_CONNECT_CLUSTER_PREFIX + "-" + hashStub(namespaceName);
     }
 
     public static String kafkaUserName(String kafkaName) {

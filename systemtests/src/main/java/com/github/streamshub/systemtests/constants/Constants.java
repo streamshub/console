@@ -85,7 +85,7 @@ public class Constants {
      */
     public static final String KAFKA_USER_PREFIX = "ku";
     public static final String KAFKA_CLUSTER_PREFIX = "kc";
-    public static final String KAFKA__CONNECT_CLUSTER_PREFIX = "kcc";
+    public static final String KAFKA_CONNECT_CLUSTER_PREFIX = "kcc";
     public static final String BROKER_ROLE_PREFIX = "brk";
     public static final String CONTROLLER_ROLE_PREFIX = "ctrl";
     public static final int REGULAR_BROKER_REPLICAS = 3;
