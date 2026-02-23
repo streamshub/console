@@ -65,9 +65,9 @@ export class AuthenticatedPage {
 
   async goToConsumerGroups(waitForLoaded = true) {
     await this.goToClusterOverview();
-    await this.clickNav("Consumer groups");
+    await this.clickNav("Groups");
     await expect(
-      this.page.locator("h1").getByText("Consumer groups"),
+      this.page.locator("h1").getByText("Groups"),
     ).toBeVisible();
     if (waitForLoaded) {
       await this.waitForTableLoaded();

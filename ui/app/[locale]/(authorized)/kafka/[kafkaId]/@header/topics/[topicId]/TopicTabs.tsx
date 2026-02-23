@@ -58,9 +58,9 @@ export const TopicsTabs = ({
         ),
       },
       {
-        key: "consumer-groups",
-        label: "Consumer Groups",
-        path: `/kafka/${kafkaId}/topics/${topicId}/consumer-groups`,
+        key: "groups",
+        label: "Groups",
+        path: `/kafka/${kafkaId}/topics/${topicId}/groups`,
         extra: (
           <Label isCompact>
             {isLoading ? (

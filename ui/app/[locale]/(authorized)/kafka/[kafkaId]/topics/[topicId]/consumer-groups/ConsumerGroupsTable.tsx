@@ -232,7 +232,7 @@ export function ConsumerGroupsTable({
                 dataLabel={t("ConsumerGroupsTable.group_id")}
               >
                 {row.attributes.protocol === "consumer" && row.meta?.describeAvailable
-                    ? <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
+                    ? <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
                         {row.attributes.groupId}
                       </Link>
                     : <>{row.attributes.groupId}</>

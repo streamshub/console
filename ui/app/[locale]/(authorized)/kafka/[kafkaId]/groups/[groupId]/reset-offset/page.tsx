@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { getConsumerGroup } from "@/api/consumerGroups/actions";
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
@@ -36,7 +36,7 @@ export default function ResetOffsetPage({
             }}
             topics={[]}
             partitions={[]}
-            baseurl={`/kafka/${kafkaId}/consumer-groups`}
+            baseurl={`/kafka/${kafkaId}/groups`}
           />
         }
       >
@@ -93,7 +93,7 @@ async function ConnectedResetOffset({
       consumerGroup={consumerGroup}
       topics={topicDetails}
       partitions={partitions}
-      baseurl={`/kafka/${kafkaId}/consumer-groups`}
+      baseurl={`/kafka/${kafkaId}/groups`}
       kafkaId={kafkaId}
     />
   );

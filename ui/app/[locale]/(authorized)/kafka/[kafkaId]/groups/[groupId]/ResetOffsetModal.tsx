@@ -34,7 +34,7 @@ export function ResetOffsetModal({
   const refresh = () => {
     if (members.length === 0) {
       router.push(
-        `/kafka/${kafkaId}/consumer-groups/${consumerGroupId}/reset-offset`,
+        `/kafka/${kafkaId}/groups/${consumerGroupId}/reset-offset`,
       );
     }
   };

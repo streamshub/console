@@ -10,7 +10,7 @@ export async function generateMetadata() {
   const t = await getTranslations();
 
   return {
-    title: `Topic Consumer Groups | ${t("common.title")}`,
+    title: `Topic Groups | ${t("common.title")}`,
   };
 }
 

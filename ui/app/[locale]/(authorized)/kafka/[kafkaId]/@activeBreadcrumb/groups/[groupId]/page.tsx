@@ -1,5 +1,5 @@
 import { getConsumerGroup } from "@/api/consumerGroups/actions";
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import RichText from "@/components/RichText";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
@@ -42,7 +42,7 @@ export default async function ConsumerGroupsActiveBreadcrumb({
       </BreadcrumbItem>
       <BreadcrumbLink
         key={"cg"}
-        href={`/kafka/${kafkaId}/consumer-groups`}
+        href={`/kafka/${kafkaId}/groups`}
         showDivider={true}
       >
         {t("breadcrumbs.consumer_groups")}

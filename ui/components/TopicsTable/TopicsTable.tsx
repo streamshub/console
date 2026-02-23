@@ -177,7 +177,7 @@ export function TopicsTable({
             );
           case "consumerGroups":
             return (
-              <Th key={key} dataLabel={"Consumer groups"}>
+              <Th key={key} dataLabel={"Groups"}>
                 {t("consumer_groups")}
               </Th>
             );
@@ -214,9 +214,9 @@ export function TopicsTable({
             );
           case "consumerGroups":
             return (
-              <Td key={key} dataLabel={"Consumer groups"}>
+              <Td key={key} dataLabel={"Groups"}>
                 {row.relationships.consumerGroups?.meta?.count !== undefined ? (
-                  <Link href={`${baseurl}/${row.id}/consumer-groups`}>
+                  <Link href={`${baseurl}/${row.id}/groups`}>
                     <Number
                       value={row.relationships.consumerGroups?.meta?.count}
                     />

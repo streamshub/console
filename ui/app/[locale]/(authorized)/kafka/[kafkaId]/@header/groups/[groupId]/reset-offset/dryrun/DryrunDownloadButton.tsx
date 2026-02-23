@@ -3,7 +3,7 @@
 import { Button } from "@/libs/patternfly/react-core";
 import { DownloadIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
-import { Offset } from "../../../../../consumer-groups/[groupId]/reset-offset/ResetConsumerOffset";
+import { Offset } from "../../../../../groups/[groupId]/reset-offset/ResetConsumerOffset";
 
 export function DryrunDownloadButton({
   groupId,
