@@ -68,7 +68,7 @@ export default function ConsumerGroupsPage({
             sortDir={sortDir}
             type={type}
             consumerGroupState={consumerGroupState}
-            baseurl={`/kafka/${kafkaId}/consumer-groups`}
+            baseurl={`/kafka/${kafkaId}/groups`}
             page={1}
             nextPageCursor={undefined}
             prevPageCursor={undefined}
@@ -145,7 +145,7 @@ async function AsyncConsumerGroupTable({
       id={id}
       type={type}
       consumerGroupState={consumerGroupState}
-      baseurl={`/kafka/${kafkaId}/consumer-groups`}
+      baseurl={`/kafka/${kafkaId}/groups`}
       nextPageCursor={nextPageCursor}
       prevPageCursor={prevPageCursor}
     />

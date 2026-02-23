@@ -5,24 +5,24 @@ test.beforeEach(async ({ authenticatedPage }) => {
 });
 
 test("Consumer page content check", async ({ page, authenticatedPage }) => {
-  const emptyStateMessage = page.getByText("No consumer groups");
+  const emptyStateMessage = page.getByText("No groups");
   const isNoGroupsVisible = await emptyStateMessage.isVisible();
 
   if (isNoGroupsVisible) {
     console.log(
-      "Empty state detected: 'No consumer groups' is visible. Skipping table checks.",
+      "Empty state detected: 'No groups' is visible. Skipping table checks.",
     );
     await expect(emptyStateMessage).toBeVisible();
   } else {
     console.log(
-      "Consumer groups table expected. Proceeding with table content checks.",
+      "Groups table expected. Proceeding with table content checks.",
     );
 
     await test.step("Navigate to consumer page", async () => {
       await expect(
-        page.getByRole("columnheader", { name: "Consumer group name" }),
+        page.getByRole("columnheader", { name: "Group ID" }),
       ).toBeVisible();
-      await authenticatedPage.clickFirstLinkInTheTable("Consumer groups");
+      await authenticatedPage.clickFirstLinkInTheTable("Groups");
     });
 
     await test.step("Consumer page should display details table", async () => {

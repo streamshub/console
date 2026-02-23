@@ -1,5 +1,5 @@
 import { getConsumerGroup } from "@/api/consumerGroups/actions";
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import RichText from "@/components/RichText";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
@@ -12,7 +12,7 @@ import {
 import { HomeIcon } from "@/libs/patternfly/react-icons";
 import { getTranslations } from "next-intl/server";
 
-export default async function DryrunActiveBreadcrumb({
+export default async function ConsumerGroupsActiveBreadcrumb({
   params: { groupId, kafkaId },
 }: {
   params: KafkaConsumerGroupMembersParams;
@@ -40,10 +40,9 @@ export default async function DryrunActiveBreadcrumb({
       >
         {t("breadcrumbs.overview")}
       </BreadcrumbItem>
-
       <BreadcrumbLink
         key={"cg"}
-        href={`/kafka/${kafkaId}/consumer-groups`}
+        href={`/kafka/${kafkaId}/groups`}
         showDivider={true}
       >
         {t("breadcrumbs.consumer_groups")}
@@ -54,17 +53,6 @@ export default async function DryrunActiveBreadcrumb({
         ) : (
           groupIdDisplay
         )}
-      </BreadcrumbItem>
-
-      <BreadcrumbLink
-        key={"cg"}
-        href={`/kafka/${kafkaId}/consumer-groups/${groupId}/reset-offset`}
-        showDivider={true}
-      >
-        {t("ConsumerGroupsTable.reset_consumer_offset")}
-      </BreadcrumbLink>
-      <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
-        {t("ConsumerGroupsTable.dry_run_results_breadcrumb")}
       </BreadcrumbItem>
     </Breadcrumb>
   );

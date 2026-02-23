@@ -100,7 +100,7 @@ async function AsyncConnectedDryrunPage({
     <ConnectedDryrunPage
       groupId={groupId}
       offsetvalue={offsets}
-      baseurl={`/kafka/${kafkaId}/consumer-groups/${groupId}/reset-offset`}
+      baseurl={`/kafka/${kafkaId}/groups/${groupId}/reset-offset`}
       cliCommand={searchParams?.cliCommand || ""}
     />
   );

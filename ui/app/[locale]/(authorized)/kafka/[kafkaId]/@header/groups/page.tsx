@@ -6,5 +6,5 @@ export default function ConsumerGroupsHeader({
 }: {
   params: KafkaParams;
 }) {
-  return <AppHeader title={"Consumer Groups"} />;
+  return <AppHeader title={"Groups"} />;
 }

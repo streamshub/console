@@ -18,7 +18,7 @@ export function LagTable({
 
   return (
     <ResponsiveTable
-      ariaLabel={"Consumer group lag"}
+      ariaLabel={"Group lag"}
       columns={
         ["topic", "partition", "behind", "currentOffset", "endOffset"] as const
       }

@@ -47,7 +47,7 @@ export function ClusterLinks({ kafkaDetail }: { kafkaDetail: ClusterDetail }) {
         Service registry
       </NavItemLink>
 */}
-        <NavItemLink url={`/kafka/${kafkaId}/consumer-groups`}>
+        <NavItemLink url={`/kafka/${kafkaId}/groups`}>
           {t("AppLayout.consumer_groups")}
         </NavItemLink>
       </NavGroup>

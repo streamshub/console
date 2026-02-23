@@ -1,11 +1,9 @@
 import { getConsumerGroup } from "@/api/consumerGroups/actions";
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
-import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 import RichText from "@/components/RichText";
-import { hasPrivilege } from "@/utils/privileges";
 
 export default function Page({
   params: { kafkaId, groupId },
@@ -13,9 +11,7 @@ export default function Page({
   params: KafkaConsumerGroupMembersParams;
 }) {
   return (
-    <Suspense
-      fallback={<Header params={{ kafkaId, groupId, groupIdDisplay: "" }} disabled={true} />}
-    >
+    <Suspense fallback={<Header groupIdDisplay={""} />}>
       <ConnectedAppHeader params={{ kafkaId, groupId }} />
     </Suspense>
   );
@@ -27,43 +23,34 @@ async function ConnectedAppHeader({
   params: KafkaConsumerGroupMembersParams;
 }) {
   const consumerGroup = (await getConsumerGroup(kafkaId, groupId)).payload;
-  let disabled = true;
   let groupIdDisplay = "";
 
   if (consumerGroup) {
-    disabled = consumerGroup.attributes.state !== "EMPTY" || !hasPrivilege("UPDATE", consumerGroup);
     groupIdDisplay = consumerGroup.attributes.groupId;
   }
 
-  return <Header params={{ kafkaId, groupId, groupIdDisplay }} disabled={disabled} />;
+  return <Header groupIdDisplay={groupIdDisplay} />;
 }
 
 function Header({
-  disabled,
-  params: { kafkaId, groupId, groupIdDisplay },
+  groupIdDisplay,
 }: {
-  disabled: boolean;
-  params: { kafkaId: string; groupId: string; groupIdDisplay: string };
+  groupIdDisplay: string;
 }) {
   const t = useTranslations();
 
   return (
     <AppHeader
-      title={
+      title={t("ConsumerGroupsTable.reset_consumer_offset")}
+      subTitle={
         groupIdDisplay === "" ? (
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
-          groupIdDisplay
+          <RichText>
+            {(tags) => t.rich("ConsumerGroupsTable.consumer_name", { ...tags, groupId: groupIdDisplay })}
+          </RichText>
         )
       }
-      actions={[
-        <ConsumerGroupActionButton
-          key={"consumergGroupActionButton"}
-          disabled={disabled}
-          kafkaId={kafkaId}
-          groupId={groupId}
-        />,
-      ]}
     />
   );
 }

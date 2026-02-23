@@ -4,7 +4,7 @@ import {
   MemberDescription,
   OffsetAndMetadata,
 } from "@/api/consumerGroups/schema";
-import { LagTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/LagTable";
+import { LagTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/LagTable";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
@@ -58,7 +58,7 @@ export function MembersTable({
   }
   return (
     <ResponsiveTable
-      ariaLabel={"Consumer group consumerGroup"}
+      ariaLabel={"Group"}
       columns={
         ["member", "clientId", "overallLag", "assignedPartitions"] as const
       }

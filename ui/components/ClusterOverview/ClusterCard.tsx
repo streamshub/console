@@ -202,7 +202,7 @@ export function ClusterCard({
                   <GridItem span={12} xl={4}>
                     <Link
                       className="pf-v6-u-font-size-xl"
-                      href={"./consumer-groups"}
+                      href={"./groups"}
                     >
                       {isLoading ? (
                         <Skeleton

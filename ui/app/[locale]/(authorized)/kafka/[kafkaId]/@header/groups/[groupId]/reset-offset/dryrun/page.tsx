@@ -1,11 +1,11 @@
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { Flex, FlexItem, Content } from "@/libs/patternfly/react-core";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { updateConsumerGroup } from "@/api/consumerGroups/actions";
-import { Offset } from "../../../../../consumer-groups/[groupId]/reset-offset/ResetOffset";
+import { Offset } from "../../../../../groups/[groupId]/reset-offset/ResetOffset";
 import { DryrunDownloadButton } from "./DryrunDownloadButton";
 import RichText from "@/components/RichText";
 

@@ -4,12 +4,12 @@ test.beforeEach(async ({ authenticatedPage }) => {
   await authenticatedPage.goToConsumerGroups();
 });
 
-test("Consumer groups page: Check for Table or Empty State", async ({
+test("Groups page: Check for Table or Empty State", async ({
   page,
 }) => {
-  const emptyState = page.getByText("No consumer groups");
+  const emptyState = page.getByText("No groups");
   const tableHeader = page.getByRole("columnheader", {
-    name: "Consumer group name",
+    name: "Group ID",
   });
 
   await test.step("Ensure either table or empty state is visible", async () => {
@@ -17,12 +17,18 @@ test("Consumer groups page: Check for Table or Empty State", async ({
 
     if (await emptyState.isVisible()) {
       await expect(emptyState).toBeVisible();
-      console.log("Empty state detected: 'No consumer groups' is visible.");
+      console.log("Empty state detected: 'No groups' is visible.");
       return;
     }
-    console.log("Consumer groups table detected. Verifying headers and data.");
+    console.log("Groups table detected. Verifying headers and data.");
 
     await expect(tableHeader).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Type" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Protocol" }),
+    ).toBeVisible();
     await expect(
       page.getByRole("columnheader", { name: "State" }),
     ).toBeVisible();
@@ -37,8 +43,8 @@ test("Consumer groups page: Check for Table or Empty State", async ({
     ).toBeVisible();
 
     const dataCells = await page
-      .locator('table[aria-label="Consumer groups"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.innerHTML?.trim() ?? ""));
+      .locator('table[aria-label="Groups"] tbody tr td')
+      .evaluateAll(tds => tds.map(td => td.innerHTML?.trim() ?? ""));
 
     expect(dataCells.length).toBeGreaterThan(0);
   });

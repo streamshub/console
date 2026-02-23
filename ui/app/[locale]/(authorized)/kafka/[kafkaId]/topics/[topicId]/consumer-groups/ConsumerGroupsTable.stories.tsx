@@ -14,7 +14,7 @@ const allStates = [
 
 type ConsumerGroupMock = {
   id: string;
-  type: "consumer-group";
+  type: "group";
   attributes: {
     groupId: string;
     state: (typeof allStates)[number];
@@ -40,7 +40,7 @@ const createMockConsumerGroup = (
   state: ConsumerGroupMock["attributes"]["state"],
 ): ConsumerGroupMock => ({
   id,
-  type: "consumer-group",
+  type: "group",
   attributes: {
     groupId: `group-${id}`,
     state,

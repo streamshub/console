@@ -18,7 +18,7 @@ export function ConsumerGroupActionButton({
 
   const onClickResetOffset = () => {
     router.push(
-      `/kafka/${kafkaId}/consumer-groups/${groupId}/reset-offset`,
+      `/kafka/${kafkaId}/groups/${groupId}/reset-offset`,
     );
   };
 
@@ -26,7 +26,7 @@ export function ConsumerGroupActionButton({
     <Tooltip
       key={"reset"}
       content={
-        "It is possible to reset the offset only on stopped consumer groups"
+        "It is possible to reset the offset only on stopped groups"
       }
     >
       <Button
@@ -40,7 +40,7 @@ export function ConsumerGroupActionButton({
     </Tooltip>
     // <Tooltip
     //   key={"delete"}
-    //   content={"It is possible to delete only stopped consumer groups"}
+    //   content={"It is possible to delete only stopped groups"}
     // >
     //   <Button
     //     variant={"danger"}
