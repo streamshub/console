@@ -153,7 +153,7 @@ public class KafkaConnectSetup {
                     .build())
                 .build();
 
-            final String imageFullPath = Environment.getImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, String.valueOf(Math.abs(UUID.randomUUID().hashCode())));
+            final String imageFullPath = Environment.getImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, String.valueOf(UUID.randomUUID().hashCode()));
 
             return kafkaConnectBuilder
                 .editOrNewSpec()
