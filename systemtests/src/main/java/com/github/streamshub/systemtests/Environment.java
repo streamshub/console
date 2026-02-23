@@ -90,6 +90,28 @@ public class Environment {
         return !Environment.TEST_CLIENTS_PULL_SECRET.isEmpty();
     }
 
+    /**
+     * Builds the full image reference (registry/repository:tag) for a Kafka Connect build output image.
+     *
+     * <p>If {@link Environment#CONNECT_BUILD_IMAGE_PATH} is empty, the image reference is constructed
+     * using the default output registry in the following format:
+     *
+     * <pre>
+     *     {registry}/{namespaceName}/{imageName}:{tag}
+     * </pre>
+     *
+     * <p>If {@link Environment#CONNECT_BUILD_IMAGE_PATH} is defined, it is used as the base image
+     * path and only the provided {@code tag} is appended:
+     *
+     * <pre>
+     *     {CONNECT_BUILD_IMAGE_PATH}:{tag}
+     * </pre>
+     *
+     * @param namespaceName the namespace or organization under which the image is stored
+     * @param imageName     the name of the container image
+     * @param tag           the image tag (e.g. version or build identifier)
+     * @return the fully qualified image reference including registry, repository, and tag
+     */
     public static String getImageOutputRegistry(String namespaceName, String imageName, String tag) {
         if (Environment.CONNECT_BUILD_IMAGE_PATH.isEmpty()) {
             return getImageOutputRegistry() + "/" + namespaceName + "/" + imageName + ":" + tag;
@@ -97,6 +119,37 @@ public class Environment {
         return Environment.CONNECT_BUILD_IMAGE_PATH + ":" + tag;
     }
 
+    /**
+     * Resolves the internal container image registry address for the current cluster.
+     *
+     * <p>If the cluster is detected as OpenShift (via {@code ClusterUtils.isOcp()}),
+     * the default OpenShift internal registry service address is returned:
+     *
+     * <pre>
+     *     image-registry.openshift-image-registry.svc:5000
+     * </pre>
+     *
+     * <p>For non-OpenShift environments (e.g. Kubernetes or Minikube), this method attempts
+     * to locate the {@code registry} {@link Service} in the {@code kube-system} namespace
+     * and constructs the registry address using:
+     *
+     * <pre>
+     *     {service.clusterIP}:{httpPort}
+     * </pre>
+     *
+     * <p>The HTTP port is resolved from the service port named {@code "http"}.
+     *
+     * <p><strong>Note (Minikube):</strong> The internal registry must be explicitly enabled,
+     * for example:
+     *
+     * <pre>
+     *     minikube start --insecure-registry '10.0.0.0/24'
+     *     minikube addons enable registry
+     * </pre>
+     *
+     * @return the host and port of the internal container image registry
+     * @throws SetupException if the registry {@link Service} is not present in the cluster
+     */
     public static String getImageOutputRegistry() {
         if (ClusterUtils.isOcp()) {
             return "image-registry.openshift-image-registry.svc:5000";

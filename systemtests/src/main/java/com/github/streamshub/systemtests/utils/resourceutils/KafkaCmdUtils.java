@@ -274,6 +274,25 @@ public class KafkaCmdUtils {
         LOGGER.debug("Insert client config resulted in => [{}]", output);
     }
 
+    /**
+     * Waits until a specific Kafka Connect connector is registered and visible in the
+     * Kafka Connect REST API of the given Kafka Connect cluster.
+     *
+     * <p>This method retrieves the pod for the specified Kafka Connect cluster and
+     * repeatedly queries its REST API endpoint for the given connector. It waits until
+     * the API response contains the expected connector name in JSON format or the timeout
+     * is reached.
+     *
+     * <p>Logs are emitted at each polling step:
+     * <ul>
+     *     <li>{@code info} when the connector is detected in the API response</li>
+     *     <li>{@code warn} when the output is empty or does not yet contain the expected string</li>
+     * </ul>
+     *
+     * @param namespace the Kubernetes namespace where the Kafka Connect cluster is deployed
+     * @param connectName the name of the Kafka Connect cluster
+     * @param connectorName the name of the connector to wait for in the Connect API
+     */
     public static void waitForConnectorInServiceApi(String namespace, String connectName, String connectorName) {
         String podName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace, connectName).get(0).getMetadata().getName();
         String service = KafkaConnectResources.url(connectName, namespace, Constants.CONNECT_SERVICE_PORT);
