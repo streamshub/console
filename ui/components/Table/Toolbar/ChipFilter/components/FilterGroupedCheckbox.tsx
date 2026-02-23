@@ -28,7 +28,13 @@ export function FilterGroupedCheckbox<T extends string | number>({
   return (
     <Select
       aria-label={label}
-      popperProps={{ appendTo: "inline" }}
+      popperProps={{
+        appendTo: () => document.body,
+        placement: "bottom-start",
+        enableFlip: true,
+        flipBehavior: ["bottom"],
+        preventOverflow: true,
+      }}
       onSelect={(_, value) => {
         onToggle(value as T);
         setIsOpen(false);

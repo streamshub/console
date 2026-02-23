@@ -322,7 +322,9 @@ export function NodesTable({
                               name: `Used capacity: ${formatBytes(diskUsage!)}`,
                             },
                             {
-                              name: `Available: ${formatBytes(diskCapacity! - diskUsage!)}`,
+                              name: `Available: ${formatBytes(
+                                diskCapacity! - diskUsage!,
+                              )}`,
                             },
                           ]}
                           legendOrientation="vertical"
