@@ -146,14 +146,17 @@ public class KafkaConnectSetup {
      */
     public static KafkaConnectBuilder addFilePluginOrImage(String namespace, KafkaConnectBuilder kafkaConnectBuilder) {
         if (Environment.CONNECT_IMAGE_WITH_FILE_PLUGIN.isEmpty()) {
-            final Plugin filePlugin = new PluginBuilder()
+            Plugin filePlugin = new PluginBuilder()
                 .withName("file-plugin")
                 .withArtifacts(new JarArtifactBuilder()
                     .withUrl(Environment.ST_FILE_PLUGIN_URL)
                     .build())
                 .build();
 
-            final String imageFullPath = Environment.getImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, String.valueOf(UUID.randomUUID().hashCode()));
+            // Sonarcube safe image tag with positive uuid
+            String tag = String.valueOf(UUID.randomUUID().hashCode() & 0x7fffffff);
+            String imageFullPath = Environment.getImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, tag);
+            LOGGER.info("Kafka connect build image [{}]", imageFullPath);
 
             return kafkaConnectBuilder
                 .editOrNewSpec()
