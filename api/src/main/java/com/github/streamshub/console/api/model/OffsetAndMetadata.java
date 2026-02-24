@@ -95,6 +95,18 @@ public record OffsetAndMetadata(
             kafkaOffset.leaderEpoch().orElse(null));
     }
 
+    public OffsetAndMetadata(String topicId, org.apache.kafka.common.TopicPartition topicPartition,
+            org.apache.kafka.clients.admin.SharePartitionOffsetInfo kafkaOffset) {
+        this(topicId,
+            topicPartition.topic(),
+            topicPartition.partition(),
+            Either.of(kafkaOffset.startOffset()),
+            null,
+            kafkaOffset.lag().orElse(null),
+            null,
+            kafkaOffset.leaderEpoch().orElse(null));
+    }
+
     public boolean isDeleted() {
         return Objects.isNull(offset);
     }

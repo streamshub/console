@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -23,18 +24,25 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.DescribeClassicGroupsOptions;
 import org.apache.kafka.clients.admin.DescribeConsumerGroupsOptions;
+import org.apache.kafka.clients.admin.DescribeShareGroupsOptions;
+import org.apache.kafka.clients.admin.DescribeStreamsGroupsOptions;
 import org.apache.kafka.clients.admin.GroupListing;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
 import org.apache.kafka.clients.admin.ListGroupsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.ListShareGroupOffsetsSpec;
+import org.apache.kafka.clients.admin.ListStreamsGroupOffsetsSpec;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.GroupState;
 import org.apache.kafka.common.GroupType;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
@@ -43,8 +51,8 @@ import org.apache.kafka.common.errors.GroupNotEmptyException;
 import org.apache.kafka.common.errors.UnknownMemberIdException;
 import org.eclipse.microprofile.context.ThreadContext;
 
-import com.github.streamshub.console.api.model.Group;
 import com.github.streamshub.console.api.model.Either;
+import com.github.streamshub.console.api.model.Group;
 import com.github.streamshub.console.api.model.MemberDescription;
 import com.github.streamshub.console.api.model.OffsetAndMetadata;
 import com.github.streamshub.console.api.model.PartitionId;
@@ -52,8 +60,8 @@ import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.github.streamshub.console.api.security.PermissionService;
-import com.github.streamshub.console.api.support.GroupValidation;
 import com.github.streamshub.console.api.support.FetchFilterPredicate;
+import com.github.streamshub.console.api.support.GroupValidation;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -66,7 +74,6 @@ import com.github.streamshub.console.config.security.ResourceTypes;
 @ApplicationScoped
 public class GroupService {
 
-    private static final ListConsumerGroupOffsetsSpec ALL_GROUP_PARTITIONS = new ListConsumerGroupOffsetsSpec();
     private static final OffsetSpec LATEST_TOPIC_OFFSETS = OffsetSpec.latest();
     private static final Set<String> REQUIRE_DESCRIBE = Set.of(
             Group.Fields.AUTHORIZED_OPERATIONS,
@@ -188,9 +195,9 @@ public class GroupService {
         Admin adminClient = kafkaContext.admin();
         String groupId = Group.decodeGroupId(requestGroupId);
 
-        return assertGroupExists(adminClient, groupId)
+        return findGroup(adminClient, groupId)
             .thenComposeAsync(
-                    nothing -> describeGroups(adminClient, List.of(groupId), includes),
+                    group -> describeGroups(adminClient, List.of(group), includes),
                     threadContext.currentContextExecutor())
             .thenApply(groups -> groups.get(groupId))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
@@ -207,6 +214,9 @@ public class GroupService {
                         GroupState.STABLE,
                         GroupState.PREPARING_REBALANCE,
                         GroupState.COMPLETING_REBALANCE,
+                        GroupState.ASSIGNING,
+                        GroupState.RECONCILING,
+                        GroupState.NOT_READY,
                         GroupState.EMPTY)))
             .valid()
             .toCompletionStage()
@@ -250,33 +260,41 @@ public class GroupService {
         Admin adminClient = kafkaContext.admin();
         String groupId = Group.decodeGroupId(requestGroupId);
 
-        return assertGroupExists(adminClient, groupId)
-            .thenComposeAsync(nothing -> Optional.ofNullable(patch.offsets())
+        return findGroup(adminClient, groupId)
+            .thenApply(group -> {
+                if ("consumer".equals(group.protocol())) {
+                    var groupType = group.type();
+                    if (GroupType.CLASSIC.toString().equals(groupType) || GroupType.CONSUMER.toString().equals(groupType)) {
+                        return group;
+                    }
+                }
+                throw new BadRequestException("Group patch not supported for group type or protocol.");
+            })
+            .thenComposeAsync(group -> Optional.ofNullable(patch.offsets())
                     .filter(Predicate.not(Collection::isEmpty))
-                    .map(patchedOffsets -> alterConsumerGroupOffsets(adminClient, groupId, patch, dryRun))
+                    .map(patchedOffsets -> alterConsumerGroupOffsets(adminClient, group, patch, dryRun))
                     .orElseGet(() -> CompletableFuture.completedStage(Optional.empty())),
                 threadContext.currentContextExecutor());
     }
 
-    CompletionStage<Void> assertGroupExists(Admin adminClient, String groupId) {
+    CompletionStage<Group> findGroup(Admin adminClient, String groupId) {
         return adminClient.listGroups(listGroupOptions())
             .all()
             .toCompletionStage()
-            .thenAcceptAsync(listing -> {
-                if (listing.stream()
-                        .filter(permissionService.permitted(ResourceTypes.Kafka.GROUPS, Privilege.GET, GroupListing::groupId))
-                        .map(GroupListing::groupId)
-                        .noneMatch(groupId::equals)) {
-                    throw new GroupIdNotFoundException("No such consumer group: " + groupId);
-                }
-            }, threadContext.currentContextExecutor());
+            .thenApplyAsync(listings -> listings.stream()
+                    .filter(permissionService.permitted(ResourceTypes.Kafka.GROUPS, Privilege.GET, GroupListing::groupId))
+                    .filter(listing -> listing.groupId().equals(groupId))
+                    .findFirst()
+                    .map(Group::fromKafkaModel)
+                    .orElseThrow(() -> new GroupIdNotFoundException("No such consumer group: " + groupId)),
+                threadContext.currentContextExecutor());
     }
 
     private ListGroupsOptions listGroupOptions() {
         return new ListGroupsOptions();
     }
 
-    CompletionStage<Optional<Group>> alterConsumerGroupOffsets(Admin adminClient, String groupId, Group patch, boolean dryRun) {
+    CompletionStage<Optional<Group>> alterConsumerGroupOffsets(Admin adminClient, Group group, Group patch, boolean dryRun) {
         var topicsToDescribe = patch.offsets()
                 .stream()
                 .map(OffsetAndMetadata::topicId)
@@ -323,10 +341,10 @@ public class GroupService {
             })
             .thenComposeAsync(alterRequest -> {
                 if (dryRun) {
-                    return alterConsumerGroupOffsetsDryRun(adminClient, groupId, alterRequest)
+                    return alterConsumerGroupOffsetsDryRun(adminClient, group, alterRequest)
                             .thenApply(Optional::of);
                 } else {
-                    return alterConsumerGroupOffsets(adminClient, groupId, alterRequest)
+                    return alterConsumerGroupOffsets(adminClient, group, alterRequest)
                             .thenApply(nothing -> Optional.empty());
                 }
             }, threadContext.currentContextExecutor());
@@ -400,15 +418,15 @@ public class GroupService {
                                     offsetModificationsByPK.get(e.getKey()).metadata()))));
     }
 
-    CompletionStage<Group> alterConsumerGroupOffsetsDryRun(Admin adminClient, String groupId,
+    CompletionStage<Group> alterConsumerGroupOffsetsDryRun(Admin adminClient, Group group,
             Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> alterRequest) {
         var pendingTopicsIds = fetchTopicIdMap();
 
-        return describeGroups(adminClient, List.of(groupId), Collections.emptyList())
-            .thenApply(groups -> groups.get(groupId))
+        return describeGroups(adminClient, List.of(group), Collections.emptyList())
+            .thenApply(groups -> groups.get(group.groupId()))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
-            .thenCombine(pendingTopicsIds, (group, topicIds) -> {
-                group.offsets(alterRequest.entrySet().stream().map(e -> {
+            .thenCombine(pendingTopicsIds, (describedGroup, topicIds) -> {
+                describedGroup.offsets(alterRequest.entrySet().stream().map(e -> {
                     var topicPartition = e.getKey();
                     String topicName = topicPartition.topic();
                     String topicId = topicIds.get(topicName);
@@ -421,11 +439,11 @@ public class GroupService {
                     return new OffsetAndMetadata(topicId, topicPartition, offsetMeta);
                 }).toList());
 
-                return group;
+                return describedGroup;
             });
     }
 
-    CompletableFuture<Void> alterConsumerGroupOffsets(Admin adminClient, String groupId,
+    CompletableFuture<Void> alterConsumerGroupOffsets(Admin adminClient, Group group,
             Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> alterRequest) {
 
         var alteredPartitions = alterRequest.entrySet().stream()
@@ -437,8 +455,8 @@ public class GroupService {
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-        var alterResults = adminClient.alterConsumerGroupOffsets(groupId, alteredPartitions);
-        var deleteResults = adminClient.deleteConsumerGroupOffsets(groupId, deletedPartitions);
+        var alterResults = adminClient.alterConsumerGroupOffsets(group.groupId(), alteredPartitions);
+        var deleteResults = adminClient.deleteConsumerGroupOffsets(group.groupId(), deletedPartitions);
 
         var results = new ArrayList<CompletableFuture<Void>>();
 
@@ -489,13 +507,14 @@ public class GroupService {
     }
 
     private CompletionStage<List<Group>> augmentList(Admin adminClient, List<Group> list, List<String> includes) {
-        Map<String, Group> groups = list.stream().collect(Collectors.toMap(Group::groupId, Function.identity()));
         CompletableFuture<Void> describePromise;
 
         if (REQUIRE_DESCRIBE.stream().anyMatch(includes::contains)) {
-            describePromise = describeGroups(adminClient, groups.keySet(), includes)
-                .thenAccept(descriptions ->
-                    descriptions.forEach((name, either) -> mergeDescriptions(groups.get(name), either)))
+            describePromise = describeGroups(adminClient, list, includes)
+                .thenAccept(descriptions -> {
+                    Map<String, Group> groups = list.stream().collect(Collectors.toMap(Group::groupId, Function.identity()));
+                    descriptions.forEach((name, either) -> mergeDescriptions(groups.get(name), either));
+                })
                 .toCompletableFuture();
         } else {
             describePromise = CompletableFuture.completedFuture(null);
@@ -526,29 +545,31 @@ public class GroupService {
 
     private CompletionStage<Map<String, Either<Group, Throwable>>> describeGroups(
             Admin adminClient,
-            Collection<String> groupIds,
+            Collection<Group> groups,
             List<String> includes) {
 
-        Map<String, Either<Group, Throwable>> result = new LinkedHashMap<>(groupIds.size());
+        Map<String, Either<Group, Throwable>> result = LinkedHashMap.newLinkedHashMap(groups.size());
 
         var pendingTopicsIds = fetchTopicIdMap();
-
-        var pendingDescribes = adminClient.describeConsumerGroups(groupIds,
-                new DescribeConsumerGroupsOptions()
-                    .includeAuthorizedOperations(includes.contains(Group.Fields.AUTHORIZED_OPERATIONS)))
-                .describedGroups()
+        var pendingDescribes = groups.stream()
+                .collect(Collectors.groupingBy(Group::type))
                 .entrySet()
                 .stream()
+                .<Map.Entry<String, KafkaFuture<?>>>mapMulti((group, next) -> describeGroups(adminClient,
+                        group.getKey(),
+                        group.getValue(),
+                        includes.contains(Group.Fields.AUTHORIZED_OPERATIONS),
+                        next))
                 .map(entry ->
                     entry.getValue()
                         .toCompletionStage()
                         .thenCombineAsync(pendingTopicsIds, (description, topicIds) -> {
-                            permissionService.assertPermitted(ResourceTypes.Kafka.GROUPS, Privilege.GET, description.groupId());
+                            permissionService.assertPermitted(ResourceTypes.Kafka.GROUPS, Privilege.GET, groupId(description));
                             return Group.fromKafkaModel(description, topicIds);
                         }, threadContext.currentContextExecutor())
-                        .<Void>handle((consumerGroup, error) -> {
+                        .<Void>handle((group, error) -> {
                             result.put(entry.getKey(), Either.of(
-                                    Optional.ofNullable(consumerGroup),
+                                    Optional.ofNullable(group),
                                     /*
                                      * If an error exists and has a non-null cause, unwrap it (CompletionException).
                                      * Otherwise, just pass the error, possibly null if no exception raised.
@@ -582,25 +603,78 @@ public class GroupService {
                 .collect(Collectors.toMap(TopicListing::name, l -> l.topicId().toString())));
     }
 
+    private void describeGroups(Admin adminClient,
+            String type,
+            List<Group> groups,
+            boolean includeAuthorizations,
+            Consumer<Map.Entry<String, KafkaFuture<?>>> next) {
+
+        var groupIds = groups.stream().map(Group::groupId).toList();
+        GroupType groupType = GroupType.parse(type);
+
+        switch (groupType) {
+            case CLASSIC:
+                adminClient.describeClassicGroups(groupIds,
+                        new DescribeClassicGroupsOptions()
+                            .includeAuthorizedOperations(includeAuthorizations))
+                        .describedGroups()
+                        .forEach((groupId, promise) -> next.accept(Map.entry(groupId, promise)));
+                break;
+            case CONSUMER:
+                adminClient.describeConsumerGroups(groupIds,
+                        new DescribeConsumerGroupsOptions()
+                            .includeAuthorizedOperations(includeAuthorizations))
+                        .describedGroups()
+                        .forEach((groupId, promise) -> next.accept(Map.entry(groupId, promise)));
+                break;
+            case SHARE:
+                adminClient.describeShareGroups(groupIds,
+                        new DescribeShareGroupsOptions()
+                            .includeAuthorizedOperations(includeAuthorizations))
+                        .describedGroups()
+                        .forEach((groupId, promise) -> next.accept(Map.entry(groupId, promise)));
+                break;
+            case STREAMS:
+                adminClient.describeStreamsGroups(groupIds,
+                        new DescribeStreamsGroupsOptions()
+                            .includeAuthorizedOperations(includeAuthorizations))
+                        .describedGroups()
+                        .forEach((groupId, promise) -> next.accept(Map.entry(groupId, promise)));
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown group type: " + groupType);
+        }
+    }
+
+    private static String groupId(Object description) {
+        switch (description) {
+            case org.apache.kafka.clients.admin.ClassicGroupDescription classicGroup:
+                return classicGroup.groupId();
+            case org.apache.kafka.clients.admin.ConsumerGroupDescription consumerGroup:
+                return consumerGroup.groupId();
+            case org.apache.kafka.clients.admin.ShareGroupDescription shareGroup:
+                return shareGroup.groupId();
+            case org.apache.kafka.clients.admin.StreamsGroupDescription streamsGroup:
+                return streamsGroup.groupId();
+            default:
+                throw new IllegalArgumentException("Unknown group type: " + description.getClass());
+        }
+    }
+
     private CompletableFuture<Void> fetchOffsets(Admin adminClient, Map<String, Group> groups, Map<String, String> topicIds) {
-        var groupOffsetsRequest = groups.keySet()
-                .stream()
-                .collect(Collectors.toMap(Function.identity(), key -> ALL_GROUP_PARTITIONS));
-
-        var groupOffsetsResult = adminClient.listConsumerGroupOffsets(groupOffsetsRequest);
-
-        Map<String, Either<Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata>, Throwable>> groupOffsets = new LinkedHashMap<>();
+        Map<String, Either<Map<PartitionId, OffsetAndMetadata>, Throwable>> groupOffsets = new LinkedHashMap<>();
         Map<TopicPartition, Either<ListOffsetsResultInfo, Throwable>> topicOffsets = new LinkedHashMap<>();
 
-        var pendingGroupOps = groups.keySet()
+        var pendingGroupOps = groups.values()
             .stream()
-            .map(groupId -> groupOffsetsResult.partitionsToOffsetAndMetadata(groupId)
-                    .toCompletionStage()
-                    .toCompletableFuture()
-                    .<Void>handle((offsets, thrown) -> {
-                        groupOffsets.put(groupId, Either.of(Optional.ofNullable(offsets), thrown));
-                        return null;
-                    }))
+            .collect(Collectors.groupingBy(Group::type))
+            .entrySet()
+            .stream()
+            .map(group -> listGroupOffsets(adminClient,
+                    group.getKey(),
+                    group.getValue(),
+                    topicIds,
+                    groupOffsets))
             .toArray(CompletableFuture[]::new);
 
         return CompletableFuture.allOf(pendingGroupOps)
@@ -612,8 +686,8 @@ public class GroupService {
                         .map(Map::keySet)
                         .flatMap(Collection::stream)
                         .distinct()
-                        .filter(topicPartition -> topicIds.containsKey(topicPartition.topic()))
-                        .collect(Collectors.toMap(Function.identity(), key -> LATEST_TOPIC_OFFSETS));
+                        .filter(topicPartition -> topicIds.containsKey(topicPartition.topicName()))
+                        .collect(Collectors.toMap(e -> e.toKafkaModel(), e -> LATEST_TOPIC_OFFSETS));
                 var topicOffsetsResult = adminClient.listOffsets(topicOffsetsRequest);
 
                 return topicOffsetsRequest.keySet()
@@ -631,14 +705,153 @@ public class GroupService {
             .thenCompose(CompletableFuture::allOf)
             .thenRun(() -> groups.forEach((groupId, group) -> {
                 var grpOffsets = groupOffsets.get(groupId);
-                addOffsets(group, topicIds, topicOffsets, grpOffsets.getOptionalPrimary().orElse(null), grpOffsets.getAlternate());
+                addOffsets(group, topicOffsets, grpOffsets.getOptionalPrimary().orElse(null), grpOffsets.getAlternate());
             }));
     }
 
-    private void addOffsets(Group group,
+    private CompletableFuture<Void> listGroupOffsets(Admin adminClient,
+            String type,
+            List<Group> groups,
             Map<String, String> topicIds,
+            Map<String, Either<Map<PartitionId, OffsetAndMetadata>, Throwable>> groupOffsets) {
+
+        GroupType groupType = GroupType.parse(type);
+
+        switch (groupType) {
+            case CLASSIC, CONSUMER:
+                return listConsumerGroupOffsets(adminClient, groups, topicIds, groupOffsets);
+            case SHARE:
+                return listShareGroupOffsets(adminClient, groups, topicIds, groupOffsets);
+            case STREAMS:
+                return listStreamsGroupOffsets(adminClient, groups, topicIds, groupOffsets);
+            default:
+                throw new IllegalArgumentException("Unknown group type: " + groupType);
+        }
+    }
+
+    private CompletableFuture<Void> listConsumerGroupOffsets(Admin adminClient,
+            List<Group> groups,
+            Map<String, String> topicIds,
+            Map<String, Either<Map<PartitionId, OffsetAndMetadata>, Throwable>> allGroupOffsets) {
+
+        var groupIds = groups.stream().map(Group::groupId).toList();
+        var request = groupIds
+                .stream()
+                .collect(Collectors.toMap(Function.identity(), key -> new ListConsumerGroupOffsetsSpec()));
+
+        var result = adminClient.listConsumerGroupOffsets(request);
+
+        var promises = groupIds.stream()
+            .map(groupId -> result.partitionsToOffsetAndMetadata(groupId)
+                    .toCompletionStage()
+                    .toCompletableFuture()
+                    .<Void>handle((offsets, thrown) -> {
+                        if (offsets != null) {
+                            var groupOffsets = offsets.entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(
+                                    e -> new PartitionId(
+                                                topicIds.get(e.getKey().topic()),
+                                                e.getKey().topic(),
+                                                e.getKey().partition()),
+                                    e -> new OffsetAndMetadata(
+                                                topicIds.get(e.getKey().topic()),
+                                                e.getKey(),
+                                                e.getValue())));
+                            allGroupOffsets.put(groupId, Either.of(groupOffsets));
+                        } else {
+                            allGroupOffsets.put(groupId, Either.ofAlternate(thrown));
+                        }
+                        return null;
+                    }))
+            .toArray(CompletableFuture[]::new);
+
+        return CompletableFuture.allOf(promises);
+    }
+
+    private CompletableFuture<Void> listShareGroupOffsets(Admin adminClient,
+            List<Group> groups,
+            Map<String, String> topicIds,
+            Map<String, Either<Map<PartitionId, OffsetAndMetadata>, Throwable>> allGroupOffsets) {
+
+        var groupIds = groups.stream().map(Group::groupId).toList();
+        var request = groupIds
+                .stream()
+                .collect(Collectors.toMap(Function.identity(), key -> new ListShareGroupOffsetsSpec()));
+
+        var result = adminClient.listShareGroupOffsets(request);
+
+        var promises = groupIds.stream()
+            .map(groupId -> result.partitionsToOffsetInfo(groupId)
+                    .toCompletionStage()
+                    .toCompletableFuture()
+                    .<Void>handle((offsets, thrown) -> {
+                        if (offsets != null) {
+                            var groupOffsets = offsets.entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(
+                                    e -> new PartitionId(
+                                                topicIds.get(e.getKey().topic()),
+                                                e.getKey().topic(),
+                                                e.getKey().partition()),
+                                    e -> new OffsetAndMetadata(
+                                                topicIds.get(e.getKey().topic()),
+                                                e.getKey(),
+                                                e.getValue())));
+                            allGroupOffsets.put(groupId, Either.of(groupOffsets));
+                        } else {
+                            allGroupOffsets.put(groupId, Either.ofAlternate(thrown));
+                        }
+                        return null;
+                    }))
+            .toArray(CompletableFuture[]::new);
+
+        return CompletableFuture.allOf(promises);
+    }
+
+    private CompletableFuture<Void> listStreamsGroupOffsets(Admin adminClient,
+            List<Group> groups,
+            Map<String, String> topicIds,
+            Map<String, Either<Map<PartitionId, OffsetAndMetadata>, Throwable>> allGroupOffsets) {
+
+        var groupIds = groups.stream().map(Group::groupId).toList();
+        var request = groupIds
+                .stream()
+                .collect(Collectors.toMap(Function.identity(), key -> new ListStreamsGroupOffsetsSpec()));
+
+        var result = adminClient.listStreamsGroupOffsets(request);
+
+        var promises = groupIds.stream()
+                .map(groupId -> result.partitionsToOffsetAndMetadata(groupId)
+                        .toCompletionStage()
+                        .toCompletableFuture()
+                        .<Void>handle((offsets, thrown) -> {
+                            if (offsets != null) {
+                                var groupOffsets = offsets.entrySet()
+                                    .stream()
+                                    .collect(Collectors.toMap(
+                                        e -> new PartitionId(
+                                                    topicIds.get(e.getKey().topic()),
+                                                    e.getKey().topic(),
+                                                    e.getKey().partition()),
+                                        e -> new OffsetAndMetadata(
+                                                    topicIds.get(e.getKey().topic()),
+                                                    e.getKey(),
+                                                    e.getValue())));
+                                allGroupOffsets.put(groupId, Either.of(groupOffsets));
+                            } else {
+                                allGroupOffsets.put(groupId, Either.ofAlternate(thrown));
+                            }
+                            return null;
+                        }))
+                .toArray(CompletableFuture[]::new);
+
+        return CompletableFuture.allOf(promises);
+    }
+
+    private void addOffsets(Group group,
             Map<TopicPartition, Either<ListOffsetsResultInfo, Throwable>> topicOffsets,
-            Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> groupOffsets,
+            Map<PartitionId, OffsetAndMetadata> groupOffsets,
             Throwable thrown) {
 
         if (thrown != null) {
@@ -647,8 +860,8 @@ public class GroupService {
             List<OffsetAndMetadata> offsets = new ArrayList<>();
 
             groupOffsets.forEach((topicPartition, offsetsAndMetadata) -> {
-                long offset = offsetsAndMetadata.offset();
-                var endOffset = Optional.ofNullable(topicOffsets.get(topicPartition))
+                long offset = offsetsAndMetadata.offset().getPrimary();
+                var endOffset = Optional.ofNullable(topicOffsets.get(topicPartition.toKafkaModel()))
                         .map(offsetOrError -> {
                             if (offsetOrError.isPrimaryPresent()) {
                                 return offsetOrError.getPrimary().offset();
@@ -656,20 +869,20 @@ public class GroupService {
 
                             Throwable listOffsetsError = offsetOrError.getAlternate();
                             String msg = "Unable to list offsets for topic/partition %s-%d"
-                                    .formatted(topicPartition.topic(), topicPartition.partition());
+                                    .formatted(topicPartition.topicName(), topicPartition.partition());
                             group.addError(new JsonApiError(msg, listOffsetsError.getMessage(), listOffsetsError));
                             return null;
                         });
 
                 offsets.add(new OffsetAndMetadata(
-                        topicIds.get(topicPartition.topic()),
-                        topicPartition.topic(),
+                        topicPartition.topicId(),
+                        topicPartition.topicName(),
                         topicPartition.partition(),
-                        Either.of(offsetsAndMetadata.offset()),
+                        offsetsAndMetadata.offset(),
                         endOffset.orElse(null), // log end offset
                         endOffset.map(end -> end - offset).orElse(null), // lag
                         offsetsAndMetadata.metadata(),
-                        offsetsAndMetadata.leaderEpoch().orElse(null)));
+                        offsetsAndMetadata.leaderEpoch()));
             });
 
             group.offsets(offsets);
