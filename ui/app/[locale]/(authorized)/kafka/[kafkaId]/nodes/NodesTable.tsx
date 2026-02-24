@@ -131,11 +131,11 @@ export function NodesTable({
   ) as ControllerStatus[];
 
   return (
-    <Card>
+    <Card isFullHeight>
       <CardHeader>
         <CardTitle className="pf-v6-u-pl-md">{t("nodes.title")}</CardTitle>
       </CardHeader>
-      <CardBody>
+      <CardBody isFilled style={{ minHeight: "600px" }}>
         <TableView
           page={page}
           perPage={perPage}
@@ -322,7 +322,9 @@ export function NodesTable({
                               name: `Used capacity: ${formatBytes(diskUsage!)}`,
                             },
                             {
-                              name: `Available: ${formatBytes(diskCapacity! - diskUsage!)}`,
+                              name: `Available: ${formatBytes(
+                                diskCapacity! - diskUsage!,
+                              )}`,
                             },
                           ]}
                           legendOrientation="vertical"
