@@ -38,7 +38,7 @@ import io.xlate.validation.constraints.Expression;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 
-@Schema(name = "ConsumerGroup")
+@Schema(name = "Group")
 @Expression(
     value = "self.id != null",
     message = "resource ID is required",
@@ -46,13 +46,13 @@ import static java.util.Comparator.nullsLast;
     payload = ErrorCategory.InvalidResource.class)
 @Expression(
     when = "self.type != null",
-    value = "self.type == '" + ConsumerGroup.API_TYPE + "'",
+    value = "self.type == '" + Group.API_TYPE + "'",
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, None> {
+public class Group extends JsonApiResource<Group.Attributes, None> {
 
-    public static final String API_TYPE = "consumerGroups";
+    public static final String API_TYPE = "groups";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
 
     public static final class Fields {
@@ -67,19 +67,19 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         public static final String OFFSETS = "offsets";
         public static final String SIMPLE_CONSUMER_GROUP = "simpleConsumerGroup";
 
-        static final Comparator<ConsumerGroup> ID_COMPARATOR =
-                comparing(ConsumerGroup::groupId);
+        static final Comparator<Group> ID_COMPARATOR =
+                comparing(Group::groupId);
 
-        static final Map<String, Map<Boolean, Comparator<ConsumerGroup>>> COMPARATORS = ComparatorBuilder.bidirectional(
+        static final Map<String, Map<Boolean, Comparator<Group>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR,
-                        GROUP_ID, nullsLast(comparing(ConsumerGroup::groupId)),
-                        TYPE, nullsLast(comparing(ConsumerGroup::type)),
-                        PROTOCOL, nullsLast(comparing(ConsumerGroup::protocol)),
-                        STATE, nullsLast(comparing(ConsumerGroup::state)),
-                        SIMPLE_CONSUMER_GROUP, comparing(ConsumerGroup::simpleConsumerGroup)));
+                        GROUP_ID, nullsLast(comparing(Group::groupId)),
+                        TYPE, nullsLast(comparing(Group::type)),
+                        PROTOCOL, nullsLast(comparing(Group::protocol)),
+                        STATE, nullsLast(comparing(Group::state)),
+                        SIMPLE_CONSUMER_GROUP, comparing(Group::simpleConsumerGroup)));
 
-        public static final ComparatorBuilder<ConsumerGroup> COMPARATOR_BUILDER =
-                new ComparatorBuilder<>(ConsumerGroup.Fields::comparator, ConsumerGroup.Fields.defaultComparator());
+        public static final ComparatorBuilder<Group> COMPARATOR_BUILDER =
+                new ComparatorBuilder<>(Group.Fields::comparator, Group.Fields.defaultComparator());
 
         public static final String LIST_DEFAULT = GROUP_ID +
                 ", " + TYPE +
@@ -99,11 +99,11 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
             // Prevent instances
         }
 
-        public static Comparator<ConsumerGroup> defaultComparator() {
+        public static Comparator<Group> defaultComparator() {
             return ID_COMPARATOR;
         }
 
-        public static Comparator<ConsumerGroup> comparator(String fieldName, boolean descending) {
+        public static Comparator<Group> comparator(String fieldName, boolean descending) {
             if (COMPARATORS.containsKey(fieldName)) {
                 return COMPARATORS.get(fieldName).get(descending);
             }
@@ -112,9 +112,9 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         }
     }
 
-    @Schema(name = "ConsumerGroupDataList")
-    public static final class DataList extends JsonApiRootDataList<ConsumerGroup> {
-        public DataList(List<ConsumerGroup> data, ListRequestContext<ConsumerGroup> listSupport) {
+    @Schema(name = "GroupDataList")
+    public static final class DataList extends JsonApiRootDataList<Group> {
+        public DataList(List<Group> data, ListRequestContext<Group> listSupport) {
             super(data.stream()
                     .map(entry -> {
                         entry.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
@@ -123,14 +123,14 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
             listSupport.meta().forEach(this::addMeta);
-            listSupport.buildPageLinks(ConsumerGroup::toCursor).forEach(this::addLink);
+            listSupport.buildPageLinks(Group::toCursor).forEach(this::addLink);
         }
     }
 
-    @Schema(name = "ConsumerGroupData")
-    public static final class Data extends JsonApiRootData<ConsumerGroup> {
+    @Schema(name = "GroupData")
+    public static final class Data extends JsonApiRootData<Group> {
         @JsonCreator
-        public Data(@JsonProperty("data") ConsumerGroup data) {
+        public Data(@JsonProperty("data") Group data) {
             super(data);
         }
     }
@@ -200,11 +200,11 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
     }
 
     @JsonCreator
-    public ConsumerGroup(String id, String type, Attributes attributes) {
+    public Group(String id, String type, Attributes attributes) {
         super(id, type, new Attributes(attributes));
     }
 
-    private ConsumerGroup(String groupId, boolean simpleConsumerGroup, String state) {
+    private Group(String groupId, boolean simpleConsumerGroup, String state) {
         super(encodeGroupId(groupId), API_TYPE, new Attributes(groupId, simpleConsumerGroup, state));
     }
 
@@ -222,8 +222,8 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         throw new GroupIdNotFoundException("Invalid groupId");
     }
 
-    public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.GroupListing listing) {
-        var group = new ConsumerGroup(
+    public static Group fromKafkaModel(org.apache.kafka.clients.admin.GroupListing listing) {
+        var group = new Group(
             listing.groupId(),
             listing.isSimpleConsumerGroup(),
             listing.groupState().map(Enum::name).orElse(null)
@@ -236,17 +236,17 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
     /**
      * Construct an instance from a Kafka consumer group description and the map of
      * topic Ids, used to set the topic ID of the assignments field elements for
-     * each member of the consumber group.
+     * each member of the consumer group.
      *
      * @param description Kafka consumer group description model
      * @param topicIds    map of topic names to Ids
-     * @return a new {@linkplain ConsumerGroup}
+     * @return a new {@linkplain Group}
      */
-    public static ConsumerGroup fromKafkaModel(
+    public static Group fromKafkaModel(
             org.apache.kafka.clients.admin.ConsumerGroupDescription description,
             Map<String, String> topicIds) {
 
-        var group = new ConsumerGroup(
+        var group = new Group(
                 description.groupId(),
                 description.isSimpleConsumerGroup(),
                 Optional.ofNullable(description.groupState()).map(Enum::name).orElse(null));
@@ -349,13 +349,13 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
      * Constructs a "cursor" ConsumerGroup from the encoded string representation of the subset
      * of Topic fields used to compare entities for pagination/sorting.
      */
-    public static ConsumerGroup fromCursor(JsonObject cursor) {
+    public static Group fromCursor(JsonObject cursor) {
         if (cursor == null) {
             return null;
         }
 
         JsonObject attr = cursor.getJsonObject("attributes");
-        var group = new ConsumerGroup(attr.getString(Fields.GROUP_ID, null),
+        var group = new Group(attr.getString(Fields.GROUP_ID, null),
                 attr.getBoolean(Fields.SIMPLE_CONSUMER_GROUP, false),
                 attr.getString(Fields.STATE, null));
 

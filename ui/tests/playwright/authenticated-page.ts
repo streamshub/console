@@ -63,7 +63,7 @@ export class AuthenticatedPage {
     }
   }
 
-  async goToConsumerGroups(waitForLoaded = true) {
+  async goToGroups(waitForLoaded = true) {
     await this.goToClusterOverview();
     await this.clickNav("Groups");
     await expect(

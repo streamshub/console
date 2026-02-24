@@ -24,7 +24,7 @@ Missing required `id` + invalid `type`
 Resource `id` differs from URL
     | {
         "data": {
-          "type": "consumerGroups",
+          "type": "groups",
           "id": "does-not-match-real-id",
           "attributes": { }
         }
@@ -43,7 +43,7 @@ Resource `id` differs from URL
 Invalid group state - connected members for alter offset
     | {
         "data": {
-          "type": "consumerGroups",
+          "type": "groups",
           "id": "$groupId",
           "attributes": {
             "offsets": [{
@@ -65,7 +65,7 @@ Invalid group state - connected members for alter offset
 No such topic
     | {
         "data": {
-          "type": "consumerGroups",
+          "type": "groups",
           "id": "$groupId",
           "attributes": {
             "offsets": [{
@@ -95,7 +95,7 @@ No such topic
 No such partition
     | {
         "data": {
-          "type": "consumerGroups",
+          "type": "groups",
           "id": "$groupId",
           "attributes": {
             "offsets": [{
@@ -120,7 +120,7 @@ No such partition
 Offset after latest
     | {
         "data": {
-          "type": "consumerGroups",
+          "type": "groups",
           "id": "$groupId",
           "attributes": {
             "offsets": [{
@@ -145,7 +145,7 @@ Offset after latest
 Invalid group state - connected members for delete offset
     | {
         "data": {
-          "type": "consumerGroups",
+          "type": "groups",
           "id": "$groupId",
           "attributes": {
             "offsets": [{
@@ -167,7 +167,7 @@ Invalid group state - connected members for delete offset
 Offset whitespace
     | {
         "data": {
-          "type": "consumerGroups",
+          "type": "groups",
           "id": "$groupId",
           "attributes": {
             "offsets": [{

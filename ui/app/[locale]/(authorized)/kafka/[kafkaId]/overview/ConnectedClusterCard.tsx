@@ -1,14 +1,14 @@
-import { ConsumerGroupsResponse } from "@/api/consumerGroups/schema";
+import { ConsumerGroupsResponse } from "@/api/groups/schema";
 import { ClusterDetail } from "@/api/kafka/schema";
 import { ApiResponse } from "@/api/api";
 import { ClusterCard } from "@/components/ClusterOverview/ClusterCard";
 
 export async function ConnectedClusterCard({
   cluster,
-  consumerGroups,
+  groups,
 }: {
   cluster: Promise<ClusterDetail | null>;
-  consumerGroups: Promise<ApiResponse<ConsumerGroupsResponse>>;
+  groups: Promise<ApiResponse<ConsumerGroupsResponse>>;
 }) {
   const res = await cluster;
 
@@ -32,7 +32,7 @@ export async function ConnectedClusterCard({
         isLoading={false}
         kafkaDetail={res}
         messages={messages ?? []}
-        consumerGroups={undefined}
+        groups={undefined}
         brokersOnline={undefined}
         brokersTotal={undefined}
         kafkaId={res?.id}
@@ -40,7 +40,7 @@ export async function ConnectedClusterCard({
       />
     );
   }
-  const groupCount = await consumerGroups.then((grpResp) =>
+  const groupCount = await groups.then((grpResp) =>
     grpResp.errors ? undefined : (grpResp.payload?.meta.page.total ?? 0),
   );
 
@@ -53,7 +53,7 @@ export async function ConnectedClusterCard({
       isLoading={false}
       kafkaDetail={res}
       messages={messages ?? []}
-      consumerGroups={groupCount}
+      groups={groupCount}
       brokersOnline={brokersOnline}
       brokersTotal={brokersTotal}
       kafkaId={res.id}

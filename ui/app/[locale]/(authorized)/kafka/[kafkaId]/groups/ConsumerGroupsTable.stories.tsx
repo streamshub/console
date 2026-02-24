@@ -7,7 +7,7 @@ export default {
   args: {
     page: 1,
     perPage: 20,
-    consumerGroups: [],
+    groups: [],
   },
 } as Meta<typeof Comp>;
 type Story = StoryObj<typeof Comp>;
@@ -52,7 +52,7 @@ const generateConsumerGroup = (
 export const ConsumerGroups: Story = {
   args: {
     perPage: 20,
-    consumerGroups: (() => {
+    groups: (() => {
       const groups = Array.from({ length: 21 }, (_, i) =>
         generateConsumerGroup(
           `${i}`,

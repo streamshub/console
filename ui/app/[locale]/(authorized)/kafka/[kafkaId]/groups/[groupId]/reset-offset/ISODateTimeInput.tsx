@@ -33,7 +33,7 @@ export function ISODateTimeInput({
   label = "ISO date time",
   onValidityChange,
 }: Props) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations("GroupsTable");
   const [inputValue, setInputValue] = useState(value);
   const [displayZone, setDisplayZone] = useState<"UTC" | "LOCAL">("UTC");
   const [originalOffset, setOriginalOffset] = useState<string | null>(null);

@@ -1,6 +1,6 @@
 "use client";
 
-import { ConsumerGroup, GroupType, ConsumerGroupState } from "@/api/consumerGroups/schema";
+import { ConsumerGroup, GroupType, ConsumerGroupState } from "@/api/groups/schema";
 import { useRouter } from "@/i18n/routing";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useState, useTransition } from "react";
@@ -14,7 +14,7 @@ import { ResetOffsetModal } from "./[groupId]/ResetOffsetModal";
 
 export type ConnectedConsumerGroupTableProps = {
   kafkaId: string;
-  consumerGroup: ConsumerGroup[] | undefined;
+  groups: ConsumerGroup[] | undefined;
   consumerGroupCount: number;
   page: number;
   perPage: number;
@@ -31,7 +31,7 @@ export type ConnectedConsumerGroupTableProps = {
 type State = {
   id: string | undefined;
   type: GroupType[] | undefined;
-  consumerGroup: ConsumerGroup[] | undefined;
+  groups: ConsumerGroup[] | undefined;
   perPage: number;
   sort: ConsumerGroupColumn;
   sortDir: "asc" | "desc";
@@ -39,7 +39,7 @@ type State = {
 };
 
 export function ConnectedConsumerGroupTable({
-  consumerGroup,
+  groups,
   consumerGroupCount,
   page,
   perPage,
@@ -61,7 +61,7 @@ export function ConnectedConsumerGroupTable({
     Partial<Omit<State, "ConsumerGroups">>
   >(
     {
-      consumerGroup,
+      groups,
       id,
       type,
       perPage,
@@ -69,11 +69,11 @@ export function ConnectedConsumerGroupTable({
       sortDir,
       consumerGroupState,
     },
-    (state, options) => ({ ...state, ...options, consumerGroup: undefined }),
+    (state, options) => ({ ...state, ...options, group: undefined }),
   );
 
   const updateUrl: typeof _updateUrl = (newParams) => {
-    const { consumerGroup, ...s } = state;
+    const { groups, ...s } = state;
     _updateUrl({
       ...s,
       ...newParams,
@@ -126,7 +126,7 @@ export function ConnectedConsumerGroupTable({
             addOptimistic({ perPage });
           });
         }}
-        consumerGroups={state.consumerGroup}
+        groups={state.groups}
         isColumnSortable={(col) => {
           if (!SortableColumns.includes(col)) {
             return undefined;

@@ -44,7 +44,7 @@ export function Dryrun({
   onClickCloseDryrun: () => void;
   cliCommand: string;
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations("GroupsTable");
 
   const hasOffsets = newOffset && newOffset.length > 0;
 

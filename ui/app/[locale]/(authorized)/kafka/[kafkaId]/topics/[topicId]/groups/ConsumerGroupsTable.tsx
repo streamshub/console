@@ -1,6 +1,6 @@
 "use client";
 
-import { ConsumerGroup, ConsumerGroupState } from "@/api/consumerGroups/schema";
+import { ConsumerGroup, ConsumerGroupState } from "@/api/groups/schema";
 import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView } from "@/components/Table";
@@ -109,24 +109,24 @@ export function ConsumerGroupsTable({
   kafkaId,
   page,
   total,
-  consumerGroups: initialData,
+  groups: initialData,
   refresh,
 }: {
   kafkaId: string;
   page: number;
   total: number;
-  consumerGroups?: ConsumerGroup[];
+  groups?: ConsumerGroup[];
   refresh?: () => Promise<ConsumerGroup[] | null>;
 }) {
   const t = useTranslations();
-  const [consumerGroups, setConsumerGroups] = useState(initialData);
+  const [groups, setGroups] = useState(initialData);
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (refresh) {
       interval = setInterval(async () => {
-        const consumerGroups = await refresh();
-        if (consumerGroups != null) {
-          setConsumerGroups(consumerGroups);
+        const groups = await refresh();
+        if (groups != null) {
+          setGroups(groups);
         }
       }, 5000);
     }
@@ -135,24 +135,24 @@ export function ConsumerGroupsTable({
   return (
     <TableView
       variant={TableVariant.compact}
-      itemCount={consumerGroups?.length}
+      itemCount={groups?.length}
       page={page}
       onPageChange={() => {}}
-      data={consumerGroups}
+      data={groups}
       emptyStateNoData={
-        <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
+        <div>{t("GroupsTable.no_consumer_groups")}</div>
       }
       emptyStateNoResults={
-        <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
+        <div>{t("GroupsTable.no_consumer_groups")}</div>
       }
-      ariaLabel={t("ConsumerGroupsTable.title")}
+      ariaLabel={t("GroupsTable.title")}
       columns={["groupId", "type", "protocol", "state", "lag", "members", "topics"] as const}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "groupId":
             return (
               <Th key={key}>
-                {t("ConsumerGroupsTable.group_id")}
+                {t("GroupsTable.group_id")}
               </Th>
             );
           case "type":
@@ -170,12 +170,12 @@ export function ConsumerGroupsTable({
           case "state":
             return (
               <Th key={key}>
-                {t("ConsumerGroupsTable.state")}{" "}
+                {t("GroupsTable.state")}{" "}
                 <Tooltip
                   content={
                     <RichText>
                       {(tags) =>
-                        t.rich("ConsumerGroupsTable.state_tooltip", tags)
+                        t.rich("GroupsTable.state_tooltip", tags)
                       }
                     </RichText>
                   }
@@ -187,13 +187,13 @@ export function ConsumerGroupsTable({
           case "lag":
             return (
               <Th key={key}>
-                {t("ConsumerGroupsTable.overall_lag")}{" "}
+                {t("GroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
                   content={
                     <RichText>
                       {(tags) =>
-                        t.rich("ConsumerGroupsTable.overall_lag_tooltip", tags)
+                        t.rich("GroupsTable.overall_lag_tooltip", tags)
                       }
                     </RichText>
                   }
@@ -205,12 +205,12 @@ export function ConsumerGroupsTable({
           case "members":
             return (
               <Th key={key}>
-                {t("ConsumerGroupsTable.members")}{" "}
+                {t("GroupsTable.members")}{" "}
                 <Tooltip
                   content={
                     <RichText>
                       {(tags) =>
-                        t.rich("ConsumerGroupsTable.members_tooltip", tags)
+                        t.rich("GroupsTable.members_tooltip", tags)
                       }
                     </RichText>
                   }
@@ -220,7 +220,7 @@ export function ConsumerGroupsTable({
               </Th>
             );
           case "topics":
-            return <Th key={key}>{t("ConsumerGroupsTable.topics")}</Th>;
+            return <Th key={key}>{t("GroupsTable.topics")}</Th>;
         }
       }}
       renderCell={({ row, column, key, Td }) => {
@@ -229,7 +229,7 @@ export function ConsumerGroupsTable({
             return (
               <Td
                 key={key}
-                dataLabel={t("ConsumerGroupsTable.group_id")}
+                dataLabel={t("GroupsTable.group_id")}
               >
                 {row.attributes.protocol === "consumer" && row.meta?.describeAvailable
                     ? <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
@@ -253,13 +253,13 @@ export function ConsumerGroupsTable({
             );
           case "state":
             return (
-              <Td key={key} dataLabel={t("ConsumerGroupsTable.state")}>
+              <Td key={key} dataLabel={t("GroupsTable.state")}>
                 {StateLabel[row.attributes.state]?.label}
               </Td>
             );
           case "lag":
             return (
-              <Td key={key} dataLabel={t("ConsumerGroupsTable.overall_lag")}>
+              <Td key={key} dataLabel={t("GroupsTable.overall_lag")}>
                 <Number
                   value={row.attributes.offsets
                     ?.map((o) => o.lag)
@@ -277,7 +277,7 @@ export function ConsumerGroupsTable({
               (a) => (allTopics[a.topicName] = a.topicId),
             );
             return (
-              <Td key={key} dataLabel={t("ConsumerGroupsTable.topics")}>
+              <Td key={key} dataLabel={t("GroupsTable.topics")}>
                 <LabelGroup>
                   {Object.entries(allTopics).map(([topicName, topicId]) => (
                     <LabelLink
@@ -295,7 +295,7 @@ export function ConsumerGroupsTable({
             );
           case "members":
             return (
-              <Td key={key} dataLabel={t("ConsumerGroupsTable.members")}>
+              <Td key={key} dataLabel={t("GroupsTable.members")}>
                 <Number value={row.attributes.members?.length} />
               </Td>
             );

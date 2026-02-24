@@ -187,7 +187,7 @@ class TopicsResourceOidcIT {
                             .withPrivileges(Privilege.GET)
                         .endRule()
                         .addNewRule()
-                            .withResources("consumerGroups")
+                            .withResources("groups")
                             .withResourceNames("ga-*")
                             .withPrivileges(Privilege.LIST, Privilege.GET)
                         .endRule()
@@ -204,7 +204,7 @@ class TopicsResourceOidcIT {
                             .withPrivileges(Privilege.GET)
                         .endRule()
                         .addNewRule()
-                            .withResources("consumerGroups")
+                            .withResources("consumerGroups") // deprecated name
                             .withResourceNames("gb-*")
                             .withPrivileges(Privilege.LIST, Privilege.GET)
                         .endRule()
@@ -240,7 +240,7 @@ class TopicsResourceOidcIT {
             whenRequesting(req -> req
                     .auth()
                         .oauth2(tokens.getToken(username))
-                    .queryParam("fields[topics]", "name,partitions,configs,consumerGroups")
+                    .queryParam("fields[topics]", "name,partitions,configs,groups")
                     .get("", clusterId1))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
@@ -252,11 +252,11 @@ class TopicsResourceOidcIT {
                 ))
                 .body("data.find { it.attributes.name == '" + allowedTopic + "'}.relationships", allOf(
                     hasEntry(
-                        is("consumerGroups"),
+                        is("groups"),
                         hasEntry(
                             is("data"),
                             contains(allOf(
-                                hasEntry(equalTo("type"), equalTo("consumerGroups")),
+                                hasEntry(equalTo("type"), equalTo("groups")),
                                 hasEntry(equalTo("id"), equalTo(allowedGroup))
                             ))
                         )
@@ -267,7 +267,7 @@ class TopicsResourceOidcIT {
                     hasEntry(is("configs"), nullValue())
                 ))
                 .body("data.find { it.attributes.name == '" + forbiddenTopic + "'}.relationships", allOf(
-                    hasEntry(is("consumerGroups"), nullValue())
+                    hasEntry(is("groups"), nullValue())
                 ));
         }
     }

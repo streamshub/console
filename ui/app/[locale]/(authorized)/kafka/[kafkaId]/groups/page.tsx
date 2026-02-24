@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { getConsumerGroups } from "@/api/consumerGroups/actions";
+import { getConsumerGroups } from "@/api/groups/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
@@ -7,7 +7,7 @@ import {
   SortableColumns,
   SortableConsumerGroupTableColumns,
 } from "./ConsumerGroupsTable";
-import { GroupType, ConsumerGroupState } from "@/api/consumerGroups/schema";
+import { GroupType, ConsumerGroupState } from "@/api/groups/schema";
 import { ConnectedConsumerGroupTable } from "./ConnectedConsumerGroupTable";
 import { stringToInt } from "@/utils/stringToInt";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
@@ -16,7 +16,7 @@ export async function generateMetadata() {
   const t = await getTranslations();
 
   return {
-    title: `${t("ConsumerGroups.title")} | ${t("common.title")}`,
+    title: `${t("Groups.title")} | ${t("common.title")}`,
   };
 }
 
@@ -61,7 +61,7 @@ export default function ConsumerGroupsPage({
         fallback={
           <ConnectedConsumerGroupTable
             kafkaId={kafkaId}
-            consumerGroup={undefined}
+            groups={undefined}
             id={id}
             perPage={pageSize}
             sort={sort}
@@ -123,24 +123,24 @@ async function AsyncConsumerGroupTable({
     return <NoDataErrorState errors={response.errors!} />;
   }
 
-  const consumerGroups = response.payload!;
+  const groups = response.payload!;
 
-  const nextPageCursor = consumerGroups.links.next
-    ? `after:${new URLSearchParams(consumerGroups.links.next).get("page[after]")}`
+  const nextPageCursor = groups.links.next
+    ? `after:${new URLSearchParams(groups.links.next).get("page[after]")}`
     : undefined;
 
-  const prevPageCursor = consumerGroups.links.prev
-    ? `before:${new URLSearchParams(consumerGroups.links.prev).get("page[before]")}`
+  const prevPageCursor = groups.links.prev
+    ? `before:${new URLSearchParams(groups.links.prev).get("page[before]")}`
     : undefined;
 
   return (
     <ConnectedConsumerGroupTable
       kafkaId={kafkaId}
-      consumerGroup={consumerGroups.data}
-      consumerGroupCount={consumerGroups.meta.page.total || 0}
+      groups={groups.data}
+      consumerGroupCount={groups.meta.page.total || 0}
       sort={sort}
       sortDir={sortDir}
-      page={consumerGroups.meta.page.pageNumber || 0}
+      page={groups.meta.page.pageNumber || 0}
       perPage={pageSize}
       id={id}
       type={type}

@@ -1,4 +1,4 @@
-import { getConsumerGroup } from "@/api/consumerGroups/actions";
+import { getConsumerGroup } from "@/api/groups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import RichText from "@/components/RichText";
@@ -61,10 +61,10 @@ export default async function DryrunActiveBreadcrumb({
         href={`/kafka/${kafkaId}/groups/${groupId}/reset-offset`}
         showDivider={true}
       >
-        {t("ConsumerGroupsTable.reset_consumer_offset")}
+        {t("GroupsTable.reset_consumer_offset")}
       </BreadcrumbLink>
       <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
-        {t("ConsumerGroupsTable.dry_run_results_breadcrumb")}
+        {t("GroupsTable.dry_run_results_breadcrumb")}
       </BreadcrumbItem>
     </Breadcrumb>
   );

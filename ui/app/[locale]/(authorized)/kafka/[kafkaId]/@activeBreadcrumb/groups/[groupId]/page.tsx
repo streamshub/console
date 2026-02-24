@@ -1,4 +1,4 @@
-import { getConsumerGroup } from "@/api/consumerGroups/actions";
+import { getConsumerGroup } from "@/api/groups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import RichText from "@/components/RichText";

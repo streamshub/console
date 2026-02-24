@@ -1,5 +1,5 @@
 
-import { ConsumerGroup, GroupType, GroupTypeValues, ConsumerGroupState } from "@/api/consumerGroups/schema";
+import { ConsumerGroup, GroupType, GroupTypeValues, ConsumerGroupState } from "@/api/groups/schema";
 import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView, TableViewProps } from "@/components/Table";
@@ -130,7 +130,7 @@ export function ConsumerGroupsTable({
   page,
   perPage,
   total,
-  consumerGroups,
+  groups,
   isColumnSortable,
   filterName,
   filterType,
@@ -149,7 +149,7 @@ export function ConsumerGroupsTable({
   filterName: string | undefined;
   filterType: GroupType[] | undefined;
   filterState: ConsumerGroupState[] | undefined;
-  consumerGroups: ConsumerGroup[] | undefined;
+  groups: ConsumerGroup[] | undefined;
   onFilterNameChange: (name: string | undefined) => void;
   onFilterTypeChange: (type: GroupType[] | undefined) => void;
   onFilterStateChange: (state: ConsumerGroupState[] | undefined) => void;
@@ -166,15 +166,15 @@ export function ConsumerGroupsTable({
       page={page}
       perPage={perPage}
       onPageChange={onPageChange}
-      data={consumerGroups}
+      data={groups}
       emptyStateNoData={
-        <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
+        <div>{t("GroupsTable.no_consumer_groups")}</div>
       }
       emptyStateNoResults={
         <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
       }
       onClearAllFilters={onClearAllFilters}
-      ariaLabel={t("ConsumerGroupsTable.title")}
+      ariaLabel={t("GroupsTable.title")}
       isFiltered={filterName !== undefined || filterState?.length !== 0}
       columns={ConsumerGroupColumns}
       isColumnSortable={isColumnSortable}
@@ -183,7 +183,7 @@ export function ConsumerGroupsTable({
           case "groupId":
             return (
               <Th key={key} width={30}>
-                {t("ConsumerGroupsTable.group_id")}
+                {t("GroupsTable.group_id")}
               </Th>
             );
           case "type":
@@ -201,12 +201,12 @@ export function ConsumerGroupsTable({
           case "state":
             return (
               <Th key={key}>
-                {t("ConsumerGroupsTable.state")}{" "}
+                {t("GroupsTable.state")}{" "}
                 <Tooltip
                   content={
                     <RichText>
                       {(tags) =>
-                        t.rich("ConsumerGroupsTable.state_tooltip", tags)
+                        t.rich("GroupsTable.state_tooltip", tags)
                       }
                     </RichText>
                   }
@@ -218,13 +218,13 @@ export function ConsumerGroupsTable({
           case "lag":
             return (
               <Th key={key}>
-                {t("ConsumerGroupsTable.overall_lag")}{" "}
+                {t("GroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
                   content={
                     <RichText>
                       {(tags) =>
-                        t.rich("ConsumerGroupsTable.overall_lag_tooltip", tags)
+                        t.rich("GroupsTable.overall_lag_tooltip", tags)
                       }
                     </RichText>
                   }
@@ -236,12 +236,12 @@ export function ConsumerGroupsTable({
           case "members":
             return (
               <Th key={key}>
-                {t("ConsumerGroupsTable.members")}{" "}
+                {t("GroupsTable.members")}{" "}
                 <Tooltip
                   content={
                     <RichText>
                       {(tags) =>
-                        t.rich("ConsumerGroupsTable.members_tooltip", tags)
+                        t.rich("GroupsTable.members_tooltip", tags)
                       }
                     </RichText>
                   }
@@ -251,7 +251,7 @@ export function ConsumerGroupsTable({
               </Th>
             );
           case "topics":
-            return <Th key={key}>{t("ConsumerGroupsTable.topics")}</Th>;
+            return <Th key={key}>{t("GroupsTable.topics")}</Th>;
         }
       }}
       renderCell={({ row, column, key, Td }) => {
@@ -260,7 +260,7 @@ export function ConsumerGroupsTable({
             return (
               <Td
                 key={key}
-                dataLabel={t("ConsumerGroupsTable.group_id")}
+                dataLabel={t("GroupsTable.group_id")}
               >
                 {row.attributes.protocol === "consumer" && row.meta?.describeAvailable
                     ? <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
@@ -284,13 +284,13 @@ export function ConsumerGroupsTable({
             );
           case "state":
             return (
-              <Td key={key} dataLabel={t("ConsumerGroupsTable.state")}>
+              <Td key={key} dataLabel={t("GroupsTable.state")}>
                 {StateLabel[row.attributes.state]?.label}
               </Td>
             );
           case "lag":
             return (
-              <Td key={key} dataLabel={t("ConsumerGroupsTable.overall_lag")}>
+              <Td key={key} dataLabel={t("GroupsTable.overall_lag")}>
                 <Number
                   value={row.attributes.offsets
                     ?.map((o) => o.lag)
@@ -308,7 +308,7 @@ export function ConsumerGroupsTable({
               (a) => (allTopics[a.topicName] = a.topicId),
             );
             return (
-              <Td key={key} dataLabel={t("ConsumerGroupsTable.topics")}>
+              <Td key={key} dataLabel={t("GroupsTable.topics")}>
                 <LabelGroup>
                   {Object.entries(allTopics).map(([topicName, topicId]) => (
                     <LabelLink
@@ -326,7 +326,7 @@ export function ConsumerGroupsTable({
             );
           case "members":
             return (
-              <Td key={key} dataLabel={t("ConsumerGroupsTable.members")}>
+              <Td key={key} dataLabel={t("GroupsTable.members")}>
                 <Number value={row.attributes.members?.length} />
               </Td>
             );
@@ -337,11 +337,11 @@ export function ConsumerGroupsTable({
           isDisabled={!hasPrivilege("UPDATE", row) || (row.attributes.protocol !== "consumer") || (!row.meta?.describeAvailable)}
           items={[
             {
-              title: t("ConsumerGroupsTable.reset_offset"),
+              title: t("GroupsTable.reset_offset"),
               description:
                 row.attributes.state === "EMPTY"
                   ? null
-                  : t("ConsumerGroupsTable.reset_offset_description"),
+                  : t("GroupsTable.reset_offset_description"),
               onClick: () => onResetOffset(row),
             },
           ]}

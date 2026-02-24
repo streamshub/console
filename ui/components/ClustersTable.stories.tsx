@@ -42,7 +42,7 @@ const clustersData = [
         online: 1,
         count: 3,
       }),
-      consumerGroupsCount: Promise.resolve(10),
+      groupsCount: Promise.resolve(10),
     },
   },
   {
@@ -60,7 +60,7 @@ const clustersData = [
         online: 2,
         count: 4,
       }),
-      consumerGroupsCount: Promise.resolve(5),
+      groupsCount: Promise.resolve(5),
     },
   },
 ];

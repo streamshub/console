@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { Flex, FlexItem, Content } from "@/libs/patternfly/react-core";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
-import { updateConsumerGroup } from "@/api/consumerGroups/actions";
+import { updateConsumerGroup } from "@/api/groups/actions";
 import { Offset } from "../../../../../groups/[groupId]/reset-offset/ResetOffset";
 import { DryrunDownloadButton } from "./DryrunDownloadButton";
 import RichText from "@/components/RichText";
@@ -106,7 +106,7 @@ function Header({
           <FlexItem>
             <Content>
               <Content>
-                <RichText>{(tags) => t.rich("ConsumerGroupsTable.dry_run_result", tags)}</RichText>
+                <RichText>{(tags) => t.rich("GroupsTable.dry_run_result", tags)}</RichText>
               </Content>
             </Content>
           </FlexItem>
@@ -120,7 +120,7 @@ function Header({
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
           <RichText>
-            {(tags) => t.rich("ConsumerGroupsTable.consumer_name", { ...tags, groupId: groupIdDisplay })}
+            {(tags) => t.rich("GroupsTable.consumer_name", { ...tags, groupId: groupIdDisplay })}
           </RichText>
         )
       }

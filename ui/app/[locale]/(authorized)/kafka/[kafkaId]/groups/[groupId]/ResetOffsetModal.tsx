@@ -28,7 +28,7 @@ export function ResetOffsetModal({
   kafkaId: string;
   consumerGroupId: string;
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations("GroupsTable");
   const router = useRouter();
 
   const refresh = () => {

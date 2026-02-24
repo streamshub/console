@@ -8,12 +8,12 @@ import {
   partitionSelection,
 } from "../types";
 import { useRouter } from "@/i18n/routing";
-import { updateConsumerGroup } from "@/api/consumerGroups/actions";
+import { updateConsumerGroup } from "@/api/groups/actions";
 import { LoadingPage } from "./LoadingPage";
 import { ResetOffset } from "./ResetOffset";
 import { useTranslations } from "next-intl";
 import { useAlert } from "@/components/AlertContext";
-import { ConsumerGroup } from "@/api/consumerGroups/schema";
+import { ConsumerGroup } from "@/api/groups/schema";
 
 export type Offset = {
   topicId: string;
@@ -299,7 +299,7 @@ export function ResetConsumerOffset({
       } else {
         closeResetOffset();
         addAlert({
-          title: t("ConsumerGroupsTable.reset_offset_submitted_successfully", {
+          title: t("GroupsTable.reset_offset_submitted_successfully", {
             groupId: groupId,
           }),
           variant: "success",

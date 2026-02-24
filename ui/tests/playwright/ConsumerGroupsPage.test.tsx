@@ -1,7 +1,7 @@
 import { expect, test } from "./authenticated-test";
 
 test.beforeEach(async ({ authenticatedPage }) => {
-  await authenticatedPage.goToConsumerGroups();
+  await authenticatedPage.goToGroups();
 });
 
 test("Groups page: Check for Table or Empty State", async ({

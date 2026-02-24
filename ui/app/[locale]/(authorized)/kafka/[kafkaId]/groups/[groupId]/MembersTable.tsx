@@ -3,7 +3,7 @@ import {
   ConsumerGroup,
   MemberDescription,
   OffsetAndMetadata,
-} from "@/api/consumerGroups/schema";
+} from "@/api/groups/schema";
 import { LagTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/LagTable";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";

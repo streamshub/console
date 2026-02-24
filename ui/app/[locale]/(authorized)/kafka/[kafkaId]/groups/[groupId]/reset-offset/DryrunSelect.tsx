@@ -21,7 +21,7 @@ export function DryrunSelect({
   cliCommand: string;
   isDisabled: boolean;
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations("GroupsTable");
 
   const tooltipRef = React.useRef<HTMLButtonElement>(null);
 

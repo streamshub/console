@@ -816,18 +816,18 @@ class TopicsResourceIT {
         try (var consumer1 = groupUtils.consume(group1, topic1, client1, 2, false);
              var consumer2 = groupUtils.consume(group2, topic2, client2, 2, false)) {
             whenRequesting(req -> req
-                    .queryParam("fields[topics]", "name,consumerGroups")
+                    .queryParam("fields[topics]", "name,groups")
                     .get("", clusterId1))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(2))
-                .body("data.find { it.attributes.name == '%s' }.relationships.consumerGroups.data[0]".formatted(topic1),
+                .body("data.find { it.attributes.name == '%s' }.relationships.groups.data[0]".formatted(topic1),
                     allOf(
-                        hasEntry(equalTo("type"), equalTo("consumerGroups")),
+                        hasEntry(equalTo("type"), equalTo("groups")),
                         hasEntry(equalTo("id"), equalTo(group1Id))))
-                .body("data.find { it.attributes.name == '%s' }.relationships.consumerGroups.data[0]".formatted(topic2),
+                .body("data.find { it.attributes.name == '%s' }.relationships.groups.data[0]".formatted(topic2),
                     allOf(
-                        hasEntry(equalTo("type"), equalTo("consumerGroups")),
+                        hasEntry(equalTo("type"), equalTo("groups")),
                         hasEntry(equalTo("id"), equalTo(group2Id))));
         }
     }
@@ -2301,16 +2301,16 @@ class TopicsResourceIT {
         try (var consumer1 = groupUtils.request().groupId(group1).topic(topic1).createTopic(false).clientId(client1).messagesPerTopic(1).autoClose(false).consume();
              var consumer2 = groupUtils.request().groupId(group2).topic(topic1).createTopic(false).clientId(client2).messagesPerTopic(1).autoClose(false).consume()) {
             whenRequesting(req -> req
-                    .queryParam("fields[topics]", "name,consumerGroups")
+                    .queryParam("fields[topics]", "name,groups")
                     .get("", clusterId1))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(1))
-                .body("data[0].relationships.consumerGroups.data.size()", is(2))
-                .body("data[0].relationships.consumerGroups.data.type", contains("consumerGroups", "consumerGroups"))
-                .body("data[0].relationships.consumerGroups.data.id", containsInAnyOrder(group1Id, group2Id));
+                .body("data[0].relationships.groups.data.size()", is(2))
+                .body("data[0].relationships.groups.data.type", contains("groups", "groups"))
+                .body("data[0].relationships.groups.data.id", containsInAnyOrder(group1Id, group2Id));
 
-            whenRequesting(req -> req.get("{topicId}/consumerGroups", clusterId1, topic1Id))
+            whenRequesting(req -> req.get("{topicId}/groups", clusterId1, topic1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(2))
@@ -2330,13 +2330,13 @@ class TopicsResourceIT {
 
         try (var consumer1 = groupUtils.consume(group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req
-                    .queryParam("fields[topics]", "name,consumerGroups")
+                    .queryParam("fields[topics]", "name,groups")
                     .get("{topicId}", clusterId1, topic2Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
-                .body("data.relationships.consumerGroups.data.size()", is(0));
+                .body("data.relationships.groups.data.size()", is(0));
 
-            whenRequesting(req -> req.get("{topicId}/consumerGroups", clusterId1, topic2Id))
+            whenRequesting(req -> req.get("{topicId}/groups", clusterId1, topic2Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(0));
@@ -2350,7 +2350,7 @@ class TopicsResourceIT {
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer1 = groupUtils.consume(group1, topic1, client1, 2, false)) {
-            whenRequesting(req -> req.get("{topicId}/consumerGroups", clusterId1, Uuid.randomUuid().toString()))
+            whenRequesting(req -> req.get("{topicId}/groups", clusterId1, Uuid.randomUuid().toString()))
                 .assertThat()
                 .statusCode(is(Status.NOT_FOUND.getStatusCode()))
                 .body("errors.size()", is(1))
@@ -2363,7 +2363,7 @@ class TopicsResourceIT {
     void testGetTopicMetricsSuccess() {
         String topicName = UUID.randomUUID().toString();
         topicUtils.createTopics(List.of(topicName), 1);
-    
+
         String topicId = whenRequesting(req -> req.get("", clusterId1))
                 .statusCode(is(Status.OK.getStatusCode()))
                 .extract()

@@ -14,7 +14,7 @@ import {
   ConsumerGroupsResponseSchema,
   ConsumerGroupState,
   GroupType,
-} from "@/api/consumerGroups/schema";
+} from "@/api/groups/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 
 export async function getConsumerGroup(
@@ -22,7 +22,7 @@ export async function getConsumerGroup(
   groupId: string,
 ): Promise<ApiResponse<ConsumerGroup>> {
   return fetchData(
-    `/api/kafkas/${kafkaId}/consumerGroups/${groupId}`,
+    `/api/kafkas/${kafkaId}/groups/${groupId}`,
     "",
     (rawData) => ConsumerGroupResponseSchema.parse(rawData).data,
   );
@@ -43,7 +43,7 @@ export async function getConsumerGroups(
 ): Promise<ApiResponse<ConsumerGroupsResponse>> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
-      "fields[consumerGroups]":
+      "fields[groups]":
         params.fields ?? "groupId,type,protocol,state,simpleConsumerGroup,members,offsets",
       "filter[id]": filterLike(params.id),
       "filter[type]": filterIn(params.type),
@@ -59,7 +59,7 @@ export async function getConsumerGroups(
     }),
   );
 
-  return fetchData(`/api/kafkas/${kafkaId}/consumerGroups`, sp, (rawData) =>
+  return fetchData(`/api/kafkas/${kafkaId}/groups`, sp, (rawData) =>
     ConsumerGroupsResponseSchema.parse(rawData),
   );
 }
@@ -76,7 +76,7 @@ export async function getTopicConsumerGroups(
 ): Promise<ApiResponse<ConsumerGroupsResponse>> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
-      "fields[consumerGroups]":
+      "fields[groups]":
         "groupId,type,protocol,state,simpleConsumerGroup,members,offsets,coordinator,partitionAssignor",
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor,
@@ -84,7 +84,7 @@ export async function getTopicConsumerGroups(
     }),
   );
   return fetchData(
-    `/api/kafkas/${kafkaId}/topics/${topicId}/consumerGroups`,
+    `/api/kafkas/${kafkaId}/topics/${topicId}/groups`,
     sp,
     (rawData) => ConsumerGroupsResponseSchema.parse(rawData),
   );
@@ -102,13 +102,13 @@ export async function updateConsumerGroup(
   dryRun?: boolean,
 ): Promise<ApiResponse<ConsumerGroup | undefined>> {
   return patchData(
-    `/api/kafkas/${kafkaId}/consumerGroups/${consumerGroupId}`,
+    `/api/kafkas/${kafkaId}/groups/${consumerGroupId}`,
     {
       meta: {
         dryRun: dryRun,
       },
       data: {
-        type: "consumerGroups",
+        type: "groups",
         id: consumerGroupId,
         attributes: {
           offsets,

@@ -82,7 +82,7 @@ export function ResetOffset({
   onDateTimeSelect: (value: DateTimeFormatSelection) => void;
   onOffsetSelect: (value: OffsetValue) => void;
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations("GroupsTable");
 
   const [isIsoValid, setIsIsoValid] = useState(false);
 

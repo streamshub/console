@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { getTopicConsumerGroups } from "@/api/consumerGroups/actions";
+import { getTopicConsumerGroups } from "@/api/groups/actions";
 import { ConsumerGroupsTable } from "./ConsumerGroupsTable";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
@@ -74,14 +74,14 @@ async function ConnectedConsumerGroupsPage({
     return <NoDataErrorState errors={response.errors} />;
   }
 
-  const consumerGroups = response.payload!;
+  const groups = response.payload!;
 
   return (
     <ConsumerGroupsTable
       kafkaId={kafkaId}
-      page={consumerGroups.meta.page.pageNumber || 1}
-      total={consumerGroups.meta.page.total || 0}
-      consumerGroups={consumerGroups.data}
+      page={groups.meta.page.pageNumber || 1}
+      total={groups.meta.page.total || 0}
+      groups={groups.data}
       refresh={refresh}
     />
   );
