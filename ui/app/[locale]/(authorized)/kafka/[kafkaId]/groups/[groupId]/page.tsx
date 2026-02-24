@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { getConsumerGroup } from "@/api/consumerGroups/actions";
+import { getConsumerGroup } from "@/api/groups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { MembersTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/MembersTable";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
@@ -11,7 +11,7 @@ export async function generateMetadata(props: { params: { kafkaId: string, group
   const t = await getTranslations();
 
   return {
-    title: `${t("ConsumerGroup.title")} ${props.params.groupId} | ${t("common.title")}`,
+    title: `${t("Group.title")} ${props.params.groupId} | ${t("common.title")}`,
   };
 }
 

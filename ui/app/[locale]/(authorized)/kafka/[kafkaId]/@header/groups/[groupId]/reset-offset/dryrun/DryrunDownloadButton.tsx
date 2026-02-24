@@ -12,7 +12,7 @@ export function DryrunDownloadButton({
   groupId: string;
   offsets: Offset[];
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations("GroupsTable");
 
   const onClickDownload = () => {
     const data = {

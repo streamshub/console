@@ -22,7 +22,7 @@ import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.ClientFactory;
-import com.github.streamshub.console.api.model.ConsumerGroup;
+import com.github.streamshub.console.api.model.Group;
 import com.github.streamshub.console.api.service.TopicDescribeService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.security.ResourceTypes;
@@ -153,8 +153,7 @@ public class AuthorizationInterceptor {
                 if (s == 3) {
                     switch (ResourceTypes.forValue(segment, Kafka.class)) {
                         case GROUPS:
-                            segment = Kafka.GROUPS.value();
-                            converter = ConsumerGroup::decodeGroupId;
+                            converter = Group::decodeGroupId;
                             break;
                         case REBALANCES:
                             converter = this::rebalanceName;

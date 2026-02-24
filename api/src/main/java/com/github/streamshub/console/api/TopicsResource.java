@@ -36,7 +36,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import com.github.streamshub.console.api.model.ConsumerGroup;
+import com.github.streamshub.console.api.model.Group;
 import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.model.NewTopic;
 import com.github.streamshub.console.api.model.Topic;
@@ -45,7 +45,7 @@ import com.github.streamshub.console.api.model.TopicMetrics;
 import com.github.streamshub.console.api.model.TopicPatch;
 import com.github.streamshub.console.api.security.Authorized;
 import com.github.streamshub.console.api.security.ResourcePrivilege;
-import com.github.streamshub.console.api.service.ConsumerGroupService;
+import com.github.streamshub.console.api.service.GroupService;
 import com.github.streamshub.console.api.service.TopicService;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.FieldFilter;
@@ -68,7 +68,7 @@ public class TopicsResource {
     TopicService topicService;
 
     @Inject
-    ConsumerGroupService consumerGroupService;
+    GroupService consumerGroupService;
 
     /**
      * Allows the value of {@link FieldFilter#requestedFields} to be set for
@@ -164,7 +164,7 @@ public class TopicsResource {
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS,
                         Topic.Fields.TOTAL_LEADER_LOG_BYTES,
-                        Topic.Fields.CONSUMER_GROUPS,
+                        Topic.Fields.GROUPS,
                         Topic.Fields.STATUS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
@@ -182,7 +182,7 @@ public class TopicsResource {
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
                                 Topic.Fields.CONFIGS,
                                 Topic.Fields.TOTAL_LEADER_LOG_BYTES,
-                                Topic.Fields.CONSUMER_GROUPS,
+                                Topic.Fields.GROUPS,
                                 Topic.Fields.STATUS,
                             }))
             List<String> fields,
@@ -254,7 +254,7 @@ public class TopicsResource {
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS,
                         Topic.Fields.TOTAL_LEADER_LOG_BYTES,
-                        Topic.Fields.CONSUMER_GROUPS,
+                        Topic.Fields.GROUPS,
                         Topic.Fields.STATUS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
@@ -272,7 +272,7 @@ public class TopicsResource {
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
                                 Topic.Fields.CONFIGS,
                                 Topic.Fields.TOTAL_LEADER_LOG_BYTES,
-                                Topic.Fields.CONSUMER_GROUPS,
+                                Topic.Fields.GROUPS,
                                 Topic.Fields.STATUS,
                             }))
             List<String> fields,
@@ -298,10 +298,10 @@ public class TopicsResource {
                 .thenApply(Response.ResponseBuilder::build);
     }
 
-    @Path("{topicId}/consumerGroups")
+    @Path("{topicId}/groups")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(ConsumerGroup.DataList.class)
+    @APIResponseSchema(Group.DataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     // authorization checked by ConsumerGroupService
@@ -315,21 +315,21 @@ public class TopicsResource {
             @Parameter(description = "Topic identifier")
             String topicId,
 
-            @QueryParam(ConsumerGroup.FIELDS_PARAM)
-            @DefaultValue(ConsumerGroup.Fields.LIST_DEFAULT)
+            @QueryParam(Group.FIELDS_PARAM)
+            @DefaultValue(Group.Fields.LIST_DEFAULT)
             @StringEnumeration(
-                    source = ConsumerGroup.FIELDS_PARAM,
+                    source = Group.FIELDS_PARAM,
                     allowedValues = {
-                        ConsumerGroup.Fields.GROUP_ID,
-                        ConsumerGroup.Fields.TYPE,
-                        ConsumerGroup.Fields.PROTOCOL,
-                        ConsumerGroup.Fields.STATE,
-                        ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
-                        ConsumerGroup.Fields.MEMBERS,
-                        ConsumerGroup.Fields.OFFSETS,
-                        ConsumerGroup.Fields.AUTHORIZED_OPERATIONS,
-                        ConsumerGroup.Fields.COORDINATOR,
-                        ConsumerGroup.Fields.PARTITION_ASSIGNOR
+                        Group.Fields.GROUP_ID,
+                        Group.Fields.TYPE,
+                        Group.Fields.PROTOCOL,
+                        Group.Fields.STATE,
+                        Group.Fields.SIMPLE_CONSUMER_GROUP,
+                        Group.Fields.MEMBERS,
+                        Group.Fields.OFFSETS,
+                        Group.Fields.AUTHORIZED_OPERATIONS,
+                        Group.Fields.COORDINATOR,
+                        Group.Fields.PARTITION_ASSIGNOR
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -339,16 +339,16 @@ public class TopicsResource {
                             type = SchemaType.ARRAY,
                             implementation = String.class,
                             enumeration = {
-                                ConsumerGroup.Fields.GROUP_ID,
-                                ConsumerGroup.Fields.TYPE,
-                                ConsumerGroup.Fields.PROTOCOL,
-                                ConsumerGroup.Fields.STATE,
-                                ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
-                                ConsumerGroup.Fields.MEMBERS,
-                                ConsumerGroup.Fields.OFFSETS,
-                                ConsumerGroup.Fields.AUTHORIZED_OPERATIONS,
-                                ConsumerGroup.Fields.COORDINATOR,
-                                ConsumerGroup.Fields.PARTITION_ASSIGNOR
+                                Group.Fields.GROUP_ID,
+                                Group.Fields.TYPE,
+                                Group.Fields.PROTOCOL,
+                                Group.Fields.STATE,
+                                Group.Fields.SIMPLE_CONSUMER_GROUP,
+                                Group.Fields.MEMBERS,
+                                Group.Fields.OFFSETS,
+                                Group.Fields.AUTHORIZED_OPERATIONS,
+                                Group.Fields.COORDINATOR,
+                                Group.Fields.PARTITION_ASSIGNOR
                             }))
             List<String> fields,
 
@@ -357,10 +357,10 @@ public class TopicsResource {
             ListFetchParams listParams) {
 
         requestedFields.accept(fields);
-        ListRequestContext<ConsumerGroup> listSupport = new ListRequestContext<>(ConsumerGroup.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, ConsumerGroup::fromCursor);
+        ListRequestContext<Group> listSupport = new ListRequestContext<>(Group.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, Group::fromCursor);
 
-        return consumerGroupService.listConsumerGroups(topicId, fields, listSupport)
-                .thenApply(groups -> new ConsumerGroup.DataList(groups, listSupport))
+        return consumerGroupService.listGroups(topicId, fields, listSupport)
+                .thenApply(groups -> new Group.DataList(groups, listSupport))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }

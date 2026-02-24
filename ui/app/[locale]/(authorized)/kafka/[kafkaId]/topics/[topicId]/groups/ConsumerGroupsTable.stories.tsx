@@ -77,7 +77,7 @@ const meta: Meta<typeof ConsumerGroupsTable> = {
     kafkaId: "mock-kafka-id",
     page: 1,
     total: mockConsumerGroups.length,
-    consumerGroups: mockConsumerGroups,
+    groups: mockConsumerGroups,
   },
 };
 

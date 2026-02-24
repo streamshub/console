@@ -33,12 +33,12 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import com.github.streamshub.console.api.model.ConsumerGroup;
-import com.github.streamshub.console.api.model.ConsumerGroupFilterParams;
+import com.github.streamshub.console.api.model.Group;
+import com.github.streamshub.console.api.model.GroupFilterParams;
 import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.security.Authorized;
 import com.github.streamshub.console.api.security.ResourcePrivilege;
-import com.github.streamshub.console.api.service.ConsumerGroupService;
+import com.github.streamshub.console.api.service.GroupService;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -47,15 +47,15 @@ import com.github.streamshub.console.config.security.Privilege;
 
 import io.xlate.validation.constraints.Expression;
 
-@Path("/api/kafkas/{clusterId}/consumerGroups")
+@Path("/api/kafkas/{clusterId}/groups")
 @Tag(name = "Kafka Cluster Resources")
-public class ConsumerGroupsResource {
+public class GroupsResource {
 
     @Inject
     UriInfo uriInfo;
 
     @Inject
-    ConsumerGroupService consumerGroupService;
+    GroupService groupService;
 
     /**
      * Allows the value of {@link FieldFilter#requestedFields} to be set for
@@ -67,31 +67,31 @@ public class ConsumerGroupsResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(ConsumerGroup.DataList.class)
+    @APIResponseSchema(Group.DataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     @Authorized
     @ResourcePrivilege(Privilege.LIST)
-    public CompletionStage<Response> listConsumerGroups(
+    public CompletionStage<Response> listGroups(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,
 
-            @QueryParam(ConsumerGroup.FIELDS_PARAM)
-            @DefaultValue(ConsumerGroup.Fields.LIST_DEFAULT)
+            @QueryParam(Group.FIELDS_PARAM)
+            @DefaultValue(Group.Fields.LIST_DEFAULT)
             @StringEnumeration(
-                    source = ConsumerGroup.FIELDS_PARAM,
+                    source = Group.FIELDS_PARAM,
                     allowedValues = {
-                        ConsumerGroup.Fields.GROUP_ID,
-                        ConsumerGroup.Fields.TYPE,
-                        ConsumerGroup.Fields.PROTOCOL,
-                        ConsumerGroup.Fields.STATE,
-                        ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
-                        ConsumerGroup.Fields.MEMBERS,
-                        ConsumerGroup.Fields.OFFSETS,
-                        ConsumerGroup.Fields.AUTHORIZED_OPERATIONS,
-                        ConsumerGroup.Fields.COORDINATOR,
-                        ConsumerGroup.Fields.PARTITION_ASSIGNOR
+                        Group.Fields.GROUP_ID,
+                        Group.Fields.TYPE,
+                        Group.Fields.PROTOCOL,
+                        Group.Fields.STATE,
+                        Group.Fields.SIMPLE_CONSUMER_GROUP,
+                        Group.Fields.MEMBERS,
+                        Group.Fields.OFFSETS,
+                        Group.Fields.AUTHORIZED_OPERATIONS,
+                        Group.Fields.COORDINATOR,
+                        Group.Fields.PARTITION_ASSIGNOR
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -101,16 +101,16 @@ public class ConsumerGroupsResource {
                             type = SchemaType.ARRAY,
                             implementation = String.class,
                             enumeration = {
-                                ConsumerGroup.Fields.GROUP_ID,
-                                ConsumerGroup.Fields.TYPE,
-                                ConsumerGroup.Fields.PROTOCOL,
-                                ConsumerGroup.Fields.STATE,
-                                ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
-                                ConsumerGroup.Fields.MEMBERS,
-                                ConsumerGroup.Fields.OFFSETS,
-                                ConsumerGroup.Fields.AUTHORIZED_OPERATIONS,
-                                ConsumerGroup.Fields.COORDINATOR,
-                                ConsumerGroup.Fields.PARTITION_ASSIGNOR
+                                Group.Fields.GROUP_ID,
+                                Group.Fields.TYPE,
+                                Group.Fields.PROTOCOL,
+                                Group.Fields.STATE,
+                                Group.Fields.SIMPLE_CONSUMER_GROUP,
+                                Group.Fields.MEMBERS,
+                                Group.Fields.OFFSETS,
+                                Group.Fields.AUTHORIZED_OPERATIONS,
+                                Group.Fields.COORDINATOR,
+                                Group.Fields.PARTITION_ASSIGNOR
                             }))
             List<String> fields,
 
@@ -120,18 +120,18 @@ public class ConsumerGroupsResource {
 
             @BeanParam
             @Valid
-            ConsumerGroupFilterParams filters) {
+            GroupFilterParams filters) {
 
         requestedFields.accept(fields);
-        ListRequestContext<ConsumerGroup> listSupport = new ListRequestContext<>(
+        ListRequestContext<Group> listSupport = new ListRequestContext<>(
                 filters,
-                ConsumerGroup.Fields.COMPARATOR_BUILDER,
+                Group.Fields.COMPARATOR_BUILDER,
                 uriInfo.getRequestUri(),
                 listParams,
-                ConsumerGroup::fromCursor);
+                Group::fromCursor);
 
-        return consumerGroupService.listConsumerGroups(fields, listSupport)
-                .thenApply(groups -> new ConsumerGroup.DataList(groups, listSupport))
+        return groupService.listGroups(fields, listSupport)
+                .thenApply(groups -> new Group.DataList(groups, listSupport))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
@@ -139,36 +139,36 @@ public class ConsumerGroupsResource {
     @Path("{groupId}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(ConsumerGroup.Data.class)
+    @APIResponseSchema(Group.Data.class)
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     @Authorized
     @ResourcePrivilege(Privilege.GET)
-    public CompletionStage<Response> describeConsumerGroup(
+    public CompletionStage<Response> describeGroup(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,
 
             @PathParam("groupId")
-            @Parameter(description = "Consumer group identifier")
+            @Parameter(description = "Group identifier")
             String groupId,
 
-            @QueryParam(ConsumerGroup.FIELDS_PARAM)
-            @DefaultValue(ConsumerGroup.Fields.DESCRIBE_DEFAULT)
+            @QueryParam(Group.FIELDS_PARAM)
+            @DefaultValue(Group.Fields.DESCRIBE_DEFAULT)
             @StringEnumeration(
-                    source = ConsumerGroup.FIELDS_PARAM,
+                    source = Group.FIELDS_PARAM,
                     allowedValues = {
-                        ConsumerGroup.Fields.GROUP_ID,
-                        ConsumerGroup.Fields.TYPE,
-                        ConsumerGroup.Fields.PROTOCOL,
-                        ConsumerGroup.Fields.STATE,
-                        ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
-                        ConsumerGroup.Fields.MEMBERS,
-                        ConsumerGroup.Fields.OFFSETS,
-                        ConsumerGroup.Fields.AUTHORIZED_OPERATIONS,
-                        ConsumerGroup.Fields.COORDINATOR,
-                        ConsumerGroup.Fields.PARTITION_ASSIGNOR
+                        Group.Fields.GROUP_ID,
+                        Group.Fields.TYPE,
+                        Group.Fields.PROTOCOL,
+                        Group.Fields.STATE,
+                        Group.Fields.SIMPLE_CONSUMER_GROUP,
+                        Group.Fields.MEMBERS,
+                        Group.Fields.OFFSETS,
+                        Group.Fields.AUTHORIZED_OPERATIONS,
+                        Group.Fields.COORDINATOR,
+                        Group.Fields.PARTITION_ASSIGNOR
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -178,23 +178,23 @@ public class ConsumerGroupsResource {
                             type = SchemaType.ARRAY,
                             implementation = String.class,
                             enumeration = {
-                                ConsumerGroup.Fields.GROUP_ID,
-                                ConsumerGroup.Fields.TYPE,
-                                ConsumerGroup.Fields.PROTOCOL,
-                                ConsumerGroup.Fields.STATE,
-                                ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
-                                ConsumerGroup.Fields.MEMBERS,
-                                ConsumerGroup.Fields.OFFSETS,
-                                ConsumerGroup.Fields.AUTHORIZED_OPERATIONS,
-                                ConsumerGroup.Fields.COORDINATOR,
-                                ConsumerGroup.Fields.PARTITION_ASSIGNOR
+                                Group.Fields.GROUP_ID,
+                                Group.Fields.TYPE,
+                                Group.Fields.PROTOCOL,
+                                Group.Fields.STATE,
+                                Group.Fields.SIMPLE_CONSUMER_GROUP,
+                                Group.Fields.MEMBERS,
+                                Group.Fields.OFFSETS,
+                                Group.Fields.AUTHORIZED_OPERATIONS,
+                                Group.Fields.COORDINATOR,
+                                Group.Fields.PARTITION_ASSIGNOR
                             }))
             List<String> fields) {
 
         requestedFields.accept(fields);
 
-        return consumerGroupService.describeConsumerGroup(groupId, fields)
-                .thenApply(ConsumerGroup.Data::new)
+        return groupService.describeGroup(groupId, fields)
+                .thenApply(Group.Data::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
@@ -204,10 +204,10 @@ public class ConsumerGroupsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @APIResponse(responseCode = "200",
-        description = "Consumer group patch dry run successful, nothing was applied",
-        content = @Content(schema = @Schema(implementation = ConsumerGroup.Data.class)))
+        description = "Group patch dry run successful, nothing was applied",
+        content = @Content(schema = @Schema(implementation = Group.Data.class)))
     @APIResponse(responseCode = "204",
-        description = "Consumer group patch successful, changes applied")
+        description = "Group patch successful, changes applied")
     @Expression(
         targetName = "args",
         // Only check when the request body Id is present (separately checked for @NotNull)
@@ -220,18 +220,18 @@ public class ConsumerGroupsResource {
         validationAppliesTo = ConstraintTarget.PARAMETERS)
     @Authorized
     @ResourcePrivilege(Privilege.UPDATE)
-    public CompletionStage<Response> patchConsumerGroup(
+    public CompletionStage<Response> patchGroup(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,
 
             @PathParam("groupId")
-            @Parameter(description = "Consumer group identifier")
+            @Parameter(description = "Group identifier")
             String groupId,
 
             @Valid
             @RequestBody(content = @Content(
-                    schema = @Schema(implementation = ConsumerGroup.Data.class),
+                    schema = @Schema(implementation = Group.Data.class),
                     examples = {
                         @ExampleObject(
                             name = "patchConsumerGroup-allPartitions",
@@ -241,24 +241,24 @@ public class ConsumerGroupsResource {
                             externalValue = "/openapi/examples/patchConsumerGroup-byPartition.json"),
                     })
             )
-            ConsumerGroup.Data patch) {
+            Group.Data patch) {
 
         final boolean dryRun = Boolean.TRUE.equals(patch.meta("dryRun"));
 
         if (dryRun) {
             requestedFields.accept(List.of(
-                ConsumerGroup.Fields.GROUP_ID,
-                ConsumerGroup.Fields.TYPE,
-                ConsumerGroup.Fields.PROTOCOL,
-                ConsumerGroup.Fields.STATE,
-                ConsumerGroup.Fields.MEMBERS,
-                ConsumerGroup.Fields.OFFSETS
+                Group.Fields.GROUP_ID,
+                Group.Fields.TYPE,
+                Group.Fields.PROTOCOL,
+                Group.Fields.STATE,
+                Group.Fields.MEMBERS,
+                Group.Fields.OFFSETS
             ));
         }
 
-        return consumerGroupService.patchConsumerGroup(groupId, patch.getData(), dryRun)
+        return groupService.patchGroup(groupId, patch.getData(), dryRun)
                 .thenApply(optionalGroup -> optionalGroup
-                        .map(ConsumerGroup.Data::new)
+                        .map(Group.Data::new)
                         .map(Response::ok)
                         .orElseGet(Response::noContent))
                 .thenApply(Response.ResponseBuilder::build);
@@ -269,15 +269,15 @@ public class ConsumerGroupsResource {
     @APIResponseSchema(responseCode = "204", value = Void.class)
     @Authorized
     @ResourcePrivilege(Privilege.DELETE)
-    public CompletionStage<Response> deleteConsumerGroup(
+    public CompletionStage<Response> deleteGroup(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,
 
             @PathParam("groupId")
-            @Parameter(description = "Consumer group identifier")
+            @Parameter(description = "Group identifier")
             String groupId) {
-        return consumerGroupService.deleteConsumerGroup(groupId)
+        return groupService.deleteGroup(groupId)
                 .thenApply(nothing -> Response.noContent())
                 .thenApply(Response.ResponseBuilder::build);
     }

@@ -11,11 +11,11 @@ import com.github.streamshub.console.api.support.ErrorCategory;
 import io.xlate.validation.constraints.Expression;
 import io.xlate.validation.constraints.Expression.ExceptionalValue;
 
-public class ConsumerGroupFilterParams extends FilterParams {
+public class GroupFilterParams extends FilterParams {
 
     @QueryParam("filter[id]")
     @Parameter(
-        description = "Retrieve only consumer groups with an ID matching this parameter",
+        description = "Retrieve only groups with an ID matching this parameter",
         schema = @Schema(implementation = String[].class, minItems = 2),
         explode = Explode.FALSE)
     @Expression(
@@ -34,7 +34,7 @@ public class ConsumerGroupFilterParams extends FilterParams {
 
     @QueryParam("filter[type]")
     @Parameter(
-        description = "Retrieve only consumer groups matching the type identified by this parameter",
+        description = "Retrieve only groups matching the type identified by this parameter",
         schema = @Schema(implementation = String[].class, minItems = 2),
         explode = Explode.FALSE)
     @Expression(
@@ -58,14 +58,14 @@ public class ConsumerGroupFilterParams extends FilterParams {
                     .noneMatch(type -> type == GroupType.UNKNOWN)
                 """,
         exceptionalValue = ExceptionalValue.UNSET,
-        message = "operands list contains an invalid consumer group type",
+        message = "operands list contains an invalid group type",
         payload = ErrorCategory.InvalidQueryParameter.class,
         node = "filter[type]")
     FetchFilter typeFilter;
 
     @QueryParam("filter[protocol]")
     @Parameter(
-        description = "Retrieve only consumer groups with a protocol type matching this parameter",
+        description = "Retrieve only groups with a protocol type matching this parameter",
         schema = @Schema(implementation = String[].class, minItems = 2),
         explode = Explode.FALSE)
     @Expression(
@@ -84,7 +84,7 @@ public class ConsumerGroupFilterParams extends FilterParams {
 
     @QueryParam("filter[state]")
     @Parameter(
-        description = "Retrieve only consumer groups matching the state identified by this parameter",
+        description = "Retrieve only groups matching the state identified by this parameter",
         schema = @Schema(implementation = String[].class, minItems = 2),
         explode = Explode.FALSE)
     @Expression(
@@ -108,16 +108,16 @@ public class ConsumerGroupFilterParams extends FilterParams {
                     .noneMatch(state -> state == GroupState.UNKNOWN)
                 """,
         exceptionalValue = ExceptionalValue.UNSET,
-        message = "operands list contains an invalid consumer group state",
+        message = "operands list contains an invalid group state",
         payload = ErrorCategory.InvalidQueryParameter.class,
         node = "filter[state]")
     FetchFilter stateFilter;
 
     @Override
     protected void buildPredicates() {
-        maybeAddPredicate(idFilter, ConsumerGroup.class, ConsumerGroup::groupId);
-        maybeAddPredicate("filter[type]", typeFilter, ConsumerGroup.class, ConsumerGroup::type);
-        maybeAddPredicate("filter[protocol]", protocolFilter, ConsumerGroup.class, ConsumerGroup::protocol);
-        maybeAddPredicate("filter[state]", stateFilter, ConsumerGroup.class, ConsumerGroup::state);
+        maybeAddPredicate(idFilter, Group.class, Group::groupId);
+        maybeAddPredicate("filter[type]", typeFilter, Group.class, Group::type);
+        maybeAddPredicate("filter[protocol]", protocolFilter, Group.class, Group::protocol);
+        maybeAddPredicate("filter[state]", stateFilter, Group.class, Group::state);
     }
 }

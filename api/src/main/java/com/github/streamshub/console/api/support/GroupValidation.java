@@ -21,7 +21,7 @@ import jakarta.validation.Payload;
 
 import org.apache.kafka.common.Uuid;
 
-import com.github.streamshub.console.api.model.ConsumerGroup;
+import com.github.streamshub.console.api.model.Group;
 import com.github.streamshub.console.api.model.Either;
 import com.github.streamshub.console.api.model.OffsetInfo;
 import com.github.streamshub.console.api.model.PartitionInfo;
@@ -31,7 +31,7 @@ import com.github.streamshub.console.api.model.Topic;
  * Collection of types responsible for validating the inputs to the
  * patchConsumerGroup operation.
  */
-public class ConsumerGroupValidation {
+public class GroupValidation {
 
     private static final String DATA = "data";
     private static final String ATTRIBUTES = "attributes";
@@ -40,13 +40,13 @@ public class ConsumerGroupValidation {
 
     /**
      * Constraint specific to modified consumer groups. Triggers execution of
-     * {@linkplain ConsumerGroupPatchValidator#isValid(ConsumerGroupPatchInputs, ConstraintValidatorContext)}.
+     * {@linkplain GroupPatchValidator#isValid(GroupPatchInputs, ConstraintValidatorContext)}.
      */
     @Target({ElementType.TYPE})
     @Retention(RetentionPolicy.RUNTIME)
-    @Constraint(validatedBy = ConsumerGroupPatchValidator.class)
+    @Constraint(validatedBy = GroupPatchValidator.class)
     @Documented
-    public @interface ValidConsumerGroupPatch {
+    public @interface ValidGroupPatch {
         String message() default ""; // Not used
         Class<?>[] groups() default {};
         Class<? extends Payload>[] payload() default {};
@@ -56,8 +56,8 @@ public class ConsumerGroupValidation {
     /**
      * Container record for the inputs to a patchTopic operation
      */
-    @ValidConsumerGroupPatch(payload = ErrorCategory.InvalidResource.class)
-    public record ConsumerGroupPatchInputs(Map<Uuid, Either<Topic, Throwable>> topics, ConsumerGroup patch) { }
+    @ValidGroupPatch(payload = ErrorCategory.InvalidResource.class)
+    public record GroupPatchInputs(Map<Uuid, Either<Topic, Throwable>> topics, Group patch) { }
 
     static NodeBuilderCustomizableContext createBuilder(ConstraintValidatorContext context,
             String message,
@@ -76,10 +76,10 @@ public class ConsumerGroupValidation {
         return customizableContext;
     }
 
-    public static class ConsumerGroupPatchValidator implements ConstraintValidator<ValidConsumerGroupPatch, ConsumerGroupPatchInputs> {
+    public static class GroupPatchValidator implements ConstraintValidator<ValidGroupPatch, GroupPatchInputs> {
 
         @Override
-        public boolean isValid(ConsumerGroupPatchInputs inputs, ConstraintValidatorContext context) {
+        public boolean isValid(GroupPatchInputs inputs, ConstraintValidatorContext context) {
             AtomicBoolean valid = new AtomicBoolean(true);
 
             validOffsetTopicPartitions(valid, inputs, context);
@@ -97,8 +97,8 @@ public class ConsumerGroupValidation {
          * </ul>
          *
          */
-        void validOffsetTopicPartitions(AtomicBoolean valid, ConsumerGroupPatchInputs inputs, ConstraintValidatorContext context) {
-            ConsumerGroup patch = inputs.patch();
+        void validOffsetTopicPartitions(AtomicBoolean valid, GroupPatchInputs inputs, ConstraintValidatorContext context) {
+            Group patch = inputs.patch();
             Map<Uuid, Either<Topic, Throwable>> topics = inputs.topics();
             AtomicInteger index = new AtomicInteger(0);
 

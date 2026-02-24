@@ -48,7 +48,7 @@ export async function getTopics(
     filterUndefinedFromObj({
       "fields[topics]":
         params.fields ??
-        "name,status,visibility,numPartitions,totalLeaderLogBytes,consumerGroups",
+        "name,status,visibility,numPartitions,totalLeaderLogBytes,groups",
       "filter[id]": filterEq(params.id),
       "filter[name]": filterLike(params.name),
       "filter[status]": filterIn(params.status),

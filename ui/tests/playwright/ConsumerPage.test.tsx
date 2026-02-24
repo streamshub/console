@@ -1,7 +1,7 @@
 import { expect, test } from "./authenticated-test";
 
 test.beforeEach(async ({ authenticatedPage }) => {
-  await authenticatedPage.goToConsumerGroups();
+  await authenticatedPage.goToGroups();
 });
 
 test("Consumer page content check", async ({ page, authenticatedPage }) => {

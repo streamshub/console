@@ -42,11 +42,11 @@ public record OffsetAndMetadata(
 
         @Schema(
             description = """
-                When describing a consumer group, the last committed offset for the topic and partitions in
-                the consumer group being described.
+                When describing a group, the last committed offset for the topic and partitions in
+                the group being described.
 
                 When resetting offsets for a partition, the value may be a literal offset,
-                or any valid offset specification. The offset for the partition in the consumer
+                or any valid offset specification. The offset for the partition in the
                 group will be reset accordingly.
 
                 1. `earliest` - reset to the earliest/first offset
@@ -55,7 +55,7 @@ public record OffsetAndMetadata(
                 4. literal timestamp - reset to the offset having a timestamp equal to or greater than the given timestamp
 
                 If no offset exists matching the `maxTimestamp` or a literal timestamp spec, no changes will
-                be made to the consumer group offset(s) for the partition.
+                be made to the group offset(s) for the partition.
                 """,
             implementation = Object.class,
             oneOf = { Long.class, OffsetSpec.class })

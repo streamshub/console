@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { getConsumerGroups } from "@/api/consumerGroups/actions";
+import { getConsumerGroups } from "@/api/groups/actions";
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { getTopics, getViewedTopics } from "@/api/topics/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
@@ -44,7 +44,7 @@ export default async function OverviewPage({
     sortDir: "asc",
     includeHidden: true,
   });
-  const consumerGroups = getConsumerGroups(params.kafkaId, {
+  const groups = getConsumerGroups(params.kafkaId, {
     fields: "groupId,state",
   });
   const viewedTopics = getViewedTopics().then((topics) =>
@@ -57,7 +57,7 @@ export default async function OverviewPage({
       clusterOverview={
         <ConnectedClusterCard
           cluster={kafkaCluster}
-          consumerGroups={consumerGroups}
+          groups={groups}
         />
       }
       topicsPartitions={<ConnectedTopicsPartitionsCard data={topicsSummary} />}

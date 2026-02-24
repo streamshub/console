@@ -1,4 +1,4 @@
-import { updateConsumerGroup } from "@/api/consumerGroups/actions";
+import { updateConsumerGroup } from "@/api/groups/actions";
 import { KafkaConsumerGroupMembersParams } from "../../KafkaConsumerGroupMembers.params";
 import { Suspense } from "react";
 import { PageSection } from "@/libs/patternfly/react-core";

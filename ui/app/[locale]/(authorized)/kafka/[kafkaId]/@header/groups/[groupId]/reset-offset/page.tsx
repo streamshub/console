@@ -1,4 +1,4 @@
-import { getConsumerGroup } from "@/api/consumerGroups/actions";
+import { getConsumerGroup } from "@/api/groups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
@@ -41,13 +41,13 @@ function Header({
 
   return (
     <AppHeader
-      title={t("ConsumerGroupsTable.reset_consumer_offset")}
+      title={t("GroupsTable.reset_consumer_offset")}
       subTitle={
         groupIdDisplay === "" ? (
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
           <RichText>
-            {(tags) => t.rich("ConsumerGroupsTable.consumer_name", { ...tags, groupId: groupIdDisplay })}
+            {(tags) => t.rich("GroupsTable.consumer_name", { ...tags, groupId: groupIdDisplay })}
           </RichText>
         )
       }

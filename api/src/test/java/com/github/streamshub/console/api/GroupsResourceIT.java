@@ -87,9 +87,9 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.doAnswer;
 
 @QuarkusTest
-@TestHTTPEndpoint(ConsumerGroupsResource.class)
+@TestHTTPEndpoint(GroupsResource.class)
 @TestProfile(TestPlainProfile.class)
-class ConsumerGroupsResourceIT {
+class GroupsResourceIT {
 
     @Inject
     Config config;
@@ -241,7 +241,7 @@ class ConsumerGroupsResourceIT {
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req
-                    .param("fields[consumerGroups]", "simpleConsumerGroup,"
+                    .param("fields[groups]", "simpleConsumerGroup,"
                             + "state,"
                             + "members,"
                             + "offsets,"
@@ -294,7 +294,7 @@ class ConsumerGroupsResourceIT {
         String response1 = whenRequesting(req -> req
                 .param("sort", "groupId,state,someIgnoredField,-simpleConsumerGroup")
                 .param("page[size]", 2)
-                .param("fields[consumerGroups]", "state,simpleConsumerGroup")
+                .param("fields[groups]", "state,simpleConsumerGroup")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
@@ -413,7 +413,7 @@ class ConsumerGroupsResourceIT {
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req
-                    .param("fields[consumerGroups]", "members")
+                    .param("fields[groups]", "members")
                     .get("", clusterId1))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
@@ -485,7 +485,7 @@ class ConsumerGroupsResourceIT {
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req
-                    .param("fields[consumerGroups]", "offsets")
+                    .param("fields[groups]", "offsets")
                     .get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
@@ -524,7 +524,7 @@ class ConsumerGroupsResourceIT {
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req
-                    .param("fields[consumerGroups]", "offsets")
+                    .param("fields[groups]", "offsets")
                     .get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
@@ -606,7 +606,7 @@ class ConsumerGroupsResourceIT {
                     .body(Json.createObjectBuilder()
                             .add("data", Json.createObjectBuilder()
                                     .add("id", noSuchGroupId)
-                                    .add("type", "consumerGroups")
+                                    .add("type", "groups")
                                     .add("attributes", Json.createObjectBuilder()))
                             .build()
                             .toString())
@@ -722,7 +722,7 @@ class ConsumerGroupsResourceIT {
                 .body(Json.createObjectBuilder()
                         .add("data", Json.createObjectBuilder()
                                 .add("id", group1Id)
-                                .add("type", "consumerGroups")
+                                .add("type", "groups")
                                 .add("attributes", Json.createObjectBuilder()
                                         .add("offsets", Json.createArrayBuilder()
                                                 .add(Json.createObjectBuilder()
@@ -791,7 +791,7 @@ class ConsumerGroupsResourceIT {
                                 .add("dryRun", true))
                         .add("data", Json.createObjectBuilder()
                                 .add("id", group1Id)
-                                .add("type", "consumerGroups")
+                                .add("type", "groups")
                                 .add("attributes", Json.createObjectBuilder()
                                         .add("offsets", Json.createArrayBuilder()
                                                 .add(Json.createObjectBuilder()

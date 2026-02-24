@@ -469,7 +469,7 @@
     "title": "The screen displays only the most recent 100 messages, with older messages rotating out.",
     "pause": "Pause"
   },
-  "ConsumerGroupsTable": {
+  "GroupsTable": {
     "title": "Groups",
     "no_consumer_groups": "No groups",
     "group_id": "Group ID",
@@ -640,10 +640,10 @@
     "end_offset": "End offset",
     "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
   },
-  "ConsumerGroups": {
+  "Groups": {
     "title": "Groups"
   },
-  "ConsumerGroup": {
+  "Group": {
     "title": "Group",
     "reset_offset": "Reset offset",
     "delete": "Delete"

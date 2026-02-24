@@ -1,4 +1,4 @@
-import { OffsetAndMetadata } from "@/api/consumerGroups/schema";
+import { OffsetAndMetadata } from "@/api/groups/schema";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";

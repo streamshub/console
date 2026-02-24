@@ -35,7 +35,7 @@ export function ConsumerGroupActionButton({
         id={"reset"}
         onClick={onClickResetOffset}
       >
-        {t("ConsumerGroup.reset_offset")}
+        {t("Group.reset_offset")}
       </Button>
     </Tooltip>
     // <Tooltip
@@ -47,7 +47,7 @@ export function ConsumerGroupActionButton({
     //     aria-disabled={disabled}
     //     isDisabled={disabled}
     //   >
-    //     {t("ConsumerGroup.delete")}
+    //     {t("Group.delete")}
     //   </Button>
     // </Tooltip>,
   );

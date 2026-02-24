@@ -7,7 +7,7 @@ import {
 import { useTranslations } from "next-intl";
 
 export function LoadingPage() {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations("GroupsTable");
   return (
     <Grid hasGutter={true}>
       <GridItem>

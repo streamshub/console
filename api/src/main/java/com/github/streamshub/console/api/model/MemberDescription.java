@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 /**
- * Description of a member of a consumer group
+ * Description of a member of a group
  */
 @JsonInclude(value = Include.NON_NULL)
 public class MemberDescription {
