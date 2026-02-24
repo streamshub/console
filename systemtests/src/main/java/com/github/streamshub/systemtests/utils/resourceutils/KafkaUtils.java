@@ -14,6 +14,7 @@ import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurati
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
+import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
@@ -239,5 +240,25 @@ public class KafkaUtils {
         scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
         WaitUtils.waitForKafkaBrokerNodePoolReplicasInSpec(namespace, kafkaName, scaledBrokersCount);
         WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), scaledBrokersCount, true);
+    }
+
+    /**
+     * Retrieves sorted Kafka node IDs from a specific Kafka Node Pool (KNP)
+     * filtered by name and process role.
+     *
+     * @param namespace the Kubernetes namespace containing the KafkaNodePool resources
+     * @param knpName   the name of the Kafka Node Pool
+     * @param role      the expected process role (e.g. BROKER or CONTROLLER)
+     * @return a sorted list of node IDs matching the given node pool name and role
+     */
+    public static List<Integer> getKnpIds(String namespace, String knpName, ProcessRoles role) {
+        return ResourceUtils.listKubeResources(KafkaNodePool.class, namespace).stream()
+            .filter(kafkaNodePool ->
+                kafkaNodePool.getMetadata().getName().equals(knpName) &&
+                kafkaNodePool.getSpec().getRoles().contains(role))
+            .flatMap(filteredKnp ->
+                filteredKnp.getStatus().getNodeIds().stream())
+            .sorted()
+            .toList();
     }
 }

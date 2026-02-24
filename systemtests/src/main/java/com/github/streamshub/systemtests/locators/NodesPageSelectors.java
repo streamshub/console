@@ -70,8 +70,15 @@ public class NodesPageSelectors {
         .withElementTbody().withComponentTable().withSubComponentTbody()
         .build();
 
-    // Rebalance
+    public static String getNodeTableRowItems(int nth) {
+        return CssBuilder.joinLocators(new CssBuilder(NPS_TABLE_BODY).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
+    }
 
+    public static String getNodeTableRowItem(int nthRow, int nthColumn) {
+        return new CssBuilder(getNodeTableRowItems(nthRow)).nth(nthColumn).build();
+    }
+
+    // Rebalance
     public static final String NPS_REBALANCE_TABLE_ITEMS = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
@@ -214,4 +221,87 @@ public class NodesPageSelectors {
         .build();
 
     public static final String NPS_PROPOSAL_MODAL_CONFIRM_BUTTON = CssSelectors.PAGES_MODAL_CONFIRM_BUTTON;
+
+    public static final String NPS_FILTER_DROPDOWN_BUTTONS = new CssBuilder(NPS_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withComponentScrollOuterWrapper().withChild()
+        .withElementDiv().withComponentToolbar().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContent().nth(1).withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContentSection().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentItem().withChild()
+        .withElementDiv().withComponentInputGroup().withChild()
+        .withElementButton().withComponentMenuToggle()
+        .build();
+
+    public static final String NPS_FILTER_TYPE_DROPDOWN_BUTTON = new CssBuilder(NPS_FILTER_DROPDOWN_BUTTONS).nth(1).build();
+    public static final String NPS_FILTER_BY_DROPDOWN_BUTTON = new CssBuilder(NPS_FILTER_DROPDOWN_BUTTONS).nth(2).build();
+
+    public static final String NPS_FILTER_TYPE_DROPDOWN_ITEMS = new CssBuilder(NPS_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withComponentScrollOuterWrapper().withChild()
+        .withElementDiv().withComponentToolbar().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContent().nth(1).withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContentSection().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentItem().withChild()
+        .withElementDiv().withComponentInputGroup().withChild()
+        .withElementDiv().withComponentMenu().withChild()
+        .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
+        .withElementUl().withComponentMenu().withSubComponentList().withChild()
+        .withElementLi().withComponentMenu().withSubComponentListItem()
+        .build();
+
+    public static final String NPS_FILTER_TYPE_NODEPOOL_BUTTON = new CssBuilder(NPS_FILTER_TYPE_DROPDOWN_ITEMS)
+        .nth(1).withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem()
+        .build();
+
+    public static final String NPS_FILTER_TYPE_ROLE_BUTTON = new CssBuilder(NPS_FILTER_TYPE_DROPDOWN_ITEMS)
+        .nth(2).withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem()
+        .build();
+
+    public static final String NPS_FILTER_TYPE_STATUS_BUTTON = new CssBuilder(NPS_FILTER_TYPE_DROPDOWN_ITEMS)
+        .nth(3).withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem()
+        .build();
+
+    public static final String NPS_FILTER_BY_NODEPOOL_ITEMS = new CssBuilder(NPS_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withComponentScrollOuterWrapper().withChild()
+        .withElementDiv().withComponentToolbar().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContent().nth(1).withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContentSection().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentItem().withChild()
+        .withElementDiv().withComponentInputGroup().withChild()
+        .withElementDiv().withComponentMenu().withChild()
+        .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
+        .withElementUl().withComponentMenu().withSubComponentList().withChild()
+        .withElementLi().withComponentMenu().withSubComponentListItem()
+        .build();
+
+    public static final String NPS_FILTER_BY_ROLE_ITEMS = new CssBuilder(NPS_FILTER_TYPE_DROPDOWN_ITEMS)
+        .withChild()
+        .withElementLabel().withComponentMenu().withSubComponentItem().withChild()
+        .withElementSpan().withComponentMenu().withSubComponentItemMain().withChild()
+        .withElementSpan().withComponentMenu().withSubComponentItemText().withChild()
+        .withElementDiv().withLayoutFlex()
+        .build();
+
+    public static final String NPS_FILTER_CLEAR_ALL_FILTERS_BUTTON = new CssBuilder(NPS_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withComponentScrollOuterWrapper().withChild()
+        .withElementDiv().withComponentToolbar().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContent().nth(2).withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentGroup().nth(2).withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentItem().withChild()
+        .withElementButton().withComponentButton()
+        .build();
 }
