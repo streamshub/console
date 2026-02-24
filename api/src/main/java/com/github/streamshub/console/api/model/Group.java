@@ -15,7 +15,6 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.validation.Valid;
 
-import org.apache.kafka.common.GroupType;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -228,21 +227,61 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
             listing.isSimpleConsumerGroup(),
             listing.groupState().map(Enum::name).orElse(null)
         );
-        group.type(listing.type().map(GroupType::toString).orElse(null));
+        group.type(listing.type().map(org.apache.kafka.common.GroupType::toString).orElse(null));
         group.protocol(listing.protocol());
         return group;
     }
 
     /**
-     * Construct an instance from a Kafka consumer group description and the map of
+     * Construct an instance from a Kafka  group description and the map of
      * topic Ids, used to set the topic ID of the assignments field elements for
-     * each member of the consumer group.
+     * each member of the group. The description must be an instance of one of
+     * the group types defined by {@link org.apache.kafka.common.GroupType}.
      *
-     * @param description Kafka consumer group description model
+     * @param description Kafka group description model
      * @param topicIds    map of topic names to Ids
      * @return a new {@linkplain Group}
      */
-    public static Group fromKafkaModel(
+    public static Group fromKafkaModel(Object description, Map<String, String> topicIds) {
+        switch (description) {
+            case org.apache.kafka.clients.admin.ClassicGroupDescription classicGroup:
+                return fromKafkaModel(classicGroup, topicIds);
+            case org.apache.kafka.clients.admin.ConsumerGroupDescription consumerGroup:
+                return fromKafkaModel(consumerGroup, topicIds);
+            case org.apache.kafka.clients.admin.ShareGroupDescription shareGroup:
+                return fromKafkaModel(shareGroup, topicIds);
+            case org.apache.kafka.clients.admin.StreamsGroupDescription streamsGroup:
+                return fromKafkaModel(streamsGroup, topicIds);
+            default:
+                throw new IllegalArgumentException("Unknown group type: " + description.getClass());
+        }
+    }
+
+    private static Group fromKafkaModel(
+            org.apache.kafka.clients.admin.ClassicGroupDescription description,
+            Map<String, String> topicIds) {
+
+        var group = new Group(
+                description.groupId(),
+                description.isSimpleConsumerGroup(),
+                Optional.ofNullable(description.state()).map(Enum::name).orElse(null));
+
+        group.type(org.apache.kafka.common.GroupType.CLASSIC.toString());
+        group.coordinator(Node.fromKafkaModel(description.coordinator()));
+        group.members(description.members()
+                .stream()
+                .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
+                .toList());
+
+        group.authorizedOperations(Optional.ofNullable(description.authorizedOperations())
+                .map(Collection::stream)
+                .map(ops -> ops.map(Enum::name).toList())
+                .orElse(null));
+
+        return group;
+    }
+
+    private static Group fromKafkaModel(
             org.apache.kafka.clients.admin.ConsumerGroupDescription description,
             Map<String, String> topicIds) {
 
@@ -253,6 +292,54 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
 
         group.type(description.type().toString());
         group.partitionAssignor(description.partitionAssignor());
+        group.coordinator(Node.fromKafkaModel(description.coordinator()));
+        group.members(description.members()
+                .stream()
+                .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
+                .toList());
+
+        group.authorizedOperations(Optional.ofNullable(description.authorizedOperations())
+                .map(Collection::stream)
+                .map(ops -> ops.map(Enum::name).toList())
+                .orElse(null));
+
+        return group;
+    }
+
+    private static Group fromKafkaModel(
+            org.apache.kafka.clients.admin.ShareGroupDescription description,
+            Map<String, String> topicIds) {
+
+        var group = new Group(
+                description.groupId(),
+                false,
+                Optional.ofNullable(description.groupState()).map(Enum::name).orElse(null));
+
+        group.type(org.apache.kafka.common.GroupType.SHARE.toString());
+        group.coordinator(Node.fromKafkaModel(description.coordinator()));
+        group.members(description.members()
+                .stream()
+                .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
+                .toList());
+
+        group.authorizedOperations(Optional.ofNullable(description.authorizedOperations())
+                .map(Collection::stream)
+                .map(ops -> ops.map(Enum::name).toList())
+                .orElse(null));
+
+        return group;
+    }
+
+    private static Group fromKafkaModel(
+            org.apache.kafka.clients.admin.StreamsGroupDescription description,
+            Map<String, String> topicIds) {
+
+        var group = new Group(
+                description.groupId(),
+                false,
+                Optional.ofNullable(description.groupState()).map(Enum::name).orElse(null));
+
+        group.type(org.apache.kafka.common.GroupType.STREAMS.toString());
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
                 .stream()

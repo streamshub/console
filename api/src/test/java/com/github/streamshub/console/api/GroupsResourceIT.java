@@ -21,9 +21,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.ConsumerGroupDescription;
-import org.apache.kafka.clients.admin.DescribeConsumerGroupsOptions;
-import org.apache.kafka.clients.admin.DescribeConsumerGroupsResult;
+import org.apache.kafka.clients.admin.ClassicGroupDescription;
+import org.apache.kafka.clients.admin.DescribeClassicGroupsOptions;
+import org.apache.kafka.clients.admin.DescribeClassicGroupsResult;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
@@ -75,6 +75,7 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
@@ -386,24 +387,24 @@ class GroupsResourceIT {
 
     @Test
     void testListConsumerGroupsWithDescribeError() {
-        Answer<DescribeConsumerGroupsResult> describeConsumerGroupsFailed = args -> {
+        Answer<DescribeClassicGroupsResult> describeGroupsFailed = args -> {
             @SuppressWarnings("unchecked")
             Collection<String> groupIds = args.getArgument(0, Collection.class);
-            Map<String, KafkaFuture<ConsumerGroupDescription>> futures = new HashMap<>(groupIds.size());
+            Map<String, KafkaFuture<ClassicGroupDescription>> futures = new HashMap<>(groupIds.size());
 
-            KafkaFutureImpl<ConsumerGroupDescription> failure = new KafkaFutureImpl<>();
+            KafkaFutureImpl<ClassicGroupDescription> failure = new KafkaFutureImpl<>();
             failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
 
             groupIds.forEach(id -> futures.put(id, failure));
 
-            return new DescribeConsumerGroupsResult(futures);
+            return new DescribeClassicGroupsResult(futures);
         };
 
         AdminClientSpy.install(adminClient -> {
             // Mock listOffsets
-            doAnswer(describeConsumerGroupsFailed)
+            doAnswer(describeGroupsFailed)
                 .when(adminClient)
-                .describeConsumerGroups(anyCollection(), any(DescribeConsumerGroupsOptions.class));
+                .describeClassicGroups(anyCollection(), any(DescribeClassicGroupsOptions.class));
         });
 
         String topic1 = "t1-" + UUID.randomUUID().toString();
@@ -419,7 +420,7 @@ class GroupsResourceIT {
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(1))
                 .body("data[0].id", is(group1Id))
-                .body("data[0].meta.errors.size()", is(1))
+                .body("data[0].meta.errors", hasSize(1))
                 .body("data[0].meta.errors[0].detail", is("EXPECTED TEST EXCEPTION"));
         }
     }
