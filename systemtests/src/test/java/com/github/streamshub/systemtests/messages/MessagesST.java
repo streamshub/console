@@ -327,9 +327,9 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true);
-        assertTrue(PwUtils.getTrimmedText(tcc.page().locator(MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT).getAttribute(Constants.VALUE_ATTRIBUTE))
-            .contains("messages=latest retrieve=50"));
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true, true);
+        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE,
+             "messages=latest retrieve=50", true));
 
         LOGGER.info("Filter messages by key - because no offset is specified, first `No message data` should appear");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
@@ -347,9 +347,8 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, "95");
 
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:95", Constants.VALUE_ATTRIBUTE, true);
-        assertTrue(PwUtils.getTrimmedText(tcc.page().locator(MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT).getAttribute(Constants.VALUE_ATTRIBUTE))
-            .contains("messages=offset:95 retrieve=50 orderID where=key"));
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:95", Constants.VALUE_ATTRIBUTE, true, true);
+        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=offset:95 retrieve=50 orderID where=key", true));
 
         // Order is ASC
         LOGGER.debug("Verify filtered messages with specific key");
@@ -360,9 +359,8 @@ public class MessagesST extends AbstractST {
         LOGGER.debug("Reset messages filter");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_RESET_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true);
-        assertTrue(PwUtils.getTrimmedText(tcc.page().locator(MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT).getAttribute(Constants.VALUE_ATTRIBUTE))
-            .contains("messages=latest retrieve=50"));
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true, true);
+        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=latest retrieve=50", true));
 
         // Order is DESC
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
@@ -376,9 +374,9 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, "95");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:95", Constants.VALUE_ATTRIBUTE, true);
-        assertTrue(PwUtils.getTrimmedText(tcc.page().locator(MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT).getAttribute(Constants.VALUE_ATTRIBUTE))
-            .contains("messages=offset:95 retrieve=50 " + HEADER_FILTER_LOOK_UP_TEXT + " where=headers"));
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:95", Constants.VALUE_ATTRIBUTE, true, true);
+        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE,
+            "messages=offset:95 retrieve=50 " + HEADER_FILTER_LOOK_UP_TEXT + " where=headers", true));
 
         // Because filter retrieve overlaps 5 messages from previous set, there should be only 45 with correct header
         // Order is ASC
@@ -392,9 +390,8 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_RESET_BUTTON);
         // Order is DESC
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true);
-        assertTrue(PwUtils.getTrimmedText(tcc.page().locator(MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT).getAttribute(Constants.VALUE_ATTRIBUTE))
-            .contains("messages=latest retrieve=50"));
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true, true);
+        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=latest retrieve=50", true));
 
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
 
@@ -409,9 +406,8 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, "195");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
 
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:195", Constants.VALUE_ATTRIBUTE, true);
-        assertTrue(PwUtils.getTrimmedText(tcc.page().locator(MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT).getAttribute(Constants.VALUE_ATTRIBUTE))
-            .contains("messages=offset:195 retrieve=50 " + VALUE_FILTER + " where=value"));
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:195", Constants.VALUE_ATTRIBUTE, true, true);
+        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=offset:195 retrieve=50 " + VALUE_FILTER + " where=value", true));
 
         // Because filter retrieve overlaps 5 messages from previous set, there should be only 45 with correct message value
         // Order is ASC
