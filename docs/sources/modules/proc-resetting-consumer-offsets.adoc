@@ -29,8 +29,13 @@ If you select this option, enter the custom offset value.
 * Latest offset
 * Earliest offset
 * Specific date and time
+* Delete committed offsets (available only if you selected a specific topic).
 +
-If you selected date and time, choose the appropriate format and enter the date in that format. 
+If you selected date and time, choose the appropriate format and enter the date in that format.
++
+IMPORTANT: The *Delete committed offsets* option removes the stored offsets for the consumer group. 
+When the group resumes, offset behavior depends on the consumer configuration (for example, the `auto.offset.reset` setting). 
+Use this option with caution.
 
 . (Optional) Perform a dry run before applying the offset reset.  
 +

@@ -19,7 +19,7 @@ Click on a message to view the full message details.
 +
 Click the *Manage columns* icon (represented as two-column icon) to choose the information to display.
 
-. Click the search dropdown and select the advanced search options to refine your search.
+. Click the search dropdown menu and select the advanced search options to refine your search.
 +
 Choose to display the latest messages or messages from a specified time or offset. 
 You can display messages for all partitions or a specified partition.

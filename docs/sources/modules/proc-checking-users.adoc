@@ -1,0 +1,39 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id='proc-checking-kafka-users-{context}']
+= Checking Kafka users
+
+[role="_abstract"]
+View authentication details and authorization rules for a specific Kafka user from the *Kafka Users* page.
+
+.Procedure
+
+. Log in to the StreamsHub Console, select a Kafka cluster, and click *Kafka Users*.
+. (Optional) Enter a username in the search field to filter the list.
+. Click the username of the user you want to inspect.
++
+. Review the user details:
++
+Name:: The name of the Kafka user resource.
+Username:: The Kafka username.
+Authentication:: The configured authentication type.
+Namespace:: The namespace where the user is defined.
+Creation Time:: The date and time the user was created.
++
+. Review the *Authorization* section:
++
+* If no rules are configured, the page displays *No authorization rules*.
+* If authorization rules are configured, a table lists the details of each configured access control rule. 
+Each rule specifies the resources and operations to which it applies, and whether access is allowed or denied.
++
+Type:: The resource type, such as `topic`, `group`, or `cluster`.
+Name:: The name of the resource. 
+For `cluster` resource types, no name is specified.
+Pattern type:: The pattern used to match the resource name. 
+`literal` matches the exact name specified. 
+`prefix` applies the rule to all resources with names that start with the specified value. 
+With the `literal` pattern type, the name can be set to `*` to apply the rule to all resources.
+Host:: The host to which the rule applies. An asterisk (`*`) indicates any host.
+Operations:: One or more operations to which the rule applies, shown as a comma-separated list, such as `Read` or `Describe`. 
+Supported operations depend on the resource type.
+Permission:: The permission type, such as `allow` or `deny`.
