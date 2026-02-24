@@ -26,7 +26,7 @@
     "@patternfly/react-user-feedback": "^6.2.0",
     "@stdlib/string-truncate": "^0.2.3",
     "@stdlib/string-truncate-middle": "^0.2.3",
-    "@tanstack/react-virtual": "^3.13.18",
+    "@tanstack/react-virtual": "^3.13.19",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "25.3.0",
     "@types/react": "18.3.12",
