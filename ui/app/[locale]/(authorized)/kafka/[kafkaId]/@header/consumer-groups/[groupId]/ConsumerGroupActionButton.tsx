@@ -1,41 +1,40 @@
-"use client";
+'use client'
 
-import { Button, Tooltip } from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { Button, Tooltip } from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 
 export function ConsumerGroupActionButton({
   disabled,
   kafkaId,
   groupId,
 }: {
-  disabled: boolean;
-  kafkaId: string;
-  groupId: string;
+  disabled: boolean
+  kafkaId: string
+  groupId: string
 }) {
-  const t = useTranslations();
-  const router = useRouter();
+  const t = useTranslations()
+  const router = useRouter()
 
   const onClickResetOffset = () => {
-    router.push(
-      `/kafka/${kafkaId}/consumer-groups/${groupId}/reset-offset`,
-    );
-  };
+    router.push(`/kafka/${kafkaId}/consumer-groups/${groupId}/reset-offset`)
+  }
 
   return (
     <Tooltip
-      key={"reset"}
+      key={'reset'}
       content={
-        "It is possible to reset the offset only on stopped consumer groups"
+        'It is possible to reset the offset only on stopped consumer groups'
       }
     >
       <Button
+        ouiaId={'consumer-group-action-button'}
         isDisabled={disabled}
         aria-disabled={disabled}
-        id={"reset"}
+        id={'reset'}
         onClick={onClickResetOffset}
       >
-        {t("ConsumerGroup.reset_offset")}
+        {t('ConsumerGroup.reset_offset')}
       </Button>
     </Tooltip>
     // <Tooltip
@@ -50,5 +49,5 @@ export function ConsumerGroupActionButton({
     //     {t("ConsumerGroup.delete")}
     //   </Button>
     // </Tooltip>,
-  );
+  )
 }

@@ -7,19 +7,31 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export async function generateMetadata(props: { params: { kafkaId: string, groupId: string} }) {
+export async function generateMetadata({
+  params: paramsPromise,
+}: {
+  params: Promise<KafkaConsumerGroupMembersParams>;
+}) {
+  const { kafkaId, groupId } = await paramsPromise;
   const t = await getTranslations();
+  const consumerGroup = (await getConsumerGroup(kafkaId, groupId)).payload;
+  let groupIdDisplay = "";
+
+  if (consumerGroup) {
+    groupIdDisplay = consumerGroup.attributes.groupId;
+  }
 
   return {
-    title: `${t("ConsumerGroup.title")} ${props.params.groupId} | ${t("common.title")}`,
+    title: `${t("ConsumerGroup.title")} ${groupIdDisplay} | ${t("common.title")}`,
   };
 }
 
-export default function ConsumerGroupMembersPage({
-  params: { kafkaId, groupId },
+export default async function ConsumerGroupMembersPage({
+  params: paramsPromise,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: Promise<KafkaConsumerGroupMembersParams>;
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
   return (
     <PageSection>
       <Suspense

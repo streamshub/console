@@ -5,17 +5,17 @@ import {
   TextInput,
   Tooltip,
   ValidatedOptions,
-} from "@/libs/patternfly/react-core";
-import { ArrowRightIcon } from "@/libs/patternfly/react-icons";
-import type { KeyboardEvent } from "react";
-import { useCallback, useRef, useState } from "react";
+} from '@/libs/patternfly/react-core'
+import { ArrowRightIcon } from '@/libs/patternfly/react-icons'
+import type { KeyboardEvent } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 export type SearchInputProps = {
-  placeholder: string;
-  errorMessage: string;
-  validate: (value: string) => boolean;
-  onSearch: (value: string) => void;
-};
+  placeholder: string
+  errorMessage: string
+  validate: (value: string) => boolean
+  onSearch: (value: string) => void
+}
 
 export function SearchInput({
   placeholder,
@@ -23,29 +23,29 @@ export function SearchInput({
   validate,
   onSearch,
 }: SearchInputProps) {
-  const [value, setValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const isEmpty = value.length === 0;
-  const isValid = !isEmpty && validate(value);
-  const showErrorFeedback = !isEmpty && !isValid;
-  const canSearch = !isEmpty && isValid;
+  const isEmpty = value.length === 0
+  const isValid = !isEmpty && validate(value)
+  const showErrorFeedback = !isEmpty && !isValid
+  const canSearch = !isEmpty && isValid
 
   const handleSearch = useCallback(() => {
     if (canSearch) {
-      onSearch(value);
-      setValue("");
+      onSearch(value)
+      setValue('')
     }
-  }, [canSearch, onSearch, value]);
+  }, [canSearch, onSearch, value])
 
   const onKeyPress = useCallback(
     (event: KeyboardEvent) => {
-      if (event.key === "Enter") {
-        handleSearch();
+      if (event.key === 'Enter') {
+        handleSearch()
       }
     },
     [handleSearch],
-  );
+  )
 
   return (
     <InputGroup>
@@ -53,6 +53,7 @@ export function SearchInput({
         name="search"
         id="search"
         type="search"
+        ouiaId={'search-input-text'}
         aria-label={placeholder}
         placeholder={placeholder}
         validated={
@@ -64,10 +65,11 @@ export function SearchInput({
         ref={inputRef}
       />
       <Button
+        ouiaId={'common-serach-input-button'}
         isDisabled={!canSearch}
         variant={ButtonVariant.control}
         onClick={handleSearch}
-        aria-label={"Search"}
+        aria-label={'Search'}
       >
         <ArrowRightIcon />
       </Button>
@@ -78,5 +80,5 @@ export function SearchInput({
         triggerRef={inputRef}
       />
     </InputGroup>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Button,
@@ -7,8 +7,8 @@ import {
   ModalFooter,
   ModalHeader,
   ModalVariant,
-} from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
+} from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
 
 export function ReconciliationModal({
   isModalOpen,
@@ -16,12 +16,12 @@ export function ReconciliationModal({
   onClickPauseReconciliation,
   isReconciliationPaused,
 }: {
-  isModalOpen: boolean;
-  onClickClose: () => void;
-  onClickPauseReconciliation: () => void;
-  isReconciliationPaused: boolean;
+  isModalOpen: boolean
+  onClickClose: () => void
+  onClickPauseReconciliation: () => void
+  isReconciliationPaused: boolean
 }) {
-  const t = useTranslations();
+  const t = useTranslations()
   return (
     <Modal
       isOpen={isModalOpen}
@@ -31,28 +31,34 @@ export function ReconciliationModal({
       <ModalHeader
         title={
           isReconciliationPaused
-            ? t("reconciliation.resume_cluster_reconciliation")
-            : t("reconciliation.pause_reconciliation")
+            ? t('reconciliation.resume_cluster_reconciliation')
+            : t('reconciliation.pause_reconciliation')
         }
       ></ModalHeader>
       <ModalBody>
         {isReconciliationPaused
-          ? t("reconciliation.resume_cluster_reconciliation_description")
-          : t("reconciliation.pause_reconciliation_text")}
+          ? t('reconciliation.resume_cluster_reconciliation_description')
+          : t('reconciliation.pause_reconciliation_text')}
       </ModalBody>
 
       <ModalFooter>
         <Button
+          ouiaId={'reconciliation-confirm-button'}
           key="confirm"
           variant="primary"
           onClick={onClickPauseReconciliation}
         >
-          {t("reconciliation.confirm")}
+          {t('reconciliation.confirm')}
         </Button>
-        <Button key="cancel" variant="link" onClick={onClickClose}>
-          {t("reconciliation.cancel")}
+        <Button
+          ouiaId={'reconciliation-cancel-button'}
+          key="cancel"
+          variant="link"
+          onClick={onClickClose}
+        >
+          {t('reconciliation.cancel')}
         </Button>
       </ModalFooter>
     </Modal>
-  );
+  )
 }

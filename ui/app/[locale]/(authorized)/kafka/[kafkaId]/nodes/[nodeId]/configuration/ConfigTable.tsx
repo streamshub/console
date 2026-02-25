@@ -10,7 +10,7 @@ import {
   List,
   ListItem,
 } from "@/libs/patternfly/react-core";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useCallback } from "react";
@@ -168,7 +168,7 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
       emptyStateNoData={<div></div>}
       emptyStateNoResults={<NoResultsEmptyState onReset={onReset} />}
       onPageChange={() => {}}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "property":
             return (

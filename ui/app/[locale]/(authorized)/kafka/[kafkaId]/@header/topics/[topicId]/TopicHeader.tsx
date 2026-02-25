@@ -8,14 +8,15 @@ import { ReactNode, Suspense } from "react";
 import { TopicsTabs } from "./TopicTabs";
 
 export type TopicHeaderProps = {
-  params: KafkaTopicParams;
+  params: Promise<KafkaTopicParams>;
   showRefresh?: boolean;
 };
 
-export function TopicHeader({
-  params: { kafkaId, topicId },
+export async function TopicHeader({
+  params: paramsPromise,
   showRefresh,
 }: TopicHeaderProps) {
+  const { kafkaId, topicId } = await paramsPromise;
   const portal = <div key={"topic-header-portal"} id={"topic-header-portal"} />;
   return (
     <Suspense

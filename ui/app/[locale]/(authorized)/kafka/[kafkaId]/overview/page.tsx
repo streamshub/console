@@ -19,12 +19,14 @@ export async function generateMetadata() {
 }
 
 export default async function OverviewPage({
-  params,
-  searchParams,
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaParams;
-  searchParams: { includeHidden?: string };
+  params: Promise<KafkaParams>;
+  searchParams: Promise<{ includeHidden?: string }>;
 }) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   const includeHidden = searchParams.includeHidden === "true";
 
   const kafkaCluster = getKafkaCluster(params.kafkaId, {

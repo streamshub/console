@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { ClustersTable } from "./ClustersTable";
+import { ClusterColumns, ClustersTable } from "./ClustersTable";
 import { ClusterDrawerContext } from "./ClusterDrawerContext";
+import { fn } from "storybook/test";
 
 const meta: Meta<typeof ClustersTable> = {
   component: ClustersTable,
@@ -20,6 +21,18 @@ const meta: Meta<typeof ClustersTable> = {
   ],
   args: {
     clusters: [],
+    sortProvider: (column) => {
+      const index = ClusterColumns.indexOf(column);
+
+      return {
+        sortBy: {
+          index: 0,
+          direction: "asc",
+        },
+        onSort: fn(),
+        columnIndex: index,
+      };
+    },
   },
 } as Meta<typeof ClustersTable>;
 

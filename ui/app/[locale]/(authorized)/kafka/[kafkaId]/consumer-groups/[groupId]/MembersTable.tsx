@@ -9,7 +9,7 @@ import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
@@ -64,7 +64,7 @@ export function MembersTable({
       }
       data={members}
       variant={TableVariant.compact}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "member":
             return (

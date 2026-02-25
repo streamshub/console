@@ -1,14 +1,14 @@
-import { DateTime } from "@/components/Format/DateTime";
-import { RefreshButton } from "@/components/RefreshButton";
+import { DateTime } from '@/components/Format/DateTime'
+import { RefreshButton } from '@/components/RefreshButton'
 import {
   Divider,
   Flex,
   FlexItem,
   PageSection,
   Title,
-} from "@/libs/patternfly/react-core";
-import { ReactNode } from "react";
-import { useNow } from "next-intl";
+} from '@/libs/patternfly/react-core'
+import { ReactNode } from 'react'
+import { useNow } from 'next-intl'
 
 export function AppHeader({
   title,
@@ -18,36 +18,37 @@ export function AppHeader({
   showRefresh = true,
   staticRefresh,
 }: {
-  title: ReactNode;
-  subTitle?: ReactNode;
-  actions?: ReactNode[];
-  navigation?: ReactNode;
-  showRefresh?: boolean;
-  staticRefresh?: Date; // allows fixed value to be provided for storybook testing
+  title: ReactNode
+  subTitle?: ReactNode
+  actions?: ReactNode[]
+  navigation?: ReactNode
+  showRefresh?: boolean
+  staticRefresh?: Date // allows fixed value to be provided for storybook testing
 }) {
-  const now = useNow();
-  const lastRefresh = staticRefresh ?? now;
+  const now = useNow()
+  const lastRefresh = staticRefresh ?? now
   return (
     <>
       <PageSection
-        variant={"default"}
-        padding={{ default: navigation ? "noPadding" : "padding" }}
-        className={navigation ? "pf-v6-u-px-lg pf-v6-u-pt-sm" : undefined}
+        variant={'default'}
+        padding={{ default: navigation ? 'noPadding' : 'padding' }}
+        className={navigation ? 'pf-v6-u-px-lg pf-v6-u-pt-sm' : undefined}
         hasShadowBottom={!navigation}
       >
-        <Flex direction={{ default: "column" }}>
+        <Flex direction={{ default: 'column' }}>
           <Flex>
-            <FlexItem flex={{ default: "flex_1" }}>
-              <Title headingLevel={"h1"}>{title}</Title>
+            <FlexItem flex={{ default: 'flex_1' }}>
+              <Title ouiaId={'main-app-header'} headingLevel={'h1'}>
+                {title}
+              </Title>
             </FlexItem>
 
             {showRefresh && (
               <FlexItem
-                alignSelf={{ default: "alignSelfFlexEnd" }}
-                className={"pf-v6-u-font-size-sm"}
+                alignSelf={{ default: 'alignSelfFlexEnd' }}
+                className={'pf-v6-u-font-size-sm'}
               >
-                Last updated{" "}
-                <DateTime value={lastRefresh} />
+                Last updated <DateTime value={lastRefresh} />
                 <RefreshButton />
               </FlexItem>
             )}
@@ -56,10 +57,10 @@ export function AppHeader({
             {subTitle && <FlexItem>{subTitle}</FlexItem>}
             {actions && (
               <Flex
-                direction={{ default: "column" }}
-                align={{ default: "alignRight" }}
+                direction={{ default: 'column' }}
+                align={{ default: 'alignRight' }}
               >
-                <Flex alignSelf={{ default: "alignSelfFlexEnd" }}>
+                <Flex alignSelf={{ default: 'alignSelfFlexEnd' }}>
                   {actions.map((a, idx) => (
                     <FlexItem key={idx}>{a}</FlexItem>
                   ))}
@@ -72,5 +73,5 @@ export function AppHeader({
       {navigation}
       {navigation && <Divider />}
     </>
-  );
+  )
 }

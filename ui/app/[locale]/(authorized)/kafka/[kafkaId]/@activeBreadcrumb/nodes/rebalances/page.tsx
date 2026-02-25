@@ -2,26 +2,27 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   Tooltip,
-} from "@/libs/patternfly/react-core";
-import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
-import { KafkaParams } from "../../../kafka.params";
+} from '@/libs/patternfly/react-core'
+import { HomeIcon } from '@/libs/patternfly/react-icons'
+import { getTranslations } from 'next-intl/server'
+import { KafkaParams } from '../../../kafka.params'
 
-export default function RebalanceActiveBreadcrumbPage({
-  params: { kafkaId },
+export default async function RebalanceActiveBreadcrumbPage({
+  params: paramsPromise,
 }: {
-  params: KafkaParams;
+  params: Promise<KafkaParams>
 }) {
-  return <RebalanceActiveBreadcrumb kafkaId={kafkaId} />;
+  const { kafkaId } = await paramsPromise
+  return <RebalanceActiveBreadcrumb kafkaId={kafkaId} />
 }
 
-function RebalanceActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
-  const t = useTranslations();
+async function RebalanceActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
+  const t = await getTranslations()
 
   return (
-    <Breadcrumb>
+    <Breadcrumb ouiaId={'rebalances-breadcrumb'}>
       <BreadcrumbItem key="home" to="/" showDivider>
-        <Tooltip content={t("breadcrumbs.view_all_kafka_clusters")}>
+        <Tooltip content={t('breadcrumbs.view_all_kafka_clusters')}>
           <HomeIcon />
         </Tooltip>
       </BreadcrumbItem>
@@ -30,9 +31,9 @@ function RebalanceActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
         to={`/kafka/${kafkaId}/overview`}
         showDivider
       >
-        {t("breadcrumbs.overview")}
+        {t('breadcrumbs.overview')}
       </BreadcrumbItem>
-      <BreadcrumbItem showDivider={true}>{t("nodes.title")}</BreadcrumbItem>
+      <BreadcrumbItem showDivider={true}>{t('nodes.title')}</BreadcrumbItem>
     </Breadcrumb>
-  );
+  )
 }

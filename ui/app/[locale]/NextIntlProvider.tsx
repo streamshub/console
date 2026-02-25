@@ -1,6 +1,6 @@
 "use client";
 import { AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 
 type Props = {
   messages: AbstractIntlMessages;
@@ -12,7 +12,14 @@ export default function NextIntlProvider({
   locale,
   children,
 }: Props) {
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  // Use UTC as default for SSR to avoid hydration mismatch
+  // Client will update to actual timezone after mount
+  const [timeZone, setTimeZone] = useState<string>("UTC");
+
+  useEffect(() => {
+    setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, []);
+
   return (
     <NextIntlClientProvider
       locale={locale}

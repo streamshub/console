@@ -4,7 +4,12 @@ import { AppHeader } from "@/components/AppHeader";
 import { Skeleton } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 
-export function KafkaHeader({ params: { kafkaId } }: { params: KafkaParams }) {
+export async function KafkaHeader({
+  params: paramsPromise,
+}: {
+  params: Promise<KafkaParams>;
+}) {
+  const { kafkaId } = await paramsPromise;
   return (
     <Suspense fallback={<AppHeader title={<Skeleton width="35%" />} />}>
       <ConnectedKafkaHeader params={{ kafkaId }} />

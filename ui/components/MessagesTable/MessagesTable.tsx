@@ -1,81 +1,82 @@
-import { Message } from "@/api/messages/schema";
-import { Bytes } from "@/components/Format/Bytes";
-import { DateTime } from "@/components/Format/DateTime";
-import { Number } from "@/components/Format/Number";
-import { SearchParams } from "@/components/MessagesTable/types";
-import { ResponsiveTable } from "@/components/Table";
+import { Message } from '@/api/messages/schema'
+import { Bytes } from '@/components/Format/Bytes'
+import { DateTime } from '@/components/Format/DateTime'
+import { Number } from '@/components/Format/Number'
+import { SearchParams } from '@/components/MessagesTable/types'
+import { ResponsiveTable } from '@/components/Table'
 import {
   Drawer,
   DrawerContent,
   PageSection,
   Content,
   Tooltip,
-} from "@/libs/patternfly/react-core";
+} from '@/libs/patternfly/react-core'
 import {
   ExclamationTriangleIcon,
   HelpIcon,
-} from "@/libs/patternfly/react-icons";
+} from '@/libs/patternfly/react-icons'
 import {
   BaseCellProps,
   InnerScrollContainer,
   OuterScrollContainer,
   TableVariant,
-} from "@/libs/patternfly/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { useTranslations } from "next-intl";
-import { PropsWithChildren, useEffect, useRef, useState } from "react";
+  Th,
+} from '@/libs/patternfly/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { useTranslations } from 'next-intl'
+import { PropsWithChildren, useEffect, useRef, useState } from 'react'
 import {
   Column,
   ColumnsModal,
   useColumnLabels,
-} from "./components/ColumnsModal";
+} from './components/ColumnsModal'
 import {
   MessageDetails,
   MessageDetailsProps,
-} from "./components/MessageDetails";
-import { MessagesTableToolbar } from "./components/MessagesTableToolbar";
-import { NoData } from "./components/NoData";
-import { NoResultsEmptyState } from "./components/NoResultsEmptyState";
-import { UnknownValuePreview } from "./components/UnknownValuePreview";
-import { beautifyUnknownValue, isSameMessage } from "./components/utils";
+} from './components/MessageDetails'
+import { MessagesTableToolbar } from './components/MessagesTableToolbar'
+import { NoData } from './components/NoData'
+import { NoResultsEmptyState } from './components/NoResultsEmptyState'
+import { UnknownValuePreview } from './components/UnknownValuePreview'
+import { beautifyUnknownValue, isSameMessage } from './components/utils'
 
-const columnWidths: Record<Column, BaseCellProps["width"]> = {
-  "offset-partition": 10,
+const columnWidths: Record<Column, BaseCellProps['width']> = {
+  'offset-partition': 10,
   size: 10,
   key: 15,
   timestamp: 15,
   timestampUTC: 15,
   headers: 20,
   value: 15,
-};
+}
 
 const defaultColumns: Column[] = [
-  "offset-partition",
-  "timestampUTC",
-  "key",
-  "headers",
-  "value",
-  "size",
-];
+  'offset-partition',
+  'timestampUTC',
+  'key',
+  'headers',
+  'value',
+  'size',
+]
 
 export type MessagesTableProps = {
-  selectedMessage?: Message;
-  lastUpdated?: Date;
-  topicName: string;
-  messages: Message[];
-  partitions: number;
-  filterLimit?: number | "continuously";
-  filterQuery?: string;
-  filterWhere?: "key" | "headers" | "value";
-  filterOffset?: number;
-  filterEpoch?: number;
-  filterTimestamp?: string;
-  filterPartition?: number;
-  onSearch: (params: SearchParams) => void;
-  onSelectMessage: (message: Message) => void;
-  onDeselectMessage: () => void;
-  onReset: () => void;
-};
+  selectedMessage?: Message
+  lastUpdated?: Date
+  topicName: string
+  messages: Message[]
+  partitions: number
+  filterLimit?: number | 'continuously'
+  filterQuery?: string
+  filterWhere?: 'key' | 'headers' | 'value'
+  filterOffset?: number
+  filterEpoch?: number
+  filterTimestamp?: string
+  filterPartition?: number
+  onSearch: (params: SearchParams) => void
+  onSelectMessage: (message: Message) => void
+  onDeselectMessage: () => void
+  onReset: () => void
+}
 
 export function MessagesTable({
   lastUpdated,
@@ -96,19 +97,20 @@ export function MessagesTable({
   onReset,
   children,
 }: PropsWithChildren<MessagesTableProps>) {
-  const t = useTranslations("message-browser");
-  const columnLabels = useColumnLabels();
-  const [showColumnsManagement, setShowColumnsManagement] = useState(false);
-  const [defaultTab, setDefaultTab] =
-    useState<MessageDetailsProps["defaultTab"]>("value");
-  const [chosenColumns, setChosenColumns] = useState<Column[]>(defaultColumns);
+  const t = useTranslations('message-browser')
+  const columnLabels = useColumnLabels()
+  const [showColumnsManagement, setShowColumnsManagement] = useState(false)
+  const [defaultTab, setDefaultTab] = useState<
+    MessageDetailsProps['defaultTab']
+  >('value')
+  const [chosenColumns, setChosenColumns] = useState<Column[]>(defaultColumns)
 
   const columnTooltips: Record<Column, any> = {
-    "offset-partition": undefined,
+    'offset-partition': undefined,
     size: (
       <>
-        {" "}
-        <Tooltip content={t("tooltip.size")}>
+        {' '}
+        <Tooltip content={t('tooltip.size')}>
           <HelpIcon />
         </Tooltip>
       </>
@@ -118,34 +120,34 @@ export function MessagesTable({
     timestampUTC: undefined,
     headers: undefined,
     value: undefined,
-  };
+  }
 
   useEffect(() => {
-    const v = localStorage.getItem("message-browser-columns");
+    const v = localStorage.getItem('message-browser-columns')
     if (v) {
       try {
-        const pv = JSON.parse(v);
+        const pv = JSON.parse(v)
         if (Array.isArray(pv)) {
-          setChosenColumns(pv);
+          setChosenColumns(pv)
         }
       } catch {}
     }
-  }, []);
+  }, [])
 
-  const parentRef = useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 34,
     overscan: 20,
-  });
+  })
 
   return (
     <PageSection
       isFilled={true}
       hasOverflowScroll={true}
-      style={{ height: "calc(100vh - 170px - 70px)" }}
-      aria-label={t("title")}
+      style={{ height: 'calc(100vh - 170px - 70px)' }}
+      aria-label={t('title')}
     >
       <Drawer isInline={true} isExpanded={selectedMessage !== undefined}>
         <DrawerContent
@@ -177,39 +179,39 @@ export function MessagesTable({
               <div ref={parentRef}>
                 <ResponsiveTable
                   variant={TableVariant.compact}
-                  ariaLabel={t("table_aria_label")}
+                  ariaLabel={t('table_aria_label')}
                   columns={chosenColumns}
                   data={virtualizer.getVirtualItems()}
                   expectedLength={messages.length}
-                  renderHeader={({ colIndex, column, Th, key }) => (
+                  renderHeader={({ colIndex, column, key }) => (
                     <Th
                       key={key}
                       width={columnWidths[column]}
-                      modifier={"truncate"}
+                      modifier={'truncate'}
                       sort={
-                        column === "timestamp" ||
-                        column === "timestampUTC" ||
-                        column === "offset-partition"
+                        column === 'timestamp' ||
+                        column === 'timestampUTC' ||
+                        column === 'offset-partition'
                           ? {
                               columnIndex: colIndex,
                               sortBy: {
                                 index: colIndex,
                                 direction:
                                   filterOffset || filterTimestamp || filterEpoch
-                                    ? "asc"
-                                    : "desc",
+                                    ? 'asc'
+                                    : 'desc',
                               },
                             }
                           : undefined
                       }
                     >
                       {columnLabels[column]}
-                      {columnTooltips[column] ?? ""}
+                      {columnTooltips[column] ?? ''}
                     </Th>
                   )}
                   renderCell={({ column, row: vrow, colIndex, Td, key }) => {
-                    const row = messages[vrow.index];
-                    const empty = <NoData />;
+                    const row = messages[vrow.index]
+                    const empty = <NoData />
 
                     function Cell({ children }: PropsWithChildren) {
                       return (
@@ -220,41 +222,44 @@ export function MessagesTable({
                         >
                           {children}
                         </Td>
-                      );
+                      )
                     }
 
                     switch (column) {
-                      case "offset-partition":
+                      case 'offset-partition':
                         return (
                           <Cell>
                             <Number value={row.attributes.offset} />
                             <Content>
-                              <Content component={"small"}>
-                                Partition{" "}
+                              <Content component={'small'}>
+                                Partition{' '}
                                 <Number value={row.attributes.partition} />
                               </Content>
                             </Content>
                           </Cell>
-                        );
-                      case "size":
+                        )
+                      case 'size':
                         return (
                           <Cell>
                             <Bytes value={row.attributes.size} />
                           </Cell>
-                        );
-                      case "timestamp":
+                        )
+                      case 'timestamp':
                         return (
                           <Cell>
                             <DateTime value={row.attributes.timestamp} />
                           </Cell>
-                        );
-                      case "timestampUTC":
+                        )
+                      case 'timestampUTC':
                         return (
                           <Cell>
-                            <DateTime value={row.attributes.timestamp} timeZone="UTC" />
+                            <DateTime
+                              value={row.attributes.timestamp}
+                              timeZone="UTC"
+                            />
                           </Cell>
-                        );
-                      case "key":
+                        )
+                      case 'key':
                         return (
                           <Cell>
                             {row.attributes.key ? (
@@ -263,18 +268,18 @@ export function MessagesTable({
                                   value={row.attributes.key}
                                   highlight={filterQuery}
                                   onClick={() => {
-                                    setDefaultTab("key");
-                                    onSelectMessage(row);
+                                    setDefaultTab('key')
+                                    onSelectMessage(row)
                                   }}
                                 />
                                 {row.relationships.keySchema && (
                                   <Content>
-                                    <Content component={"small"}>
+                                    <Content component={'small'}>
                                       {row.relationships.keySchema?.meta?.name}
                                       {row.relationships.keySchema?.meta
                                         ?.errors && (
                                         <>
-                                          <ExclamationTriangleIcon />{" "}
+                                          <ExclamationTriangleIcon />{' '}
                                           {
                                             row.relationships.keySchema?.meta
                                               ?.errors[0].detail
@@ -289,8 +294,8 @@ export function MessagesTable({
                               empty
                             )}
                           </Cell>
-                        );
-                      case "headers":
+                        )
+                      case 'headers':
                         return (
                           <Cell>
                             {Object.keys(row.attributes.headers).length > 0 ? (
@@ -300,16 +305,16 @@ export function MessagesTable({
                                 )}
                                 highlight={filterQuery}
                                 onClick={() => {
-                                  setDefaultTab("headers");
-                                  onSelectMessage(row);
+                                  setDefaultTab('headers')
+                                  onSelectMessage(row)
                                 }}
                               />
                             ) : (
                               empty
                             )}
                           </Cell>
-                        );
-                      case "value":
+                        )
+                      case 'value':
                         return (
                           <Cell>
                             {row.attributes.value ? (
@@ -318,13 +323,13 @@ export function MessagesTable({
                                   value={row.attributes.value}
                                   highlight={filterQuery}
                                   onClick={() => {
-                                    setDefaultTab("value");
-                                    onSelectMessage(row);
+                                    setDefaultTab('value')
+                                    onSelectMessage(row)
                                   }}
                                 />
                                 {row.relationships.valueSchema && (
                                   <Content>
-                                    <Content component={"small"}>
+                                    <Content component={'small'}>
                                       {
                                         row.relationships.valueSchema?.meta
                                           ?.name
@@ -332,7 +337,7 @@ export function MessagesTable({
                                       {row.relationships.valueSchema?.meta
                                         ?.errors && (
                                         <>
-                                          <ExclamationTriangleIcon />{" "}
+                                          <ExclamationTriangleIcon />{' '}
                                           {
                                             row.relationships.valueSchema?.meta
                                               ?.errors[0].detail
@@ -347,7 +352,7 @@ export function MessagesTable({
                               empty
                             )}
                           </Cell>
-                        );
+                        )
                     }
                   }}
                   getRowProps={({ row: vrow, rowIndex }) => {
@@ -359,19 +364,19 @@ export function MessagesTable({
                           vrow.start - rowIndex * vrow.size
                         }px)`,
                       },
-                    };
+                    }
                   }}
                   isRowSelected={({ row: vrow }) => {
-                    const row = messages[vrow.index];
+                    const row = messages[vrow.index]
                     return (
                       selectedMessage !== undefined &&
                       isSameMessage(row, selectedMessage)
-                    );
+                    )
                   }}
                   onRowClick={({ row: vrow }) => {
-                    const row = messages[vrow.index];
-                    setDefaultTab("value");
-                    onSelectMessage(row);
+                    const row = messages[vrow.index]
+                    setDefaultTab('value')
+                    onSelectMessage(row)
                   }}
                 >
                   <NoResultsEmptyState onReset={onReset} />
@@ -381,11 +386,10 @@ export function MessagesTable({
           </OuterScrollContainer>
           <Content>
             <Content
-              component={"small"}
-              className={"pf-v6-u-px-md pf-v6-u-py-sm"}
+              component={'small'}
+              className={'pf-v6-u-px-md pf-v6-u-py-sm'}
             >
-              Last updated:{" "}
-              <DateTime value={lastUpdated} />
+              Last updated: <DateTime value={lastUpdated} />
             </Content>
           </Content>
         </DrawerContent>
@@ -394,16 +398,16 @@ export function MessagesTable({
         <ColumnsModal
           chosenColumns={chosenColumns}
           onConfirm={(columns) => {
-            setChosenColumns(columns);
+            setChosenColumns(columns)
             localStorage.setItem(
-              "message-browser-columns",
+              'message-browser-columns',
               JSON.stringify(columns),
-            );
-            setShowColumnsManagement(false);
+            )
+            setShowColumnsManagement(false)
           }}
           onCancel={() => setShowColumnsManagement(false)}
         />
       )}
     </PageSection>
-  );
+  )
 }

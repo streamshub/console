@@ -14,7 +14,7 @@ import {
   PauseCircleIcon,
   PendingIcon,
 } from "@/libs/patternfly/react-icons";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import {
   DescriptionList,
   DescriptionListDescription,
@@ -209,7 +209,7 @@ export function ConnectorDetails({
                 emptyStateNoResults={<div></div>}
                 ariaLabel={t("connectors.tasks")}
                 columns={["taskId", "state", "workerId"] as const}
-                renderHeader={({ column, key, Th }) => {
+                renderHeader={({ column, key }) => {
                   switch (column) {
                     case "taskId":
                       return <Th key={key}>{t("connectors.taskId")}</Th>;
@@ -249,7 +249,7 @@ export function ConnectorDetails({
                 emptyStateNoResults={<div></div>}
                 columns={["property", "value"] as const}
                 data={Object.entries(config || {})}
-                renderHeader={({ column, key, Th }) => {
+                renderHeader={({ column, key }) => {
                   switch (column) {
                     case "property":
                       return (

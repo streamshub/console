@@ -2,52 +2,53 @@ import {
   Dropdown,
   DropdownItem,
   MenuToggle,
-} from "@/libs/patternfly/react-core";
-import { useEffect, useState } from "react";
-import { MessagesTableProps } from "../MessagesTable";
+} from '@/libs/patternfly/react-core'
+import { useEffect, useState } from 'react'
+import { MessagesTableProps } from '../MessagesTable'
 
 export function WhereSelector({
   value,
   onChange,
 }: {
-  value: MessagesTableProps["filterWhere"];
-  onChange: (value: MessagesTableProps["filterWhere"]) => void;
+  value: MessagesTableProps['filterWhere']
+  onChange: (value: MessagesTableProps['filterWhere']) => void
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
   useEffect(() => {
-    setIsOpen(false);
-  }, [value]);
+    setIsOpen(false)
+  }, [value])
   return (
     <Dropdown
-      data-testid={"filter-group-dropdown"}
+      data-testid={'filter-group-dropdown'}
       toggle={(toggleRef) => (
         <MenuToggle
+          ouiaId={'where-selector-toggle'}
           onClick={() => {
-            setIsOpen(true);
+            setIsOpen(true)
           }}
           isDisabled={false}
           isExpanded={isOpen}
-          data-testid={"filter-group"}
+          data-testid={'filter-group'}
           ref={toggleRef}
-          className={"pf-v6-u-w-100"}
+          className={'pf-v6-u-w-100'}
         >
           {(() => {
             switch (value) {
-              case "value":
-                return "Value";
-              case "key":
-                return "Key";
-              case "headers":
-                return "Headers";
+              case 'value':
+                return 'Value'
+              case 'key':
+                return 'Key'
+              case 'headers':
+                return 'Headers'
               default:
-                return "Anywhere";
+                return 'Anywhere'
             }
           })()}
         </MenuToggle>
       )}
       isOpen={isOpen}
       onOpenChange={() => {
-        setIsOpen((v) => !v);
+        setIsOpen((v) => !v)
       }}
     >
       <DropdownItem
@@ -56,21 +57,21 @@ export function WhereSelector({
       >
         Anywhere
       </DropdownItem>
-      <DropdownItem key="key" value="key" onClick={() => onChange("key")}>
+      <DropdownItem key="key" value="key" onClick={() => onChange('key')}>
         Key
       </DropdownItem>
       <DropdownItem
-        isSelected={value === "headers"}
-        onClick={() => onChange("headers")}
+        isSelected={value === 'headers'}
+        onClick={() => onChange('headers')}
       >
         Header
       </DropdownItem>
       <DropdownItem
-        isSelected={value === "value"}
-        onClick={() => onChange("value")}
+        isSelected={value === 'value'}
+        onClick={() => onChange('value')}
       >
         Value
       </DropdownItem>
     </Dropdown>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Avatar,
@@ -7,9 +7,9 @@ import {
   DropdownList,
   MenuToggle,
   ToolbarItem,
-} from "@/libs/patternfly/react-core";
-import React, { useState } from "react";
-import { handleLogout } from "@/utils/logout";
+} from '@/libs/patternfly/react-core'
+import React, { useState } from 'react'
+import { handleLogout } from '@/utils/logout'
 
 function UserToggle(
   username: string | null | undefined,
@@ -20,34 +20,35 @@ function UserToggle(
 ) {
   return (
     <MenuToggle
+      ouiaId={'user-dropdown-toggle'}
       ref={toggleRef}
       onClick={() => setIsOpen((o) => !o)}
       isFullHeight
       isExpanded={isOpen}
       icon={
-        <Avatar src={picture ?? "/avatar_img.svg"} alt={username ?? "User"} />
+        <Avatar src={picture ?? '/avatar_img.svg'} alt={username ?? 'User'} />
       }
     >
-      {username ?? "User"}
+      {username ?? 'User'}
     </MenuToggle>
-  );
+  )
 }
 
 export function UserDropdown({
   username,
   picture,
 }: {
-  username: string | null | undefined;
-  picture: string | null | undefined;
+  username: string | null | undefined
+  picture: string | null | undefined
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
     <ToolbarItem>
       <Dropdown
         isOpen={isOpen}
         onOpenChange={(isOpen: boolean) => setIsOpen(isOpen)}
-        popperProps={{ position: "right" }}
+        popperProps={{ position: 'right' }}
         toggle={(toggleRef) =>
           UserToggle(username, picture, isOpen, setIsOpen, toggleRef)
         }
@@ -57,5 +58,5 @@ export function UserDropdown({
         </DropdownList>
       </Dropdown>
     </ToolbarItem>
-  );
+  )
 }

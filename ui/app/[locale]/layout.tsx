@@ -5,10 +5,11 @@ import "../globals.css";
 
 type Props = {
   children: ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default async function Layout({ children, params: { locale } }: Props) {
+export default async function Layout({ children, params: paramsPromise }: Props) {
+  const { locale } = await paramsPromise;
   const messages = await getMessages();
   return (
     <NextIntlProvider locale={locale} messages={messages}>
@@ -18,8 +19,9 @@ export default async function Layout({ children, params: { locale } }: Props) {
 }
 
 export async function generateMetadata({
-  params: { locale },
+  params: paramsPromise,
 }: Omit<Props, "children">) {
+  const { locale } = await paramsPromise;
   const t = await getTranslations({ locale, namespace: "common" });
 
   return {

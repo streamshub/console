@@ -7,7 +7,7 @@ import {
   HelperTextItem,
   TextInput,
 } from "@/libs/patternfly/react-core";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
 
@@ -86,7 +86,7 @@ export function ConfigTable({
       ariaLabel={"Topic configuration"}
       columns={columns}
       data={data}
-      renderHeader={({ column, Th, key }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "property":
             return (

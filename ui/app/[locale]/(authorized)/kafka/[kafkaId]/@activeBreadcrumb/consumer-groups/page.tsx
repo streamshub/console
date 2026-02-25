@@ -2,26 +2,31 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   Tooltip,
-} from "@/libs/patternfly/react-core";
-import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
-import { KafkaParams } from "../../kafka.params";
+} from '@/libs/patternfly/react-core'
+import { HomeIcon } from '@/libs/patternfly/react-icons'
+import { getTranslations } from 'next-intl/server'
+import { KafkaParams } from '../../kafka.params'
 
-export default function ConsumerGroupsActiveBreadcrumbPage({
-  params: { kafkaId },
+export default async function ConsumerGroupsActiveBreadcrumbPage({
+  params: paramsPromise,
 }: {
-  params: KafkaParams;
+  params: Promise<KafkaParams>
 }) {
-  return <ConsumerGroupsActiveBreadcrumb kafkaId={kafkaId} />;
+  const { kafkaId } = await paramsPromise
+  return <ConsumerGroupsActiveBreadcrumb kafkaId={kafkaId} />
 }
 
-function ConsumerGroupsActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
-  const t = useTranslations("breadcrumbs");
+async function ConsumerGroupsActiveBreadcrumb({
+  kafkaId,
+}: {
+  kafkaId: string
+}) {
+  const t = await getTranslations('breadcrumbs')
 
   return (
-    <Breadcrumb>
+    <Breadcrumb ouiaId={'consumer-group-breadcrumb'}>
       <BreadcrumbItem key="home" to="/" showDivider>
-        <Tooltip content={t("view_all_kafka_clusters")}>
+        <Tooltip content={t('view_all_kafka_clusters')}>
           <HomeIcon />
         </Tooltip>
       </BreadcrumbItem>
@@ -30,11 +35,11 @@ function ConsumerGroupsActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
         to={`/kafka/${kafkaId}/overview`}
         showDivider
       >
-        {t("overview")}
+        {t('overview')}
       </BreadcrumbItem>
       <BreadcrumbItem showDivider isActive={true}>
-        {t("consumer_groups")}
+        {t('consumer_groups')}
       </BreadcrumbItem>
     </Breadcrumb>
-  );
+  )
 }

@@ -16,19 +16,22 @@ export async function generateMetadata() {
   };
 }
 
-export default function KafkaUsersPage({
-  params: { kafkaId },
-  searchParams,
+export default async function KafkaUsersPage({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaParams;
-  searchParams: {
+  params: Promise<KafkaParams>;
+  searchParams: Promise<{
     username: string | undefined;
     perPage: string | undefined;
     sort: string | undefined;
     sortDir: string | undefined;
     page: string | undefined;
-  };
+  }>;
 }) {
+  const { kafkaId } = await paramsPromise;
+  const searchParams = await searchParamsPromise;
+
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] || "name") as KafkaUserColumn;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";

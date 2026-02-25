@@ -7,10 +7,11 @@ import { SessionRefresher } from "./SessionRefresher";
 
 type Props = {
   children: ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default async function Layout({ children, params: { locale } }: Props) {
+export default async function Layout({ children, params: paramsPromise }: Props) {
+  const { locale } = await paramsPromise;
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   return (
