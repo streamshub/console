@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -35,6 +36,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.ApiException;
 import org.apache.kafka.common.internals.KafkaFutureImpl;
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.context.ThreadContext;
 import org.hamcrest.Description;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
@@ -50,6 +52,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import com.github.streamshub.console.api.support.Holder;
+import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
@@ -96,6 +99,9 @@ class GroupsResourceIT {
     Config config;
 
     @Inject
+    ThreadContext threadContext;
+
+    @Inject
     KubernetesClient client;
 
     @Inject
@@ -114,11 +120,11 @@ class GroupsResourceIT {
     void setup() {
         URI bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
 
+        groupUtils = new ConsumerUtils(config);
+        groupUtils.deleteGroups();
+
         topicUtils = new TopicHelper(bootstrapServers, config);
         topicUtils.deleteAllTopics();
-
-        groupUtils = new ConsumerUtils(config);
-        groupUtils.deleteConsumerGroups();
 
         utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
@@ -136,23 +142,30 @@ class GroupsResourceIT {
     }
 
     @Test
-    void testListConsumerGroupsDefault() {
+    void testListGroupsDefault() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
+        String topic2 = "t2-" + UUID.randomUUID().toString();
+        String group2 = "g2-" + UUID.randomUUID().toString();
+        String client2 = "c2-" + UUID.randomUUID().toString();
 
-        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false);
+            var shareConsumer = groupUtils.share(group2, topic2, client2, 2, false)) {
             whenRequesting(req -> req.get("", clusterId1))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
-                .body("data.size()", is(1))
-                .body("data[0].attributes.state", is(Matchers.notNullValue(String.class)))
-                .body("data[0].attributes.simpleConsumerGroup", is(Matchers.notNullValue(Boolean.class)));
+                .body("data", hasSize(2))
+                .body("data[0].attributes.type", is("Classic"))
+                .body("data[0].attributes.state", is(notNullValue(String.class)))
+                .body("data[0].attributes.simpleConsumerGroup", is(notNullValue(Boolean.class)))
+                .body("data[1].attributes.type", is("Share"))
+                .body("data[1].attributes.state", is(notNullValue(String.class)));
         }
     }
 
     @Test
-    void testListConsumerGroupsEmpty() {
+    void testListGroupsEmpty() {
         whenRequesting(req -> req.get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
@@ -167,18 +180,18 @@ class GroupsResourceIT {
     }
 
     @Test
-    void testListConsumerGroupsWithIdFilter() {
-        List<String> groupIds = IntStream.range(2, 10)
+    void testListGroupsWithIdFilter() {
+        IntStream.range(2, 10)
                 .mapToObj("grp-%02d-"::formatted)
                 .map(prefix -> prefix + UUID.randomUUID().toString())
                 .sorted()
-                .toList();
-
-        groupIds.forEach(groupId -> {
-            String topic = "t-" + UUID.randomUUID().toString();
-            String clientId = "c-" + UUID.randomUUID().toString();
-            groupUtils.consume(groupId, topic, clientId, 1, true);
-        });
+                .map(groupId -> CompletableFuture.runAsync(() -> {
+                    String topic = "t-" + UUID.randomUUID().toString();
+                    String clientId = "c-" + UUID.randomUUID().toString();
+                    groupUtils.consume(groupId, topic, clientId, 1, true);
+                }, threadContext.currentContextExecutor()))
+                .collect(Promises.awaitingAll())
+                .join();
 
         String topic01 = "t-" + UUID.randomUUID().toString();
         String group01 = "grp-01-FLAG-" + UUID.randomUUID().toString();
@@ -189,7 +202,7 @@ class GroupsResourceIT {
         String client10 = "c-" + UUID.randomUUID().toString();
 
         try (var consumer01 = groupUtils.consume(group01, topic01, client01, 2, false);
-             var consumer10 = groupUtils.consume(group10, topic10, client10, 2, false)) {
+             var share10 = groupUtils.share(group10, topic10, client10, 2, false)) {
             whenRequesting(req -> req
                     .param("filter[id]", "like,*FLAG*")
                     .get("", clusterId1))
@@ -201,18 +214,18 @@ class GroupsResourceIT {
     }
 
     @Test
-    void testListConsumerGroupsWithStateFilter() {
-        List<String> groupIds = IntStream.range(2, 10)
+    void testListGroupsWithStateFilter() {
+        IntStream.range(2, 10)
                 .mapToObj("grp-%02d-"::formatted)
                 .map(prefix -> prefix + UUID.randomUUID().toString())
                 .sorted()
-                .toList();
-
-        groupIds.forEach(groupId -> {
-            String topic = "t-" + UUID.randomUUID().toString();
-            String clientId = "c-" + UUID.randomUUID().toString();
-            groupUtils.consume(groupId, topic, clientId, 1, true);
-        });
+                .map(groupId -> CompletableFuture.runAsync(() -> {
+                    String topic = "t-" + UUID.randomUUID().toString();
+                    String clientId = "c-" + UUID.randomUUID().toString();
+                    groupUtils.consume(groupId, topic, clientId, 1, true);
+                }, threadContext.currentContextExecutor()))
+                .collect(Promises.awaitingAll())
+                .join();
 
         String topic01 = "t-" + UUID.randomUUID().toString();
         String group01 = "grp-01-FLAG-" + UUID.randomUUID().toString();
@@ -273,17 +286,20 @@ class GroupsResourceIT {
 
     @Test
     void testListConsumerGroupsWithPagination() {
-        List<String> groupIds = IntStream.range(0, 10)
+        var groupIds = IntStream.range(0, 10)
                 .mapToObj("grp-%02d-"::formatted)
                 .map(prefix -> prefix + UUID.randomUUID().toString())
                 .sorted()
                 .toList();
 
-        groupIds.forEach(groupId -> {
-            String topic = "t-" + UUID.randomUUID().toString();
-            String clientId = "c-" + UUID.randomUUID().toString();
-            groupUtils.consume(groupId, topic, clientId, 1, true);
-        });
+        groupIds.stream()
+                .map(groupId -> CompletableFuture.runAsync(() -> {
+                    String topic = "t-" + UUID.randomUUID().toString();
+                    String clientId = "c-" + UUID.randomUUID().toString();
+                    groupUtils.consume(groupId, topic, clientId, 1, true);
+                }, threadContext.currentContextExecutor()))
+                .collect(Promises.awaitingAll())
+                .join();
 
         Function<String, JsonObject> linkExtract = response -> {
             try (JsonReader reader = Json.createReader(new StringReader(response))) {
@@ -425,17 +441,22 @@ class GroupsResourceIT {
         }
     }
 
-    @Test
-    void testDescribeConsumerGroupDefault() {
+    @ParameterizedTest
+    @CsvSource({
+        "org.apache.kafka.clients.consumer.Consumer, Classic",
+        "org.apache.kafka.clients.consumer.ShareConsumer, Share",
+    })
+    void testDescribeGroupDefault(Class<? extends AutoCloseable> consumerType, String groupType) throws Exception {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
-        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+        try (var consumer = groupUtils.consume(consumerType, group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req.get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.attributes.type", is(groupType))
                 .body("data.attributes.state", is(Matchers.notNullValue(String.class)))
                 .body("data.attributes.simpleConsumerGroup", is(Matchers.notNullValue(Boolean.class)));
         }
