@@ -78,8 +78,15 @@ public class KafkaResourceManager extends ResourceManagerBase implements Quarkus
                 .withNumberOfBrokers(1)
                 .withAdditionalKafkaConfiguration(Map.of(
                     "auto.create.topics.enable", "false",
+                    "group.coordinator.new.enable", "false",
+                    "group.coordinator.rebalance.protocols", "classic,consumer,share,streams",
                     "group.initial.rebalance.delay.ms", "0",
-                    "group.coordinator.new.enable", "false"
+                    "group.share.heartbeat.interval.ms", "200",
+                    "group.share.min.heartbeat.interval.ms", "100",
+                    // Value _must_ be 1 since we run a single-node cluster in testing
+                    "share.coordinator.state.topic.replication.factor", "1",
+                    "unstable.api.versions.enable", "true",
+                    "unstable.feature.versions.enable", "true"
                 ))
                 .build();
 

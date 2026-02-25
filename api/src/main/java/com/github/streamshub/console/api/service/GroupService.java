@@ -789,6 +789,7 @@ public class GroupService {
                         if (offsets != null) {
                             var groupOffsets = offsets.entrySet()
                                 .stream()
+                                .filter(e -> Objects.nonNull(e.getValue()))
                                 .collect(Collectors.toMap(
                                     e -> new PartitionId(
                                                 topicIds.get(e.getKey().topic()),
