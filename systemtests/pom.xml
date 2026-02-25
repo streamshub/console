@@ -149,6 +149,11 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.kroxylicious</groupId>
+            <artifactId>kroxylicious-api</artifactId>
+            <version>${kroxy-api.version}/version>
+        </dependency>
     </dependencies>
 
     <build>
