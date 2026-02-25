@@ -4,7 +4,7 @@
 = Kafka Users page
 
 [role="_abstract"]
-The *Kafka Users* page lists Kafka users associated with the selected Kafka cluster. 
+The *Kafka Users* page lists Kafka users associated a Kafka cluster. 
 It provides visibility of user authentication settings and configured access control lists (ACLs).
 
 You can search by username to filter the list of users.

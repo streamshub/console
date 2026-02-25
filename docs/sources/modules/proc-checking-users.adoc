@@ -8,10 +8,10 @@ View authentication details and authorization rules for a specific Kafka user fr
 
 .Procedure
 
-. Log in to the StreamsHub Console, select a Kafka cluster, and click *Kafka Users*.
+. Log in to the Kafka cluster in the StreamsHub Console, and click *Kafka Users*.
 . (Optional) Enter a username in the search field to filter the list.
 . Click the username of the user you want to inspect.
-+
+
 . Review the user details:
 +
 Name:: The name of the Kafka user resource.
@@ -19,7 +19,7 @@ Username:: The Kafka username.
 Authentication:: The configured authentication type.
 Namespace:: The namespace where the user is defined.
 Creation Time:: The date and time the user was created.
-+
+
 . Review the *Authorization* section:
 +
 * If no rules are configured, the page displays *No authorization rules*.
