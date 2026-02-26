@@ -11,7 +11,7 @@ import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
@@ -68,8 +68,8 @@ public class PwUtils {
      *
      * @param tcc the test case configuration containing page and Kafka cluster information
      */
-    public static void login(TestCaseConfig tcc) {
-        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
+    public static void login(TestCaseConfig tcc, String kafkaName) {
+        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, kafkaName);
         LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
         waitForConsoleUiAnonymousLoginToBecomeReady(tcc);
         // Anonymous login
@@ -77,8 +77,12 @@ public class PwUtils {
         tcc.page().waitForURL(Pattern.compile(loginUrl + ".*"), getDefaultWaitForUrlOpts());
         waitForLocatorAndClick(tcc, CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
         // Go to overview page
-        tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), getDefaultWaitForUrlOpts());
+        tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, kafkaName), getDefaultWaitForUrlOpts());
         LOGGER.info("Successfully logged into Console");
+    }
+
+    public static void login(TestCaseConfig tcc) {
+        login(tcc, tcc.kafkaName());
     }
 
     /**

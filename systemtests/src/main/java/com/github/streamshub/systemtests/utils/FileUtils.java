@@ -97,7 +97,7 @@ public class FileUtils {
      * and returns the path to that directory.
      */
     public static Path downloadAndExtractTarGz(String url, String tempFileprefix) throws IOException {
-        File tempArchive = Files.createTempFile(tempFileprefix, ".tar.gz",getDefaultPosixFilePermissions()).toFile();
+        File tempArchive = Files.createTempFile(tempFileprefix, ".tar.gz", getDefaultPosixFilePermissions()).toFile();
         tempArchive.deleteOnExit();
 
         LOGGER.info("Downloading tar archive from: {}", url);

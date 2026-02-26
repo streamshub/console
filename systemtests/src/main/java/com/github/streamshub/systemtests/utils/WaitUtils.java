@@ -7,7 +7,7 @@ import com.github.streamshub.systemtests.enums.ConditionStatus;
 import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.JobUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ContainerStatus;

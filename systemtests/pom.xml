@@ -151,8 +151,8 @@
         </dependency>
         <dependency>
             <groupId>io.kroxylicious</groupId>
-            <artifactId>kroxylicious-api</artifactId>
-            <version>${kroxy-api.version}/version>
+            <artifactId>kroxylicious-kubernetes-api</artifactId>
+            <version>${kroxy-api.version}</version>
         </dependency>
     </dependencies>
 

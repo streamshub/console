@@ -7,7 +7,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.KafkaClusterBuilder;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
