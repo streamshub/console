@@ -56,6 +56,7 @@ import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
+import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils.ConsumerType;
 import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.TestHelper;
@@ -142,7 +143,7 @@ class GroupsResourceIT {
     }
 
     @Test
-    void testListGroupsDefault() {
+    void testListGroupsDefault() throws Exception {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
@@ -151,7 +152,7 @@ class GroupsResourceIT {
         String client2 = "c2-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false);
-            var shareConsumer = groupUtils.share(group2, topic2, client2, 2, false)) {
+            var shareConsumer = groupUtils.consume(ConsumerType.SHARE, group2, topic2, client2, 2, false)) {
             whenRequesting(req -> req.get("", clusterId1))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
@@ -180,7 +181,7 @@ class GroupsResourceIT {
     }
 
     @Test
-    void testListGroupsWithIdFilter() {
+    void testListGroupsWithIdFilter() throws Exception {
         IntStream.range(2, 10)
                 .mapToObj("grp-%02d-"::formatted)
                 .map(prefix -> prefix + UUID.randomUUID().toString())
@@ -202,7 +203,7 @@ class GroupsResourceIT {
         String client10 = "c-" + UUID.randomUUID().toString();
 
         try (var consumer01 = groupUtils.consume(group01, topic01, client01, 2, false);
-             var share10 = groupUtils.share(group10, topic10, client10, 2, false)) {
+             var share10 = groupUtils.consume(ConsumerType.SHARE, group10, topic10, client10, 2, false)) {
             whenRequesting(req -> req
                     .param("filter[id]", "like,*FLAG*")
                     .get("", clusterId1))
@@ -443,10 +444,11 @@ class GroupsResourceIT {
 
     @ParameterizedTest
     @CsvSource({
-        "org.apache.kafka.clients.consumer.Consumer, Classic",
-        "org.apache.kafka.clients.consumer.ShareConsumer, Share",
+        "CLASSIC",
+        "CONSUMER",
+        "SHARE",
     })
-    void testDescribeGroupDefault(Class<? extends AutoCloseable> consumerType, String groupType) throws Exception {
+    void testDescribeGroupDefault(ConsumerType consumerType) throws Exception {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String group1Id = Identifiers.encode(group1);
@@ -456,7 +458,7 @@ class GroupsResourceIT {
             whenRequesting(req -> req.get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
-                .body("data.attributes.type", is(groupType))
+                .body("data.attributes.type", is(consumerType.groupType().toString()))
                 .body("data.attributes.state", is(Matchers.notNullValue(String.class)))
                 .body("data.attributes.simpleConsumerGroup", is(Matchers.notNullValue(Boolean.class)));
         }
@@ -659,7 +661,7 @@ class GroupsResourceIT {
                 .replace("$groupId", group1Id)
                 .replace("$topicId", topic1Id);
 
-        var consumer = groupUtils.request()
+        var consumer = groupUtils.request(ConsumerType.CLASSIC)
             .groupId(group1)
             .topic(topic1)
             .createTopic(false)
@@ -716,7 +718,7 @@ class GroupsResourceIT {
         String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
-        groupUtils.request()
+        groupUtils.request(ConsumerType.CLASSIC)
                 .groupId(group1)
                 .topic(topic1, partitionCount)
                 .createTopic(false)
@@ -783,7 +785,7 @@ class GroupsResourceIT {
         String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
-        groupUtils.request()
+        groupUtils.request(ConsumerType.CLASSIC)
                 .groupId(group1)
                 .topic(topic1, partitionCount)
                 .createTopic(false)

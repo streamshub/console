@@ -1,12 +1,15 @@
 package com.github.streamshub.console.kafka.systemtest.utils;
 
-import java.io.Closeable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +28,7 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.GroupProtocol;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.KafkaShareConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -161,11 +165,35 @@ public class ConsumerUtils {
         }
     }
 
-    public ConsumerRequest request() {
-        return new ConsumerRequest();
+    public enum ConsumerType {
+        CLASSIC(GroupType.CLASSIC, GroupProtocol.CLASSIC),
+        CONSUMER(GroupType.CONSUMER, GroupProtocol.CONSUMER),
+        SHARE(GroupType.SHARE, null),
+        STREAMS(GroupType.STREAMS, null);
+
+        private final GroupType type;
+        private final GroupProtocol protocol;
+
+        private ConsumerType(GroupType type, GroupProtocol protocol) {
+            this.type = type;
+            this.protocol = protocol;
+        }
+
+        public GroupType groupType() {
+            return type;
+        }
+
+        public GroupProtocol protocol() {
+            return protocol;
+        }
+    }
+
+    public ConsumerRequest request(ConsumerType type) {
+        return new ConsumerRequest(type);
     }
 
     public class ConsumerRequest {
+        final ConsumerType type;
         String groupId;
         String clientId;
         List<NewTopic> topics = new ArrayList<>();
@@ -176,6 +204,11 @@ public class ConsumerUtils {
         String valueSerializer = StringSerializer.class.getName();
         int consumeMessages = 0;
         boolean autoClose = false;
+        Map<String, String> configs = new HashMap<>();
+
+        private ConsumerRequest(ConsumerType type) {
+            this.type = type;
+        }
 
         public ConsumerRequest topic(String topicName, int numPartitions) {
             this.topics.add(new NewTopic(topicName, numPartitions, (short) 1));
@@ -227,47 +260,48 @@ public class ConsumerUtils {
             return this;
         }
 
-        public ConsumerResponse consume() {
-            return ConsumerUtils.this.consume(this, autoClose);
+        public ConsumerRequest config(String key, String value) {
+            this.configs.put(key, value);
+            return this;
         }
 
-        public ShareConsumerResponse share() {
-            return ConsumerUtils.this.share(this, autoClose);
+        public ConsumerRequest configs(Map<String, String> configs) {
+            this.configs.clear();
+            this.configs.putAll(configs);
+            return this;
+        }
+
+        public <C extends AutoCloseable> ConsumerResponse<C> consume() {
+            switch (type) {
+                case CLASSIC, CONSUMER:
+                    return ConsumerUtils.this.consume(this, autoClose);
+                case SHARE:
+                    return ConsumerUtils.this.consume(this, autoClose);
+                case STREAMS:
+                default:
+                    throw new IllegalArgumentException("Unsupported consumer type: " + type);
+            }
         }
     }
 
-    public class ConsumerResponse implements Closeable {
-        Consumer<String, String> consumer;
+    public class ConsumerResponse<C extends AutoCloseable> implements AutoCloseable {
+        C consumer;
         List<ConsumerRecord<String, String>> records = new ArrayList<>();
 
         @Override
         public void close() {
             if (consumer != null) {
-                consumer.close();
+                try {
+                    consumer.close();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
-        public Consumer<String, String> consumer() {
-            return consumer;
-        }
-
-        public List<ConsumerRecord<String, String>> records() {
-            return records;
-        }
-    }
-
-    public class ShareConsumerResponse implements Closeable {
-        ShareConsumer<String, String> consumer;
-        List<ConsumerRecord<String, String>> records = new ArrayList<>();
-
-        @Override
-        public void close() {
-            if (consumer != null) {
-                consumer.close();
-            }
-        }
-
-        public ShareConsumer<String, String> consumer() {
+        public C consumer() {
             return consumer;
         }
 
@@ -278,82 +312,52 @@ public class ConsumerUtils {
 
     @SuppressWarnings("unchecked")
     public <C extends AutoCloseable> C consume(
-            Class<C> type,
+            ConsumerType type,
             String groupId,
             String topicName,
             String clientId,
             int numPartitions,
             boolean autoClose) {
 
-        if (Consumer.class.equals(type)) {
-            return (C) consume(groupId, topicName, clientId, numPartitions, autoClose);
-        }
-
-        if (ShareConsumer.class.equals(type)) {
-            return (C) share(groupId, topicName, clientId, numPartitions, autoClose);
-        }
-
-        throw new IllegalArgumentException("Unknown consumer type: " + type);
-    }
-
-    public Consumer<String, String> consume(String groupId, String topicName, String clientId, int numPartitions, boolean autoClose) {
-        return request()
+        return (C) request(type)
                 .groupId(groupId)
                 .topic(topicName, numPartitions)
                 .clientId(clientId)
                 .messagesPerTopic(1)
                 .autoClose(autoClose)
                 .consume()
-                .consumer;
+                .consumer();
     }
 
-    public ShareConsumer<String, String> share(String groupId, String topicName, String clientId, int numPartitions, boolean autoClose) {
-        return request()
+    @SuppressWarnings("unchecked")
+    public Consumer<String, String> consume(String groupId, String topicName, String clientId, int numPartitions, boolean autoClose) {
+        return (Consumer<String, String>) request(ConsumerType.CLASSIC)
                 .groupId(groupId)
                 .topic(topicName, numPartitions)
                 .clientId(clientId)
                 .messagesPerTopic(1)
                 .autoClose(autoClose)
-                .share()
-                .consumer;
+                .consume()
+                .consumer();
     }
 
-    ConsumerResponse consume(ConsumerRequest consumerRequest, boolean autoClose) {
-        ConsumerResponse response = new ConsumerResponse();
+    <C extends AutoCloseable> ConsumerResponse<C> consume(ConsumerRequest request, boolean autoClose) {
+        ConsumerResponse<C> response = new ConsumerResponse<>();
 
         try (Admin admin = Admin.create(adminConfig)) {
-            if (consumerRequest.createTopic) {
-                BlockingSupplier.get(() -> admin.createTopics(consumerRequest.topics)
+            if (request.createTopic) {
+                BlockingSupplier.get(() -> admin.createTopics(request.topics)
                     .all());
             }
 
-            produceMessages(consumerRequest)
-                .thenRun(() -> consumeMessages(consumerRequest, response))
-                .toCompletableFuture()
-                .get(15, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            response.close();
-            throw new RuntimeException(e);
-        }
-
-        if (autoClose) {
-            response.close();
-        }
-
-        return response;
-    }
-
-    ShareConsumerResponse share(ConsumerRequest consumerRequest, boolean autoClose) {
-        ShareConsumerResponse response = new ShareConsumerResponse();
-
-        try (Admin admin = Admin.create(adminConfig)) {
-            if (consumerRequest.createTopic) {
-                BlockingSupplier.get(() -> admin.createTopics(consumerRequest.topics)
-                        .all());
-            }
-
-            produceMessages(consumerRequest)
-                .thenRun(() -> consumeMessages(admin, consumerRequest, response))
+            produceMessages(request)
+                .thenRun(() -> {
+                    if (request.type == ConsumerType.SHARE) {
+                        shareConsumeMessages(admin, request, response);
+                    } else {
+                        consumeMessages(request, response);
+                    }
+                })
                 .toCompletableFuture()
                 .get(15, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -415,11 +419,15 @@ public class ConsumerUtils {
         return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new));
     }
 
-    void consumeMessages(ConsumerRequest consumerRequest, ConsumerResponse response) {
+    @SuppressWarnings("unchecked")
+    <C extends AutoCloseable> void consumeMessages(ConsumerRequest consumerRequest, ConsumerResponse<C> response) {
         Properties consumerConfig =
                 ClientsConfig.getConsumerConfig(config, consumerRequest.groupId);
 
-        consumerConfig.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
+        consumerConfig.put(ConsumerConfig.GROUP_PROTOCOL_CONFIG, consumerRequest.type.protocol().name.toLowerCase(Locale.ROOT));
+        if (consumerRequest.type == ConsumerType.CLASSIC) {
+            consumerConfig.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
+        }
         consumerConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         consumerConfig.put(CommonClientConfigs.CLIENT_ID_CONFIG, consumerRequest.clientId);
 
@@ -427,7 +435,9 @@ public class ConsumerUtils {
             consumerConfig.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, String.valueOf(consumerRequest.consumeMessages));
         }
 
-        response.consumer = new KafkaConsumer<>(consumerConfig);
+        @SuppressWarnings("resource")
+        Consumer<String, String> consumer = new KafkaConsumer<String, String>(consumerConfig);
+        response.consumer = (C) consumer;
 
         try {
             List<String> topics = consumerRequest.topics
@@ -437,19 +447,19 @@ public class ConsumerUtils {
 
             if (consumerRequest.groupId.isEmpty()) {
                 List<TopicPartition> assignments = topics.stream()
-                        .map(response.consumer::partitionsFor)
+                        .map(consumer::partitionsFor)
                         .flatMap(partitions -> partitions.stream().map(p -> new TopicPartition(p.topic(), p.partition())))
                         .distinct()
                         .toList();
 
                 // Must use assign instead of subscribe to support empty group.id
-                response.consumer.assign(assignments);
+                consumer.assign(assignments);
             } else {
-                response.consumer.subscribe(topics);
+                consumer.subscribe(topics);
             }
 
             if (consumerRequest.consumeMessages < 1 && consumerRequest.messagesPerTopic < 1) {
-                var records = response.consumer.poll(Duration.ofSeconds(5));
+                var records = consumer.poll(Duration.ofSeconds(5));
                 records.forEach(response.records::add);
             } else {
                 int pollCount = 0;
@@ -458,19 +468,20 @@ public class ConsumerUtils {
                     (consumerRequest.messagesPerTopic * consumerRequest.topics.size());
 
                 while (response.records.size() < fetchCount && pollCount++ < 10) {
-                    var records = response.consumer.poll(Duration.ofSeconds(1));
+                    var records = consumer.poll(Duration.ofSeconds(1));
                     records.forEach(response.records::add);
-                    log.debugf("Assignments polled: %s ; total messages received: %d", response.consumer.assignment(), response.records.size());
+                    log.debugf("Assignments polled: %s ; total messages received: %d", consumer.assignment(), response.records.size());
                 }
             }
 
-            response.consumer.commitSync();
+            consumer.commitSync();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    void consumeMessages(Admin admin, ConsumerRequest consumerRequest, ShareConsumerResponse response) {
+    @SuppressWarnings("unchecked")
+    <C extends AutoCloseable> void shareConsumeMessages(Admin admin, ConsumerRequest consumerRequest, ConsumerResponse<C> response) {
         Properties consumerConfig =
                 ClientsConfig.getConsumerConfig(config, consumerRequest.groupId);
 
@@ -480,7 +491,9 @@ public class ConsumerUtils {
             consumerConfig.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, String.valueOf(consumerRequest.consumeMessages));
         }
 
-        response.consumer = new KafkaShareConsumer<>(consumerConfig);
+        @SuppressWarnings("resource")
+        ShareConsumer<String, String> consumer = new KafkaShareConsumer<>(consumerConfig);
+        response.consumer = (C) consumer;
 
         await().atMost(10, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
             // Set share.auto.offset.reset=earliest for the group
@@ -505,11 +518,11 @@ public class ConsumerUtils {
             if (consumerRequest.groupId.isEmpty()) {
                 throw new IllegalStateException("groupId is required for share consumers");
             } else {
-                response.consumer.subscribe(topics);
+                consumer.subscribe(topics);
             }
 
             if (consumerRequest.consumeMessages < 1 && consumerRequest.messagesPerTopic < 1) {
-                var records = response.consumer.poll(Duration.ofSeconds(5));
+                var records = consumer.poll(Duration.ofSeconds(5));
                 records.forEach(response.records::add);
             } else {
                 int pollCount = 0;
@@ -518,13 +531,13 @@ public class ConsumerUtils {
                     (consumerRequest.messagesPerTopic * consumerRequest.topics.size());
 
                 while (response.records.size() < fetchCount && pollCount++ < 10) {
-                    var records = response.consumer.poll(Duration.ofSeconds(1));
+                    var records = consumer.poll(Duration.ofSeconds(1));
                     records.forEach(response.records::add);
-                    log.debugf("Subscription polled: %s ; total messages received: %d", response.consumer.subscription(), response.records.size());
+                    log.debugf("Subscription polled: %s ; total messages received: %d", consumer.subscription(), response.records.size());
                 }
             }
 
-            response.consumer.commitSync();
+            consumer.commitSync();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
