@@ -93,8 +93,17 @@ public class FileUtils {
     }
 
     /**
-     * Downloads a tar.gz from the given URL, extracts all contents into a temp directory,
-     * and returns the path to that directory.
+     * Downloads a `.tar.gz` archive from the specified URL, saves it to a temporary file,
+     * and extracts its contents into a temporary directory.
+     *
+     * <p>The temporary files and directories are set to be deleted on JVM exit.
+     * Extraction ensures that no archive entry escapes the target directory for security.</p>
+     *
+     * @param url the URL of the `.tar.gz` archive to download
+     * @param tempFileprefix prefix to use for temporary files and directories
+     * @return the {@link Path} to the directory where the archive was extracted
+     * @throws IOException if an I/O error occurs during download or extraction, or
+     *                     if a tar entry tries to escape the target directory
      */
     public static Path downloadAndExtractTarGz(String url, String tempFileprefix) throws IOException {
         File tempArchive = Files.createTempFile(tempFileprefix, ".tar.gz", getDefaultPosixFilePermissions()).toFile();
@@ -134,6 +143,18 @@ public class FileUtils {
         return extractDir;
     }
 
+    /**
+     * Loads all YAML files from the specified directory (recursively), combines them,
+     * and returns a single {@link InputStream} containing all contents.
+     *
+     * <p>Files ending with `.yaml` or `.yml` are included, sorted by path, and separated
+     * by a newline. This is useful for feeding multiple Kubernetes manifests or configurations
+     * as a single stream.</p>
+     *
+     * @param targetPath the root directory to search for YAML files
+     * @return an {@link InputStream} containing the concatenated contents of all YAML files
+     * @throws IOException if an I/O error occurs while reading files or walking the directory
+     */
     public static InputStream loadYamlsFromPath(Path targetPath) throws IOException {
         ByteArrayOutputStream combined = new ByteArrayOutputStream();
 

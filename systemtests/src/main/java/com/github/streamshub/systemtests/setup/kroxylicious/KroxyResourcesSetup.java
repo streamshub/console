@@ -27,8 +27,6 @@ import java.util.Set;
 
 public class KroxyResourcesSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KroxyResourcesSetup.class);
-
-
     private KroxyResourcesSetup() {}
 
     public static void setupDefaultProxyResourcesWithAuthIfNeeded(String namespace, String kafkaName, String kafkaUser,
