@@ -25,6 +25,7 @@ public class TestCaseConfig {
 
     // Default
     private final String kafkaName;
+    private final String connectName;
     private final String kafkaUserName;
     private final String consoleInstanceName;
 
@@ -47,6 +48,7 @@ public class TestCaseConfig {
         this.page = context.newPage();
 
         this.kafkaName = KafkaNamingUtils.kafkaClusterName(namespace);
+        this.connectName = KafkaNamingUtils.kafkaConnectName(namespace);
         this.kafkaUserName =  KafkaNamingUtils.kafkaUserName(kafkaName);
         this.consoleInstanceName = Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(namespace);
 
@@ -78,6 +80,10 @@ public class TestCaseConfig {
 
     public String kafkaName() {
         return kafkaName;
+    }
+
+    public String connectName() {
+        return connectName;
     }
 
     public String kafkaUserName() {
