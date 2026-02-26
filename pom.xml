@@ -22,11 +22,11 @@
         <apicurio-registry.version>3.1.7</apicurio-registry.version>
         <kiota-http-jdk.version>0.0.32</kiota-http-jdk.version>
         <kafka.version>4.2.0</kafka.version>
-        <protobuf.version>0.18.0</protobuf.version>
 
         <!-- Test Dependencies -->
         <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
         <kroxy-api.version>0.18.0</kroxy-api.version>
+        <apicurio-registry-api.version>3.1.7</apicurio-registry-api.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.15.0</maven.compiler.version>
