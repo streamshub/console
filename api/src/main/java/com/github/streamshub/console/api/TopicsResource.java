@@ -305,7 +305,7 @@ public class TopicsResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     // authorization checked by ConsumerGroupService
-    public CompletionStage<Response> listTopicConsumerGroups(
+    public CompletionStage<Response> listTopicGroups(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,

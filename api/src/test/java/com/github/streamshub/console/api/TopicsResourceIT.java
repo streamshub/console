@@ -92,6 +92,7 @@ import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
+import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils.ConsumerType;
 import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.LogCapture;
@@ -2298,8 +2299,8 @@ class TopicsResourceIT {
         String client1 = "c1-" + UUID.randomUUID().toString();
         String client2 = "c2-" + UUID.randomUUID().toString();
 
-        try (var consumer1 = groupUtils.request().groupId(group1).topic(topic1).createTopic(false).clientId(client1).messagesPerTopic(1).autoClose(false).consume();
-             var consumer2 = groupUtils.request().groupId(group2).topic(topic1).createTopic(false).clientId(client2).messagesPerTopic(1).autoClose(false).consume()) {
+        try (var consumer1 = groupUtils.request(ConsumerType.CLASSIC).groupId(group1).topic(topic1).createTopic(false).clientId(client1).messagesPerTopic(1).autoClose(false).consume();
+             var consumer2 = groupUtils.request(ConsumerType.CONSUMER).groupId(group2).topic(topic1).createTopic(false).clientId(client2).messagesPerTopic(1).autoClose(false).consume()) {
             whenRequesting(req -> req
                     .queryParam("fields[topics]", "name,groups")
                     .get("", clusterId1))
@@ -2310,12 +2311,17 @@ class TopicsResourceIT {
                 .body("data[0].relationships.groups.data.type", contains("groups", "groups"))
                 .body("data[0].relationships.groups.data.id", containsInAnyOrder(group1Id, group2Id));
 
-            whenRequesting(req -> req.get("{topicId}/groups", clusterId1, topic1Id))
+            whenRequesting(req -> req
+                    .param("sort", "groupId")
+                    .get("{topicId}/groups", clusterId1, topic1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
-                .body("data.size()", is(2))
-                .body("data.id", containsInAnyOrder(group1Id, group2Id))
-                .body("data.attributes.groupId", containsInAnyOrder(group1, group2));
+                .body("data", hasSize(2))
+                .body("data.id", contains(group1Id, group2Id))
+                .body("data.attributes.groupId", contains(group1, group2))
+                .body("data.attributes.type", contains(
+                        ConsumerType.CLASSIC.groupType().toString(),
+                        ConsumerType.CONSUMER.groupType().toString()));
         }
     }
 
