@@ -13,7 +13,6 @@ import {
   getHours,
   getMinutes,
   getSeconds,
-  isDate,
   isValid,
   parseISO,
   setHours,
@@ -86,8 +85,7 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
 
   const datePart = date && isValid(date) ? yyyyMMddFormat(date) : undefined;
 
-  const timePart =
-    date && isValid(date) ? format(date, "hh:mm:ss aa") : undefined;
+  const timePart = date && isValid(date) ? format(date, "HH:mm:ss") : undefined;
 
   return (
     <InputGroup>
@@ -98,8 +96,9 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
         <TimePicker
           time={timePart}
           isDisabled={!date}
-          placeholder="hh:mm:ss"
+          placeholder="HH:mm:ss"
           includeSeconds
+          is24Hour
           onChange={onTimeChange}
         />
       </InputGroupItem>
