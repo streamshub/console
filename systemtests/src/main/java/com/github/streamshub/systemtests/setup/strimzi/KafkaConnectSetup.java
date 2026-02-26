@@ -155,7 +155,7 @@ public class KafkaConnectSetup {
 
             // Sonarcube safe image tag with positive uuid
             String tag = String.valueOf(UUID.randomUUID().hashCode() & 0x7fffffff);
-            String imageFullPath = Environment.getImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, tag);
+            String imageFullPath = Environment.getConnectImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, tag);
             LOGGER.info("Kafka connect build image [{}]", imageFullPath);
 
             return kafkaConnectBuilder

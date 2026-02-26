@@ -112,9 +112,9 @@ public class Environment {
      * @param tag           the image tag (e.g. version or build identifier)
      * @return the fully qualified image reference including registry, repository, and tag
      */
-    public static String getImageOutputRegistry(String namespaceName, String imageName, String tag) {
+    public static String getConnectImageOutputRegistry(String namespaceName, String imageName, String tag) {
         if (Environment.CONNECT_BUILD_IMAGE_PATH.isEmpty()) {
-            return getImageOutputRegistry() + "/" + namespaceName + "/" + imageName + ":" + tag;
+            return getConnectImageOutputRegistry() + "/" + namespaceName + "/" + imageName + ":" + tag;
         }
         return Environment.CONNECT_BUILD_IMAGE_PATH + ":" + tag;
     }
@@ -150,7 +150,7 @@ public class Environment {
      * @return the host and port of the internal container image registry
      * @throws SetupException if the registry {@link Service} is not present in the cluster
      */
-    public static String getImageOutputRegistry() {
+    public static String getConnectImageOutputRegistry() {
         if (ClusterUtils.isOcp()) {
             return "image-registry.openshift-image-registry.svc:5000";
         }
