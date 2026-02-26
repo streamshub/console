@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.utils.resourceutils.kafka;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.resources.KubeResourceManager;
