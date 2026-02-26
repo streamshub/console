@@ -168,6 +168,7 @@ public class CssBuilder {
     public CssBuilder withComponentForm() { return withComponent("form"); }
     public CssBuilder withComponentRadio() { return withComponent("radio"); }
     public CssBuilder withComponentDatePicker() { return withComponent("date-picker"); }
+    public CssBuilder withComponentTabs() { return withComponent("tabs"); }
 
     // ----------------
     // Sub-components
@@ -234,6 +235,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentExpandableRowContent() { return withSubComponent("expandable-row-content"); }
     public CssBuilder withSubComponentDescription() { return withSubComponent("description"); }
     public CssBuilder withComponentTabContent() { return withComponent("tab-content"); }
+    public CssBuilder withSubComponentMainSubnav() { return withSubComponent("main-subnav"); }
 
     // ------------
     // Layouts

@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.constants;
 
 import com.github.streamshub.systemtests.exceptions.UnsupportedKafkaRoleException;
+import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
@@ -21,6 +22,16 @@ public class Labels {
     public static final String COLLECT_ST_LOGS = "streamshub-st";
     public static final String APP = "app";
 
+    // ------------
+    // Console
+    // ------------
+    public static final String CONSOLE_INSTANCE_LABEL = "app.kubernetes.io/instance";
+
+    public static LabelSelector getConsolePodSelector(String instanceName) {
+        return new LabelSelectorBuilder()
+            .addToMatchLabels(CONSOLE_INSTANCE_LABEL, ConsoleUtils.getConsoleDeploymentName(instanceName))
+            .build();
+    }
 
     // ------------
     // Strimzi
