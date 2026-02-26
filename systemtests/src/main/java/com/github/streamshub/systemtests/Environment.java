@@ -73,6 +73,9 @@ public class Environment {
     // Postgres
     public static final String POSTGRES_IMAGE = ENVS.getOrDefault("POSTGRES_IMAGE", "mirror.gcr.io/postgres:18");
 
+    // Apicurio
+    public static final String APICURIO_VERSION = ENVS.getOrDefault("APICURIO_VERSION", "3.1.7");
+
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation
     private Environment() {}

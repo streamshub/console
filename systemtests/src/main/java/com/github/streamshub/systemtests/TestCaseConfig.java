@@ -29,6 +29,9 @@ public class TestCaseConfig {
     private final String kafkaUserName;
     private final String consoleInstanceName;
 
+    // Default Apicurio
+    private final String apicurioRegistryName;
+
     public TestCaseConfig(ExtensionContext extensionContext) {
         this.testName = extensionContext.getTestMethod()
             .map(Method::getName)
@@ -53,6 +56,7 @@ public class TestCaseConfig {
         this.consoleInstanceName = Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(namespace);
 
         this.messageCount = Constants.MESSAGE_COUNT;
+        this.apicurioRegistryName = Constants.APICURIO_PREFIX + "-" + Utils.hashStub(namespace);
     }
 
     // ----------
@@ -96,6 +100,10 @@ public class TestCaseConfig {
 
     public int messageCount() {
         return messageCount;
+    }
+
+    public String apicurioRegistryName() {
+        return apicurioRegistryName;
     }
 
     // ----------

@@ -8,6 +8,7 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaConnectType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
+import com.github.streamshub.systemtests.resourcetypes.apicurio.ApicurioRegistry3Type;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.skodjob.testframe.resources.ClusterRoleBindingType;
@@ -24,7 +25,6 @@ import io.skodjob.testframe.resources.RoleBindingType;
 import io.skodjob.testframe.resources.SecretType;
 import io.skodjob.testframe.resources.ServiceAccountType;
 import io.skodjob.testframe.resources.ServiceType;
-import io.skodjob.testframe.resources.SubscriptionType;
 import io.skodjob.testframe.utils.KubeUtils;
 import org.apache.logging.log4j.Logger;
 import org.slf4j.event.Level;
@@ -73,7 +73,7 @@ public class SetupUtils {
             new SecretType(),
             new ServiceAccountType(),
             new ServiceType(),
-            new SubscriptionType());
+            new ApicurioRegistry3Type());
 
         KubeResourceManager.get().addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF

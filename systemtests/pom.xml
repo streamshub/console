@@ -149,6 +149,11 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-registry-operator-model</artifactId>
+            <version>${apicurio-registry-api.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
