@@ -91,8 +91,6 @@ public class KroxyST extends AbstractST {
         KroxyResourcesSetup.setupDefaultProxyResourcesWithAuthIfNeeded(tcc.namespace(), tcc.kafkaName(), tcc.kafkaUserName(),
             tcc.kafkaProxyName(), tcc.kafkaProxyIngressName(), tcc.kafkaServiceName(), tcc.virtualKafkaClusterName(), tcc.kafkaProtocolFilterName());
 
-        // Must be without namespace, otherwise console looks up kafka CR
-        //
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName())
                 .editSpec()
                     .addNewKafkaCluster()
