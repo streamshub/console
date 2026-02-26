@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.utils.resourceutils;
+package com.github.streamshub.systemtests.utils.resourceutils.kafka;
 
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.constants.Constants;

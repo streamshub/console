@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.utils.playwright;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
