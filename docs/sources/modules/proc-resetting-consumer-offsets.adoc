@@ -33,7 +33,7 @@ If you select this option, enter the custom offset value.
 +
 If you selected date and time, choose the appropriate format and enter the date in that format.
 +
-IMPORTANT: The *Delete committed offsets* option removes the stored offsets for the consumer group. 
+IMPORTANT: The *Delete committed offsets* option removes the stored offsets from the consumer group. 
 When the group resumes, offset behavior depends on the consumer configuration (for example, the `auto.offset.reset` setting). 
 Use this option with caution.
 
