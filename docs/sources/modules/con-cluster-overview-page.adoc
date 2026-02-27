@@ -21,8 +21,8 @@ At a glance, the page displays:
 
 Metrics are presented as interactive charts.
 
-* For cluster metrics, use the dropdown menu to view data for a specific node or for all nodes.  
-* For topic metrics, use the dropdown menu to view data for a specific topic or for all topics.  
+* For *Cluster metrics*, use the dropdown menu to view data for a specific node or for all nodes.  
+* For *Topic metrics*, use the dropdown menu to view data for a specific topic or for all topics.  
 
 You can adjust the time range for the charts, from the last 5 minutes up to 7 days.
 
