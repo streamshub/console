@@ -28,7 +28,9 @@ import org.apache.kafka.clients.admin.DescribeClassicGroupsResult;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.ListShareGroupOffsetsResult;
 import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.admin.SharePartitionOffsetInfo;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.GroupState;
 import org.apache.kafka.common.KafkaFuture;
@@ -448,19 +450,39 @@ class GroupsResourceIT {
         "CONSUMER",
         "SHARE",
     })
-    void testDescribeGroupDefault(ConsumerType consumerType) throws Exception {
-        String topic1 = "t1-" + UUID.randomUUID().toString();
-        String group1 = "g1-" + UUID.randomUUID().toString();
+    void testDescribeGroupDefault(ConsumerType consumerType) {
+        String topic1 = "t1-" + consumerType.name() + "-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + consumerType.name() + UUID.randomUUID().toString();
         String group1Id = Identifiers.encode(group1);
-        String client1 = "c1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + consumerType.name() + UUID.randomUUID().toString();
 
-        try (var consumer = groupUtils.consume(consumerType, group1, topic1, client1, 2, false)) {
+        try (var consumer = groupUtils.request(consumerType)
+                .groupId(group1)
+                .topic(topic1, 2)
+                .clientId(client1)
+                .messagesPerTopic(2)
+                .consumeMessages(2)
+                .autoClose(false)
+                .consume()) {
             whenRequesting(req -> req.get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.attributes.groupId", is(group1))
                 .body("data.attributes.type", is(consumerType.groupType().toString()))
                 .body("data.attributes.state", is(Matchers.notNullValue(String.class)))
-                .body("data.attributes.simpleConsumerGroup", is(Matchers.notNullValue(Boolean.class)));
+                .body("data.attributes.simpleConsumerGroup", is(Matchers.notNullValue(Boolean.class)))
+                .body("data.attributes.members", hasSize(1))
+                .body("data.attributes.members[0].clientId", is(client1))
+                .body("data.attributes.members[0].assignments", hasSize(2))
+                .body("data.attributes.members[0].assignments.topicName", everyItem(is(topic1)))
+                .body("data.attributes.members[0].assignments.partition", containsInAnyOrder(0, 1))
+                .body("data.attributes.offsets", hasSize(2))
+                .body("data.attributes.offsets[0].topicName", is(topic1))
+                .body("data.attributes.offsets[0].partition", Matchers.oneOf(0, 1))
+                .body("data.attributes.offsets[0].offset", is(1))
+                .body("data.attributes.offsets[1].topicName", is(topic1))
+                .body("data.attributes.offsets[1].partition", Matchers.oneOf(0, 1))
+                .body("data.attributes.offsets[1].offset", is(1));
         }
     }
 
@@ -496,7 +518,7 @@ class GroupsResourceIT {
         };
 
         AdminClientSpy.install(adminClient -> {
-            // Mock listOffsets
+            // Mock listConsumerGroupOffsets
             doAnswer(listConsumerGroupOffsetsFailed)
                 .when(adminClient)
                 .listConsumerGroupOffsets(anyMap());
@@ -514,12 +536,51 @@ class GroupsResourceIT {
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.id", is(group1Id))
-                .body("data.meta.errors.size()", is(1))
-                .body("data.meta.errors[0].title", is("Unable to list consumer group offsets"))
+                .body("data.meta.errors", hasSize(1))
+                .body("data.meta.errors[0].title", is("Unable to list group offsets"))
                 .body("data.meta.errors[0].detail", is("EXPECTED TEST EXCEPTION"));
         }
     }
 
+    @Test
+    void testDescribeShareGroupWithFetchGroupOffsetsError() throws Exception {
+        Answer<ListShareGroupOffsetsResult> listShareGroupOffsetsFailed = args -> {
+            KafkaFutureImpl<Map<TopicPartition, SharePartitionOffsetInfo>> failure = new KafkaFutureImpl<>();
+            failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
+
+            ListShareGroupOffsetsResult resultMock = Mockito.mock(ListShareGroupOffsetsResult.class);
+
+            doAnswer(partitionsToOffsetInfoArgs -> failure)
+                .when(resultMock)
+                .partitionsToOffsetInfo(Mockito.anyString());
+
+            return resultMock;
+        };
+
+        AdminClientSpy.install(adminClient -> {
+            // Mock listShareGroupOffsets
+            doAnswer(listShareGroupOffsetsFailed)
+                .when(adminClient)
+                .listShareGroupOffsets(anyMap());
+        });
+
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        try (var consumer = groupUtils.consume(ConsumerType.SHARE, group1, topic1, client1, 2, false)) {
+            whenRequesting(req -> req
+                    .param("fields[groups]", "offsets")
+                    .get("{groupId}", clusterId1, group1Id))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.id", is(group1Id))
+                .body("data.meta.errors", hasSize(1))
+                .body("data.meta.errors[0].title", is("Unable to list group offsets"))
+                .body("data.meta.errors[0].detail", is("EXPECTED TEST EXCEPTION"));
+        }
+    }
 
     @Test
     void testDescribeConsumerGroupWithFetchTopicOffsetsError() {

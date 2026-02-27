@@ -856,7 +856,7 @@ public class GroupService {
             Throwable thrown) {
 
         if (thrown != null) {
-            group.addError(new JsonApiError("Unable to list consumer group offsets", thrown.getMessage(), thrown));
+            group.addError(new JsonApiError("Unable to list group offsets", thrown.getMessage(), thrown));
         } else {
             List<OffsetAndMetadata> offsets = new ArrayList<>();
 

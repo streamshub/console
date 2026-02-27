@@ -76,16 +76,17 @@ public class KafkaResourceManager extends ResourceManagerBase implements Quarkus
         StrimziKafkaCluster cluster = new StrimziKafkaClusterBuilder()
                 .withKafkaVersion(kafkaVersion)
                 .withNumberOfBrokers(1)
-                .withAdditionalKafkaConfiguration(Map.of(
-                    "auto.create.topics.enable", "false",
-                    "group.coordinator.rebalance.protocols", "classic,consumer,share,streams",
-                    "group.initial.rebalance.delay.ms", "0",
-                    "group.share.heartbeat.interval.ms", "200",
-                    "group.share.min.heartbeat.interval.ms", "100",
+                .withAdditionalKafkaConfiguration(Map.ofEntries(
+                    Map.entry("auto.create.topics.enable", "false"),
+                    Map.entry("group.coordinator.rebalance.protocols", "classic,consumer,streams"),
+                    Map.entry("group.initial.rebalance.delay.ms", "0"),
+                    Map.entry("share.coordinator.state.topic.min.isr", "1"),
+                    Map.entry("share.coordinator.state.topic.num.partitions", "5"),
                     // Value _must_ be 1 since we run a single-node cluster in testing
-                    "share.coordinator.state.topic.replication.factor", "1",
-                    "unstable.api.versions.enable", "true",
-                    "unstable.feature.versions.enable", "true"
+                    Map.entry("share.coordinator.state.topic.replication.factor", "1"),
+                    Map.entry("offsets.topic.num.partitions", "5"),
+                    Map.entry("unstable.api.versions.enable", "true"),
+                    Map.entry("unstable.feature.versions.enable", "true")
                 ))
                 .build();
 

@@ -495,7 +495,7 @@ public class ConsumerUtils {
         ShareConsumer<String, String> consumer = new KafkaShareConsumer<>(consumerConfig);
         response.consumer = (C) consumer;
 
-        await().atMost(10, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+        await().atMost(5, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
             // Set share.auto.offset.reset=earliest for the group
             admin.incrementalAlterConfigs(Map.of(
                     new ConfigResource(ConfigResource.Type.GROUP, consumerRequest.groupId),
@@ -531,7 +531,7 @@ public class ConsumerUtils {
                     (consumerRequest.messagesPerTopic * consumerRequest.topics.size());
 
                 while (response.records.size() < fetchCount && pollCount++ < 10) {
-                    var records = consumer.poll(Duration.ofSeconds(1));
+                    var records = consumer.poll(Duration.ofMillis(500));
                     records.forEach(response.records::add);
                     log.debugf("Subscription polled: %s ; total messages received: %d", consumer.subscription(), response.records.size());
                 }
