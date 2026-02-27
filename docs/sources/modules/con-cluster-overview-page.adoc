@@ -19,6 +19,11 @@ At a glance, the page displays:
 ** Total incoming byte rate
 ** Total outgoing byte rate
 
-These metrics are presented in charts for quick scanning and analysis of cluster performance.
+Metrics are presented as interactive charts.
 
-To view more information, click on the broker and topic-related links.
+* For *Cluster metrics*, use the dropdown menu to view data for a specific node or for all nodes.  
+* For *Topic metrics*, use the dropdown menu to view data for a specific topic or for all topics.  
+
+You can adjust the time range for the charts, from the last 5 minutes up to 7 days.
+
+To view more information, click the broker and topic-related links.
