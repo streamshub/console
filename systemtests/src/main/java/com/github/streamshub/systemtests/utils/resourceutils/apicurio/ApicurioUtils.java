@@ -9,7 +9,8 @@ public class ApicurioUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(ApicurioUtils.class);
 
     private static final int APICURIO_PORT = 8080;
-    private static final String APICURIO_API_PATH = "/apis/registry/v2";
+    private static final String APICURIO_API_PATH = "/apis/registry/v3";
+    private static final String APICURIO_APP_SERVICE_SUFFIX = "-app-service";
 
     private ApicurioUtils() { }
 
@@ -22,10 +23,11 @@ public class ApicurioUtils {
      * @return in-cluster service host:port string
      */
     public static String getApicurioServiceUrl(String namespace, String registryName) {
-        Service service = ResourceUtils.getKubeResource(Service.class, namespace, registryName + "-service");
+        String serviceName = registryName + APICURIO_APP_SERVICE_SUFFIX;
+        Service service = ResourceUtils.getKubeResource(Service.class, namespace, serviceName);
         if (service == null) {
             throw new IllegalStateException(
-                "Could not find Apicurio Registry service for '" + registryName + "' in namespace '" + namespace + "'"
+                "Could not find Apicurio Registry app service for '" + registryName + "' in namespace '" + namespace + "'"
             );
         }
         String host = service.getMetadata().getName() + "." + namespace + ".svc";

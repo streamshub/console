@@ -6,8 +6,8 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -24,6 +24,7 @@ import java.util.List;
 public class ApicurioOperatorSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(ApicurioOperatorSetup.class);
 
+    private static final String APICURIO_OPERATOR_WATCHED_NAMESPACES = "APICURIO_OPERATOR_WATCHED_NAMESPACES";
     private static final String APICURIO_OPERATOR_NAME = "apicurio-registry-operator-v" + Environment.APICURIO_VERSION;
     private static final String APICURIO_BUNDLE_URL = "https://github.com/Apicurio/apicurio-registry/releases/download/"
         + Environment.APICURIO_VERSION + "/apicurio-registry-operator-" + Environment.APICURIO_VERSION + ".tar.gz";
@@ -37,31 +38,15 @@ public class ApicurioOperatorSetup {
     private final String watchNamespace;
     private List<HasMetadata> allResources;
 
-    /**
-     * @param watchNamespace the namespace where Apicurio Registry instances will be deployed
-     *                       (e.g. "apicurio-st"). The operator itself is installed into CO_NAMESPACE.
-     */
     public ApicurioOperatorSetup(String operatorNamespace, String watchNamespace) {
         this.operatorNamespace = operatorNamespace;
         this.watchNamespace = watchNamespace;
 
         try {
             extractedArchive = FileUtils.downloadAndExtractTarGz(APICURIO_BUNDLE_URL, APICURIO_TEMP_FILE_PREFIX);
-
-            InputStream installYaml = FileUtils.loadYamlsFromPath(
-                extractedArchive.resolve(APICURIO_INSTALL_DIR_NAME).resolve(APICURIO_INSTALL_FILE_NAME)
-            );
-
+            InputStream installYaml = FileUtils.loadYamlsFromPath(extractedArchive.resolve(APICURIO_INSTALL_DIR_NAME).resolve(APICURIO_INSTALL_FILE_NAME));
             // Skip Namespace resources — the test framework manages namespaces separately
-            allResources = KubeResourceManager.get()
-                .kubeClient()
-                .getClient()
-                .load(installYaml)
-                .items()
-                .stream()
-                .filter(resource -> !HasMetadata.getKind(Namespace.class).equals(resource.getKind()))
-                .toList();
-
+            allResources = KubeResourceManager.get().kubeClient().getClient().load(installYaml).items().stream().toList();
             LOGGER.info("Loaded {} resources from Apicurio install.yaml", allResources.size());
         } catch (IOException e) {
             throw new SetupException("Unable to load Apicurio Registry operator resources: " + e.getMessage());
@@ -133,26 +118,26 @@ public class ApicurioOperatorSetup {
                 }
             }
 
-            // Set WATCH_NAMESPACE env var on the operator Deployment
+            // Set APICURIO_OPERATOR_WATCHED_NAMESPACES env var on the operator Deployment
             if (HasMetadata.getKind(Deployment.class).equals(kind)) {
                 Deployment deployment = (Deployment) resource;
                 deployment.getSpec().getTemplate().getSpec().getContainers().forEach(container -> {
                     if (container.getEnv() != null) {
                         container.getEnv().stream()
-                            .filter(env -> "WATCH_NAMESPACE".equals(env.getName()))
+                            .filter(env -> APICURIO_OPERATOR_WATCHED_NAMESPACES.equals(env.getName()))
                             .findFirst()
                             .ifPresentOrElse(
                                 env -> {
-                                    LOGGER.info("Overriding WATCH_NAMESPACE to '{}' in Deployment: {}",
-                                        watchNamespace, deployment.getMetadata().getName());
+                                    LOGGER.info("Overriding APICURIO_OPERATOR_WATCHED_NAMESPACES to '{}' in Deployment: {}", watchNamespace, deployment.getMetadata().getName());
+                                    // Clear the OLM fieldRef and set a plain value instead
+                                    env.setValueFrom(null);
                                     env.setValue(watchNamespace);
                                 },
                                 () -> {
-                                    LOGGER.info("Adding WATCH_NAMESPACE='{}' to Deployment: {}",
-                                        watchNamespace, deployment.getMetadata().getName());
+                                    LOGGER.info("Adding APICURIO_OPERATOR_WATCHED_NAMESPACES='{}' to Deployment: {}", watchNamespace, deployment.getMetadata().getName());
                                     container.getEnv().add(
-                                        new io.fabric8.kubernetes.api.model.EnvVarBuilder()
-                                            .withName("WATCH_NAMESPACE")
+                                        new EnvVarBuilder()
+                                            .withName(APICURIO_OPERATOR_WATCHED_NAMESPACES)
                                             .withValue(watchNamespace)
                                             .build()
                                     );

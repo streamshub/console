@@ -134,4 +134,6 @@ public class Constants {
     // ------------ Apicurio ----------
     // --------------------------------
     public static final String APICURIO_PREFIX = "apicurio";
+    public static final String APICURIO_VALUE_GROUP_ID = "apicurio.value.groupId";
+    public static final String APICURIO_VALUE_ARTIFACT_ID = "apicurio.value.artifactId";
 }

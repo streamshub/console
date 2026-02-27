@@ -30,7 +30,7 @@ public class TestCaseConfig {
     private final String consoleInstanceName;
 
     // Default Apicurio
-    private final String apicurioRegistryName;
+    private final String apicurioRegistry3Name;
 
     public TestCaseConfig(ExtensionContext extensionContext) {
         this.testName = extensionContext.getTestMethod()
@@ -56,7 +56,7 @@ public class TestCaseConfig {
         this.consoleInstanceName = Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(namespace);
 
         this.messageCount = Constants.MESSAGE_COUNT;
-        this.apicurioRegistryName = Constants.APICURIO_PREFIX + "-" + Utils.hashStub(namespace);
+        this.apicurioRegistry3Name = Constants.APICURIO_PREFIX + "-" + Utils.hashStub(namespace);
     }
 
     // ----------
@@ -102,8 +102,8 @@ public class TestCaseConfig {
         return messageCount;
     }
 
-    public String apicurioRegistryName() {
-        return apicurioRegistryName;
+    public String apicurioRegistry3Name() {
+        return apicurioRegistry3Name;
     }
 
     // ----------
