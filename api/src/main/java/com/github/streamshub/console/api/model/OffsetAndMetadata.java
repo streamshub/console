@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonParser;
@@ -107,6 +108,7 @@ public record OffsetAndMetadata(
             kafkaOffset.leaderEpoch().orElse(null));
     }
 
+    @JsonIgnore // internal use only
     public boolean isDeleted() {
         return Objects.isNull(offset);
     }

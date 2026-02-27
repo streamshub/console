@@ -34,7 +34,7 @@ public class MemberDescription {
             case org.apache.kafka.clients.admin.ShareMemberDescription shareGroupMember:
                 return fromKafkaModel(shareGroupMember, topicIds);
             case org.apache.kafka.clients.admin.StreamsGroupMemberDescription streamsGroupMember:
-                return fromKafkaModel(streamsGroupMember, topicIds);
+                return fromKafkaModel(streamsGroupMember);
             default:
                 throw new IllegalArgumentException("Unknown member type: " + description.getClass());
         }
@@ -103,9 +103,7 @@ public class MemberDescription {
     }
 
     private static MemberDescription fromKafkaModel(
-            org.apache.kafka.clients.admin.StreamsGroupMemberDescription description,
-            Map<String, String> topicIds) {
-
+            org.apache.kafka.clients.admin.StreamsGroupMemberDescription description) {
         MemberDescription result = new MemberDescription(
                 description.memberId(),
                 description.instanceId().orElse(null),
@@ -113,7 +111,7 @@ public class MemberDescription {
                 description.clientHost());
 
         /*
-         * TODO: extract assignments from streams group topology (if possible?)
+         * XXX: extract assignments from streams group topology (if possible?)
          */
         result.assignments = Collections.emptyList();
 
