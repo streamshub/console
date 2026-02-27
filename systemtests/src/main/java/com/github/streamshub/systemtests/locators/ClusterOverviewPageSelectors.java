@@ -44,6 +44,8 @@ public class ClusterOverviewPageSelectors {
 
     public static final String COPS_CLUSTER_CARD_KAFKA_NAME = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_INFO)
         .withChild()
+        .withElementDiv().withLayoutFlex().nth(2).withChild()
+        .withElementDiv().withLayoutFlex().withChild()
         .withElementDiv().withLayoutFlex().nth(1).withChild()
         .withElementDiv().withChild()
         .withElementH2().withComponentTitle()

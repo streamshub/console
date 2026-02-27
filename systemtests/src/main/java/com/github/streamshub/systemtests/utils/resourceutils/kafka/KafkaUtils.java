@@ -1,10 +1,12 @@
-package com.github.streamshub.systemtests.utils.resourceutils;
+package com.github.streamshub.systemtests.utils.resourceutils.kafka;
 
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.kafka.Kafka;

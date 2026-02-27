@@ -3,7 +3,8 @@ package com.github.streamshub.systemtests;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kroxy.KroxyNamingUtils;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
@@ -23,11 +24,18 @@ public class TestCaseConfig {
     private final Page page;
     private int messageCount;
 
-    // Default
+    // Default Kafka
     private final String kafkaName;
     private final String connectName;
     private final String kafkaUserName;
     private final String consoleInstanceName;
+
+    // Default Kroxy
+    private final String kafkaProxyName;
+    private final String kafkaProxyIngressName;
+    private final String virtualKafkaClusterName;
+    private final String kafkaServiceName;
+    private final String kafkaProtocolFilterName;
 
     public TestCaseConfig(ExtensionContext extensionContext) {
         this.testName = extensionContext.getTestMethod()
@@ -50,7 +58,14 @@ public class TestCaseConfig {
         this.kafkaName = KafkaNamingUtils.kafkaClusterName(namespace);
         this.connectName = KafkaNamingUtils.kafkaConnectName(namespace);
         this.kafkaUserName =  KafkaNamingUtils.kafkaUserName(kafkaName);
+
         this.consoleInstanceName = Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(namespace);
+
+        this.kafkaProxyName = KroxyNamingUtils.kafkaProxyName(namespace);
+        this.kafkaProxyIngressName = KroxyNamingUtils.kafkaProxyIngressName(namespace);
+        this.virtualKafkaClusterName = KroxyNamingUtils.virtualKafkaClusterName(namespace);
+        this.kafkaServiceName = KroxyNamingUtils.kafkaServiceName(namespace);
+        this.kafkaProtocolFilterName = KroxyNamingUtils.kafkaProtocolFilterName(namespace);
 
         this.messageCount = Constants.MESSAGE_COUNT;
     }
@@ -92,6 +107,26 @@ public class TestCaseConfig {
 
     public String consoleInstanceName() {
         return consoleInstanceName;
+    }
+
+    public String kafkaProxyName() {
+        return kafkaProxyName;
+    }
+
+    public String kafkaProxyIngressName() {
+        return kafkaProxyIngressName;
+    }
+
+    public String virtualKafkaClusterName() {
+        return virtualKafkaClusterName;
+    }
+
+    public String kafkaServiceName() {
+        return kafkaServiceName;
+    }
+
+    public String kafkaProtocolFilterName() {
+        return kafkaProtocolFilterName;
     }
 
     public int messageCount() {

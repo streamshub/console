@@ -73,6 +73,10 @@ public class Environment {
     // Postgres
     public static final String POSTGRES_IMAGE = ENVS.getOrDefault("POSTGRES_IMAGE", "mirror.gcr.io/postgres:18");
 
+    // Proxy
+    public static final String KROXYLICIOUS_VERSION = ENVS.getOrDefault("KROXYLICIOUS_VERSION", "0.18.0");
+
+
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation
     private Environment() {}

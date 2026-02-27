@@ -10,7 +10,7 @@ import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KeycloakUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
@@ -44,7 +44,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
-import static com.github.streamshub.systemtests.utils.resourceutils.KeycloakUtils.getKeycloakHostname;
+import static com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils.getKeycloakHostname;
 
 public class KeycloakSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KeycloakSetup.class);

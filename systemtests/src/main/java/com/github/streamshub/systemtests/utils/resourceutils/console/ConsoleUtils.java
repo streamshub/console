@@ -1,7 +1,9 @@
-package com.github.streamshub.systemtests.utils.resourceutils;
+package com.github.streamshub.systemtests.utils.resourceutils.console;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.openshift.api.model.Route;
 import io.skodjob.testframe.resources.KubeResourceManager;
 

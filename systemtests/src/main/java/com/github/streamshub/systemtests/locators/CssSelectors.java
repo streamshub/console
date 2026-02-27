@@ -264,4 +264,14 @@ public class CssSelectors {
         .withElementDiv().withComponentForm().withSubComponentActions().withChild()
         .withElementButton().withComponentButton()
         .build();
+
+    public static final String PAGES_NAV_KAFKA_CLUSTERS_LIST_ITEMS = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withComponentMenu().withChild()
+        .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
+        .withElementUl().withComponentMenu().withSubComponentList().withChild()
+        .withElementSection().withComponentMenu().withSubComponentGroup().withChild()
+        .withElementUl().withComponentMenu().withSubComponentList().withChild()
+        .withElementLi().withComponentMenu().withSubComponentListItem()
+        .build();
 }
