@@ -7,7 +7,6 @@ import io.apicurio.registry.rest.client.RegistryClient;
 import io.apicurio.registry.rest.client.models.CreateArtifact;
 import io.apicurio.registry.rest.client.models.CreateVersion;
 import io.apicurio.registry.rest.client.models.VersionContent;
-import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import org.apache.logging.log4j.Logger;
 
@@ -16,8 +15,6 @@ import java.security.InvalidParameterException;
 public class ApicurioUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(ApicurioUtils.class);
 
-    private static final int APICURIO_PORT = 8080;
-    private static final String APICURIO_APP_SERVICE_SUFFIX = "-app-service";
     private static final String APICURIO_APP_INGRESS_SUFFIX = "-app-ingress";
 
     private ApicurioUtils() { }
