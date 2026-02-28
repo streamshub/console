@@ -13,7 +13,6 @@ import {
   getHours,
   getMinutes,
   getSeconds,
-  isDate,
   isValid,
   parseISO,
   setHours,
@@ -28,88 +27,65 @@ export type DateTimePickerProps = {
 };
 
 export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
-  const [date, setDate] = useState<Date | string | undefined>(value);
+  const [date, setDate] = useState<Date | undefined>(
+    value ? parseISO(value) : undefined,
+  );
 
-  const onDateChange: DatePickerProps["onChange"] = (_, inputDate, newDate) => {
-    setDate((date) => {
-      if (newDate && yyyyMMddFormat(newDate)) {
-        if (date) {
-          // we already have a date set, we should preserve the time part
-          newDate = setHours(newDate, getHours(date));
-          newDate = setMinutes(newDate, getMinutes(date));
-          newDate = setSeconds(newDate, getSeconds(date));
-        }
-        return newDate;
+  useEffect(() => {
+    if (value) {
+      const parsed = parseISO(value);
+      if (isValid(parsed)) {
+        setDate(parsed);
       }
-      return date;
-    });
-    if (date) {
-      setDate(date);
+    } else {
+      setDate(undefined);
+    }
+  }, [value]);
+
+  const updateParent = (newDate: Date | undefined) => {
+    if (newDate && isValid(newDate)) {
+      onChange(formatISO(newDate));
     }
   };
+
+  const onDateChange: DatePickerProps["onChange"] = (_, __, newDate) => {
+    if (!newDate || !isValid(newDate)) return;
+
+    let updated = newDate;
+
+    if (date) {
+      updated = setHours(updated, getHours(date));
+      updated = setMinutes(updated, getMinutes(date));
+      updated = setSeconds(updated, getSeconds(date));
+    }
+
+    setDate(updated);
+    updateParent(updated);
+  };
+
   const onTimeChange: TimePickerProps["onChange"] = (
     _,
-    time,
+    __,
     hour,
     minutes,
     seconds,
-    isValid,
+    isValidTime,
   ) => {
-    setDate((date) => {
-      if (
-        isValid &&
-        date &&
-        hour != undefined &&
-        hour >= 0 &&
-        (time.includes("AM") || time.includes("PM"))
-      ) {
-        let newDate = date;
-        if (hour !== undefined) {
-          newDate = setHours(newDate, hour);
-        }
-        if (minutes !== undefined) {
-          newDate = setMinutes(newDate, minutes);
-        }
-        if (seconds !== undefined) {
-          newDate = setSeconds(newDate, seconds);
-        }
-        return newDate;
-      }
-      return date;
-    });
+    if (!isValidTime || !date) return;
+
+    let updated = date;
+
+    if (hour !== undefined) updated = setHours(updated, hour);
+    if (minutes !== undefined) updated = setMinutes(updated, minutes);
+    if (seconds !== undefined) updated = setSeconds(updated, seconds);
+
+    setDate(updated);
+    updateParent(updated);
   };
 
-  useEffect(() => {
-    if (date && isDate(date)) {
-      onChange(formatISO(date));
-    }
-  }, [date, onChange]);
+  const datePart = date && isValid(date) ? yyyyMMddFormat(date) : undefined;
 
-  const [datePart, timePart] = (() => {
-    let datePart: string | undefined;
-    let timePart: string | undefined;
-    if (typeof date === "string") {
-      const parsedDate = parseISO(date);
-      if (isValid(parsedDate)) {
-        datePart = yyyyMMddFormat(parsedDate);
-        if (value === date) {
-          timePart = format(parsedDate, "hh:mm:ss aa");
-        }
-      } else {
-        datePart = date;
-      }
-    } else if (isDate(date)) {
-      if (isValid(date)) {
-        datePart = yyyyMMddFormat(date);
-      } else {
-        datePart = date.toISOString();
-      }
-      datePart = isValid(date) ? yyyyMMddFormat(date) : date.toISOString();
-    } else {
-      datePart = date;
-    }
-    return [datePart, timePart];
-  })();
+  const timePart = date && isValid(date) ? format(date, "HH:mm:ss") : undefined;
 
   return (
     <InputGroup>
@@ -120,8 +96,9 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
         <TimePicker
           time={timePart}
           isDisabled={!date}
-          placeholder={"hh:mm:ss"}
-          includeSeconds={true}
+          placeholder="HH:mm:ss"
+          includeSeconds
+          is24Hour
           onChange={onTimeChange}
         />
       </InputGroupItem>
