@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.utils.playwright;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -85,5 +86,16 @@ public class PwPageUrls {
             Base64.getEncoder().encodeToString(namespace.getBytes(StandardCharsets.UTF_8)) +
             "," +
             Base64.getEncoder().encodeToString(kafkaUser.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static String getSchemaLink(String apicurioInstance, String contentId, String groupId, String schemaName) {
+        String json = String.format("{\"contentId\":%s,\"groupId\":\"%s\"}", contentId, groupId);
+        String encoded = Base64.getUrlEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
+        String content = URLEncoder.encode("/api/registries/" + apicurioInstance + "/schemas/" + encoded, StandardCharsets.UTF_8);
+        return "/schema?content=" + content + "&schemaname=" + schemaName;
+    }
+
+    public static String getSchemaPage(TestCaseConfig tcc, String apicurioInstance, String contentId, String groupId, String schemaName) {
+        return getConsoleUrl(tcc) + getSchemaLink(apicurioInstance, contentId, groupId, schemaName);
     }
 }
