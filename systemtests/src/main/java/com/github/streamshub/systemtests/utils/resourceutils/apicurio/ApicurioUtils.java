@@ -23,27 +23,6 @@ public class ApicurioUtils {
     private ApicurioUtils() { }
 
     /**
-     * Returns the in-cluster service hostname for the given Apicurio Registry instance.
-     * e.g. "apicurio-registry-service.my-namespace.svc:8080"
-     *
-     * @param namespace    namespace where the ApicurioRegistry CR was deployed
-     * @param registryName name of the ApicurioRegistry CR
-     * @return in-cluster service host:port string
-     */
-    public static String getApicurioServiceUrl(String namespace, String registryName) {
-        String serviceName = registryName + APICURIO_APP_SERVICE_SUFFIX;
-        Service service = ResourceUtils.getKubeResource(Service.class, namespace, serviceName);
-        if (service == null) {
-            throw new IllegalStateException(
-                "Could not find Apicurio Registry app service for '" + registryName + "' in namespace '" + namespace + "'"
-            );
-        }
-        String host = service.getMetadata().getName() + "." + namespace + ".svc";
-        LOGGER.info("Resolved Apicurio Registry service URL: {}:{}", host, APICURIO_PORT);
-        return host + ":" + APICURIO_PORT;
-    }
-
-    /**
      * Returns the full Apicurio Registry v3 API URL for use in Console schema registry config.
      * e.g. "http://apicurio-registry-/apis/registry/v3"
      *
@@ -63,7 +42,22 @@ public class ApicurioUtils {
         return getApicurioRegistryUrl(namespace, registryName) + Constants.APICURIO_API_V3_SUFFIX;
     }
 
+    /**
+     * Creates a new artifact in the specified registry group with an initial version.
+     *
+     * <p>This method constructs a {@code CreateArtifact} request, sets its artifact ID and type,
+     * attaches the provided schema as the first version with the given content type,
+     * and submits it using the provided {@link RegistryClient}.</p>
+     *
+     * @param client       the registry client used to communicate with the artifact registry
+     * @param groupId      the ID of the registry group where the artifact will be created
+     * @param artifactId   the unique identifier of the artifact
+     * @param artifactType the type of the artifact (e.g. AVRO, JSON, PROTOBUF)
+     * @param schema       the schema or artifact content
+     * @param contentType  the content type of the artifact (e.g. application/json)
+     */
     public static void createArtifact(RegistryClient client, String groupId, String artifactId, String artifactType, String schema, String contentType) {
+        LOGGER.info("Creating artifact {}  of type {} in Apicurio Registry", artifactId, artifactType);
         CreateArtifact createArtifact = new CreateArtifact();
         createArtifact.setArtifactId(artifactId);
         createArtifact.setArtifactType(artifactType);
@@ -79,6 +73,21 @@ public class ApicurioUtils {
         client.groups().byGroupId(groupId).artifacts().post(createArtifact);
     }
 
+    /**
+     * Builds a Kafka producer configuration string for use with Apicurio Registry.
+     *
+     * <p>The configuration includes registry connection details, artifact settings,
+     * and optional serializer and SCRAM-SHA authentication configuration.</p>
+     *
+     * <p>If {@code scramShaConfig} or {@code serializer} are {@code null},
+     * they are omitted from the resulting configuration.</p>
+     *
+     * @param registryUrl   the URL of the Apicurio Registry instance
+     * @param serializer    the fully qualified class name of the value serializer (nullable)
+     * @param artifactId    the artifact ID to use when interacting with the registry
+     * @param scramShaConfig optional SCRAM-SHA authentication configuration block (nullable)
+     * @return a formatted Kafka producer configuration string
+     */
     public static String getApicurioProducerConfig(String registryUrl, String serializer, String artifactId, String scramShaConfig) {
         return """
             %s
@@ -99,6 +108,19 @@ public class ApicurioUtils {
             );
     }
 
+    /**
+     * Retrieves the content ID of a specific artifact version from the registry.
+     *
+     * <p>Queries the registry for the given group ID, artifact ID, and version,
+     * and returns the associated content ID as a string.</p>
+     *
+     * @param client     the registry client used to communicate with the artifact registry
+     * @param groupId    the ID of the registry group
+     * @param artifactId the ID of the artifact
+     * @param version    the artifact version (or version expression)
+     * @return the content ID of the specified artifact version as a string
+     * @throws InvalidParameterException if the content ID is not found
+     */
     public static String getArtifactContentId(RegistryClient client, String groupId, String artifactId, String version) {
         Long contentId = client.groups()
             .byGroupId(groupId)

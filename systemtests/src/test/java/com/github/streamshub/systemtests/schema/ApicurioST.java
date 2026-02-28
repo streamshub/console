@@ -113,6 +113,38 @@ public class ApicurioST extends AbstractST {
             );
     }
 
+    /**
+     * Verifies that serialized messages produced with Apicurio Registry schemas
+     * are correctly displayed and linked in the Console UI.
+     *
+     * <p>This parameterized test covers multiple serialization scenarios
+     * (e.g. Avro, JSON, Protobuf) using different serializers and schema types.</p>
+     *
+     * <p>The test performs the following steps:
+     * <ul>
+     *     <li>Creates a Kafka topic.</li>
+     *     <li>Registers a schema artifact in Apicurio Registry.</li>
+     *     <li>Produces a message using the configured serializer and registry settings.</li>
+     *     <li>Verifies in the Topic Messages UI:
+     *         <ul>
+     *             <li>Schema name is displayed correctly.</li>
+     *             <li>Value format matches the artifact type.</li>
+     *             <li>Schema link points to the correct registry location.</li>
+     *             <li>Schema definition is rendered correctly.</li>
+     *         </ul>
+     *     </li>
+     *     <li>Navigates to the Schema page and verifies its content.</li>
+     *     <li>Cleans up by deleting the created artifact.</li>
+     * </ul>
+     *
+     * @param serializer   the value serializer class used by the producer
+     * @param schemaType   the logical schema type (used for topic naming)
+     * @param schemaName   the expected schema name displayed in the UI
+     * @param schema       the schema definition content
+     * @param artifactType the Apicurio artifact type (e.g. AVRO, JSON, PROTOBUF)
+     * @param message      the message payload to produce
+     * @param contentType  the registry content type for the artifact
+     */
     @ParameterizedTest
     @MethodSource("serializedSchemaScenarios")
     void testApicurioSerializedSchema(String serializer, String schemaType, String schemaName, String schema, String artifactType, String message, String contentType) {
@@ -131,6 +163,7 @@ public class ApicurioST extends AbstractST {
         ApicurioUtils.createArtifact(client, Constants.APICURIO_DEFAULT_GROUP, artifactId, artifactType, schema, contentType);
 
         // Produce messages
+        LOGGER.info("Producing test message to topic {} using serializer {}", topicName, serializer);
         KafkaClients clients = new KafkaClientsBuilder()
             .withNamespaceName(tcc.namespace())
             .withTopicName(topicName)
@@ -157,6 +190,7 @@ public class ApicurioST extends AbstractST {
         KubeResourceManager.get().createResourceWithWait(clients.producer());
         WaitUtils.waitForClientSuccess(tcc.namespace(), clients.getProducerName(), clients.getMessageCount(), true);
 
+        LOGGER.info("Verifying message and schema in topic page for {}", topicName);
         String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
         String contentId = ApicurioUtils.getArtifactContentId(client, Constants.APICURIO_DEFAULT_GROUP, artifactId, DEFAULT_ARTIFACT_VERSION);
         String schemaLink = PwPageUrls.getSchemaLink(tcc.apicurioRegistry3Name(), contentId, Constants.APICURIO_DEFAULT_GROUP, schemaName);
@@ -170,12 +204,14 @@ public class ApicurioST extends AbstractST {
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_CODE, PwUtils.getTrimmedText(schema), true);
 
         // Content Id depends on how much artifacts are present in the registry - just like globalId
+        LOGGER.info("Navigating to schema page to verify artifact content for {}", artifactId);
         tcc.page().navigate(PwPageUrls.getSchemaPage(tcc, tcc.apicurioRegistry3Name(), contentId, Constants.APICURIO_DEFAULT_GROUP, schemaName));
 
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SCHEMA_PAGE_HEADER, schemaName, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SCHEMA_PAGE_CODE, PwUtils.getTrimmedText(schema), true);
 
         // Delete artifact
+        LOGGER.info("Deleting artifact: {} from group: {}", artifactId, Constants.APICURIO_DEFAULT_GROUP);
         client.groups().byGroupId(Constants.APICURIO_DEFAULT_GROUP).artifacts().byArtifactId(artifactId).delete();
     }
 
@@ -189,6 +225,35 @@ public class ApicurioST extends AbstractST {
                  Constants.ARTIFACT_TYPE_XML.toUpperCase(Locale.ROOT), XML_MESSAGE, Constants.CONTENT_TYPE_XML)
         );
     }
+
+    /**
+     * Verifies that messages produced with raw schema types in Apicurio Registry
+     * are correctly displayed in the Console UI for Kafka topics.
+     *
+     * <p>This parameterized test covers multiple raw schema scenarios (e.g., plain JSON, strings, integers)
+     * and ensures that the message value and schema type are correctly rendered in the topic messages sidebar.</p>
+     *
+     * <p>The test performs the following steps:
+     * <ul>
+     *     <li>Creates a Kafka topic for the given schema type.</li>
+     *     <li>Registers a raw schema artifact in Apicurio Registry.</li>
+     *     <li>Produces a single message using the registered artifact.</li>
+     *     <li>Verifies in the Topic Messages UI:
+     *         <ul>
+     *             <li>The value format matches the expected schema type.</li>
+     *             <li>The message content matches the raw schema value.</li>
+     *         </ul>
+     *     </li>
+     *     <li>Cleans up by deleting the created artifact from the registry.</li>
+     * </ul>
+     *
+     * @param schemaType   the logical schema type used to create the topic
+     * @param schema       the schema definition or content
+     * @param valueFormat  the expected format displayed in the UI (e.g., JSON, STRING)
+     * @param artifactType the Apicurio artifact type (e.g., AVRO, JSON, PROTOBUF)
+     * @param message      the raw message payload to produce
+     * @param contentType  the registry content type for the artifact
+     */
     @ParameterizedTest
     @MethodSource("schemaRawTypes")
     void testApicurioSchemaRegistryRawTypes(String schemaType, String schema, String valueFormat, String artifactType, String message, String contentType) {
@@ -207,6 +272,7 @@ public class ApicurioST extends AbstractST {
         ApicurioUtils.createArtifact(client, Constants.APICURIO_DEFAULT_GROUP, artifactId, artifactType, schema, contentType);
 
         // Produce messages
+        LOGGER.info("Producing test message to topic {}", topicName);
         KafkaClients clients = new KafkaClientsBuilder()
             .withNamespaceName(tcc.namespace())
             .withTopicName(topicName)
@@ -233,6 +299,7 @@ public class ApicurioST extends AbstractST {
         KubeResourceManager.get().createResourceWithWait(clients.producer());
         WaitUtils.waitForClientSuccess(tcc.namespace(), clients.getProducerName(), clients.getMessageCount(), true);
 
+        LOGGER.info("Verifying message and schema in topic page for {}", topicName);
         String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
         tcc.page().navigate(PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
 
@@ -241,6 +308,7 @@ public class ApicurioST extends AbstractST {
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_PLAIN_CODE, PwUtils.getTrimmedText(message), true);
 
         // Delete artifact
+        LOGGER.info("Deleting artifact: {} from group: {}", artifactId, Constants.APICURIO_DEFAULT_GROUP);
         client.groups().byGroupId(Constants.APICURIO_DEFAULT_GROUP).artifacts().byArtifactId(artifactId).delete();
     }
 
