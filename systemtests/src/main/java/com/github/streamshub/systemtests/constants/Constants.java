@@ -134,6 +134,22 @@ public class Constants {
     // ------------ Apicurio ----------
     // --------------------------------
     public static final String APICURIO_PREFIX = "apicurio";
+    public static final String APICURIO_API_V3_SUFFIX = "/apis/registry/v3";
     public static final String APICURIO_VALUE_GROUP_ID = "apicurio.value.groupId";
     public static final String APICURIO_VALUE_ARTIFACT_ID = "apicurio.value.artifactId";
+    public static final String APICURIO_DEFAULT_GROUP = "default";
+    // Artifact
+    public static final String ARTIFACT_TYPE_PROTOBUF = "protobuf";
+    public static final String ARTIFACT_TYPE_AVRO = "avro";
+    public static final String ARTIFACT_TYPE_JSON = "json";
+    public static final String ARTIFACT_TYPE_XML = "xml";
+    public static final String PLAIN_VALUE_TYPE = "Plain";
+    // Content type
+    public static final String CONTENT_TYPE_PROTOBUF = "application/x-protobuf";
+    public static final String CONTENT_TYPE_JSON = "application/json";
+    public static final String CONTENT_TYPE_XML = "application/xml";
+    // Serializers
+    public static final String SERIALIZER_PROTOBUF = "io.apicurio.registry.serde.protobuf.ProtobufKafkaSerializer";
+    public static final String SERIALIZER_AVRO = "io.apicurio.registry.serde.avro.AvroKafkaSerializer";
+    public static final String SERIALIZER_JSON = "io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaSerializer";
 }

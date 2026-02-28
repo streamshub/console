@@ -8,9 +8,12 @@ import io.apicurio.registry.operator.api.v1.ApicurioRegistry3Spec;
 import io.apicurio.registry.operator.api.v1.spec.AppSpec;
 import io.apicurio.registry.operator.api.v1.spec.IngressSpec;
 import io.apicurio.registry.operator.api.v1.spec.UiSpec;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.List;
 
 public class ApicurioRegistry3Setup {
     private static final Logger LOGGER = LogWrapper.getLogger(ApicurioRegistry3Setup.class);
@@ -40,6 +43,20 @@ public class ApicurioRegistry3Setup {
             .ingress(IngressSpec.builder()
                 .host(registryName + "-app-service-" + namespace + "." + ClusterUtils.getClusterDomain())
                 .build())
+            .env(List.of(
+                new EnvVarBuilder()
+                    .withName("APICURIO_REST_DELETION_ARTIFACT_ENABLED")
+                    .withValue("true")
+                    .build(),
+                new EnvVarBuilder()
+                    .withName("APICURIO_REST_DELETION_ARTIFACT_VERSION_ENABLED")
+                    .withValue("true")
+                    .build(),
+                new EnvVarBuilder()
+                    .withName("APICURIO_REST_DELETION_GROUP_ENABLED")
+                    .withValue("true")
+                    .build()
+            ))
             .build();
 
         UiSpec uiSpec = UiSpec.builder()

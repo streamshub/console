@@ -42,7 +42,7 @@ public abstract class AbstractST {
 
         KubeResourceManager.get().setTestContext(extensionContext);
         NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
-        //strimziOperatorSetup.install();
+        strimziOperatorSetup.install();
         //consoleOperatorSetup.install();
     }
 

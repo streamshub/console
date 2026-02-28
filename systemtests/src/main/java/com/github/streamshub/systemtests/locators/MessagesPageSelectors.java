@@ -306,4 +306,93 @@ public class MessagesPageSelectors {
         .withElementSpan().withComponentFormControl().withChild()
         .withElementInput()
         .build();
+        
+    
+    public static final String MPS_MESSAGE_SIDEBAR = new CssBuilder(CssSelectors.PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withComponentDrawer().withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentMain().withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentPanel().withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentPanelMain()
+        .build();
+
+    public static final String MPS_MESSAGE_SIDEBAR_DETAILS_BODY = new CssBuilder(MPS_MESSAGE_SIDEBAR)
+        .withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentBody().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(1)
+        .build();
+
+    public static final String MPS_MESSAGE_SIDEBAR_SCHEMA_BODY = new CssBuilder(MPS_MESSAGE_SIDEBAR)
+        .withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentBody().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(2)
+        .build();
+
+    public static final String MPS_MESSAGE_SIDEBAR_VALUE_FORMAT = new CssBuilder(MPS_MESSAGE_SIDEBAR_DETAILS_BODY)
+        .withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().nth(8).withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String MPS_MESSAGE_SIDEBAR_SCHEMA_NAME = new CssBuilder(MPS_MESSAGE_SIDEBAR_SCHEMA_BODY)
+        .withChild()
+        .withElementSection().withComponentTabContent().nth(1).withChild()
+        .withElementDiv().withLayoutStack().withChild()
+        .withElementDiv().withLayoutStack().withSubComponentItem().nth(2).withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementH4().withComponentTitle()
+        .build();
+
+    public static final String MPS_MESSAGE_SIDEBAR_SCHEMA_LINK = new CssBuilder(MPS_MESSAGE_SIDEBAR_SCHEMA_NAME)
+        .withChild()
+        .withElementA().withComponentButton()
+        .build();
+
+    public static final String MPS_MESSAGE_SIDEBAR_SCHEMA_CODE = new CssBuilder(MPS_MESSAGE_SIDEBAR_SCHEMA_BODY)
+        .withChild()
+        .withElementSection().withComponentTabContent().nth(1).withChild()
+        .withElementDiv().withLayoutStack().withChild()
+        .withElementDiv().withLayoutStack().withSubComponentItem().nth(2).withChild()
+        .withElementDiv().withComponentCodeBlock().withChild()
+        .withElementDiv().withComponentCodeBlock().withSubComponentContent().withChild()
+        .withElementPre().withComponentCodeBlock().withSubComponentPre().withChild()
+        .withElementCode().withComponentCodeBlock().withSubComponentCode()
+        .build();
+
+    public static final String MPS_MESSAGE_SIDEBAR_SCHEMA_PLAIN_CODE = new CssBuilder(MPS_MESSAGE_SIDEBAR_SCHEMA_BODY)
+        .withChild()
+        .withElementSection().withComponentTabContent().nth(1).withChild()
+        .withElementDiv().withLayoutStack().withChild()
+        .withElementDiv().withLayoutStack().withSubComponentItem().withChild()
+        .withElementDiv().withComponentClipboardCopy().withChild()
+        .withElementDiv().withComponentClipboardCopy().withSubComponentExpandableContent().withChild()
+        .withElementPre()
+        .build();
+
+    public static final String MPS_SCHEMA_PAGE_HEADER = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
+        .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(1).withChild()
+        .withElementH4().withComponentTitle()
+        .build();
+
+    public static final String MPS_SCHEMA_PAGE_CODE = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
+        .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentCodeBlock().withChild()
+        .withElementDiv().withComponentCodeBlock().withSubComponentContent().withChild()
+        .withElementPre().withComponentCodeBlock().withSubComponentPre().withChild()
+        .withElementCode().withComponentCodeBlock().withSubComponentCode()
+        .build();
 }

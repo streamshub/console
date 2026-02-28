@@ -29,6 +29,7 @@ public class KafkaClients {
     private String topicName;
     private String additionalConfig;
     private String namespaceName;
+    private String timestamp;
 
     public String getProducerName() {
         return producerName;
@@ -330,6 +331,14 @@ public class KafkaClients {
                     .endSpec()
                 .endTemplate()
             .endSpec();
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 }
 
