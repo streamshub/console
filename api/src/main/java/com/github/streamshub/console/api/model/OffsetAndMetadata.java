@@ -1,6 +1,7 @@
 package com.github.streamshub.console.api.model;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -78,7 +79,11 @@ public record OffsetAndMetadata(
         String metadata,
 
         Integer leaderEpoch
-) {
+) implements Comparable<OffsetAndMetadata> {
+
+    private static final Comparator<OffsetAndMetadata> COMPARATOR = Comparator
+            .comparing(OffsetAndMetadata::topicName)
+            .thenComparing(OffsetAndMetadata::partition);
 
     public OffsetAndMetadata(String topicId, org.apache.kafka.common.TopicPartition topicPartition) {
         this(topicId, topicPartition.topic(), topicPartition.partition(), null, null, null, null, null);
@@ -131,6 +136,11 @@ public record OffsetAndMetadata(
 
     public String offsetSpec() {
         return offset.getAlternate();
+    }
+
+    @Override
+    public int compareTo(OffsetAndMetadata o) {
+        return COMPARATOR.compare(this, o);
     }
 
     @Schema(ref = "OffsetSpec")
