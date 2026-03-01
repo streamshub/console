@@ -162,16 +162,9 @@ public class KafkaNodePoolST extends AbstractST {
         // Add additional KNP for filtering, due to quorum voters it's currently possible to add only broker role node pools
         // controller node pools cause crash
         // -> Configuration can't be updated dynamically because its scope is ready only: AlterConfigOp(name=controller.quorum.voters)
-        KafkaNodePool addedBrokerPool = KafkaSetup.getDefaultBrokerNodePools(tcc.namespace(), tcc.kafkaName(), ADDITIONAL_BRK_NODES)
-            .editMetadata()
-                .withName(ADDITIONAL_BRK_KNP_NAME)
-            .endMetadata()
-            .build();
-        KubeResourceManager.get().createOrUpdateResourceWithWait(addedBrokerPool);
-        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpLabelSelector(tcc.kafkaName(), ADDITIONAL_BRK_KNP_NAME, ProcessRoles.BROKER), ADDITIONAL_BRK_NODES, true);
 
         // Update kafka to accept new brokers
-        List<GenericKafkaListenerConfigurationBroker> brokerHosts = KafkaUtils.getKnpIds(tcc.namespace(), ADDITIONAL_BRK_KNP_NAME, ProcessRoles.BROKER)
+        List<GenericKafkaListenerConfigurationBroker> brokerHosts = KafkaUtils.getNewNodePoolNodeIds(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_BROKER_REPLICAS + ADDITIONAL_BRK_NODES)
             .stream()
             .sorted()
             .map(id -> new GenericKafkaListenerConfigurationBrokerBuilder()
@@ -193,6 +186,14 @@ public class KafkaNodePoolST extends AbstractST {
                 .endSpec()
                 .build());
 
+        KafkaNodePool addedBrokerPool = KafkaSetup.getDefaultBrokerNodePools(tcc.namespace(), tcc.kafkaName(), ADDITIONAL_BRK_NODES)
+            .editMetadata()
+                .withName(ADDITIONAL_BRK_KNP_NAME)
+            .endMetadata()
+            .build();
+
+        KubeResourceManager.get().createOrUpdateResourceWithWait(addedBrokerPool);
+        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpLabelSelector(tcc.kafkaName(), ADDITIONAL_BRK_KNP_NAME, ProcessRoles.BROKER), ADDITIONAL_BRK_NODES, true);
         WaitUtils.waitForKafkaReady(tcc.namespace(), tcc.kafkaName());
     }
 
