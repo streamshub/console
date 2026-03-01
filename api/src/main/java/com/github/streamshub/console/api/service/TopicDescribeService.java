@@ -107,7 +107,7 @@ public class TopicDescribeService {
     ConfigService configService;
 
     @Inject
-    ConsumerGroupService consumerGroupService;
+    GroupService groupService;
 
     public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
         Set<String> fetchList = new LinkedHashSet<>(fields);
@@ -299,7 +299,7 @@ public class TopicDescribeService {
     }
 
     private CompletableFuture<Void> maybeFetchConsumerGroups(Map<Uuid, Topic> topics, List<String> fields) {
-        if (!fields.contains(Topic.Fields.CONSUMER_GROUPS)) {
+        if (!fields.contains(Topic.Fields.GROUPS)) {
             return CompletableFuture.completedFuture(null);
         }
 
@@ -309,22 +309,22 @@ public class TopicDescribeService {
                 .map(Uuid::toString)
                 .toList();
 
-        return consumerGroupService
-                .listConsumerGroupMembership(searchTopics)
-                .thenAccept(consumerGroups ->
+        return groupService
+                .listGroupMembership(searchTopics)
+                .thenAccept(groups ->
                     topics.forEach((topicId, topic) -> {
                         String idString = topicId.toString();
 
                         if (searchTopics.contains(idString)) {
-                            var topicGroups = consumerGroups.getOrDefault(idString, Collections.emptyList());
+                            var topicGroups = groups.getOrDefault(idString, Collections.emptyList());
                             var identifiers = topicGroups.stream()
                                     .map(Identifiers::encode)
-                                    .map(g -> new Identifier("consumerGroups", g))
+                                    .map(g -> new Identifier("groups", g))
                                     .toList();
-                            topic.consumerGroups().getData().addAll(identifiers);
-                            topic.consumerGroups().addMeta("count", identifiers.size());
+                            topic.groups().getData().addAll(identifiers);
+                            topic.groups().addMeta("count", identifiers.size());
                         } else {
-                            topic.consumerGroups(null);
+                            topic.groups(null);
                         }
                     }))
                 .toCompletableFuture();

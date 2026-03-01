@@ -78,7 +78,7 @@ async function ConnectedTopicHeader({
             topicId={topicId}
             numPartitions={topic?.attributes.numPartitions || 0}
             consumerGroupCount={
-              topic?.relationships.consumerGroups?.data.length ?? 0
+              topic?.relationships.groups?.data.length ?? 0
             }
             isLoading={false}
           />

@@ -34,7 +34,7 @@ export const WithData: Story = {
     },
     brokersTotal: 9999,
     brokersOnline: 9999,
-    consumerGroups: 9999,
+    groups: 9999,
     messages: [
       {
         variant: "danger",
@@ -91,7 +91,7 @@ export const NoMessages: Story = {
     },
     brokersTotal: 9999,
     brokersOnline: 9999,
-    consumerGroups: 9999,
+    groups: 9999,
     messages: [],
   },
 };

@@ -7,12 +7,19 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Promises {
 
     private Promises() {
         // No instances
+    }
+
+    public static <F extends Object> Collector<CompletableFuture<F>, ?, CompletableFuture<Void>> awaitingAll() {
+        return Collectors.collectingAndThen(Collectors.toList(), pending ->
+            CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new)));
     }
 
     public static <T extends Object> CompletableFuture<Void> allOf(Collection<CompletableFuture<T>> pending) {

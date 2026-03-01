@@ -1,6 +1,7 @@
 package com.github.streamshub.console.api.model;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -9,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonParser;
@@ -42,11 +44,11 @@ public record OffsetAndMetadata(
 
         @Schema(
             description = """
-                When describing a consumer group, the last committed offset for the topic and partitions in
-                the consumer group being described.
+                When describing a group, the last committed offset for the topic and partitions in
+                the group being described.
 
                 When resetting offsets for a partition, the value may be a literal offset,
-                or any valid offset specification. The offset for the partition in the consumer
+                or any valid offset specification. The offset for the partition in the
                 group will be reset accordingly.
 
                 1. `earliest` - reset to the earliest/first offset
@@ -55,7 +57,7 @@ public record OffsetAndMetadata(
                 4. literal timestamp - reset to the offset having a timestamp equal to or greater than the given timestamp
 
                 If no offset exists matching the `maxTimestamp` or a literal timestamp spec, no changes will
-                be made to the consumer group offset(s) for the partition.
+                be made to the group offset(s) for the partition.
                 """,
             implementation = Object.class,
             oneOf = { Long.class, OffsetSpec.class })
@@ -77,7 +79,11 @@ public record OffsetAndMetadata(
         String metadata,
 
         Integer leaderEpoch
-) {
+) implements Comparable<OffsetAndMetadata> {
+
+    private static final Comparator<OffsetAndMetadata> COMPARATOR = Comparator
+            .comparing(OffsetAndMetadata::topicName)
+            .thenComparing(OffsetAndMetadata::partition);
 
     public OffsetAndMetadata(String topicId, org.apache.kafka.common.TopicPartition topicPartition) {
         this(topicId, topicPartition.topic(), topicPartition.partition(), null, null, null, null, null);
@@ -95,6 +101,19 @@ public record OffsetAndMetadata(
             kafkaOffset.leaderEpoch().orElse(null));
     }
 
+    public OffsetAndMetadata(String topicId, org.apache.kafka.common.TopicPartition topicPartition,
+            org.apache.kafka.clients.admin.SharePartitionOffsetInfo kafkaOffset) {
+        this(topicId,
+            topicPartition.topic(),
+            topicPartition.partition(),
+            Either.of(kafkaOffset.startOffset()),
+            null,
+            kafkaOffset.lag().orElse(null),
+            null,
+            kafkaOffset.leaderEpoch().orElse(null));
+    }
+
+    @JsonIgnore // internal use only
     public boolean isDeleted() {
         return Objects.isNull(offset);
     }
@@ -117,6 +136,11 @@ public record OffsetAndMetadata(
 
     public String offsetSpec() {
         return offset.getAlternate();
+    }
+
+    @Override
+    public int compareTo(OffsetAndMetadata o) {
+        return COMPARATOR.compare(this, o);
     }
 
     @Schema(ref = "OffsetSpec")

@@ -1,6 +1,6 @@
 {
     "data": {
-        "type": "consumerGroups",
+        "type": "groups",
         "id": "my-group",
         "attributes": {
             "offsets": [

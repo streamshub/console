@@ -25,7 +25,7 @@ test("Topics page", async ({ page }) => {
     expect(await page.innerText("body")).toContain("Name");
     expect(await page.innerText("body")).toContain("Status");
     expect(await page.innerText("body")).toContain("Partitions");
-    expect(await page.innerText("body")).toContain("Consumer groups");
+    expect(await page.innerText("body")).toContain("Groups");
     expect(await page.innerText("body")).toContain("Storage");
   });
 });

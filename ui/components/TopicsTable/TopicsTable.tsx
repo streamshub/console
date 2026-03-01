@@ -22,12 +22,12 @@ export const TopicsTableColumns = [
   "name",
   "status",
   "partitions",
-  "consumerGroups",
+  "groups",
   "storage",
 ] as const;
 export type SortableTopicsTableColumns = Exclude<
   TopicsTableColumn,
-  "consumerGroups" | "partitions"
+  "groups" | "partitions"
 >;
 export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
 export const SortableColumns = ["name", "storage"];
@@ -175,9 +175,9 @@ export function TopicsTable({
                 </Tooltip>
               </Th>
             );
-          case "consumerGroups":
+          case "groups":
             return (
-              <Th key={key} dataLabel={"Consumer groups"}>
+              <Th key={key} dataLabel={"Groups"}>
                 {t("consumer_groups")}
               </Th>
             );
@@ -212,18 +212,18 @@ export function TopicsTable({
                 {StatusLabel[row.attributes.status!].label}
               </Td>
             );
-          case "consumerGroups":
+          case "groups":
             return (
-              <Td key={key} dataLabel={"Consumer groups"}>
-                {row.relationships.consumerGroups?.meta?.count !== undefined ? (
-                  <Link href={`${baseurl}/${row.id}/consumer-groups`}>
+              <Td key={key} dataLabel={"Groups"}>
+                {row.relationships.groups?.meta?.count !== undefined ? (
+                  <Link href={`${baseurl}/${row.id}/groups`}>
                     <Number
-                      value={row.relationships.consumerGroups?.meta?.count}
+                      value={row.relationships.groups?.meta?.count}
                     />
                   </Link>
                 ) : (
                   <Number
-                    value={row.relationships.consumerGroups?.meta?.count}
+                    value={row.relationships.groups?.meta?.count}
                   />
                 )}
               </Td>
