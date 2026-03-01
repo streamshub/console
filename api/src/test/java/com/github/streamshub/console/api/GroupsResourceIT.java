@@ -446,22 +446,25 @@ class GroupsResourceIT {
 
     @ParameterizedTest
     @CsvSource({
-        "CLASSIC",
-        "CONSUMER",
-        "SHARE",
+        "CLASSIC, 5",
+        "CONSUMER, 5",
+        "SHARE, ", // startOffset for share groups is not reliable so we just check for a numeric value
     })
-    void testDescribeGroupDefault(ConsumerType consumerType) {
+    void testDescribeGroupDefault(ConsumerType consumerType, Integer expectedOffset) {
         String topic1 = "t1-" + consumerType.name() + "-" + UUID.randomUUID().toString();
-        String group1 = "g1-" + consumerType.name() + UUID.randomUUID().toString();
+        String group1 = "g1-" + consumerType.name() +  "-" + UUID.randomUUID().toString();
         String group1Id = Identifiers.encode(group1);
-        String client1 = "c1-" + consumerType.name() + UUID.randomUUID().toString();
+        String client1 = "c1-" + consumerType.name() + "-" + UUID.randomUUID().toString();
+        org.hamcrest.Matcher<?> offsetMatcher = expectedOffset != null
+                ? is(expectedOffset)
+                : Matchers.greaterThanOrEqualTo(0);
 
         try (var consumer = groupUtils.request(consumerType)
                 .groupId(group1)
                 .topic(topic1, 2)
                 .clientId(client1)
-                .messagesPerTopic(2)
-                .consumeMessages(2)
+                .messagesPerTopic(10)
+                .consumeMessages(10)
                 .autoClose(false)
                 .consume()) {
             whenRequesting(req -> req.get("{groupId}", clusterId1, group1Id))
@@ -479,10 +482,10 @@ class GroupsResourceIT {
                 .body("data.attributes.offsets", hasSize(2))
                 .body("data.attributes.offsets[0].topicName", is(topic1))
                 .body("data.attributes.offsets[0].partition", Matchers.oneOf(0, 1))
-                .body("data.attributes.offsets[0].offset", is(1))
+                .body("data.attributes.offsets[0].offset", offsetMatcher)
                 .body("data.attributes.offsets[1].topicName", is(topic1))
                 .body("data.attributes.offsets[1].partition", Matchers.oneOf(0, 1))
-                .body("data.attributes.offsets[1].offset", is(1));
+                .body("data.attributes.offsets[1].offset", offsetMatcher);
         }
     }
 

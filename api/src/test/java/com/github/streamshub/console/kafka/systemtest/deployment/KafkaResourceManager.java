@@ -80,6 +80,10 @@ public class KafkaResourceManager extends ResourceManagerBase implements Quarkus
                     Map.entry("auto.create.topics.enable", "false"),
                     Map.entry("group.coordinator.rebalance.protocols", "classic,consumer,streams"),
                     Map.entry("group.initial.rebalance.delay.ms", "0"),
+                    Map.entry("group.consumer.min.heartbeat.interval.ms", "100"),
+                    Map.entry("group.consumer.heartbeat.interval.ms", "200"),
+                    Map.entry("group.share.min.heartbeat.interval.ms", "100"),
+                    Map.entry("group.share.heartbeat.interval.ms", "200"),
                     Map.entry("share.coordinator.state.topic.min.isr", "1"),
                     Map.entry("share.coordinator.state.topic.num.partitions", "5"),
                     // Value _must_ be 1 since we run a single-node cluster in testing

@@ -749,6 +749,7 @@ public class GroupService {
                         if (offsets != null) {
                             var groupOffsets = offsets.entrySet()
                                 .stream()
+                                .filter(e -> Objects.nonNull(e.getValue()))
                                 .collect(Collectors.toMap(
                                     e -> new PartitionId(
                                                 topicIds.get(e.getKey().topic()),
@@ -830,6 +831,7 @@ public class GroupService {
                             if (offsets != null) {
                                 var groupOffsets = offsets.entrySet()
                                     .stream()
+                                    .filter(e -> Objects.nonNull(e.getValue()))
                                     .collect(Collectors.toMap(
                                         e -> new PartitionId(
                                                     topicIds.get(e.getKey().topic()),
@@ -875,17 +877,22 @@ public class GroupService {
                             return null;
                         });
 
+                Long lag = Optional.ofNullable(offsetsAndMetadata.lag())
+                        .or(() -> endOffset.map(end -> end - offset))
+                        .orElse(null);
+
                 offsets.add(new OffsetAndMetadata(
                         topicPartition.topicId(),
                         topicPartition.topicName(),
                         topicPartition.partition(),
                         offsetsAndMetadata.offset(),
                         endOffset.orElse(null), // log end offset
-                        endOffset.map(end -> end - offset).orElse(null), // lag
+                        lag,
                         offsetsAndMetadata.metadata(),
                         offsetsAndMetadata.leaderEpoch()));
             });
 
+            Collections.sort(offsets);
             group.offsets(offsets);
         }
     }
