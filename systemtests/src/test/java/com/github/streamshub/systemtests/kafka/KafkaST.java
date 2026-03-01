@@ -300,12 +300,10 @@ public class KafkaST extends AbstractST {
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
 
-        String kafkaWarningsString = tcc.page()
-            .locator(new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build())
-            .allInnerTexts()
-            .toString();
-
-        assertTrue(PwUtils.getTrimmedText(kafkaWarningsString).contains(warningMessage));
+        assertTrue(PwUtils.locatorContainsText(
+            tcc.page().locator(new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build()),
+            warningMessage,
+            true));
 
         // Remove wrong config
         LOGGER.info("Remove incorrect Kafka config to get rid off the warning from UI status");

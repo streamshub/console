@@ -18,6 +18,7 @@ import io.strimzi.api.kafka.model.common.template.ContainerEnvVarBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBroker;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
@@ -30,7 +31,9 @@ import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 public class KafkaSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaSetup.class);
@@ -39,20 +42,20 @@ public class KafkaSetup {
 
     public static void setupDefaultKafkaIfNeeded(String namespaceName, String clusterName) {
         setupKafkaIfNeeded(
-            getDefaultKafkaConfigMap(namespaceName, clusterName),
-            getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS),
-            getDefaultControllerNodePools(namespaceName, clusterName, Constants.REGULAR_CONTROLLER_REPLICAS),
-            getDefaultKafkaUser(namespaceName, clusterName),
+            getDefaultKafkaConfigMap(namespaceName, clusterName).build(),
+            getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS).build(),
+            getDefaultControllerNodePools(namespaceName, clusterName, Constants.REGULAR_CONTROLLER_REPLICAS).build(),
+            getDefaultKafkaUser(namespaceName, clusterName).build(),
             getDefaultKafka(namespaceName, clusterName, Environment.ST_KAFKA_VERSION, Constants.REGULAR_BROKER_REPLICAS).build()
         );
     }
 
     public static void setupKafkaWithCcIfNeeded(String namespaceName, String clusterName) {
         setupKafkaIfNeeded(
-            getDefaultKafkaConfigMap(namespaceName, clusterName),
-            getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS),
-            getDefaultControllerNodePools(namespaceName, clusterName, Constants.REGULAR_CONTROLLER_REPLICAS),
-            getDefaultKafkaUser(namespaceName, clusterName),
+            getDefaultKafkaConfigMap(namespaceName, clusterName).build(),
+            getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS).build(),
+            getDefaultControllerNodePools(namespaceName, clusterName, Constants.REGULAR_CONTROLLER_REPLICAS).build(),
+            getDefaultKafkaUser(namespaceName, clusterName).build(),
             getKafkaWithCc(namespaceName, clusterName, Environment.ST_KAFKA_VERSION, Constants.REGULAR_BROKER_REPLICAS).build()
         );
     }
@@ -88,37 +91,36 @@ public class KafkaSetup {
     }
 
     /**
-     * Returns the default Kafka metrics {@link ConfigMap} for the specified namespace and cluster.
+     * Returns the default Kafka metrics {@link ConfigMapBuilder} for the specified namespace and cluster.
      *
      * <p>The ConfigMap is created by loading a predefined YAML template and customizing its metadata
      * with the provided namespace, cluster name, and appropriate labels.
      *
      * @param namespaceName the Kubernetes namespace where the ConfigMap will be created
      * @param clusterName the name of the Kafka cluster
-     * @return a {@link ConfigMap} configured with default Kafka metrics settings
+     * @return a {@link ConfigMapBuilder} configured with default Kafka metrics settings
      */
-    public static ConfigMap getDefaultKafkaConfigMap(String namespaceName, String clusterName) {
+    public static ConfigMapBuilder getDefaultKafkaConfigMap(String namespaceName, String clusterName) {
         return new ConfigMapBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLES_KAFKA_METRICS_CONFIG_MAP, ConfigMap.class))
             .editMetadata()
                 .withName(KafkaNamingUtils.kafkaMetricsConfigMapName(clusterName))
                 .withNamespace(namespaceName)
                 .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName))
-            .endMetadata()
-            .build();
+            .endMetadata();
     }
 
     /**
-     * Creates the default {@link KafkaNodePool} for Kafka brokers with the specified configuration.
+     * Creates the default {@link KafkaNodePoolBuilder} for Kafka brokers with the specified configuration.
      *
      * <p>The node pool is configured with the given namespace, cluster name, number of replicas,
-     * broker role, and JBOD persistent storage of 10Gi per broker with claim deletion enabled.
+     * broker role, and JBOD persistent storage of 1Gi per broker with claim deletion enabled.
      *
      * @param namespaceName the Kubernetes namespace for the KafkaNodePool resource
      * @param clusterName the name of the Kafka cluster
      * @param replicas the number of broker replicas to configure in the node pool
-     * @return a {@link KafkaNodePool} configured as a broker node pool with JBOD storage
+     * @return a {@link KafkaNodePoolBuilder} configured as a broker node pool with JBOD storage
      */
-    public static KafkaNodePool getDefaultBrokerNodePools(String namespaceName, String clusterName, int replicas) {
+    public static KafkaNodePoolBuilder getDefaultBrokerNodePools(String namespaceName, String clusterName, int replicas) {
         return new KafkaNodePoolBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
@@ -133,25 +135,24 @@ public class KafkaSetup {
                     .addNewPersistentClaimStorageVolume()
                         .withId(0)
                         .withDeleteClaim(true)
-                        .withSize("10Gi")
+                        .withSize("1Gi")
                     .endPersistentClaimStorageVolume()
                 .endJbodStorage()
-            .endSpec()
-            .build();
+            .endSpec();
     }
 
     /**
-     * Creates the default {@link KafkaNodePool} for Kafka controllers with the specified configuration.
+     * Creates the default {@link KafkaNodePoolBuilder} for Kafka controllers with the specified configuration.
      *
      * <p>The node pool is configured with the given namespace, cluster name, number of replicas,
-     * controller role, and JBOD persistent storage of 10Gi per controller with claim deletion enabled.
+     * controller role, and JBOD persistent storage of 1Gi per controller with claim deletion enabled.
      *
      * @param namespaceName the Kubernetes namespace for the KafkaNodePool resource
      * @param clusterName the name of the Kafka cluster
      * @param replicas the number of controller replicas to configure in the node pool
-     * @return a {@link KafkaNodePool} configured as a controller node pool with JBOD storage
+     * @return a {@link KafkaNodePoolBuilder} configured as a controller node pool with JBOD storage
      */
-    public static KafkaNodePool getDefaultControllerNodePools(String namespaceName, String clusterName, int replicas) {
+    public static KafkaNodePoolBuilder getDefaultControllerNodePools(String namespaceName, String clusterName, int replicas) {
         return new KafkaNodePoolBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
@@ -166,15 +167,14 @@ public class KafkaSetup {
                     .addNewPersistentClaimStorageVolume()
                         .withId(0)
                         .withDeleteClaim(true)
-                        .withSize("10Gi")
+                        .withSize("1Gi")
                     .endPersistentClaimStorageVolume()
                 .endJbodStorage()
-            .endSpec()
-            .build();
+            .endSpec();
     }
 
     /**
-     * Creates the default {@link KafkaUser} for the given Kafka cluster namespace and name.
+     * Creates the default {@link KafkaUserBuilder} for the given Kafka cluster namespace and name.
      *
      * <p>The KafkaUser is configured with SCRAM-SHA-512 client authentication and simple authorization
      * rules granting permissions to describe cluster resources, read and describe groups, and
@@ -182,9 +182,9 @@ public class KafkaSetup {
      *
      * @param namespaceName the Kubernetes namespace for the KafkaUser resource
      * @param clusterName the name of the Kafka cluster to associate the user with
-     * @return a {@link KafkaUser} configured with default SCRAM-SHA-512 authentication and authorization rules
+     * @return a {@link KafkaUserBuilder} configured with default SCRAM-SHA-512 authentication and authorization rules
      */
-    public static KafkaUser getDefaultKafkaUser(String namespaceName, String clusterName) {
+    public static KafkaUserBuilder getDefaultKafkaUser(String namespaceName, String clusterName) {
         return new KafkaUserBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
@@ -216,12 +216,11 @@ public class KafkaSetup {
                     .withOperations(AclOperation.ALL)
                 .endAcl()
             .endKafkaUserAuthorizationSimple()
-            .endSpec()
-            .build();
+            .endSpec();
     }
 
     /**
-     * Creates a default {@link Kafka} custom resource configured with standard settings.
+     * Creates a default {@link KafkaBuilder} custom resource configured with standard settings.
      *
      * <p>This method configures the Kafka cluster with the specified namespace, cluster name,
      * Kafka version, and number of replicas. It enables KRaft mode and node pools via annotations,
@@ -241,11 +240,20 @@ public class KafkaSetup {
      * @param clusterName the name of the Kafka cluster resource
      * @param kafkaVersion the Kafka version to use (e.g., "3.5.0")
      * @param replicas the number of Kafka broker replicas to configure
-     * @return a fully built {@link Kafka} resource object with the default configuration
+     * @return a fully built {@link KafkaBuilder} resource object with the default configuration
      */
     public static KafkaBuilder getDefaultKafka(String namespaceName, String clusterName, String kafkaVersion, int replicas) {
         // This helps to avoid issues with same-name kafka in different namespace exposing the same hostname
         String hashedNamespace = Utils.hashStub(namespaceName);
+
+        // Set broker hosts dynamically
+        List<GenericKafkaListenerConfigurationBroker> brokerHosts = IntStream.range(0, replicas)
+            .mapToObj(id -> new GenericKafkaListenerConfigurationBrokerBuilder()
+                .withBroker(id)
+                .withHost(String.join(".", "broker-" + id, hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
+                .build())
+            .toList();
+
         return new KafkaBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
             .editMetadata()
@@ -302,19 +310,7 @@ public class KafkaSetup {
                             .withNewBootstrap()
                                 .withHost(String.join(".", "bootstrap", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
                             .endBootstrap()
-                            .withBrokers(
-                                new GenericKafkaListenerConfigurationBrokerBuilder()
-                                    .withBroker(0)
-                                    .withHost(String.join(".", "broker-0", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
-                                .build(),
-                                new GenericKafkaListenerConfigurationBrokerBuilder()
-                                    .withBroker(1)
-                                    .withHost(String.join(".", "broker-1", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
-                                .build(),
-                                new GenericKafkaListenerConfigurationBrokerBuilder()
-                                    .withBroker(2)
-                                    .withHost(String.join(".", "broker-2", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
-                                .build())
+                            .withBrokers(brokerHosts)
                         .endConfiguration()
                         .build())
                     .withNewJmxPrometheusExporterMetricsConfig()

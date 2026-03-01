@@ -131,7 +131,7 @@ public class ConsumerTestUtils {
         selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
 
         PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_DRY_RUN_COMMAND, offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForAttributeContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_DRY_RUN_COMMAND, offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true, true);
         PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_BACK_TO_EDIT_OFFSET_BUTTON);
     }
 
