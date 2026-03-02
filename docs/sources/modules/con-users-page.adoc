@@ -1,0 +1,20 @@
+:_mod-docs-content-type: CONCEPT
+
+[id='con-kafka-users-page-{context}']
+= Kafka Users page
+
+[role="_abstract"]
+The *Kafka Users* page lists Kafka users associated a Kafka cluster. 
+It provides visibility of user authentication settings and configured access control lists (ACLs).
+
+You can search by username to filter the list of users.
+
+The list displays the following information for each user:
+
+Name:: The name of the Kafka user resource.
+Namespace:: The Kubernetes namespace where the user is defined.
+Creation Time:: The date and time the user was created.
+Username:: The Kafka username.
+Authentication:: The configured authentication type, such as `scram-sha-512`.
+
+Click a username to view detailed information about the selected user, including authentication settings and any configured authorization rules (ACLs).

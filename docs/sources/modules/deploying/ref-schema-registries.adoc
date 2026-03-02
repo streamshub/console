@@ -77,7 +77,7 @@ spec:
 ----
 
 * `schemaRegistries.name` defines a unique name for the schema registry connection.
-* `schemaRegistries.url` specifies the base URL of the schema registry API, typically the REST endpoint such as `http://<host>/apis/registry/v2`.
+* `schemaRegistries.url` specifies the base URL of the schema registry API, typically the REST endpoint such as `\http://<host>/apis/registry/v2`.
 * `schemaRegistries.authentication` defines the authentication configuration used to access the schema registry.
 ** `basic` specifies basic authentication and requires a `username` and `password`.
 ** `bearer` specifies bearer token authentication and requires a `token`.

@@ -4,9 +4,7 @@
 = StreamsHub Console overview
 
 [role="_abstract"]
-The StreamsHub Console provides a user interface to facilitate the administration of Kafka clusters, delivering real-time insights for monitoring, managing, and optimizing each cluster from its user interface.
+The StreamsHub Console provides a web interface for administering Kafka clusters. 
+It delivers real-time insights to help you monitor, manage, and troubleshoot cluster performance.
 
-Connect a Kafka cluster managed by Strimzi to gain real-time insights and optimize cluster performance from its user interface. 
-The console's homepage displays connected Kafka clusters, allowing you to access detailed information on components such as brokers, topics, partitions, and consumer groups.
-
-From the console, view the status of a Kafka cluster before navigating to view information on the cluster’s brokers and topics, or the consumer groups connected to the Kafka cluster.
+After connecting a Kafka cluster managed by Strimzi, you can monitor cluster health and resources, inspect Kafka Connect components, and check users and groups associated with the cluster.
