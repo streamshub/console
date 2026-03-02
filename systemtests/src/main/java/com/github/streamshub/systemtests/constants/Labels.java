@@ -62,7 +62,7 @@ public class Labels {
      * @return a {@link LabelSelector} matching the specified labels
      * @throws UnsupportedKafkaRoleException if the process role is not BROKER or CONTROLLER
      */
-    private static LabelSelector getKnpLabelSelector(String clusterName, String poolName, ProcessRoles processRole) {
+    public static LabelSelector getKnpLabelSelector(String clusterName, String poolName, ProcessRoles processRole) {
         Map<String, String> matchLabels = new HashMap<>();
 
         matchLabels.put(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName);
