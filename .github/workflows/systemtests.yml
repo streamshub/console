@@ -86,7 +86,7 @@ jobs:
           echo "ARTIFACTS_RUN_ID=$ARTIFACTS_RUN_ID" >> $GITHUB_ENV
 
       - name: Download Image Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: streamshub-images
           run-id: ${{ env.ARTIFACTS_RUN_ID }}
@@ -213,7 +213,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download all systemtest artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: systemtests-artifacts-*
           merge-multiple: true
