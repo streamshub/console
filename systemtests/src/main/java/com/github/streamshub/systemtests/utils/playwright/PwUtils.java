@@ -92,7 +92,7 @@ public class PwUtils {
      * @param text the input string to be trimmed and cleaned
      * @return a cleaned, single-line trimmed string
      */
-    private static String getTrimmedText(String text) {
+    public static String getTrimmedText(String text) {
         // Replaces newline, NBSP, horizontal whitespace, tab or whitespace with a whitespace
         return text.replace("\n", "")
             .replace("\u00A0", " ")
