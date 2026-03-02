@@ -111,10 +111,6 @@ public class Constants {
      * CRDs
      */
     public static final String CONSOLE_INSTANCE = "console-instance";
-    public static final String BOOTSTRAP_SERVERS = "bootstrap.servers";
-    public static final String SECURITY_PROTOCOL = "security.protocol";
-    public static final String SASL_MECHANISM = "sasl.mechanism";
-    public static final String SASL_JAAS_CONFIG = "sasl.jaas.config";
 
     /**
      * OLM

@@ -8,13 +8,14 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaConnectType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
-import com.github.streamshub.systemtests.resourcetypes.kroxy.KafkaProtocolFilterType;
-import com.github.streamshub.systemtests.resourcetypes.kroxy.KafkaProxyIngressType;
-import com.github.streamshub.systemtests.resourcetypes.kroxy.KafkaProxyType;
-import com.github.streamshub.systemtests.resourcetypes.kroxy.KafkaServiceType;
-import com.github.streamshub.systemtests.resourcetypes.kroxy.VirtualKafkaClusterType;
+import com.github.streamshub.systemtests.resourcetypes.kroxy.KroxyResourceType;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
+import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProtocolFilter;
+import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxy;
+import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxyIngress;
+import io.kroxylicious.kubernetes.api.v1alpha1.KafkaService;
+import io.kroxylicious.kubernetes.api.v1alpha1.VirtualKafkaCluster;
 import io.skodjob.testframe.resources.ClusterRoleBindingType;
 import io.skodjob.testframe.resources.ClusterRoleType;
 import io.skodjob.testframe.resources.ConfigMapType;
@@ -82,11 +83,11 @@ public class SetupUtils {
             new ServiceAccountType(),
             new ServiceType(),
             new SubscriptionType(),
-            new VirtualKafkaClusterType(),
-            new KafkaProxyType(),
-            new KafkaProtocolFilterType(),
-            new KafkaProxyIngressType(),
-            new KafkaServiceType());
+            new KroxyResourceType<>(KafkaProxy.class),
+            new KroxyResourceType<>(KafkaService.class),
+            new KroxyResourceType<>(KafkaProxyIngress.class),
+            new KroxyResourceType<>(VirtualKafkaCluster.class),
+            new KroxyResourceType<>(KafkaProtocolFilter.class));
 
         KubeResourceManager.get().addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF

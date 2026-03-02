@@ -21,7 +21,9 @@ import com.github.streamshub.systemtests.utils.resourceutils.kroxy.KroxyUtils;
 import com.github.streamshub.systemtests.utils.testchecks.KroxyChecks;
 import com.github.streamshub.systemtests.utils.testutils.KroxyTestUtils;
 import io.fabric8.kubernetes.api.model.Secret;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.ScramMechanism;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -98,7 +100,7 @@ public class KroxyST extends AbstractST {
             tcc.kafkaProxyName(), tcc.kafkaProxyIngressName(), tcc.kafkaServiceName(), tcc.virtualKafkaClusterName(), tcc.kafkaProtocolFilterName());
 
         // Auth config for virtual cluster
-        String saslConfig = ResourceUtils.getKubeResource(Secret.class, tcc.namespace(), tcc.kafkaUserName()).getData().get(Constants.SASL_JAAS_CONFIG);
+        String saslConfig = ResourceUtils.getKubeResource(Secret.class, tcc.namespace(), tcc.kafkaUserName()).getData().get(SaslConfigs.SASL_JAAS_CONFIG);
         String decodedSaslConfig = new String(Base64.getDecoder().decode(saslConfig), StandardCharsets.UTF_8);
 
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName())
@@ -109,19 +111,19 @@ public class KroxyST extends AbstractST {
                         .withNamespace(tcc.namespace())
                         .withNewProperties()
                             .addNewValue()
-                                .withName(Constants.BOOTSTRAP_SERVERS)
+                                .withName(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                                 .withValue(KroxyUtils.getKroxyBootstrapServer(tcc.namespace(), tcc.virtualKafkaClusterName(), tcc.kafkaProxyIngressName()))
                             .endValue()
                             .addNewValue()
-                                .withName(Constants.SECURITY_PROTOCOL)
+                                .withName(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG)
                                 .withValue(SecurityProtocol.SASL_PLAINTEXT.name())
                             .endValue()
                             .addNewValue()
-                                .withName(Constants.SASL_MECHANISM)
+                                .withName(SaslConfigs.SASL_MECHANISM)
                                 .withValue(ScramMechanism.SCRAM_SHA_512.mechanismName())
                             .endValue()
                             .addNewValue()
-                                .withName(Constants.SASL_JAAS_CONFIG)
+                                .withName(SaslConfigs.SASL_JAAS_CONFIG)
                                 .withValue(decodedSaslConfig)
                             .endValue()
                         .endProperties()

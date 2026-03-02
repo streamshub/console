@@ -1,10 +1,11 @@
 package com.github.streamshub.systemtests.utils.resourceutils.kafka;
 
-import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.Secret;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.ScramMechanism;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 
 public class KafkaClientsUtils {
@@ -24,9 +25,9 @@ public class KafkaClientsUtils {
      * @return a multi-line SASL configuration string for the Kafka client using SCRAM-SHA-512
      */
     public static String getScramShaConfig(String namespace, String userName, SecurityProtocol securityProtocol) {
-        final String saslJaasConfigDecrypted = Utils.decodeFromBase64(ResourceUtils.getKubeResource(Secret.class, namespace, userName).getData().get(Constants.SASL_JAAS_CONFIG));
-        return Constants.SASL_MECHANISM + "=" + ScramMechanism.SCRAM_SHA_512.mechanismName() + "\n" +
-            Constants.SECURITY_PROTOCOL + "=" + securityProtocol + "\n" +
-            Constants.SASL_JAAS_CONFIG + "=" + saslJaasConfigDecrypted + "\n";
+        final String saslJaasConfigDecrypted = Utils.decodeFromBase64(ResourceUtils.getKubeResource(Secret.class, namespace, userName).getData().get(SaslConfigs.SASL_JAAS_CONFIG));
+        return SaslConfigs.SASL_MECHANISM + "=" + ScramMechanism.SCRAM_SHA_512.mechanismName() + "\n" +
+            CommonClientConfigs.SECURITY_PROTOCOL_CONFIG + "=" + securityProtocol + "\n" +
+            SaslConfigs.SASL_JAAS_CONFIG + "=" + saslJaasConfigDecrypted + "\n";
     }
 }
