@@ -1,8 +1,8 @@
 package com.github.streamshub.systemtests.constants;
 
 import com.github.streamshub.systemtests.exceptions.UnsupportedKafkaRoleException;
-import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.strimzi.api.ResourceLabels;
@@ -21,15 +21,16 @@ public class Labels {
     // ------------
     public static final String COLLECT_ST_LOGS = "streamshub-st";
     public static final String APP = "app";
+    public static final String K8S_COMPONENT_LABEL = "app.kubernetes.io/component";
+    public static final String K8S_INSTANCE_LABEL = "app.kubernetes.io/instance";
+    public static final String K8S_NAME_LABEL = "app.kubernetes.io/name";
 
     // ------------
     // Console
     // ------------
-    public static final String CONSOLE_INSTANCE_LABEL = "app.kubernetes.io/instance";
-
     public static LabelSelector getConsolePodSelector(String instanceName) {
         return new LabelSelectorBuilder()
-            .addToMatchLabels(CONSOLE_INSTANCE_LABEL, ConsoleUtils.getConsoleDeploymentName(instanceName))
+            .addToMatchLabels(K8S_INSTANCE_LABEL, ConsoleUtils.getConsoleDeploymentName(instanceName))
             .build();
     }
 
@@ -114,8 +115,16 @@ public class Labels {
 
     public static LabelSelector getNginxPodLabelSelector() {
         return new LabelSelectorBuilder()
-            .addToMatchLabels("app.kubernetes.io/component", "controller")
-            .addToMatchLabels("app.kubernetes.io/instance", "ingress-nginx")
+            .addToMatchLabels(K8S_COMPONENT_LABEL, "controller")
+            .addToMatchLabels(K8S_INSTANCE_LABEL, "ingress-nginx")
+            .build();
+    }
+
+    public static LabelSelector getkafkaProxyPodLabelSelector(String instanceName) {
+        return new LabelSelectorBuilder()
+            .addToMatchLabels(K8S_COMPONENT_LABEL, "proxy")
+            .addToMatchLabels(K8S_INSTANCE_LABEL, instanceName)
+            .addToMatchLabels(K8S_NAME_LABEL, "kroxylicious")
             .build();
     }
 }

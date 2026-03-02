@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.utils.resourceutils;
+package com.github.streamshub.systemtests.utils.resourceutils.keycloak;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -8,6 +8,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
 import io.skodjob.testframe.TestFrameConstants;

@@ -4,9 +4,9 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -256,7 +256,7 @@ public class KafkaConnectSetup {
                 .addNewIngress()
                     .addNewFrom()
                         .withNewPodSelector()
-                            .addToMatchLabels(Labels.CONSOLE_INSTANCE_LABEL, ConsoleUtils.getConsoleDeploymentName(consoleInstanceName))
+                            .addToMatchLabels(Labels.K8S_INSTANCE_LABEL, ConsoleUtils.getConsoleDeploymentName(consoleInstanceName))
                         .endPodSelector()
                     .endFrom()
                     .addNewPort()

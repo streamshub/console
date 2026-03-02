@@ -129,4 +129,19 @@ public class Constants {
 
     public static final String KEYCLOAK_REALM = "console-realm";
     public static final String TRUST_STORE_PASSWORD = "changeit"; // NOSONAR - test password
+
+    // --------------------------------
+    // ------------- Kroxy ------------
+    // --------------------------------
+    public static final String KAFKA_PROTOCOL_FILTER_PREFIX = "kpf";
+    public static final String KAFKA_PROXY_INGRESS_PREFIX = "kpi";
+    public static final String KAFKA_PROXY_PREFIX = "kp";
+    public static final String KAFKA_SERVICE_PREFIX = "ks";
+    public static final String VIRTUAL_KAFKA_CLUSTER_PREFIX = "vkc";
+    public static final String KROXY_INSTANCE_PREFIX = "kroxy";
+
+    public static final int REGULAR_KAFKA_PROXY_REPLICAS = 1;
+
+    public static final String CONFIG_MAP_PREFIX = "cm";
+    public static final String ACL_CONGIF_MAP_RULES_FIELD = "acl-rules";
 }
