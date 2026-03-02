@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.resourcetypes.ConsoleType;
+import com.github.streamshub.systemtests.resourcetypes.KafkaConnectType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
@@ -65,6 +66,7 @@ public class SetupUtils {
             new KafkaType(),
             new KafkaTopicType(),
             new KafkaUserType(),
+            new KafkaConnectType(),
             new NamespaceType(),
             new OperatorGroupType(),
             new RoleBindingType(),
