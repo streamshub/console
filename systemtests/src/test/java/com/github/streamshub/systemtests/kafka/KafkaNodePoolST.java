@@ -72,11 +72,16 @@ public class KafkaNodePoolST extends AbstractST {
     @Test
     void testFilterKafkaNodesByType() {
         LOGGER.debug("Fetching default broker and controller node IDs");
-        List<Integer> defaultBrokerIds = KafkaUtils.getKnpIds(tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()), ProcessRoles.BROKER);
-        List<Integer> defaultControllerIds = KafkaUtils.getKnpIds(tcc.namespace(), KafkaNamingUtils.controllerPoolName(tcc.kafkaName()), ProcessRoles.CONTROLLER);
+        List<Integer> defaultBrokerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()))
+            .getStatus().getNodeIds();
+
+        List<Integer> defaultControllerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.controllerPoolName(tcc.kafkaName()))
+            .getStatus().getNodeIds();
 
         LOGGER.debug("Fetching additional broker node IDs");
-        List<Integer> addedBrokerIds = KafkaUtils.getKnpIds(tcc.namespace(), ADDITIONAL_BRK_KNP_NAME, ProcessRoles.BROKER);
+        List<Integer> addedBrokerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), ADDITIONAL_BRK_KNP_NAME)
+            .getStatus().getNodeIds();
+
         List<Integer> brokerIds = Stream.of(defaultBrokerIds, addedBrokerIds).flatMap(List::stream).toList();
         int totalNodeCount = brokerIds.size() + defaultControllerIds.size();
 
@@ -130,11 +135,16 @@ public class KafkaNodePoolST extends AbstractST {
     @Test
     void testFilterKafkaNodesByRole() {
         LOGGER.debug("Fetching default broker and controller node IDs");
-        List<Integer> defaultBrokerIds = KafkaUtils.getKnpIds(tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()), ProcessRoles.BROKER);
-        List<Integer> defaultControllerIds = KafkaUtils.getKnpIds(tcc.namespace(), KafkaNamingUtils.controllerPoolName(tcc.kafkaName()), ProcessRoles.CONTROLLER);
+        List<Integer> defaultBrokerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()))
+            .getStatus().getNodeIds();
 
-        LOGGER.debug("Fetching additional broker IDs");
-        List<Integer> addedBrokerIds = KafkaUtils.getKnpIds(tcc.namespace(), ADDITIONAL_BRK_KNP_NAME, ProcessRoles.BROKER);
+        List<Integer> defaultControllerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.controllerPoolName(tcc.kafkaName()))
+            .getStatus().getNodeIds();
+
+        LOGGER.debug("Fetching additional broker node IDs");
+        List<Integer> addedBrokerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), ADDITIONAL_BRK_KNP_NAME)
+            .getStatus().getNodeIds();
+
         List<Integer> brokerIds = Stream.of(defaultBrokerIds, addedBrokerIds).flatMap(List::stream).toList();
         int totalNodeCount = brokerIds.size() + defaultControllerIds.size();
 
