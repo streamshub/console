@@ -181,7 +181,7 @@ jobs:
           mvn clean verify -B --no-transfer-progress -pl systemtests $PARAMETERS
 
       - name: Archive systemtest artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: systemtests-artifacts-${{ matrix.testcase }}${{ matrix.profile && format('-{0}', matrix.profile) || '' }}
