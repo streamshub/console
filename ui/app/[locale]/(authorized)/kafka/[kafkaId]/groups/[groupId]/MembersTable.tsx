@@ -111,19 +111,26 @@ export function MembersTable({
                 {row.clientId}
               </Td>
             );
-          case "overallLag":
-            const topics = row.assignments?.map((a) => a.topicId);
+          case "overallLag": {
+            const partitions: { topicName: string, partition: number }[] = row
+              .assignments
+              ?.map(a => {
+                const partition = { topicName: a.topicName, partition: a.partition };
+                return partition;
+              }) ?? [];
+
             return (
               <Td key={key} dataLabel={"Overall lag"}>
                 <Number
                   value={consumerGroup!.attributes.offsets
-                    ?.filter((o) => topics?.includes(o.topicId))
-                    .map((o) => o.lag)
+                    ?.filter(o => partitions.some(p => p.topicName === o.topicName && p.partition === o.partition))
+                    .map(o => o.lag)
                     // lag values may not be available from API, e.g. when there is an error listing the topic offsets
                     .reduce((acc, v) => (acc ?? NaN) + (v ?? NaN), 0)}
                 />
               </Td>
             );
+          }
           case "assignedPartitions":
             return (
               <Td key={key} dataLabel={"Assigned partitions"}>

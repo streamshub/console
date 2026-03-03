@@ -268,7 +268,7 @@ public class GroupService {
                         return group;
                     }
                 }
-                throw new BadRequestException("Group patch not supported for group type or protocol.");
+                throw new BadRequestException("Patch not supported for group type or protocol.");
             })
             .thenComposeAsync(group -> Optional.ofNullable(patch.offsets())
                     .filter(Predicate.not(Collection::isEmpty))

@@ -270,7 +270,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
                 .stream()
-                .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
+                .map(member -> MemberDescription.fromKafkaModel(description, member, topicIds))
                 .toList());
 
         group.authorizedOperations(Optional.ofNullable(description.authorizedOperations())
@@ -295,7 +295,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
                 .stream()
-                .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
+                .map(member -> MemberDescription.fromKafkaModel(description, member, topicIds))
                 .toList());
 
         group.authorizedOperations(Optional.ofNullable(description.authorizedOperations())
@@ -319,7 +319,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
                 .stream()
-                .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
+                .map(member -> MemberDescription.fromKafkaModel(description, member, topicIds))
                 .toList());
 
         group.authorizedOperations(Optional.ofNullable(description.authorizedOperations())
@@ -343,7 +343,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
                 .stream()
-                .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
+                .map(member -> MemberDescription.fromKafkaModel(description, member, topicIds))
                 .toList());
 
         group.authorizedOperations(Optional.ofNullable(description.authorizedOperations())

@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 import RichText from "@/components/RichText";
+import { resetButtonDisabled } from "@/utils/groups";
 import { hasPrivilege } from "@/utils/privileges";
 
 export default function Page({
@@ -26,13 +27,13 @@ async function ConnectedAppHeader({
 }: {
   params: KafkaConsumerGroupMembersParams;
 }) {
-  const consumerGroup = (await getConsumerGroup(kafkaId, groupId)).payload;
+  const group = (await getConsumerGroup(kafkaId, groupId)).payload;
   let disabled = true;
   let groupIdDisplay = "";
 
-  if (consumerGroup) {
-    disabled = consumerGroup.attributes.state !== "EMPTY" || !hasPrivilege("UPDATE", consumerGroup);
-    groupIdDisplay = consumerGroup.attributes.groupId;
+  if (group) {
+    disabled = resetButtonDisabled(group) || !hasPrivilege("UPDATE", group);
+    groupIdDisplay = group.attributes.groupId;
   }
 
   return <Header params={{ kafkaId, groupId, groupIdDisplay }} disabled={disabled} />;

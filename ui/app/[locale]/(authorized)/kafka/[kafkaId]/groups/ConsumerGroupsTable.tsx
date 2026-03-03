@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import RichText from "@/components/RichText";
+import { describeEnabled, resetMenuDisabled } from "@/utils/groups";
 import { hasPrivilege } from "@/utils/privileges";
 import { TableVariant } from "@patternfly/react-table";
 
@@ -125,6 +126,8 @@ const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   },
 };
 
+
+
 export function ConsumerGroupsTable({
   kafkaId,
   page,
@@ -189,13 +192,13 @@ export function ConsumerGroupsTable({
           case "type":
             return (
               <Th key={key}>
-                Type
+                {t("GroupsTable.type")}
               </Th>
             );
           case "protocol":
             return (
               <Th key={key}>
-                Protocol
+                {t("GroupsTable.protocol")}
               </Th>
             );
           case "state":
@@ -262,7 +265,7 @@ export function ConsumerGroupsTable({
                 key={key}
                 dataLabel={t("GroupsTable.group_id")}
               >
-                {row.attributes.protocol === "consumer" && row.meta?.describeAvailable
+                { describeEnabled(row)
                     ? <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
                         {row.attributes.groupId}
                       </Link>
@@ -334,7 +337,6 @@ export function ConsumerGroupsTable({
       }}
       renderActions={({ row, ActionsColumn }) => (
         <ActionsColumn
-          isDisabled={!hasPrivilege("UPDATE", row) || (row.attributes.protocol !== "consumer") || (!row.meta?.describeAvailable)}
           items={[
             {
               title: t("GroupsTable.reset_offset"),
@@ -342,6 +344,7 @@ export function ConsumerGroupsTable({
                 row.attributes.state === "EMPTY"
                   ? null
                   : t("GroupsTable.reset_offset_description"),
+              isDisabled: row.attributes.state !== "EMPTY" || !hasPrivilege("UPDATE", row) || resetMenuDisabled(row),
               onClick: () => onResetOffset(row),
             },
           ]}

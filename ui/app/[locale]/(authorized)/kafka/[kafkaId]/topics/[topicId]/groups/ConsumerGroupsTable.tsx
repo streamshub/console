@@ -158,13 +158,13 @@ export function ConsumerGroupsTable({
           case "type":
             return (
               <Th key={key}>
-                Type
+                {t("GroupsTable.type")}
               </Th>
             );
           case "protocol":
             return (
               <Th key={key}>
-                Protocol
+                {t("GroupsTable.protocol")}
               </Th>
             );
           case "state":

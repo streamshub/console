@@ -473,6 +473,8 @@
     "title": "Groups",
     "no_consumer_groups": "No groups",
     "group_id": "Group ID",
+    "type": "Type",
+    "protocol": "Protocol",
     "state": "State",
     "state_tooltip": "<p>Reflects the current operational state of the group.</p><p>Possible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning, 'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.</p><p>If in the 'Empty' state, consider adding members to the group.</p>",
     "overall_lag": "Overall lag",
