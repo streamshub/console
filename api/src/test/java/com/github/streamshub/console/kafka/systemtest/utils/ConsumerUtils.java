@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
@@ -42,7 +43,16 @@ import org.apache.kafka.common.GroupState;
 import org.apache.kafka.common.GroupType;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.TaskMetadata;
+import org.apache.kafka.streams.kstream.KStream;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
@@ -275,11 +285,8 @@ public class ConsumerUtils {
 
         public <C extends AutoCloseable> ConsumerResponse<C> consume() {
             switch (type) {
-                case CLASSIC, CONSUMER:
+                case CLASSIC, CONSUMER, SHARE, STREAMS:
                     return ConsumerUtils.this.consume(this, autoClose);
-                case SHARE:
-                    return ConsumerUtils.this.consume(this, autoClose);
-                case STREAMS:
                 default:
                     throw new IllegalArgumentException("Unsupported consumer type: " + type);
             }
@@ -397,7 +404,7 @@ public class ConsumerUtils {
                 .consumer();
     }
 
-    <C extends AutoCloseable> ConsumerResponse<C> consume(ConsumerRequest request, boolean autoClose) {
+    private <C extends AutoCloseable> ConsumerResponse<C> consume(ConsumerRequest request, boolean autoClose) {
         ConsumerResponse<C> response = new ConsumerResponse<>(request);
 
         try (Admin admin = Admin.create(adminConfig)) {
@@ -409,10 +416,18 @@ public class ConsumerUtils {
 
             var consumePromise = CompletableFuture
                     .runAsync(() -> {
-                        if (request.type == ConsumerType.SHARE) {
-                            shareConsumeMessages(admin, request, response);
-                        } else {
-                            consumeMessages(request, response);
+                        switch (request.type) {
+                            case CLASSIC, CONSUMER:
+                                consume(request, response);
+                                break;
+                            case SHARE:
+                                share(admin, request, response);
+                                break;
+                            case STREAMS:
+                                streams(request, response);
+                                break;
+                            default:
+                                throw new IllegalArgumentException("Unsupported consumer type: " + request.type);
                         }
                     }, executor);
 
@@ -435,7 +450,7 @@ public class ConsumerUtils {
         return response;
     }
 
-    CompletionStage<Void> produceMessages(ConsumerRequest consumerRequest) {
+    private CompletionStage<Void> produceMessages(ConsumerRequest consumerRequest) {
         if (consumerRequest.messagesPerTopic < 1) {
             return CompletableFuture.completedStage(null);
         }
@@ -455,6 +470,7 @@ public class ConsumerUtils {
                 while (msgCount > -1) {
                     for (int p = 0, m = topic.numPartitions(); p < m && --msgCount > -1; p++) {
                         int partition = p;
+                        String key = "%s:%d:%d".formatted(topicName, partition, msgCount);
                         Object value = consumerRequest.messageSupplier.apply(msgCount);
                         CompletableFuture<Void> promise = new CompletableFuture<>();
                         pending.add(promise);
@@ -471,7 +487,7 @@ public class ConsumerUtils {
                                 topicName,
                                 partition,
                                 timestamp,
-                                null /* key */,
+                                key,
                                 value),
                             (metadata, exception) -> {
                                 if (exception != null) {
@@ -490,12 +506,14 @@ public class ConsumerUtils {
     }
 
     @SuppressWarnings("unchecked")
-    <C extends AutoCloseable> void consumeMessages(ConsumerRequest request, ConsumerResponse<C> response) {
+    private <C extends AutoCloseable> void consume(ConsumerRequest request, ConsumerResponse<C> response) {
         Properties cfg = ClientsConfig.getConsumerConfig(config, request.groupId);
 
         cfg.put(ConsumerConfig.GROUP_PROTOCOL_CONFIG, request.type.protocol().name.toLowerCase(Locale.ROOT));
         cfg.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        cfg.put(CommonClientConfigs.CLIENT_ID_CONFIG, request.clientId);
+        if (request.clientId != null) {
+            cfg.put(CommonClientConfigs.CLIENT_ID_CONFIG, request.clientId);
+        }
 
         if (request.type == ConsumerType.CLASSIC) {
             cfg.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
@@ -539,9 +557,17 @@ public class ConsumerUtils {
     }
 
     @SuppressWarnings("unchecked")
-    <C extends AutoCloseable> void shareConsumeMessages(Admin admin, ConsumerRequest request, ConsumerResponse<C> response) {
+    private <C extends AutoCloseable> void share(Admin admin, ConsumerRequest request, ConsumerResponse<C> response) {
         Properties cfg = ClientsConfig.getConsumerConfig(config, request.groupId);
-        cfg.put(CommonClientConfigs.CLIENT_ID_CONFIG, request.clientId);
+        String clientId;
+
+        if (request.clientId != null) {
+            clientId = request.clientId;
+        } else {
+            clientId = "consumer-" + request.groupId + "-0";
+        }
+
+        cfg.put(CommonClientConfigs.CLIENT_ID_CONFIG, clientId);
         cfg.put(ConsumerConfig.SHARE_ACKNOWLEDGEMENT_MODE_CONFIG, "explicit");
 
         if (request.consumeMessages > 0) {
@@ -560,7 +586,7 @@ public class ConsumerUtils {
             consumer.subscribe(topics);
             AtomicInteger status = new AtomicInteger(0);
             await().atMost(10, TimeUnit.SECONDS).ignoreExceptions()
-                .until(() -> assignmentReceived(admin, consumer, request, status));
+                .until(() -> assignmentReceived(admin, consumer, clientId, request, status));
 
             consumer.commitSync();
             consume(request, response, consumer::poll, consumer::acknowledge, consumer::subscription);
@@ -598,7 +624,63 @@ public class ConsumerUtils {
         }
     }
 
-    private boolean assignmentReceived(Admin admin, ShareConsumer<?, ?> consumer, ConsumerRequest request, AtomicInteger status) {
+    public static class StringSerde implements Serde<String> {
+        @Override
+        public Deserializer<String> deserializer() {
+            return new StringDeserializer();
+        }
+        @Override
+        public Serializer<String> serializer() {
+            return new StringSerializer();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <C extends AutoCloseable> void streams(ConsumerRequest request, ConsumerResponse<C> response) {
+        Properties cfg = ClientsConfig.getConsumerConfig(config, request.groupId);
+        cfg.put(StreamsConfig.APPLICATION_ID_CONFIG, cfg.get(ConsumerConfig.GROUP_ID_CONFIG));
+        cfg.put(StreamsConfig.GROUP_PROTOCOL_CONFIG, GroupType.STREAMS.name().toLowerCase(Locale.ROOT));
+        cfg.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, StringSerde.class);
+        cfg.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, StringSerde.class);
+        cfg.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, "500");
+
+        StreamsBuilder builder = new StreamsBuilder();
+        KStream<String, String> stream = builder.stream(request.topics.stream().map(NewTopic::name).toList());
+        stream.foreach((key, value) -> {
+            var keyElements = key.split(":");
+            var rec = new ConsumerRecord<String, String>(
+                    keyElements[0],
+                    Integer.parseInt(keyElements[1]),
+                    Long.parseLong(keyElements[2]),
+                    key,
+                    value
+            );
+            response.add(rec);
+        });
+
+        Properties properties = new Properties();
+        cfg.forEach(properties::put);
+        @SuppressWarnings("resource")
+        KafkaStreams streams = new KafkaStreams(builder.build(), properties);
+        response.consumer = (C) streams;
+        streams.start();
+        await().atMost(10, TimeUnit.SECONDS).until(() -> streams.state() == KafkaStreams.State.RUNNING);
+        response.consumerRunning.set(true);
+
+        // Wait until all records have been read
+        await().atMost(20, TimeUnit.SECONDS).until(() -> !response.continuePolling());
+
+        // Finally, wait until some offsets have been committed
+        await().atMost(20, TimeUnit.SECONDS).until(() -> streams
+                .metadataForLocalThreads()
+                .stream()
+                .flatMap(meta -> Stream.concat(meta.activeTasks().stream(), meta.standbyTasks().stream())
+                        .map(TaskMetadata::committedOffsets))
+                .flatMap(offsets -> offsets.values().stream())
+                .anyMatch(offset -> offset >= 0));
+    }
+
+    private boolean assignmentReceived(Admin admin, ShareConsumer<?, ?> consumer, String clientId, ConsumerRequest request, AtomicInteger status) {
         consumer.poll(Duration.ofMillis(200));
 
         var group = admin.describeShareGroups(List.of(request.groupId))
@@ -620,26 +702,26 @@ public class ConsumerUtils {
         return group.members()
                 .stream()
                 .filter(m -> {
-                    if (m.clientId().equals(request.clientId)) {
+                    if (m.clientId().equals(clientId)) {
                         if (status.compareAndSet(1, 2)) {
                             log.debugf("Client %s became a member of group %s",
-                                    request.clientId, request.groupId);
+                                    clientId, request.groupId);
                         }
                         return true;
                     }
                     log.debugf("Client %s is not yet a member of group %s",
-                            request.clientId, request.groupId);
+                            clientId, request.groupId);
                     return false;
                 })
                 .findFirst()
                 .map(member -> {
                     if (member.assignment().topicPartitions().isEmpty()) {
                         log.debugf("Client %s does not yet have an assignments in group %s",
-                                request.clientId, request.groupId);
+                                clientId, request.groupId);
                         return false;
                     }
                     if (status.compareAndSet(2, 3)) {
-                        log.debugf("Client %s received assignment in group %s: %s", request.clientId,
+                        log.debugf("Client %s received assignment in group %s: %s", clientId,
                                 request.groupId, member.assignment().topicPartitions());
                     }
                     return true;
