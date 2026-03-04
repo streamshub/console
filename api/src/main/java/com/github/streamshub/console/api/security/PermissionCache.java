@@ -24,6 +24,7 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.AuditConfig;
 import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
 
 @ApplicationScoped
 class PermissionCache {
@@ -121,6 +122,13 @@ class PermissionCache {
                 Privilege[] actions = rule.getPrivileges().toArray(Privilege[]::new);
 
                 for (var resource : rule.getResources()) {
+                    if ("consumerGroups".equals(resource)) {
+                        log.warnf("Kafka cluster %s role %s uses deprecated resource `consumerGroups`. Use `groups` instead.",
+                                kafkaCluster.getName(),
+                                roleName);
+                        resource = ResourceTypes.Kafka.GROUPS.value();
+                    }
+
                     Collection<String> resourceNames = rule.getResourceNames();
                     rulePermissions.add(new ConsolePermissionPossessed(
                             kafkaContext.securityResourcePath(resource),

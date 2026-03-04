@@ -32,7 +32,7 @@ export const WithTopics: Story = {
             totalLeaderLogBytes: 1234,
           },
           relationships: {
-            consumerGroups: {
+            groups: {
               data: [{}],
             },
           },
@@ -46,7 +46,7 @@ export const WithTopics: Story = {
             totalLeaderLogBytes: 4212,
           },
           relationships: {
-            consumerGroups: {
+            groups: {
               data: [{}, {}],
             },
           },
@@ -60,7 +60,7 @@ export const WithTopics: Story = {
             totalLeaderLogBytes: 355312,
           },
           relationships: {
-            consumerGroups: {
+            groups: {
               data: [],
             },
           },
@@ -74,7 +74,7 @@ export const WithTopics: Story = {
             totalLeaderLogBytes: 0,
           },
           relationships: {
-            consumerGroups: {
+            groups: {
               data: [],
             },
           },
@@ -88,7 +88,7 @@ export const WithTopics: Story = {
             totalLeaderLogBytes: 99999999999999,
           },
           relationships: {
-            consumerGroups: {
+            groups: {
               data: new Array(99999).fill({}),
             },
           },

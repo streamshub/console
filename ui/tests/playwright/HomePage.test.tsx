@@ -8,7 +8,7 @@ test.skip("Home page", async ({ page }) => {
       .evaluateAll((ths) => ths.map((th) => th.Content?.trim()));
     expect(columnHeadings).toContain("Name");
     expect(columnHeadings).toContain("Brokers");
-    expect(columnHeadings).toContain("Consumer groups");
+    expect(columnHeadings).toContain("Groups");
     expect(columnHeadings).toContain("Kafka version");
     expect(columnHeadings).toContain("Project");
   });

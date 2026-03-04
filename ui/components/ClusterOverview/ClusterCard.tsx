@@ -43,7 +43,7 @@ type ClusterCardProps = {
   kafkaDetail: ClusterDetail | null;
   brokersOnline?: number;
   brokersTotal?: number;
-  consumerGroups?: number;
+  groups?: number;
   kafkaId: string | undefined;
   messages: Array<{
     variant: "danger" | "warning";
@@ -59,7 +59,7 @@ export function ClusterCard({
   kafkaDetail,
   brokersOnline,
   brokersTotal,
-  consumerGroups,
+  groups,
   messages,
   kafkaId,
   managed,
@@ -202,7 +202,7 @@ export function ClusterCard({
                   <GridItem span={12} xl={4}>
                     <Link
                       className="pf-v6-u-font-size-xl"
-                      href={"./consumer-groups"}
+                      href={"./groups"}
                     >
                       {isLoading ? (
                         <Skeleton
@@ -211,7 +211,7 @@ export function ClusterCard({
                           style={{ display: "inline-block" }}
                         />
                       ) : (
-                        <Number value={consumerGroups} />
+                        <Number value={groups} />
                       )}
                     </Link>
                     <Content>

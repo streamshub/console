@@ -2,7 +2,7 @@ import { ApiErrorSchema } from "@/api/api";
 import { z } from "zod";
 
 export const describeTopicsQuery = encodeURI(
-  "fields[topics]=name,status,visibility,partitions,numPartitions,authorizedOperations,configs,totalLeaderLogBytes,consumerGroups",
+  "fields[topics]=name,status,visibility,partitions,numPartitions,authorizedOperations,configs,totalLeaderLogBytes,groups",
 );
 const OffsetSchema = z.object({
   offset: z.number().optional(),
@@ -88,7 +88,7 @@ const TopicSchema = z.object({
     totalLeaderLogBytes: z.number().optional().nullable(),
   }),
   relationships: z.object({
-    consumerGroups: z
+    groups: z
       .object({
         meta: z.record(z.string(), z.any()).optional(),
         data: z.array(z.any()),
@@ -120,7 +120,7 @@ const TopicListItemSchema = z.object({
     totalLeaderLogBytes: true,
   }),
   relationships: TopicSchema.shape.relationships.pick({
-    consumerGroups: true,
+    groups: true,
   }),
 });
 export type TopicListItem = z.infer<typeof TopicListItemSchema>;

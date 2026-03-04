@@ -38,20 +38,20 @@ public class PwPageUrls {
         return getTopicsPage(tcc, kafkaName) + "/" + topicId;
     }
 
-    public static String getSingleTopicConsumerGroupsPage(TestCaseConfig tcc, String kafkaName, String topicId) {
-        return getSingleTopicPage(tcc, kafkaName, topicId) + "/consumer-groups";
+    public static String getSingleTopicGroupsPage(TestCaseConfig tcc, String kafkaName, String topicId) {
+        return getSingleTopicPage(tcc, kafkaName, topicId) + "/groups";
     }
 
     public static String getMessagesPage(TestCaseConfig tcc, String kafkaName, String topicId) {
         return getSingleTopicPage(tcc, kafkaName, topicId) + "/messages";
     }
 
-    public static String getConsumerGroupsPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
-        return getKafkaBaseUrl(tcc, kafkaName) + "/consumer-groups/" + consumerGroupName;
+    public static String getGroupsPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
+        return getKafkaBaseUrl(tcc, kafkaName) + "/groups/" + consumerGroupName;
     }
 
-    public static String getConsumerGroupsResetOffsetPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
-        return getKafkaBaseUrl(tcc, kafkaName) + "/consumer-groups/" + consumerGroupName + "/reset-offset";
+    public static String getGroupsResetOffsetPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
+        return getGroupsPage(tcc, kafkaName, consumerGroupName) + "/reset-offset";
     }
 
     /** This name might be unintuitive, but connector page is linked as Kafka Connect in the sidebar.
