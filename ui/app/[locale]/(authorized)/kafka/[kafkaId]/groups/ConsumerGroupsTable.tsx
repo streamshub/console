@@ -344,7 +344,7 @@ export function ConsumerGroupsTable({
                 row.attributes.state === "EMPTY"
                   ? null
                   : t("GroupsTable.reset_offset_description"),
-              isDisabled: row.attributes.state !== "EMPTY" || !hasPrivilege("UPDATE", row) || resetMenuDisabled(row),
+              isDisabled: !hasPrivilege("UPDATE", row) || resetMenuDisabled(row),
               onClick: () => onResetOffset(row),
             },
           ]}
