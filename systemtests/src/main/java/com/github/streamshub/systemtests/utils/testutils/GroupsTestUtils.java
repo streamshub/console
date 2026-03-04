@@ -4,19 +4,19 @@ import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
-import com.github.streamshub.systemtests.locators.SingleConsumerGroupPageSelectors;
+import com.github.streamshub.systemtests.locators.SingleGroupPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.microsoft.playwright.Locator;
 import org.apache.logging.log4j.Logger;
 
-public class ConsumerTestUtils {
-    private static final Logger LOGGER = LogWrapper.getLogger(ConsumerTestUtils.class);
+public class GroupsTestUtils {
+    private static final Logger LOGGER = LogWrapper.getLogger(GroupsTestUtils.class);
 
-    private ConsumerTestUtils() {}
+    private GroupsTestUtils() {}
 
     /**
-     * Selects the offset reset type in the consumer group reset UI.
+     * Selects the offset reset type in the group reset UI.
      * <p>
      * This method handles the dropdown selection of various offset types such as:
      * {@code EARLIEST}, {@code LATEST}, {@code DATE_TIME}, and {@code CUSTOM_OFFSET}.
@@ -29,29 +29,29 @@ public class ConsumerTestUtils {
      */
     public static void selectResetOffsetType(TestCaseConfig tcc, ResetOffsetType offsetType, String value) {
         LOGGER.debug("Select reset offset type");
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON);
 
         switch (offsetType) {
             case EARLIEST:
-                PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET);
+                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET);
                 break;
             case LATEST:
-                PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_LATEST_OFFSET);
+                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_LATEST_OFFSET);
                 break;
             case DATE_TIME:
-                Locator specificPartitionRadio = tcc.page().locator(SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_SELECTED_PARTITION_RADIO);
+                Locator specificPartitionRadio = tcc.page().locator(SingleGroupPageSelectors.SGPS_RESET_PAGE_SELECTED_PARTITION_RADIO);
                 if (specificPartitionRadio.isVisible() && specificPartitionRadio.getAttribute(Constants.CHECKED_ATTRIBUTE) != null) {
-                    PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_SPECIFIC_PARTITION_SPECIFIC_DATETIME_OFFSET);
+                    PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_PARTITION_SPECIFIC_DATETIME_OFFSET);
                 } else {
-                    PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET);
+                    PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET);
                 }
                 break;
             case CUSTOM_OFFSET:
-                PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET);
-                PwUtils.waitForLocatorAndFill(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT, value);
+                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET);
+                PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT, value);
                 break;
             case DELETE_COMMITED_OFFSETS:
-                PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS);
+                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS);
                 break;
         }
     }
@@ -72,13 +72,13 @@ public class ConsumerTestUtils {
         LOGGER.debug("Select reset offset datetime type and fill value");
         switch (dateTimeType) {
             case UNIX_EPOCH:
-                PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO);
+                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO);
                 break;
             case ISO_8601:
-                PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO);
+                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO);
                 break;
         }
-        PwUtils.waitForLocatorAndFill(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT, value);
+        PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT, value);
     }
 
     /**
@@ -107,7 +107,7 @@ public class ConsumerTestUtils {
         }
 
         if (offsetType.equals(ResetOffsetType.CUSTOM_OFFSET)) {
-            PwUtils.waitForLocatorAndFill(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT, value);
+            PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT, value);
         }
     }
 
@@ -130,9 +130,9 @@ public class ConsumerTestUtils {
         LOGGER.info("DryRun reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
         selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
 
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_DRY_RUN_COMMAND, offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true, true);
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_BACK_TO_EDIT_OFFSET_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
+        PwUtils.waitForAttributeContainsText(tcc, SingleGroupPageSelectors.SGPS_DRY_RUN_COMMAND, offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true, true);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_BACK_TO_EDIT_OFFSET_BUTTON);
     }
 
     /**
@@ -152,6 +152,6 @@ public class ConsumerTestUtils {
     public static void execResetOffset(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.info("Reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
         selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_RESET_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_RESET_BUTTON);
     }
 }

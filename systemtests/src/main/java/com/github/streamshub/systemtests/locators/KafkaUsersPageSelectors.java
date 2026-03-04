@@ -39,7 +39,7 @@ public class KafkaUsersPageSelectors {
     }
 
     // Single user page
-    public static final String KUPS_KAFKA_USER_NAME_HEADER = SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME;
+    public static final String KUPS_KAFKA_USER_NAME_HEADER = SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME;
 
 
     // Authorization table

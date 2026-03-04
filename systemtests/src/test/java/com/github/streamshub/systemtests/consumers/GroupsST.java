@@ -11,10 +11,10 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
-import com.github.streamshub.systemtests.locators.ConsumerGroupsPageSelectors;
+import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
-import com.github.streamshub.systemtests.locators.SingleConsumerGroupPageSelectors;
+import com.github.streamshub.systemtests.locators.SingleGroupPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
@@ -29,7 +29,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUti
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
-import com.github.streamshub.systemtests.utils.testutils.ConsumerTestUtils;
+import com.github.streamshub.systemtests.utils.testutils.GroupsTestUtils;
 import com.microsoft.playwright.Locator;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.TestFrameConstants;
@@ -55,8 +55,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
-public class ConsumerST extends AbstractST {
-    private static final Logger LOGGER = LogWrapper.getLogger(ConsumerST.class);
+public class GroupsST extends AbstractST {
+    private static final Logger LOGGER = LogWrapper.getLogger(GroupsST.class);
     private static final String RESET_OFFSET_BUCKET = "ResetOffset";
 
     // Shared
@@ -125,40 +125,40 @@ public class ConsumerST extends AbstractST {
         LOGGER.info("Verify consumer group is displaying correctly");
 
         LOGGER.info("Navigate to single consumer group page encoded to '{}'", consumerGroupEncodedName);
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName));
-        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName));
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
 
-        LOGGER.info("Navigate to consumer groups page to check group is present");
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), ""), PwUtils.getDefaultNavigateOpts());
+        LOGGER.info("Navigate to groups page to check group is present");
+        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName(), ""), PwUtils.getDefaultNavigateOpts());
 
-        PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_HEADER_TITLE, "Consumer Groups", true);
-        PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS, consumerGroupName, true);
+        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, "Groups", true);
+        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_TABLE_ITEMS, consumerGroupName, true);
 
         LOGGER.info("Try click-through link and get redirected to a correct page");
         PwUtils.waitForLocatorAndClick(tcc.page()
-            .locator(ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS)
+            .locator(GroupsPageSelectors.GPS_TABLE_ITEMS)
             .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
 
-        tcc.page().waitForURL(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
-        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+        tcc.page().waitForURL(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
 
         LOGGER.info("Check topic page if consumer group is present");
         final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
 
-        tcc.page().navigate(PwPageUrls.getSingleTopicConsumerGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
-        tcc.page().waitForURL(PwPageUrls.getSingleTopicConsumerGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
+        tcc.page().navigate(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
+        tcc.page().waitForURL(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
 
-        PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS, consumerGroupName, true);
+        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_TABLE_ITEMS, consumerGroupName, true);
 
         LOGGER.info("Try click-through link and get redirected to a correct page");
         PwUtils.waitForLocatorAndClick(tcc.page()
-            .locator(ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS)
+            .locator(GroupsPageSelectors.GPS_TABLE_ITEMS)
             .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
 
-        tcc.page().waitForURL(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
-        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+        tcc.page().waitForURL(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
     }
 
@@ -231,7 +231,7 @@ public class ConsumerST extends AbstractST {
      *
      * <p> For each scenario provided by {@link #resetOffsetAllTopicsScenarios()}:</p>
      * <ul>
-     *   <li>Navigates to the Consumer Groups page for the test consumer group.</li>
+     *   <li>Navigates to the Groups page for the test consumer group.</li>
      *   <li>Verifies the current default offset for each topic.</li>
      *   <li> If a DATE_TIME reset is used, calculates the appropriate timestamp
      *       based on the expected offset and selected date/time format (UNIX_EPOCH or ISO-8601).</li>
@@ -265,9 +265,9 @@ public class ConsumerST extends AbstractST {
 
         assertFalse(kafkaTopicNames.isEmpty());
 
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
-        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
-        PwUtils.waitForElementEnabledState(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
+        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+        PwUtils.waitForElementEnabledState(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
 
         // Look at the offset in UI
         for (String kafkaTopicName : kafkaTopicNames) {
@@ -292,11 +292,11 @@ public class ConsumerST extends AbstractST {
                 }
             }
 
-            tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
-            PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+            tcc.page().navigate(PwPageUrls.getGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
 
-            ConsumerTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
-            ConsumerTestUtils.execResetOffset(tcc, resetType, dateTimeType, resetValue);
+            GroupsTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
+            GroupsTestUtils.execResetOffset(tcc, resetType, dateTimeType, resetValue);
 
             LOGGER.info("Verify expected consumer offset value");
             assertEquals(String.valueOf(expectedOffset),
@@ -321,9 +321,9 @@ public class ConsumerST extends AbstractST {
 
         assertFalse(kafkaTopicName.isEmpty());
 
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
-        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
-        PwUtils.waitForElementEnabledState(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
+        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+        PwUtils.waitForElementEnabledState(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
 
         LOGGER.info("Verify default consumer offset");
         KafkaCmdUtils.setConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, RESET_OFFSET_CONSUMER_GROUP_NAME, kafkaTopicName, String.valueOf(messageCount),
@@ -346,19 +346,19 @@ public class ConsumerST extends AbstractST {
             }
         }
 
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
-        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+        tcc.page().navigate(PwPageUrls.getGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
         // Dry-run
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_SELECTED_TOPIC_RADIO);
-        PwUtils.waitForLocatorAndFill(tcc, SingleConsumerGroupPageSelectors.SCGPS_SELECTED_TOPIC_INPUT, kafkaTopicName);
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON);
-        ConsumerTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_RADIO);
+        PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_INPUT, kafkaTopicName);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON);
+        GroupsTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
 
         // Reset offset
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_SELECTED_TOPIC_RADIO);
-        PwUtils.waitForLocatorAndFill(tcc, SingleConsumerGroupPageSelectors.SCGPS_SELECTED_TOPIC_INPUT, kafkaTopicName);
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON);
-        ConsumerTestUtils.execResetOffset(tcc, resetType, dateTimeType, resetValue);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_RADIO);
+        PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_INPUT, kafkaTopicName);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON);
+        GroupsTestUtils.execResetOffset(tcc, resetType, dateTimeType, resetValue);
 
         LOGGER.info("Verify expected consumer offset value");
 

@@ -218,7 +218,7 @@ public class CssSelectors {
         .withElementDiv().withComponentEmptyState().withSubComponentContent().withChild()
         .withElementDiv().withComponentEmptyState().withSubComponentHeader().withChild()
         .withElementDiv().withComponentEmptyState().withSubComponentTitle().withChild()
-        .withElementH1().withComponentEmptyState().withSubComponentTitleText()
+        .withElementH4().withComponentEmptyState().withSubComponentTitleText()
         .build();
 
     // Kafka credentials login page

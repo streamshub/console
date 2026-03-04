@@ -101,6 +101,7 @@ public class CssBuilder {
     public CssBuilder withElementH1() { return withElement("h1"); }
     public CssBuilder withElementH2() { return withElement("h2"); }
     public CssBuilder withElementH3() { return withElement("h3"); }
+    public CssBuilder withElementH4() { return withElement("h4"); }
     public CssBuilder withElementSection() { return withElement("section"); }
     public CssBuilder withElementMain() { return withElement("main"); }
     public CssBuilder withElementNav() { return withElement("nav"); }

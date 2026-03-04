@@ -1,23 +1,23 @@
 package com.github.streamshub.systemtests.locators;
 
-public class SingleConsumerGroupPageSelectors {
-    private SingleConsumerGroupPageSelectors() {}
+public class SingleGroupPageSelectors {
+    private SingleGroupPageSelectors() {}
 
-    public static final String SCGPS_PAGE_HEADER = new CssBuilder(CssSelectors.PAGES_HEADER)
+    public static final String SGPS_PAGE_HEADER = new CssBuilder(CssSelectors.PAGES_HEADER)
         .withChild()
         .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withLayoutFlex()
         .build();
 
-    public static final String SCGPS_PAGE_HEADER_NAME = new CssBuilder(SCGPS_PAGE_HEADER)
+    public static final String SGPS_PAGE_HEADER_NAME = new CssBuilder(SGPS_PAGE_HEADER)
         .withChild()
         .withElementDiv().withLayoutFlex().nth(1).withChild()
         .withElementDiv().nth(1).withChild()
         .withElementH1().withComponentTitle()
         .build();
 
-    public static final String SCGPS_RELOAD_PAGE_BUTTON = new CssBuilder(SCGPS_PAGE_HEADER)
+    public static final String SGPS_RELOAD_PAGE_BUTTON = new CssBuilder(SGPS_PAGE_HEADER)
         .withChild()
         .withElementDiv().withLayoutFlex().nth(1).withChild()
         .withElementDiv().nth(2).withChild()
@@ -25,7 +25,7 @@ public class SingleConsumerGroupPageSelectors {
         .withElementButton().withComponentButton()
         .build();
 
-    public static final String SCGPS_PAGE = new CssBuilder(CssSelectors.PAGES_CONTENT)
+    public static final String SGPS_PAGE = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withComponentPanel().withChild()
@@ -33,31 +33,31 @@ public class SingleConsumerGroupPageSelectors {
         .withElementDiv().withComponentPanel().withSubComponentMainBody()
         .build();
 
-    public static final String SCGPS_FORM = new CssBuilder(SCGPS_PAGE)
+    public static final String SGPS_FORM = new CssBuilder(SGPS_PAGE)
         .withChild()
         .withComponentForm()
         .build();
 
-    public static final String SCGPS_CONSUMER_GROUPS_TABLE = new CssBuilder(CssSelectors.PAGES_CONTENT)
+    public static final String SGPS_GROUPS_TABLE = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementTable().withComponentTable()
         .build();
 
-    public static final String SCGPS_CONSUMER_GROUPS_TABLE_ITEMS = new CssBuilder(SCGPS_CONSUMER_GROUPS_TABLE)
+    public static final String SGPS_GROUPS_TABLE_ITEMS = new CssBuilder(SGPS_GROUPS_TABLE)
         .withChild()
         .withElementTbody().withComponentTable().withSubComponentTbody()
         .build();
 
-    public static String getConsumerGroupsTableRow(int nth) {
-        return CssBuilder.joinLocators(new CssBuilder(SCGPS_CONSUMER_GROUPS_TABLE_ITEMS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
+    public static String getGroupsTableRow(int nth) {
+        return CssBuilder.joinLocators(new CssBuilder(SGPS_GROUPS_TABLE_ITEMS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
     }
 
-    public static String getConsumerGroupsTableRowItem(int nthRow, int nthColumn) {
-        return new CssBuilder(getConsumerGroupsTableRow(nthRow)).nth(nthColumn).build();
+    public static String getGroupsTableRowItem(int nthRow, int nthColumn) {
+        return new CssBuilder(getGroupsTableRow(nthRow)).nth(nthColumn).build();
     }
 
-    public static final String SCGPS_RESET_CONSUMER_OFFSET_BUTTON = new CssBuilder(SCGPS_PAGE_HEADER)
+    public static final String SGPS_RESET_CONSUMER_OFFSET_BUTTON = new CssBuilder(SGPS_PAGE_HEADER)
         .withChild()
         .withElementDiv().withLayoutFlex().nth(2).withChild()
         .withElementDiv().withLayoutFlex().withChild()
@@ -67,7 +67,7 @@ public class SingleConsumerGroupPageSelectors {
         .withElementButton().withComponentButton()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_CONSUMER_GROUP_NAME = new CssBuilder(SCGPS_PAGE_HEADER)
+    public static final String SGPS_RESET_PAGE_CONSUMER_GROUP_NAME = new CssBuilder(SGPS_PAGE_HEADER)
         .withChild()
         .withElementDiv().withLayoutFlex().nth(2).withChild()
         .withElementDiv().withChild()
@@ -75,26 +75,26 @@ public class SingleConsumerGroupPageSelectors {
         .withElementB()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_APPLY_TARGET = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_APPLY_TARGET = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
         .withElementDiv().withComponentForm().withSubComponentGroupControl()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_APPLY_ON_ALL_TOPICS_RADIO = new CssBuilder(SCGPS_RESET_PAGE_APPLY_TARGET)
+    public static final String SGPS_RESET_PAGE_APPLY_ON_ALL_TOPICS_RADIO = new CssBuilder(SGPS_RESET_PAGE_APPLY_TARGET)
         .withChild()
         .withElementDiv().withComponentRadio().nth(1).withChild()
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_APPLY_ON_SELECTED_TOPIC_RADIO = new CssBuilder(SCGPS_RESET_PAGE_APPLY_TARGET)
+    public static final String SGPS_RESET_PAGE_APPLY_ON_SELECTED_TOPIC_RADIO = new CssBuilder(SGPS_RESET_PAGE_APPLY_TARGET)
         .withChild()
         .withElementDiv().withComponentRadio().nth(2).withChild()
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_INPUT = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_INPUT = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
         .withElementDiv().withComponentMenuToggle().withChild()
@@ -104,7 +104,7 @@ public class SingleConsumerGroupPageSelectors {
         .withElementInput().withComponentTextInputGroup().withSubComponentTextInput()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS = new CssBuilder()
+    public static final String SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS = new CssBuilder()
         .withElementBody().withChild()
         .withElementDiv().withComponentMenu().withChild()
         .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
@@ -112,44 +112,44 @@ public class SingleConsumerGroupPageSelectors {
         .withElementLi().withComponentMenu().withSubComponentListItem()
         .build();
 
-    public static final String SCGPS_AD_TARGET_SEARCH_TOPIC_RESULTS_BUTTON = new CssBuilder()
+    public static final String SGPS_AD_TARGET_SEARCH_TOPIC_RESULTS_BUTTON = new CssBuilder()
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
     public static String getResetPageSelectedTopicResultItems(int nth) {
-        return CssBuilder.joinLocators(new CssBuilder(SCGPS_CONSUMER_GROUPS_TABLE_ITEMS).nth(nth).build(), SCGPS_AD_TARGET_SEARCH_TOPIC_RESULTS_BUTTON);
+        return CssBuilder.joinLocators(new CssBuilder(SGPS_GROUPS_TABLE_ITEMS).nth(nth).build(), SGPS_AD_TARGET_SEARCH_TOPIC_RESULTS_BUTTON);
     }
 
-    public static final String SCGPS_RESET_PAGE_PARTITIONS_RADIOS = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_PARTITIONS_RADIOS = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroupControl()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_ALL_PARTITIONS_RADIO = new CssBuilder(SCGPS_RESET_PAGE_PARTITIONS_RADIOS)
+    public static final String SGPS_RESET_PAGE_ALL_PARTITIONS_RADIO = new CssBuilder(SGPS_RESET_PAGE_PARTITIONS_RADIOS)
         .withChild()
         .withElementDiv().withComponentRadio().nth(1).withChild()
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_SELECTED_PARTITION_RADIO = new CssBuilder(SCGPS_RESET_PAGE_PARTITIONS_RADIOS)
+    public static final String SGPS_RESET_PAGE_SELECTED_PARTITION_RADIO = new CssBuilder(SGPS_RESET_PAGE_PARTITIONS_RADIOS)
         .withChild()
         .withElementDiv().withComponentRadio().nth(2).withChild()
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
 
-    public static final String SCGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_BUTTON = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_BUTTON = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
         .withElementButton().withComponentMenuToggle()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_ITEMS = SCGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS;
+    public static final String SGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_ITEMS = SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS;
 
-    public static final String SCGPS_AD_RESET_PAGE_SELECTED_PARTITION_ITEM_BUTTTON = new CssBuilder(SCGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS)
+    public static final String SGPS_AD_RESET_PAGE_SELECTED_PARTITION_ITEM_BUTTTON = new CssBuilder(SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem().withChild()
         .withElementSpan().withComponentMenu().withSubComponentItemMain().withChild()
@@ -157,10 +157,10 @@ public class SingleConsumerGroupPageSelectors {
         .build();
 
     public static String getResetPageSelectedPartitionItems(int nth) {
-        return CssBuilder.joinLocators(new CssBuilder(SCGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_ITEMS).nth(nth).build(), SCGPS_AD_RESET_PAGE_SELECTED_PARTITION_ITEM_BUTTTON);
+        return CssBuilder.joinLocators(new CssBuilder(SGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_ITEMS).nth(nth).build(), SGPS_AD_RESET_PAGE_SELECTED_PARTITION_ITEM_BUTTTON);
     }
 
-    public static final String SCGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON = new CssBuilder(SCGPS_PAGE)
+    public static final String SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON = new CssBuilder(SGPS_PAGE)
         .withChild()
         .withElementForm().withComponentForm().withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
@@ -168,7 +168,7 @@ public class SingleConsumerGroupPageSelectors {
         .withElementButton().withComponentMenuToggle().withSubComponentButton()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
@@ -177,45 +177,45 @@ public class SingleConsumerGroupPageSelectors {
         .build();
 
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS = SCGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS;
+    public static final String SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS = SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS;
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+    public static final String SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(3)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+    public static final String SGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(1)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_LATEST_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+    public static final String SGPS_RESET_PAGE_OFFSET_LATEST_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(2)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+    public static final String SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(3)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+    public static final String SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(4)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_SPECIFIC_PARTITION_SPECIFIC_DATETIME_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_PARTITION_SPECIFIC_DATETIME_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(4)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroup().nth(2).withChild()
@@ -224,7 +224,7 @@ public class SingleConsumerGroupPageSelectors {
         .withElementInput()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
@@ -232,18 +232,18 @@ public class SingleConsumerGroupPageSelectors {
         .withElementDiv().withComponentRadio()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME)
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO = new CssBuilder(SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME)
         .nth(1).withChild()
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME)
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO = new CssBuilder(SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME)
         .nth(2).withChild()
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
@@ -253,37 +253,37 @@ public class SingleConsumerGroupPageSelectors {
         .build();
 
 
-    public static final String SCGPS_RESET_PAGE_RESET_BUTTONS = new CssBuilder(SCGPS_FORM)
+    public static final String SGPS_RESET_PAGE_RESET_BUTTONS = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
         .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
         .withElementDiv().withComponentForm().withSubComponentActions()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_RESET_BUTTON = new CssBuilder(SCGPS_RESET_PAGE_RESET_BUTTONS)
+    public static final String SGPS_RESET_PAGE_OFFSET_RESET_BUTTON = new CssBuilder(SGPS_RESET_PAGE_RESET_BUTTONS)
         .withChild()
         .withElementButton().withComponentButton().nth(1)
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON = new CssBuilder(SCGPS_RESET_PAGE_RESET_BUTTONS)
+    public static final String SGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON = new CssBuilder(SGPS_RESET_PAGE_RESET_BUTTONS)
         .withChild()
         .withElementDiv().withComponentMenuToggle().withChild()
         .withElementButton().withComponentMenuToggle().withSubComponentButton().nth(1)
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_DRY_RUN_MORE_BUTTON = new CssBuilder(SCGPS_RESET_PAGE_RESET_BUTTONS)
+    public static final String SGPS_RESET_PAGE_OFFSET_DRY_RUN_MORE_BUTTON = new CssBuilder(SGPS_RESET_PAGE_RESET_BUTTONS)
         .withChild()
         .withElementDiv().withComponentMenuToggle().withChild()
         .withElementButton().withComponentMenuToggle().withSubComponentButton().nth(2)
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_CANCEL_BUTTON = new CssBuilder(SCGPS_RESET_PAGE_RESET_BUTTONS)
+    public static final String SGPS_RESET_PAGE_OFFSET_CANCEL_BUTTON = new CssBuilder(SGPS_RESET_PAGE_RESET_BUTTONS)
         .withChild()
         .withElementButton().withComponentButton().nth(2).withChild()
         .withElementSpan().withComponentButton().withSubComponentText()
         .build();
 
-    public static final String SCGPS_DRY_RUN_COMMAND = new CssBuilder(SCGPS_PAGE)
+    public static final String SGPS_DRY_RUN_COMMAND = new CssBuilder(SGPS_PAGE)
         .withChild()
         .withElementDiv().withLayoutStack().withChild()
         .withElementDiv().withLayoutStack().withSubComponentItem().nth(1).withChild()
@@ -293,7 +293,7 @@ public class SingleConsumerGroupPageSelectors {
         .withElementInput()
         .build();
 
-    public static final String SCGPS_BACK_TO_EDIT_OFFSET_BUTTON = new CssBuilder(CssSelectors.PAGES_CONTENT)
+    public static final String SGPS_BACK_TO_EDIT_OFFSET_BUTTON = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withComponentPanel().withChild()
@@ -305,7 +305,7 @@ public class SingleConsumerGroupPageSelectors {
         .withElementSpan().withComponentButton().withSubComponentText()
         .build();
 
-    public static final String SCGPS_SELECTED_TOPIC_RADIO = new CssBuilder(SCGPS_PAGE)
+    public static final String SGPS_SELECTED_TOPIC_RADIO = new CssBuilder(SGPS_PAGE)
         .withChild()
         .withElementForm().withComponentForm().withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
@@ -315,7 +315,7 @@ public class SingleConsumerGroupPageSelectors {
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
-    public static final String SCGPS_SELECTED_TOPIC_INPUT = new CssBuilder(SCGPS_PAGE)
+    public static final String SGPS_SELECTED_TOPIC_INPUT = new CssBuilder(SGPS_PAGE)
         .withChild()
         .withElementForm().withComponentForm().withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
