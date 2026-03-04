@@ -490,6 +490,7 @@
     "cancel": "Cancel",
     "reset_offset": "Reset offsets",
     "reset_offset_description": "Group must be empty to reset offsets.",
+    "reset_offset_description_non_consumer": "Only consumer group offsets may be reset. This group uses the {protocol} protocol.",
     "member_shutdown_helper_text": "To reset the group offsets, all the active members must be shut down.",
     "shutdown_active_members": "Shut down active members before proceeding",
     "learn_to_shutdown_members": "Learn how to shut down members",

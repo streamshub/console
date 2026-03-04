@@ -341,6 +341,9 @@ export function ConsumerGroupsTable({
             {
               title: t("GroupsTable.reset_offset"),
               description:
+                row.attributes.protocol !== "consumer"
+                  ? t("GroupsTable.reset_offset_description_non_consumer", { protocol: row.attributes.protocol! })
+                  :
                 row.attributes.state === "EMPTY"
                   ? null
                   : t("GroupsTable.reset_offset_description"),
