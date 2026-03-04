@@ -37,6 +37,9 @@ public class TestCaseConfig {
     private final String kafkaServiceName;
     private final String kafkaProtocolFilterName;
 
+    // Default Apicurio
+    private final String apicurioRegistry3Name;
+
     public TestCaseConfig(ExtensionContext extensionContext) {
         this.testName = extensionContext.getTestMethod()
             .map(Method::getName)
@@ -68,6 +71,7 @@ public class TestCaseConfig {
         this.kafkaProtocolFilterName = KroxyNamingUtils.kafkaProtocolFilterName(namespace);
 
         this.messageCount = Constants.MESSAGE_COUNT;
+        this.apicurioRegistry3Name = Constants.APICURIO_PREFIX + "-" + Utils.hashStub(namespace);
     }
 
     // ----------
@@ -131,6 +135,10 @@ public class TestCaseConfig {
 
     public int messageCount() {
         return messageCount;
+    }
+
+    public String apicurioRegistry3Name() {
+        return apicurioRegistry3Name;
     }
 
     // ----------

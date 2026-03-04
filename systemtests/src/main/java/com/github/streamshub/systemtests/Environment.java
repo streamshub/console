@@ -77,6 +77,9 @@ public class Environment {
     public static final String KROXYLICIOUS_VERSION = ENVS.getOrDefault("KROXYLICIOUS_VERSION", "0.18.0");
 
 
+    // Apicurio
+    public static final String APICURIO_VERSION = ENVS.getOrDefault("APICURIO_VERSION", "3.1.7");
+
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation
     private Environment() {}

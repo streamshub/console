@@ -84,6 +84,10 @@ public class CssBuilder {
     }
 
     // -------------------
+    // Constants
+    // -------------------
+    public static final String HREF = "href";
+    // -------------------
     // Elements
     // -------------------
     public CssBuilder withElementBody() { return withElement("body"); }
@@ -123,6 +127,8 @@ public class CssBuilder {
     public CssBuilder withElementSvg() { return withElement("svg"); }
     public CssBuilder withElementG() { return withElement("g"); }
     public CssBuilder withElementText() { return withElement("text"); }
+    public CssBuilder withElementPre() { return withElement("pre"); }
+    public CssBuilder withElementCode() { return withElement("code"); }
 
     // -------------------
     // Components
@@ -170,6 +176,7 @@ public class CssBuilder {
     public CssBuilder withComponentRadio() { return withComponent("radio"); }
     public CssBuilder withComponentDatePicker() { return withComponent("date-picker"); }
     public CssBuilder withComponentTabs() { return withComponent("tabs"); }
+    public CssBuilder withComponentCodeBlock() { return withComponent("code-block"); }
 
     // ----------------
     // Sub-components
@@ -237,6 +244,8 @@ public class CssBuilder {
     public CssBuilder withSubComponentDescription() { return withSubComponent("description"); }
     public CssBuilder withComponentTabContent() { return withComponent("tab-content"); }
     public CssBuilder withSubComponentMainSubnav() { return withSubComponent("main-subnav"); }
+    public CssBuilder withSubComponentPre() { return withSubComponent("pre"); }
+    public CssBuilder withSubComponentCode() { return withSubComponent("code"); }
 
     // ------------
     // Layouts

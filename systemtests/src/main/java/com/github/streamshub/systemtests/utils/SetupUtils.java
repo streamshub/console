@@ -8,9 +8,17 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaConnectType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
+import com.github.streamshub.systemtests.resourcetypes.apicurio.ApicurioRegistry3Type;
 import com.github.streamshub.systemtests.resourcetypes.kroxy.KroxyResourceType;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
+import io.fabric8.kubernetes.api.model.Namespaced;
+import io.fabric8.kubernetes.api.model.PodSpec;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServiceAccount;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProtocolFilter;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxy;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxyIngress;
@@ -87,11 +95,12 @@ public class SetupUtils {
             new KroxyResourceType<>(KafkaService.class),
             new KroxyResourceType<>(KafkaProxyIngress.class),
             new KroxyResourceType<>(VirtualKafkaCluster.class),
-            new KroxyResourceType<>(KafkaProtocolFilter.class));
+            new KroxyResourceType<>(KafkaProtocolFilter.class),
+            new ApicurioRegistry3Type());
 
         KubeResourceManager.get().addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF
-            if (resource.getKind().equals(HasMetadata.getKind(Namespace.class))) {
+            if (resource instanceof Namespace) {
                 KubeUtils.labelNamespace(resource.getMetadata().getName(), Labels.COLLECT_ST_LOGS, "true");
             }
         });
@@ -110,6 +119,91 @@ public class SetupUtils {
         if (Environment.CLEANUP_ENVIRONMENT) {
             KubeResourceManager.get().printCurrentResources(Level.DEBUG);
             KubeResourceManager.get().deleteResources(false);
+        }
+    }
+
+    /**
+     * Removes pod and container {@code securityContext} settings from a Deployment
+     * when running on OpenShift.
+     *
+     * <p>If the provided resource is a {@link Deployment} and the cluster is
+     * detected as OpenShift, this method clears:</p>
+     * <ul>
+     *   <li>The pod-level {@code securityContext}</li>
+     *   <li>The {@code securityContext} of all containers</li>
+     *   <li>The {@code securityContext} of all init containers (if present)</li>
+     * </ul>
+     *
+     * <p>This helps avoid permission or SCC-related conflicts in restricted
+     * OpenShift environments.</p>
+     *
+     * @param resource the Kubernetes resource to inspect and normalize
+     */
+    public static void removeSecurityContexts(HasMetadata resource) {
+        if (resource instanceof Deployment deployment && ClusterUtils.isOcp()) {
+            PodSpec podSpec = deployment.getSpec().getTemplate().getSpec();
+
+            if (podSpec.getSecurityContext() != null) {
+                LOGGER.info("Removing pod securityContext from Deployment: {}", deployment.getMetadata().getName());
+                podSpec.setSecurityContext(null);
+            }
+
+            podSpec.getContainers().forEach(container -> {
+                if (container.getSecurityContext() != null) {
+                    LOGGER.info("Removing container securityContext from Deployment: {}", deployment.getMetadata().getName());
+                    container.setSecurityContext(null);
+                }
+            });
+
+            if (podSpec.getInitContainers() != null) {
+                podSpec.getInitContainers().forEach(container -> {
+                    if (container.getSecurityContext() != null) {
+                        LOGGER.info("Removing init container securityContext from Deployment: {}", deployment.getMetadata().getName());
+
+                        container.setSecurityContext(null);
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * Rewrites subject namespaces in a {@link ClusterRoleBinding}.
+     *
+     * <p>If the provided resource is a {@link ClusterRoleBinding}, this method
+     * updates the namespace of all defined subjects to the given target namespace.
+     * This ensures RBAC bindings reference the correct namespace in
+     * namespace-scoped deployments.</p>
+     *
+     * @param resource         the Kubernetes resource to inspect
+     * @param targetNamespace  the namespace to set on all subjects
+     */
+    public static void fixClusterRoleBindingNamespace(HasMetadata resource, String targetNamespace) {
+        if (resource instanceof ClusterRoleBinding crb) {
+            if (crb.getSubjects() != null) {
+                crb.getSubjects().forEach(subject -> {
+                    LOGGER.info("Setting subject namespace to '{}' in ClusterRoleBinding: {}",
+                        targetNamespace, crb.getMetadata().getName());
+                    subject.setNamespace(targetNamespace);
+                });
+            }
+        }
+    }
+
+    /**
+     * Sets the namespace on supported namespaced Kubernetes resources.
+     *
+     * <p>If the provided resource is a {@link ServiceAccount}, {@link Service},
+     * or {@link Deployment}, this method updates its metadata namespace
+     * to the specified target namespace.</p>
+     *
+     * @param resource        the Kubernetes resource to update
+     * @param targetNamespace the namespace to assign to the resource
+     */
+    public static void setNamespaceOnNamespacedResources(HasMetadata resource, String targetNamespace) {
+        if (resource instanceof Namespaced) {
+            LOGGER.info("Setting resource {} to namespace {}", resource.getMetadata().getName(), targetNamespace);
+            resource.getMetadata().setNamespace(targetNamespace);
         }
     }
 }
