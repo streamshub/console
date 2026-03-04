@@ -749,7 +749,10 @@ public class GroupService {
                         if (offsets != null) {
                             var groupOffsets = offsets.entrySet()
                                 .stream()
+                                // Drop offset entries that don't actually have the offset
                                 .filter(e -> Objects.nonNull(e.getValue()))
+                                // Drop offsets for unknown topics (or not authorized)
+                                .filter(e -> topicIds.containsKey(e.getKey().topic()))
                                 .collect(Collectors.toMap(
                                     e -> new PartitionId(
                                                 topicIds.get(e.getKey().topic()),
@@ -790,7 +793,10 @@ public class GroupService {
                         if (offsets != null) {
                             var groupOffsets = offsets.entrySet()
                                 .stream()
+                                // Drop offset entries that don't actually have the offset
                                 .filter(e -> Objects.nonNull(e.getValue()))
+                                // Drop offsets for unknown topics (or not authorized)
+                                .filter(e -> topicIds.containsKey(e.getKey().topic()))
                                 .collect(Collectors.toMap(
                                     e -> new PartitionId(
                                                 topicIds.get(e.getKey().topic()),
@@ -831,7 +837,10 @@ public class GroupService {
                             if (offsets != null) {
                                 var groupOffsets = offsets.entrySet()
                                     .stream()
+                                    // Drop offset entries that don't actually have the offset
                                     .filter(e -> Objects.nonNull(e.getValue()))
+                                    // Drop offsets for unknown topics (or not authorized)
+                                    .filter(e -> topicIds.containsKey(e.getKey().topic()))
                                     .collect(Collectors.toMap(
                                         e -> new PartitionId(
                                                     topicIds.get(e.getKey().topic()),
