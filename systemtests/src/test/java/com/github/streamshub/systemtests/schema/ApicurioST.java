@@ -370,6 +370,5 @@ public class ApicurioST extends AbstractST {
     @AfterAll
     void testClassTeardown() {
         tcc.playwright().close();
-        apicurioOperatorSetup.teardown();
     }
 }
