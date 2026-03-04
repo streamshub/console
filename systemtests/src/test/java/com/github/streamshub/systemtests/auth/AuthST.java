@@ -13,7 +13,7 @@ import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.ConsumerGroupsPageSelectors;
+import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
@@ -217,7 +217,7 @@ public class AuthST extends AbstractST {
 
     /**
      * Verifies that a "topics-only" usergroup can access Kafka topic information but is restricted
-     * from viewing other administrative pages like Nodes and Consumer Groups.
+     * from viewing other administrative pages like Nodes and Groups.
      *
      * <p>The test covers the following behaviors:</p>
      *
@@ -226,7 +226,7 @@ public class AuthST extends AbstractST {
      *   <li>Checks that the user can see only the Kafka clusters they are authorized to access and verifies the total count.</li>
      *   <li>Validates topic overview and topics pages for the authorized Kafka cluster, including replicated topics count and visibility.</li>
      *   <li>Ensures that search and filtering on the Topics page work correctly.</li>
-     *   <li>Verifies that restricted pages such as Nodes and Consumer Groups display a "Not Authorized" message.</li>
+     *   <li>Verifies that restricted pages such as Nodes and Groups display a "Not Authorized" message.</li>
      *   <li>Logs out and confirms the user can no longer access the console UI.</li>
      * </ul>
      *
@@ -271,7 +271,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify consumer groups page is unavailable");
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
         // Logout and check user is no longer logged in
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
@@ -290,7 +290,7 @@ public class AuthST extends AbstractST {
      *   <li>Checks that the user can see only the Kafka clusters they are authorized to access and verifies the total count.</li>
      *   <li>Validates that the Topics overview and Topics page display "Not Authorized" for this user.</li>
      *   <li>Ensures that the Nodes page is also restricted and shows "Not Authorized".</li>
-     *   <li>Verifies that the Consumer Groups page is accessible, even when no consumer groups exist.</li>
+     *   <li>Verifies that the Groups page is accessible, even when no groups exist.</li>
      *   <li>Creates a Kafka topic and producer/consumer clients, then confirms the new consumer group appears in the UI.</li>
      *   <li>Waits for the producer/consumer clients to complete successfully.</li>
      *   <li>Logs out and ensures the user can no longer access the console UI.</li>
@@ -301,7 +301,7 @@ public class AuthST extends AbstractST {
      */
     @Order(Integer.MAX_VALUE)
     @Test
-    void testAccessConsumerGroupsViewUser() {
+    void testAccessGroupsViewUser() {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, AuthTestConstants.USER_CONSUMERONLY_GRACE);
 
         // Check correct user is logged in
@@ -332,9 +332,9 @@ public class AuthST extends AbstractST {
         tcc.page().navigate(PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
-        LOGGER.info("Verify consumer groups page is available");
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT, "No consumer groups", true);
+        LOGGER.info("Verify groups page is available");
+        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT, "No groups", true);
 
         String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "continuous-msg";
         KafkaClients clients = new KafkaClientsBuilder()
@@ -352,8 +352,8 @@ public class AuthST extends AbstractST {
 
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
 
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
-        PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_TABLE, KafkaNamingUtils.consumerGroupName(newTopicName), true);
+        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_TABLE, KafkaNamingUtils.consumerGroupName(newTopicName), true);
 
         WaitUtils.waitForClientsSuccess(clients);
         // Logout and check user is no longer logged in

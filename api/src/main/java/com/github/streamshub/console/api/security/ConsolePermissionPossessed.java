@@ -107,7 +107,7 @@ public final class ConsolePermissionPossessed extends ConsolePermission {
         /*
          * The action requires a permission unrelated to this configured
          * permission.
-         * E.g. consumerGroups versus topics
+         * E.g. groups versus topics
          */
         if (!requiredPermission.resource().equals(resource())) {
             return true;

@@ -19,7 +19,7 @@ test("Cluster Overview page", async ({ page }) => {
       "Key performance indicators and important information regarding the Kafka cluster.",
     );
     expect(await newPage.innerText("body")).toContain("Online brokers");
-    expect(await newPage.innerText("body")).toContain("Consumer groups");
+    expect(await newPage.innerText("body")).toContain("Groups");
     expect(await newPage.innerText("body")).toContain("Kafka version");
     expect(await newPage.innerText("body")).toContain("Used disk space");
     expect(await newPage.innerText("body")).toContain("CPU usage");

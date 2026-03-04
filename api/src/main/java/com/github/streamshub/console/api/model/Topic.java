@@ -51,7 +51,7 @@ public class Topic extends JsonApiResource<Topic.Attributes, Topic.Relationships
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
         public static final String TOTAL_LEADER_LOG_BYTES = "totalLeaderLogBytes";
-        public static final String CONSUMER_GROUPS = "consumerGroups";
+        public static final String GROUPS = "groups";
         public static final String STATUS = "status";
         static final Pattern CONFIG_KEY = Pattern.compile("^configs\\.\"([^\"]+)\"$");
 
@@ -237,7 +237,7 @@ public class Topic extends JsonApiResource<Topic.Attributes, Topic.Relationships
     @JsonFilter("fieldFilter")
     static class Relationships {
         @JsonProperty
-        JsonApiRelationshipToMany consumerGroups = new JsonApiRelationshipToMany();
+        JsonApiRelationshipToMany groups = new JsonApiRelationshipToMany();
     }
 
     public Topic(String name, boolean internal, String id) {
@@ -393,12 +393,12 @@ public class Topic extends JsonApiResource<Topic.Attributes, Topic.Relationships
         return attributes.configs;
     }
 
-    public JsonApiRelationshipToMany consumerGroups() {
-        return relationships.consumerGroups;
+    public JsonApiRelationshipToMany groups() {
+        return relationships.groups;
     }
 
-    public void consumerGroups(JsonApiRelationshipToMany consumerGroups) {
-        relationships.consumerGroups = consumerGroups;
+    public void groups(JsonApiRelationshipToMany groups) {
+        relationships.groups = groups;
     }
 
     public boolean partitionsOnline() {

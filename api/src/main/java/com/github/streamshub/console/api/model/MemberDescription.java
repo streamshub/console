@@ -2,12 +2,14 @@ package com.github.streamshub.console.api.model;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 /**
- * Description of a member of a consumer group
+ * Description of a member of a group
  */
 @JsonInclude(value = Include.NON_NULL)
 public class MemberDescription {
@@ -22,11 +24,26 @@ public class MemberDescription {
      * Construct an instance from a Kafka member description and the map of topic
      * Ids, used to set the topic ID of the assignments field elements.
      *
-     * @param description Kafka member description model
+     * @param group Kafka description model the parent group of the member
+     * @param member Kafka member description model for any type of group
      * @param topicIds    map of topic names to Ids
      * @return a new {@linkplain MemberDescription}
      */
-    public static MemberDescription fromKafkaModel(
+    public static MemberDescription fromKafkaModel(Object group, Object member, Map<String, String> topicIds) {
+        switch (member) {
+            case org.apache.kafka.clients.admin.MemberDescription consumerGroupMember:
+                return fromKafkaModel(consumerGroupMember, topicIds);
+            case org.apache.kafka.clients.admin.ShareMemberDescription shareGroupMember:
+                return fromKafkaModel(shareGroupMember, topicIds);
+            case org.apache.kafka.clients.admin.StreamsGroupMemberDescription streamsGroupMember:
+                return fromKafkaModel((org.apache.kafka.clients.admin.StreamsGroupDescription) group,
+                        streamsGroupMember, topicIds);
+            default:
+                throw new IllegalArgumentException("Unknown member type: " + member.getClass());
+        }
+    }
+
+    private static MemberDescription fromKafkaModel(
             org.apache.kafka.clients.admin.MemberDescription description,
             Map<String, String> topicIds) {
 
@@ -52,6 +69,76 @@ public class MemberDescription {
                         topicIds.get(partition.topic()),
                         partition.topic(),
                         partition.partition()))
+                .toList();
+
+        return result;
+    }
+
+    private static MemberDescription fromKafkaModel(
+            org.apache.kafka.clients.admin.ShareMemberDescription description,
+            Map<String, String> topicIds) {
+
+        MemberDescription result = new MemberDescription(
+                description.consumerId(),
+                null,
+                description.clientId(),
+                description.host());
+
+        /*
+         * assignments remains mutable to allow replacement with PartitionKeys once
+         * topic IDs are known.
+         */
+        result.assignments = description.assignment()
+                .topicPartitions()
+                .stream()
+                /*
+                 * Filter out assigned partitions not visible to the client
+                 * configured to connect to Kafka cluster.
+                 */
+                .filter(partition -> topicIds.containsKey(partition.topic()))
+                .map(partition -> new PartitionId(
+                        topicIds.get(partition.topic()),
+                        partition.topic(),
+                        partition.partition()))
+                .toList();
+
+        return result;
+    }
+
+    private static MemberDescription fromKafkaModel(
+            org.apache.kafka.clients.admin.StreamsGroupDescription group,
+            org.apache.kafka.clients.admin.StreamsGroupMemberDescription member,
+            Map<String, String> topicIds) {
+
+        MemberDescription result = new MemberDescription(
+                member.memberId(),
+                member.instanceId().orElse(null),
+                member.clientId(),
+                member.clientHost());
+
+        // Find all sub-topologies assigned to the member's active tasks
+        var subtopologies = member.assignment()
+                .activeTasks()
+                .stream()
+                .map(org.apache.kafka.clients.admin.StreamsGroupMemberAssignment.TaskIds::subtopologyId)
+                .distinct()
+                .flatMap(subtopologyId -> group.subtopologies()
+                        .stream()
+                        .filter(t -> subtopologyId.equals(t.subtopologyId())))
+                .collect(Collectors.toMap(t -> t.subtopologyId(), Function.identity()));
+
+        result.assignments = member.assignment()
+                .activeTasks()
+                .stream()
+                .<PartitionId>mapMulti((task, next) -> {
+                    var subtopology = subtopologies.get(task.subtopologyId());
+
+                    for (String topic : subtopology.sourceTopics()) {
+                        for (Integer partition : task.partitions()) {
+                            next.accept(new PartitionId(topicIds.get(topic), topic, partition));
+                        }
+                    }
+                })
                 .toList();
 
         return result;

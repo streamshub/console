@@ -90,7 +90,7 @@ public class KafkaClientExceptionHandlers {
         extends AbstractClientExceptionHandler<GroupNotEmptyException> {
 
         public GroupNotEmptyExceptionHandler() {
-            super(ErrorCategory.ResourceConflict.class, "The consumer group is not empty", (String) null);
+            super(ErrorCategory.ResourceConflict.class, "The group is not empty", (String) null);
         }
 
         @Override
@@ -105,7 +105,7 @@ public class KafkaClientExceptionHandlers {
         extends AbstractClientExceptionHandler<GroupSubscribedToTopicException> {
 
         public GroupSubscribedToTopicExceptionHandler() {
-            super(ErrorCategory.ResourceConflict.class, "The consumer group is not empty", (String) null);
+            super(ErrorCategory.ResourceConflict.class, "The group is not empty", (String) null);
         }
 
         @Override

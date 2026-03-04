@@ -12,7 +12,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.locators.KafkaConnectPageSelectors;
-import com.github.streamshub.systemtests.locators.SingleConsumerGroupPageSelectors;
+import com.github.streamshub.systemtests.locators.SingleGroupPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaConnectSetup;
@@ -100,7 +100,7 @@ public class ConnectST extends AbstractST {
         tcc.page().navigate(PwPageUrls.getKafkaConnectorPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Verifying Kafka Connect page header is visible");
-        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, "Kafka Connect", true);
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, "Kafka Connect", true);
 
         LOGGER.debug("Waiting for connectors table and verifying initial count (expected: 2)");
         PwUtils.waitForLocatorVisible(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT);
@@ -133,7 +133,7 @@ public class ConnectST extends AbstractST {
         tcc.page().navigate(PwPageUrls.getKafkaConnectClusterPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Verifying Kafka Connect clusters page header");
-        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, "Kafka Connect", true);
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, "Kafka Connect", true);
 
         LOGGER.debug("Waiting for clusters table and verifying initial count (expected: 2)");
         PwUtils.waitForLocatorVisible(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT);
