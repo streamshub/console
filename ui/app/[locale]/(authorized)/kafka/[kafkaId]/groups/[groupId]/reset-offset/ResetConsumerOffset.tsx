@@ -6,7 +6,7 @@ import {
   OffsetValue,
   TopicSelection,
   partitionSelection,
-} from "../types";
+} from "../members/types";
 import { useRouter } from "@/i18n/routing";
 import { updateConsumerGroup } from "@/api/groups/actions";
 import { LoadingPage } from "./LoadingPage";

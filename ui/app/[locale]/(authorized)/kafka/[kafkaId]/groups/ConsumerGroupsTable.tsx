@@ -185,7 +185,7 @@ export function ConsumerGroupsTable({
         switch (column) {
           case "groupId":
             return (
-              <Th key={key} width={30}>
+              <Th key={key}>
                 {t("GroupsTable.group_id")}
               </Th>
             );

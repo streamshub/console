@@ -91,7 +91,8 @@ public class GroupsResource {
                         Group.Fields.OFFSETS,
                         Group.Fields.AUTHORIZED_OPERATIONS,
                         Group.Fields.COORDINATOR,
-                        Group.Fields.PARTITION_ASSIGNOR
+                        Group.Fields.PARTITION_ASSIGNOR,
+                        Group.Fields.CONFIGS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -110,7 +111,8 @@ public class GroupsResource {
                                 Group.Fields.OFFSETS,
                                 Group.Fields.AUTHORIZED_OPERATIONS,
                                 Group.Fields.COORDINATOR,
-                                Group.Fields.PARTITION_ASSIGNOR
+                                Group.Fields.PARTITION_ASSIGNOR,
+                                Group.Fields.CONFIGS,
                             }))
             List<String> fields,
 
@@ -168,7 +170,8 @@ public class GroupsResource {
                         Group.Fields.OFFSETS,
                         Group.Fields.AUTHORIZED_OPERATIONS,
                         Group.Fields.COORDINATOR,
-                        Group.Fields.PARTITION_ASSIGNOR
+                        Group.Fields.PARTITION_ASSIGNOR,
+                        Group.Fields.CONFIGS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -187,7 +190,8 @@ public class GroupsResource {
                                 Group.Fields.OFFSETS,
                                 Group.Fields.AUTHORIZED_OPERATIONS,
                                 Group.Fields.COORDINATOR,
-                                Group.Fields.PARTITION_ASSIGNOR
+                                Group.Fields.PARTITION_ASSIGNOR,
+                                Group.Fields.CONFIGS,
                             }))
             List<String> fields) {
 

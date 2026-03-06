@@ -1,17 +1,19 @@
 import { getConsumerGroup } from "@/api/groups/actions";
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { GroupParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/Group.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
+import { PageSection, Skeleton } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 import RichText from "@/components/RichText";
 import { resetButtonDisabled } from "@/utils/groups";
 import { hasPrivilege } from "@/utils/privileges";
+import { GroupTabs } from "./GroupTabs";
 
-export default function Page({
+export function GroupHeader({
   params: { kafkaId, groupId },
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
 }) {
   return (
     <Suspense
@@ -25,7 +27,7 @@ export default function Page({
 async function ConnectedAppHeader({
   params: { kafkaId, groupId },
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
 }) {
   const group = (await getConsumerGroup(kafkaId, groupId)).payload;
   let disabled = true;
@@ -57,6 +59,14 @@ function Header({
           groupIdDisplay
         )
       }
+      navigation={
+       <PageSection className={"pf-v6-u-px-sm"} type="subnav">
+         <GroupTabs
+           kafkaId={kafkaId}
+           groupId={groupId}
+         />
+       </PageSection>
+     }
       actions={[
         <ConsumerGroupActionButton
           key={"consumergGroupActionButton"}

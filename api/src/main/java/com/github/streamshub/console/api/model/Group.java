@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -15,6 +16,7 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.validation.Valid;
 
+import org.apache.kafka.clients.consumer.GroupProtocol;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -65,6 +67,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
         public static final String PARTITION_ASSIGNOR = "partitionAssignor";
         public static final String OFFSETS = "offsets";
         public static final String SIMPLE_CONSUMER_GROUP = "simpleConsumerGroup";
+        public static final String CONFIGS = "configs";
 
         static final Comparator<Group> ID_COMPARATOR =
                 comparing(Group::groupId);
@@ -172,6 +175,10 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
         @JsonProperty
         List<String> authorizedOperations;
 
+        @JsonProperty
+        @Schema(implementation = Object.class, oneOf = { ConfigEntry.ConfigEntryMap.class, JsonApiError.class })
+        Either<Map<String, ConfigEntry>, JsonApiError> configs;
+
         // Available via list offsets operation only
         @JsonProperty
         List<@Valid OffsetAndMetadata> offsets = Collections.emptyList();
@@ -267,6 +274,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
                 Optional.ofNullable(description.state()).map(Enum::name).orElse(null));
 
         group.type(org.apache.kafka.common.GroupType.CLASSIC.toString());
+        group.protocol(description.protocol());
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
                 .stream()
@@ -291,6 +299,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
                 Optional.ofNullable(description.groupState()).map(Enum::name).orElse(null));
 
         group.type(description.type().toString());
+        group.protocol(GroupProtocol.CONSUMER.name().toLowerCase(Locale.ROOT));
         group.partitionAssignor(description.partitionAssignor());
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
@@ -316,6 +325,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
                 Optional.ofNullable(description.groupState()).map(Enum::name).orElse(null));
 
         group.type(org.apache.kafka.common.GroupType.SHARE.toString());
+        group.protocol(org.apache.kafka.common.GroupType.SHARE.name().toLowerCase(Locale.ROOT));
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
                 .stream()
@@ -340,6 +350,7 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
                 Optional.ofNullable(description.groupState()).map(Enum::name).orElse(null));
 
         group.type(org.apache.kafka.common.GroupType.STREAMS.toString());
+        group.protocol(org.apache.kafka.common.GroupType.STREAMS.name().toLowerCase(Locale.ROOT));
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
                 .stream()
@@ -430,6 +441,12 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
 
     public void protocol(String protocol) {
         attributes.protocol = protocol;
+    }
+
+    public void addConfigs(Either<Map<String, ConfigEntry>, Throwable> configs) {
+        attributes.configs = configs.ifPrimaryOrElse(
+                Either::of,
+                thrown -> JsonApiError.forThrowable(thrown, "Unable to describe group configs"));
     }
 
     /**
