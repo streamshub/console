@@ -46,13 +46,6 @@ public class KroxyliciousOperatorSetup {
         prepareKroxyliciousCrs();
     }
 
-    /**
-     * Prepares Kroxylicious-related Kubernetes resources for deployment
-     * into the target namespace.
-     *
-     * <p>Applies namespace adjustments, removes security contexts, and
-     * updates ClusterRoleBinding subjects to match the deployment namespace.</p>
-     */
     private void prepareKroxyliciousCrs() {
         allResources.forEach(resource -> {
             SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);

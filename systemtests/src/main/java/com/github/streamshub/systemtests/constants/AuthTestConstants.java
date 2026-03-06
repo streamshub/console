@@ -6,7 +6,7 @@ public class AuthTestConstants {
 
     private AuthTestConstants() {}
 
-        // JWT Claim
+    // JWT Claim
     public static final String CLAIM_GROUPS = "groups";
 
     // Test Usernames

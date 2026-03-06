@@ -42,13 +42,6 @@ public class PrometheusOperatorSetup {
         preparePrometheusCrs();
     }
 
-    /**
-     * Prepares loaded Kubernetes resources for deployment into the target namespace.
-     *
-     * <p>Applies namespace adjustments, removes security contexts, and fixes
-     * RBAC subject namespaces to ensure compatibility with the deployment
-     * environment.</p>
-     */
     private void preparePrometheusCrs() {
         allResources.forEach(resource -> {
             SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);

@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.StreamSupport;
 
 public class KeycloakApiUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KeycloakApiUtils.class);
@@ -24,13 +25,33 @@ public class KeycloakApiUtils {
     private static final String ADMIN_REALMS_PATH = "/admin/realms/";
     private static final String OIDC_TOKEN_PATH = "/realms/master/protocol/openid-connect/token"; // NOSONAR
 
+    /**
+     * Checks whether a Keycloak realm exists.
+     *
+     * @param httpsHostname  Keycloak HTTPS hostname
+     * @param userName       admin username used for authentication
+     * @param password       admin password used for authentication
+     * @param realmName      name of the realm to check
+     *
+     * @return {@code true} if the realm exists, {@code false} otherwise
+     */
     public static boolean realmExists(String httpsHostname, String userName, String password, String realmName) {
         String result = executeRequestAndReturnData(request(
             "GET", httpsHostname, ADMIN_REALMS_PATH + realmName, userName, password, null));
         return !result.contains("Realm not found") && !result.isEmpty();
     }
 
-    public static String deleteRealm(String httpsHostname, String userName, String password, String realmName) {
+    /**
+     * Deletes a Keycloak realm.
+     *
+     * @param httpsHostname  Keycloak HTTPS hostname
+     * @param userName       admin username used for authentication
+     * @param password       admin password used for authentication
+     * @param realmName      name of the realm to delete
+     *
+     * @throws SetupException if the realm deletion request fails
+     */
+    public static void deleteRealm(String httpsHostname, String userName, String password, String realmName) {
         String result = executeRequestAndReturnData(request(
             "DELETE", httpsHostname, ADMIN_REALMS_PATH + realmName, userName, password, null));
 
@@ -38,11 +59,20 @@ public class KeycloakApiUtils {
             throw new SetupException("Keycloak realm was not deleted");
         }
 
-        LOGGER.info("Deleted Keycloak realm '{}'", realmName);
-        return result;
+        LOGGER.info("Deleted Keycloak realm {}", realmName);
     }
 
-    public static String importRealm(String httpsHostname, String userName, String password, String realmData) {
+    /**
+     * Imports a Keycloak realm using the provided realm JSON definition.
+     *
+     * @param httpsHostname  Keycloak HTTPS hostname
+     * @param userName       admin username used for authentication
+     * @param password       admin password used for authentication
+     * @param realmData      JSON definition of the realm to import
+     *
+     * @throws SetupException if the realm import request fails
+     */
+    public static void importRealm(String httpsHostname, String userName, String password, String realmData) {
 
         String result = executeRequestAndReturnData(request(
             "POST", httpsHostname, ADMIN_REALMS_PATH,  userName, password, realmData));
@@ -52,9 +82,24 @@ public class KeycloakApiUtils {
         }
 
         LOGGER.info("Console realm successfully imported");
-        return result;
     }
 
+    /**
+     * Retrieves the client secret for a given Keycloak client.
+     *
+     * <p>The method first resolves the internal client UUID using the provided
+     * client name and then queries the Keycloak Admin API for the client secret.</p>
+     *
+     * @param httpsHostname  Keycloak HTTPS hostname
+     * @param userName       admin username used for authentication
+     * @param password       admin password used for authentication
+     * @param realm          realm containing the client
+     * @param clientName     client ID (name) whose secret should be retrieved
+     *
+     * @return the client secret value
+     *
+     * @throws SetupException if the client secret cannot be retrieved
+     */
     public static String getClientSecret(String httpsHostname, String userName, String password, String realm, String clientName) {
         String clientUuid = getClientUuid(httpsHostname, userName, password, realm, clientName);
 
@@ -70,38 +115,65 @@ public class KeycloakApiUtils {
         return result;
     }
 
+    /**
+     * Resolves the internal UUID of a Keycloak client by its client ID (name).
+     *
+     * <p>This method queries the Keycloak Admin API for all clients in the specified
+     * realm and searches for the client whose {@code clientId} matches the provided
+     * name. Once found, the corresponding internal client UUID ({@code id}) is returned.</p>
+     *
+     * @param httpsHostname  Keycloak HTTPS hostname
+     * @param userName       admin username used for authentication
+     * @param password       admin password used for authentication
+     * @param realm          realm containing the client
+     * @param clientName     client ID (name) whose UUID should be retrieved
+     *
+     * @return the internal UUID of the client
+     *
+     * @throws SetupException if the client cannot be found or the response cannot be parsed
+     */
     public static String getClientUuid(String httpsHostname, String userName, String password, String realm, String clientName) {
         String response = executeRequestAndReturnData(request(
             "GET", httpsHostname, ADMIN_REALMS_PATH + realm + "/clients/", userName, password, null));
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode clientsArray;
+        LOGGER.info("ClientId response keycloak api {}", response);
 
         try {
-            clientsArray = mapper.readTree(response);
+            JsonNode clientsArray = new ObjectMapper().readTree(response);
+            return StreamSupport.stream(clientsArray.spliterator(), false)
+                .filter(client -> {
+                    JsonNode clientIdNode = client.get("clientId");
+                    return clientIdNode != null && clientIdNode.textValue().equals(clientName);
+                })
+                .map(client -> client.get("id").textValue())
+                .findFirst()
+                .map(uuid -> {
+                    LOGGER.info("ClientId from keycloak api {}", uuid);
+                    return uuid;
+                })
+                .orElseThrow(() -> new SetupException("Cannot get clientId from keycloak api response"));
         } catch (JsonProcessingException e) {
             throw new SetupException("Keycloak client uuid response cannot be mapped to json node", e);
         }
-
-        LOGGER.info("ClientId response keycloak api {}", response);
-
-        String clientUuid = "";
-        for (JsonNode client : clientsArray) {
-            JsonNode clientIdNode = client.get("clientId");
-            if (clientIdNode != null && clientIdNode.textValue().equals(clientName)) {
-                clientUuid = client.get("id").textValue();
-                break;
-            }
-        }
-
-        if (clientUuid.isEmpty()) {
-            throw new SetupException("Cannot get clientId from keycloak api response");
-        }
-
-        LOGGER.info("ClientId from keycloak api {}", clientUuid);
-        return clientUuid;
     }
 
+    /**
+     * Builds a curl command for invoking the Keycloak Admin API.
+     *
+     * <p>The command includes the HTTP method, authentication token, and optional
+     * JSON request body. The request is executed with {@code --insecure} to allow
+     * HTTPS communication with self-signed certificates typically used in test
+     * environments.</p>
+     *
+     * @param method        HTTP method to use (e.g. GET, POST, DELETE)
+     * @param httpsHostname base HTTPS hostname of the Keycloak server
+     * @param endpoint      API endpoint path
+     * @param userName      admin username used to obtain the access token
+     * @param password      admin password used to obtain the access token
+     * @param body          optional JSON request body (may be {@code null})
+     *
+     * @return the curl command as an array of strings ready for execution
+     */
     private static String[] request(String method, String httpsHostname, String endpoint, String userName, String password, String body) {
         List<String> cmd = new ArrayList<>(List.of("curl", "--insecure", "-X", method));
         String token = getToken(httpsHostname, userName, password);
@@ -117,6 +189,20 @@ public class KeycloakApiUtils {
         return cmd.toArray(new String[0]);
     }
 
+    /**
+     * Obtains an access token from Keycloak using the admin CLI client.
+     *
+     * <p>Performs a password grant request against the Keycloak OIDC token endpoint
+     * and extracts the {@code access_token} from the response.</p>
+     *
+     * @param httpsHostname Keycloak HTTPS hostname
+     * @param userName      admin username
+     * @param password      admin password
+     *
+     * @return access token used for authenticated Keycloak Admin API requests
+     *
+     * @throws SetupException if the token cannot be retrieved
+     */
     public static String getToken(String httpsHostname, String userName, String password) {
         String token = new JsonObject(
             executeRequestAndReturnData(
@@ -134,20 +220,14 @@ public class KeycloakApiUtils {
     }
 
     /**
-     * Executes a shell request (typically a {@code curl} command) and returns the response
-     * once it succeeds. The method retries until the command produces a valid output that
-     * does not contain a "Connection refused" error.
+     * Executes a request command and returns the response body.
      *
-     * <p>The request is executed via {@link Exec#exec}, and the output is captured. If the
-     * request fails or the Keycloak API is temporarily unavailable, the method waits and
-     * retries using the {@link Wait#until} utility with standard polling and timeout
-     * intervals.</p>
+     * <p>The request is retried until it succeeds or the configured timeout is reached.
+     * Retries are triggered if the command output indicates a connection failure.</p>
      *
-     * <p>Any exceptions during command execution are logged and cause a retry. When the
-     * request eventually succeeds, the output from the command is returned.</p>
+     * @param request the command to execute (typically a curl request)
      *
-     * @param request the command to execute, represented as a string array suitable for {@code Exec.exec}
-     * @return the full command output once the request succeeds
+     * @return the response body returned by the command
      */
     public static String executeRequestAndReturnData(String[] request) {
         AtomicReference<String> response = new AtomicReference<>("");

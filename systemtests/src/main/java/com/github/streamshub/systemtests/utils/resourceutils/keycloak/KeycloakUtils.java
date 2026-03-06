@@ -19,7 +19,6 @@ import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
-import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.vertx.core.json.JsonArray;
@@ -37,6 +36,19 @@ public class KeycloakUtils {
 
     private KeycloakUtils() {}
 
+    /**
+     * Loads and patches a Keycloak realm template with dynamic roles, groups, users,
+     * and console client configuration.
+     *
+     * @param consoleURL console base URL
+     * @param realmPath  path to the realm template file
+     * @param realmName  name of the realm to create
+     * @param clientId   client ID used by the console
+     * @param mapping    role/group mappings
+     * @param users      users to include in the realm
+     *
+     * @return patched realm definition as JsonObject
+     */
     public static JsonObject loadRealmTemplate(String consoleURL, String realmPath, String realmName, String clientId,
         List<KeycloakTestConfig.GroupRoleMapping> mapping, List<KeycloakTestConfig.User> users
     ) {
@@ -91,27 +103,11 @@ public class KeycloakUtils {
     }
 
     /**
-     * Creates and applies a permissive NetworkPolicy that allows all ingress traffic to Pods
-     * matching a set of labels, but only if the environment is configured to use default-deny
-     * network policies.
+     * Creates a NetworkPolicy allowing all ingress traffic to pods matching the given labels.
      *
-     * <p>This method checks the {@code Environment.DEFAULT_TO_DENY_NETWORK_POLICIES} flag to
-     * determine whether network policies should be applied. If enabled, it constructs a
-     * Kubernetes {@link NetworkPolicy} resource that:</p>
-     *
-     * <ul>
-     *     <li>Targets Pods in the given namespace whose labels match {@code matchLabels}.</li>
-     *     <li>Defines an empty <em>ingress</em> rule block, which Kubernetes interprets as
-     *         "allow all ingress traffic" to the selected Pods.</li>
-     *     <li>Creates the policy in the cluster and waits for it to become active via
-     *         {@code KubeResourceManager.createResourceWithWait}.</li>
-     * </ul>
-     *
-     * <p>If the environment flag is disabled, no action is performed.</p>
-     *
-     * @param namespaceName the namespace in which the NetworkPolicy should be created
-     * @param policyName    the name of the NetworkPolicy resource
-     * @param matchLabels   the labels identifying which Pods the policy applies to
+     * @param namespaceName namespace where the policy is created
+     * @param policyName    name of the NetworkPolicy
+     * @param matchLabels   pod selector for allowed ingress
      */
     public static void allowNetworkPolicyAllIngressForMatchingLabel(String namespaceName, String policyName, LabelSelector matchLabels) {
         if (!Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
@@ -133,6 +129,13 @@ public class KeycloakUtils {
             .build());
     }
 
+    /**
+     * Creates a NetworkPolicy allowing Keycloak pods to access Postgres pods.
+     *
+     * @param namespace     namespace where the policy is created
+     * @param policyName    name of the NetworkPolicy
+     * @param postgresLabel label selector identifying Postgres pods
+     */
     public static void allowNetworkPolicyBetweenKeycloakAndPostgres(String namespace, String policyName, LabelSelector postgresLabel) {
         if (!Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
             return;
@@ -156,6 +159,13 @@ public class KeycloakUtils {
             .build());
     }
 
+    /**
+     * Generates a self-signed certificate and creates a TLS secret for Keycloak.
+     *
+     * @param namespace     namespace where the secret will be created
+     * @param tlsSecretName name of the TLS secret
+     * @param hostname      hostname for the generated certificate
+     */
     public static void createTlsSecret(String namespace, String tlsSecretName, String hostname) {
         LOGGER.info("Creating TLS secret '{}' for hostname '{}' in namespace '{}'", tlsSecretName, hostname, namespace);
         try {
@@ -178,6 +188,14 @@ public class KeycloakUtils {
         }
     }
 
+    /**
+     * Patches the Keycloak Ingress resource to enable TLS using the provided secret.
+     *
+     * @param namespace     namespace of the ingress
+     * @param httpHostname  hostname exposed by the ingress
+     * @param ingressName   name of the ingress resource
+     * @param tlsSecretName TLS secret used for HTTPS
+     */
     public static void patchIngressTls(String namespace, String httpHostname, String ingressName, String tlsSecretName) {
         if (ClusterUtils.isOcp()) {
             return;
@@ -204,6 +222,12 @@ public class KeycloakUtils {
         WaitUtils.waitForLogInPod(Constants.NGINX_INGRESS_NAMESPACE, nginxController, httpHostname);
     }
 
+    /**
+     * Imports the Keycloak server certificate into the local truststore.
+     *
+     * @param httpHostname       Keycloak hostname
+     * @param trustStorePassword password protecting the truststore
+     */
     public static void importCertificatesIntoTruststore(String httpHostname, String trustStorePassword) {
         try {
             Certificates.importCertificateIntoTrustStore(httpHostname, 443,
@@ -213,6 +237,14 @@ public class KeycloakUtils {
         }
     }
 
+    /**
+     * Creates a secret with the truststore password and a configmap containing the truststore.
+     *
+     * @param namespace               namespace where resources are created
+     * @param secretName              name of the secret storing the password
+     * @param configMapName           name of the configmap storing the truststore
+     * @param trustStorePasswordData  encoded truststore password data
+     */
     public static void createTrustStorePasswordAndConfigmap(String namespace, String secretName, String configMapName, Map<String, String> trustStorePasswordData) {
         LOGGER.info("Create secret with trust store password for console");
         KubeResourceManager.get().createOrUpdateResourceWithWait(new SecretBuilder()

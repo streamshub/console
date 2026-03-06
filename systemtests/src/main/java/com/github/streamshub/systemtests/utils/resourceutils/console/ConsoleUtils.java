@@ -40,22 +40,23 @@ public class ConsoleUtils {
     }
 
     public static void patchConsoleNginxBuffer(String namespace, String consoleInstance) {
-        if (!ClusterUtils.isOcp()) {
-            LOGGER.info("Edit console ingress, annotate for bigger buffer");
-            WaitUtils.waitForIngressToBePresent(namespace, consoleInstance + "-" + ConsoleIngress.NAME);
-            Ingress consoleIngress = ResourceUtils.getKubeResource(Ingress.class, namespace, consoleInstance + "-" + ConsoleIngress.NAME);
-            // Add nginx ingress annotation to increase buffer
-            // This is required to correctly receive bigger header containing keycloak token - session cookie
-            consoleIngress = consoleIngress.edit()
-                .editMetadata()
-                .addToAnnotations("nginx.ingress.kubernetes.io/proxy-buffer-size", "16k")
-                .addToAnnotations("nginx.ingress.kubernetes.io/proxy-buffers-number", "8")
-                .addToAnnotations("nginx.ingress.kubernetes.io/proxy-busy-buffers-size", "16k")
-                .endMetadata()
-                .build();
-
-            KubeResourceManager.get()
-                .createOrUpdateResourceWithWait(consoleIngress);
+        if (ClusterUtils.isOcp()) {
+            return;
         }
+
+        LOGGER.info("Edit console ingress, annotate for bigger buffer");
+        WaitUtils.waitForIngressToBePresent(namespace, consoleInstance + "-" + ConsoleIngress.NAME);
+        Ingress consoleIngress = ResourceUtils.getKubeResource(Ingress.class, namespace, consoleInstance + "-" + ConsoleIngress.NAME);
+        // Add nginx ingress annotation to increase buffer
+        // This is required to correctly receive bigger header containing keycloak token - session cookie
+        consoleIngress = consoleIngress.edit()
+            .editMetadata()
+            .addToAnnotations("nginx.ingress.kubernetes.io/proxy-buffer-size", "16k")
+            .addToAnnotations("nginx.ingress.kubernetes.io/proxy-buffers-number", "8")
+            .addToAnnotations("nginx.ingress.kubernetes.io/proxy-busy-buffers-size", "16k")
+            .endMetadata()
+            .build();
+
+        KubeResourceManager.get().createOrUpdateResourceWithWait(consoleIngress);
     }
 }

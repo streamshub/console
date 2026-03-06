@@ -102,6 +102,19 @@ public class KeycloakInstanceSetup {
 
     }
 
+    /**
+     * Deploys and initializes a Keycloak instance with a backing PostgreSQL database.
+     *
+     * <p>The setup performs the following steps:</p>
+     * <ul>
+     *   <li>Creates TLS secrets required for Keycloak ingress.</li>
+     *   <li>Deploys the PostgreSQL database and configures network access.</li>
+     *   <li>Deploys the Keycloak StatefulSet and waits until it becomes ready.</li>
+     *   <li>Configures ingress TLS and network policies for Keycloak.</li>
+     *   <li>Retrieves the Keycloak admin credentials from the generated secret.</li>
+     *   <li>Prepares a truststore and related Kubernetes resources for secure HTTPS communication.</li>
+     * </ul>
+     */
     public void setup() {
         LOGGER.info("----------- Install Keycloak Instance -----------");
         KeycloakUtils.createTlsSecret(namespace, keycloakTlsSecretName, httpHostname());
@@ -139,6 +152,19 @@ public class KeycloakInstanceSetup {
             Map.of(Constants.PASSWORD_KEY_NAME, Base64.getEncoder().encodeToString(trustStorePassword.getBytes())));
     }
 
+    /**
+     * Imports a Keycloak realm configured for the Console UI.
+     *
+     * <p>Optionally deletes an existing realm before importing a new one, loads a
+     * realm template with the provided role and user mappings, and waits until
+     * the realm becomes ready. After the realm is created, the client secret for
+     * the configured client is retrieved.</p>
+     *
+     * @param consoleUiUrl       URL of the Console UI used in the realm configuration
+     * @param deleteRealmBefore  whether an existing realm with the same name should be deleted before import
+     * @param roleMapping        group-to-role mappings to apply in the realm
+     * @param userMapping        users to create in the realm
+     */
     public void importConsoleRealm(String consoleUiUrl, boolean deleteRealmBefore, List<KeycloakTestConfig.GroupRoleMapping> roleMapping, List<KeycloakTestConfig.User> userMapping) {
         if (deleteRealmBefore && KeycloakApiUtils.realmExists(httpsHostname(), userName, userPassword, realmName)) {
             LOGGER.info("Realm {} already exists, deleting before reimport", realmName);

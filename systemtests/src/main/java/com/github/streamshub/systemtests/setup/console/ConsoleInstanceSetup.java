@@ -103,7 +103,7 @@ public class ConsoleInstanceSetup {
                 .withNamespace(namespace)
                 .build())
             .withNewSpec()
-                .withHostname(consoleInstanceName + "." + ClusterUtils.getClusterDomain())
+                .withHostname(ConsoleUtils.getConsoleUiHostname(consoleInstanceName))
                 .addAllToKafkaClusters(getOidcKafkaClusters(namespace, kafkaConfig))
                 .withNewSecurity()
                     .withNewOidc()
