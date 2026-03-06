@@ -4,14 +4,10 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.FileUtils;
+import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
-import io.fabric8.kubernetes.api.model.PodSpec;
-import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
-import io.fabric8.kubernetes.api.model.ServiceAccount;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.resources.ResourceItem;
 import org.apache.logging.log4j.Logger;
@@ -51,7 +47,7 @@ public class KroxyliciousOperatorSetup {
                 .load(multiYaml)
                 .items()
                 .stream()
-                .filter(resource -> !HasMetadata.getKind(Namespace.class).equals(resource.getKind()))
+                .filter(resource -> !(resource instanceof Namespace))
                 .toList();
 
             LOGGER.info("Loaded {} resources from archive", allResources.size());
@@ -61,53 +57,18 @@ public class KroxyliciousOperatorSetup {
         prepareKroxyliciousCrs();
     }
 
+    /**
+     * Prepares Kroxylicious-related Kubernetes resources for deployment
+     * into the target namespace.
+     *
+     * <p>Applies namespace adjustments, removes security contexts, and
+     * updates ClusterRoleBinding subjects to match the deployment namespace.</p>
+     */
     private void prepareKroxyliciousCrs() {
         allResources.forEach(resource -> {
-            String kind = resource.getKind();
-
-            // Resources must have namespace set for creation
-            if (HasMetadata.getKind(ServiceAccount.class).equals(kind) ||
-                HasMetadata.getKind(Deployment.class).equals(kind)) {
-                resource.getMetadata().setNamespace(deploymentNamespace);
-            }
-
-            // Remove securityContext from Deployments on OpenShift clusters
-            if (HasMetadata.getKind(Deployment.class).equals(kind) && ClusterUtils.isOcp()) {
-                Deployment deployment = (Deployment) resource;
-                LOGGER.info("Removing securityContext from Deployment: {}",
-                    deployment.getMetadata().getName());
-
-                PodSpec podSpec = deployment.getSpec().getTemplate().getSpec();
-
-                if (podSpec.getSecurityContext() != null) {
-                    podSpec.setSecurityContext(null);
-                }
-
-                podSpec.getContainers().forEach(container -> {
-                    if (container.getSecurityContext() != null) {
-                        container.setSecurityContext(null);
-                    }
-                });
-
-                if (podSpec.getInitContainers() != null) {
-                    podSpec.getInitContainers().forEach(container -> {
-                        if (container.getSecurityContext() != null) {
-                            container.setSecurityContext(null);
-                        }
-                    });
-                }
-            }
-
-            // Fix ClusterRoleBinding subjects namespace
-            // The kroxylicious install YAMLs hardcode 'kroxylicious-operator' as the subject namespace, so replace that
-            if (HasMetadata.getKind(ClusterRoleBinding.class).equals(kind)) {
-                ClusterRoleBinding crb = (ClusterRoleBinding) resource;
-                if (crb.getSubjects() != null) {
-                    crb.getSubjects().forEach(subject -> {
-                        subject.setNamespace(deploymentNamespace);
-                    });
-                }
-            }
+            SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);
+            SetupUtils.removeSecurityContexts(resource);
+            SetupUtils.fixClusterRoleBindingNamespace(resource, deploymentNamespace);
         });
     }
 

@@ -61,13 +61,13 @@ public class WaitUtils {
      * Waits for a Kubernetes Secret associated with a Kafka user to be created and contain non-empty data.
      *
      * @param namespace     the namespace where the Secret should be located
-     * @param kafkaUserName the name of the Kafka user, used as the Secret name
+     * @param secretName    the name of the Secret this method is waiting for
      */
-    public static void waitForSecretReady(String namespace, String kafkaUserName) {
-        Wait.until(String.format("creation of Secret %s/%s", namespace, kafkaUserName),
+    public static void waitForSecretReady(String namespace, String secretName) {
+        Wait.until(String.format("creation of Secret %s/%s", namespace, secretName),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
-                Secret secret = ResourceUtils.getKubeResource(Secret.class, namespace, kafkaUserName);
+                Secret secret = ResourceUtils.getKubeResource(Secret.class, namespace, secretName);
                 return secret != null && secret.getData() != null && !secret.getData().isEmpty();
             });
     }

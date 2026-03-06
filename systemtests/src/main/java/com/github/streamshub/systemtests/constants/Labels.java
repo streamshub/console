@@ -127,4 +127,10 @@ public class Labels {
             .addToMatchLabels(K8S_NAME_LABEL, "kroxylicious")
             .build();
     }
+
+    public static LabelSelector getKeycloakLabelSelector() {
+        return new LabelSelectorBuilder()
+            .addToMatchLabels(APP, Constants.KEYCLOAK)
+            .build();
+    }
 }

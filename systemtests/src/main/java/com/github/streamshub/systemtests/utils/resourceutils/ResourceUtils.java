@@ -54,6 +54,11 @@ public class ResourceUtils {
             .map(type::cast);
     }
 
+    public static <T extends HasMetadata> T[] getResourcesArrayFromListOfResources(List<HasMetadata> resources, Class<T> type) {
+        return getResourcesStreamFromListOfResources(resources, type)
+            .toArray(size -> (T[]) java.lang.reflect.Array.newInstance(type, size));
+    }
+
     public static <T> T getResourceFromListOfResources(List<HasMetadata> resources, Class<T> type) {
         return getResourcesStreamFromListOfResources(resources, type)
             .findFirst()

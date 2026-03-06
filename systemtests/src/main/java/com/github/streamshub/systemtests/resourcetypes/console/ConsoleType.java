@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.resourcetypes;
+package com.github.streamshub.systemtests.resourcetypes.console;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;

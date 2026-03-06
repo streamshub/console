@@ -61,7 +61,6 @@ public class GroupsST extends AbstractST {
 
     // Shared
     protected TestCaseConfig tcc;
-    private static final int MESSAGE_COUNT = Constants.MESSAGE_COUNT_HIGH;
 
     // ResetOffset TestBucket
     private static final String RESET_OFFSET_TOPIC_PREFIX = "rst-all-topics-var-offset";
@@ -190,19 +189,19 @@ public class GroupsST extends AbstractST {
     public Stream<Arguments> resetOffsetAllTopicsScenarios() {
         final String earliestOffsetIndex = "0";
         // Use index to reset consumers to previous offset to read timestamp
-        final String latestOffsetIndex = String.valueOf(MESSAGE_COUNT - 1);
-        final String middleOffsetIndex = String.valueOf((int) Math.ceil(MESSAGE_COUNT / 2.0) - 1);
+        final String latestOffsetIndex = String.valueOf(Constants.MESSAGE_COUNT_HIGH - 1);
+        final String middleOffsetIndex = String.valueOf((int) Math.ceil(Constants.MESSAGE_COUNT_HIGH / 2.0) - 1);
 
         return Stream.of(
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
             // Only one that uses `--to-latest` which sets the index to nth+1 for consuming the next message
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.LATEST, null, String.valueOf(MESSAGE_COUNT)),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, earliestOffsetIndex),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, middleOffsetIndex),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, earliestOffsetIndex),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, latestOffsetIndex),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex)
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.LATEST, null, String.valueOf(Constants.MESSAGE_COUNT_HIGH)),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, earliestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, middleOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, earliestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, latestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex)
         );
     }
 
@@ -214,14 +213,14 @@ public class GroupsST extends AbstractST {
     public Stream<Arguments> resetOffsetSpecificTopicScenarios() {
         final String earliestOffsetIndex = "0";
         // Use index to reset consumers to previous offset to read timestamp
-        final String latestOffsetIndex = String.valueOf(MESSAGE_COUNT - 1);
-        final String middleOffsetIndex = String.valueOf((int) Math.ceil(MESSAGE_COUNT / 2.0) - 1);
+        final String latestOffsetIndex = String.valueOf(Constants.MESSAGE_COUNT_HIGH - 1);
+        final String middleOffsetIndex = String.valueOf((int) Math.ceil(Constants.MESSAGE_COUNT_HIGH / 2.0) - 1);
 
         return Stream.of(
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex),
-            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DELETE_COMMITED_OFFSETS, null, earliestOffsetIndex)
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DELETE_COMMITED_OFFSETS, null, earliestOffsetIndex)
         );
     }
 
@@ -393,8 +392,6 @@ public class GroupsST extends AbstractST {
      */
     @SetupTestBucket(RESET_OFFSET_BUCKET)
     public void setupConsumerGroupResetOffset() {
-        tcc.setMessageCount(MESSAGE_COUNT);
-
         LOGGER.info("Prepare consumer offset scenario by creating topic(s) and then producing and consuming messages");
 
         List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), RESET_OFFSET_TOPIC_PREFIX, RESET_OFFSET_TOPIC_COUNT, true, 1, 1, 1)
@@ -406,7 +403,7 @@ public class GroupsST extends AbstractST {
             KafkaClients clients = new KafkaClientsBuilder()
                 .withNamespaceName(tcc.namespace())
                 .withTopicName(kafkaTopicName)
-                .withMessageCount(tcc.messageCount())
+                .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
                 .withDelayMs(0)
                 .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
                 .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))

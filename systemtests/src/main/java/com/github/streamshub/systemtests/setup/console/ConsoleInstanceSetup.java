@@ -6,9 +6,8 @@ import com.github.streamshub.console.api.v1alpha1.spec.ConsoleSpecBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaClusterBuilder;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.LogManager;
@@ -25,7 +24,7 @@ public class ConsoleInstanceSetup {
             return;
         }
         KubeResourceManager.get().createResourceWithWait(console);
-        LOGGER.info("Console deployed and available at {}", ConsoleUtils.getConsoleUiUrl(console.getMetadata().getNamespace(), console.getMetadata().getName(), true));
+        LOGGER.info("Console deployed and available at {}", ConsoleUtils.getConsoleUiUrl(console.getMetadata().getName(), true));
     }
 
     public static ConsoleBuilder getDefaultConsoleInstance(String namespaceName, String instanceName, String kafkaName, String kafkaUserName) {
@@ -35,7 +34,7 @@ public class ConsoleInstanceSetup {
                 .withNamespace(namespaceName)
                 .build())
             .withSpec(new ConsoleSpecBuilder()
-                .withHostname(instanceName + "." + ClusterUtils.getClusterDomain())
+                .withHostname(ConsoleUtils.getConsoleUiHostname(instanceName))
                 .withKafkaClusters(
                     new KafkaClusterBuilder()
                         .withId(kafkaName)
@@ -53,17 +52,25 @@ public class ConsoleInstanceSetup {
 
         if (!Environment.CONSOLE_API_IMAGE.isEmpty()) {
             builder = builder.editSpec()
-                .withNewImages()
-                    .withApi(Environment.CONSOLE_API_IMAGE)
-                .endImages()
+                .editOrNewContainers()
+                    .editOrNewApi()
+                        .editOrNewSpec()
+                            .withImage(Environment.CONSOLE_API_IMAGE)
+                        .endSpec()
+                    .endApi()
+                .endContainers()
             .endSpec();
         }
 
         if (!Environment.CONSOLE_UI_IMAGE.isEmpty()) {
             builder = builder.editSpec()
-                .editImages()
-                    .withUi(Environment.CONSOLE_UI_IMAGE)
-                .endImages()
+                .editOrNewContainers()
+                    .editOrNewUi()
+                        .editOrNewSpec()
+                            .withImage(Environment.CONSOLE_UI_IMAGE)
+                        .endSpec()
+                    .endUi()
+                .endContainers()
             .endSpec();
         }
 

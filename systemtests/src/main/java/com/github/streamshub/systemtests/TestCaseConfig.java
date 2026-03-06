@@ -19,10 +19,9 @@ public class TestCaseConfig {
     private final String testName;
     private final String namespace;
     private final Playwright playwright;
-    private final Browser browser;
     private final BrowserContext context;
     private final Page page;
-    private int messageCount;
+    private final int defaultMessageCount;
 
     // Default Kafka
     private final String kafkaName;
@@ -51,7 +50,7 @@ public class TestCaseConfig {
             .orElse("nullClass");
 
         this.playwright = Playwright.create();
-        this.browser = PwUtils.createBrowser(playwright);
+        Browser browser = PwUtils.createBrowser(playwright);
         this.context = browser.newContext(new Browser.NewContextOptions().setIgnoreHTTPSErrors(true));
         // Allow tracing
         this.context.tracing().start(new Tracing.StartOptions().setScreenshots(true).setSnapshots(true).setSources(true));
@@ -70,7 +69,7 @@ public class TestCaseConfig {
         this.kafkaServiceName = KroxyNamingUtils.kafkaServiceName(namespace);
         this.kafkaProtocolFilterName = KroxyNamingUtils.kafkaProtocolFilterName(namespace);
 
-        this.messageCount = Constants.MESSAGE_COUNT;
+        this.defaultMessageCount = Constants.MESSAGE_COUNT;
         this.apicurioRegistry3Name = Constants.APICURIO_PREFIX + "-" + Utils.hashStub(namespace);
     }
 
@@ -133,18 +132,11 @@ public class TestCaseConfig {
         return kafkaProtocolFilterName;
     }
 
-    public int messageCount() {
-        return messageCount;
+    public int defaultMessageCount() {
+        return defaultMessageCount;
     }
 
     public String apicurioRegistry3Name() {
         return apicurioRegistry3Name;
-    }
-
-    // ----------
-    // Setters
-    // ----------
-    public void setMessageCount(int messageCount) {
-        this.messageCount = messageCount;
     }
 }

@@ -3,12 +3,17 @@ package com.github.streamshub.systemtests.utils.resourceutils.keycloak;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
+import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelector;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
 import io.skodjob.testframe.TestFrameConstants;
@@ -16,10 +21,12 @@ import io.skodjob.testframe.enums.LogLevel;
 import io.skodjob.testframe.executor.Exec;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.wait.Wait;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Map;
+import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class KeycloakUtils {
@@ -27,23 +34,170 @@ public class KeycloakUtils {
 
     private KeycloakUtils() {}
 
-    /**
-     * Imports a Keycloak realm by sending a POST request with the provided realm JSON definition.
-     *
-     * <p>This method performs an HTTP POST request (via a shell-executed {@code curl} command)
-     * to the {@code /admin/realms} endpoint of the target Keycloak instance. The request uses the
-     * supplied bearer token for authentication and sends the {@code realmData} payload as JSON.</p>
-     *
-     * <p>The response body from the request is returned as a string. If the request fails,
-     * the underlying executor is expected to throw or return error output accordingly.</p>
-     *
-     * @param baseURI    the base URI of the Keycloak instance (e.g. {@code https://keycloak.example.com})
-     * @param token      the bearer token used for authorization
-     * @param realmData  the JSON payload representing the realm to import
-     *
-     * @return the raw response body from the Keycloak API call
-     */
-    public static String importRealm(String baseURI, String token, String realmData) {
+    @SuppressWarnings("MethodLength")
+    public static void importConsoleRealm(String consoleURL, String userName, String password,
+                                          List<KeycloakTestConfig.GroupRoleMapping> mapping, List<KeycloakTestConfig.User> users
+    ) {
+        // Generated from the mapping and initial test JSON - now flexible for adding new roles or users
+        JsonObject realm = new JsonObject()
+            .put("realm", Constants.KEYCLOAK_REALM)
+            .put("enabled", true)
+            .put("accessTokenLifespan", 6000)
+            .put("ssoSessionIdleTimeout", 864000)
+            .put("ssoSessionMaxLifespan", 864000)
+            .put("accessCodeLifespan", 6000)
+            .put("accessCodeLifespanUserAction", 6000)
+            .put("notBefore", 0)
+            .put("sslRequired", "external")
+            .put("rememberMe", false)
+            .put("ssoSessionIdleTimeoutRememberMe", 0)
+            .put("ssoSessionMaxLifespanRememberMe", 0)
+            .put("roles", new JsonObject()
+                .put("realm", new JsonArray(
+                    mapping.stream()
+                        .map(m -> new JsonObject()
+                            .put("name", m.roleName())
+                            .put("description", m.roleDescription()))  // use actual descriptions, not ""
+                        .toList()))
+                .put("client", new JsonObject()
+                    .put(Constants.KEYCLOAK_CLIENT_ID, new JsonArray())))
+            .put("groups", new JsonArray(
+                mapping.stream()
+                    .map(m -> new JsonObject()
+                        .put("name", m.groupName())  // groupName should NOT include leading "/"
+                        .put("path", m.groupPath())
+                        .put("realmRoles", new JsonArray(List.of(m.roleName()))))
+                    .toList()))
+            .put("users", new JsonArray(
+                users.stream()
+                    .map(u -> new JsonObject()
+                        .put("username", u.username())
+                        .put("enabled", true)
+                        .put("emailVerified", true)
+                        .put("firstName", u.firstName())
+                        .put("lastName", u.lastName())
+                        .put("email", u.email())
+                        .put("credentials", new JsonArray(List.of(
+                            new JsonObject().put("type", "password").put("value", u.password()))))
+                        .put("groups", new JsonArray(List.of(u.groupPath()))))
+                    .toList()))
+            .put("clients", new JsonArray(List.of(
+                new JsonObject()
+                    .put("clientId", Constants.KEYCLOAK_CLIENT_ID)
+                    .put("description", "private client for streamshub console")
+                    .put("enabled", true)
+                    .put("bearerOnly", false)
+                    .put("consentRequired", false)
+                    .put("standardFlowEnabled", true)
+                    .put("implicitFlowEnabled", false)
+                    .put("clientAuthenticatorType", "client-secret")
+                    .put("redirectUris", new JsonArray(List.of(consoleURL + "/*")))
+                    .put("webOrigins", new JsonArray(List.of(consoleURL + "/")))
+                    .put("directAccessGrantsEnabled", true)
+                    .put("serviceAccountsEnabled", true)
+                    .put("publicClient", false)
+                    .put("frontchannelLogout", true)
+                    .put("protocol", "openid-connect")
+                    .put("fullScopeAllowed", true)
+                    .put("nodeReRegistrationTimeout", -1)
+                    .put("defaultClientScopes", new JsonArray(List.of("profile", "groups", "email"))))))
+            .put("clientScopes", new JsonArray(List.of(
+                new JsonObject()
+                    .put("name", "profile")
+                    .put("protocol", "openid-connect")
+                    .put("attributes", new JsonObject()
+                        .put("include.in.token.scope", "true")
+                        .put("display.on.consent.screen", "true"))
+                    .put("protocolMappers", new JsonArray(List.of(
+                        new JsonObject()
+                            .put("name", "profile")
+                            .put("protocol", "openid-connect")
+                            .put("protocolMapper", "oidc-usermodel-attribute-mapper")
+                            .put("config", new JsonObject()
+                                .put("userinfo.token.claim", "true")
+                                .put("user.attribute", "profile")
+                                .put("id.token.claim", "true")
+                                .put("access.token.claim", "true")
+                                .put("claim.name", "profile")
+                                .put("jsonType.label", "String")),
+                        new JsonObject()
+                            .put("name", "username")
+                            .put("protocol", "openid-connect")
+                            .put("protocolMapper", "oidc-usermodel-attribute-mapper")
+                            .put("config", new JsonObject()
+                                .put("userinfo.token.claim", "true")
+                                .put("user.attribute", "username")
+                                .put("id.token.claim", "true")
+                                .put("access.token.claim", "true")
+                                .put("claim.name", "preferred_username")
+                                .put("jsonType.label", "String"))))),
+                new JsonObject()
+                    .put("name", "basic")
+                    .put("protocol", "openid-connect")
+                    .put("attributes", new JsonObject()
+                        .put("include.in.token.scope", "false")
+                        .put("display.on.consent.screen", "false"))
+                    .put("protocolMappers", new JsonArray(List.of(
+                        new JsonObject()
+                            .put("name", "sub")
+                            .put("protocol", "openid-connect")
+                            .put("protocolMapper", "oidc-sub-mapper"),
+                        new JsonObject()
+                            .put("name", "auth_time")
+                            .put("protocol", "openid-connect")
+                            .put("protocolMapper", "oidc-usersessionmodel-note-mapper")
+                            .put("config", new JsonObject()
+                                .put("user.session.note", "AUTH_TIME")
+                                .put("id.token.claim", "true")
+                                .put("access.token.claim", "true")
+                                .put("claim.name", "auth_time")
+                                .put("jsonType.label", "long"))))),
+                new JsonObject()
+                    .put("name", "email")
+                    .put("protocol", "openid-connect")
+                    .put("attributes", new JsonObject()
+                        .put("include.in.token.scope", "true")
+                        .put("display.on.consent.screen", "true"))
+                    .put("protocolMappers", new JsonArray(List.of(
+                        new JsonObject()
+                            .put("name", "email")
+                            .put("protocol", "openid-connect")
+                            .put("protocolMapper", "oidc-usermodel-attribute-mapper")
+                            .put("config", new JsonObject()
+                                .put("userinfo.token.claim", "true")
+                                .put("user.attribute", "email")
+                                .put("id.token.claim", "true")
+                                .put("access.token.claim", "true")
+                                .put("claim.name", "email")
+                                .put("jsonType.label", "String"))))),
+                new JsonObject()
+                    .put("name", "groups")
+                    .put("protocol", "openid-connect")
+                    .put("attributes", new JsonObject()
+                        .put("include.in.token.scope", "true")
+                        .put("display.on.consent.screen", "true"))
+                    .put("protocolMappers", new JsonArray(List.of(
+                        new JsonObject()
+                            .put("name", "Groups Mapper")
+                            .put("protocol", "openid-connect")
+                            .put("protocolMapper", "oidc-group-membership-mapper")
+                            .put("config", new JsonObject()
+                                .put("full.path", "true")
+                                .put("multivalued", "true")
+                                .put("id.token.claim", "true")
+                                .put("access.token.claim", "true")
+                                .put("claim.name", "groups"))))))));
+
+        String result = importRealm(getKeycloakHostname(true), userName, password, realm.encode());
+        if (!result.isEmpty() && !result.contains("already exists")) {
+            throw new SetupException("Console realm was not imported: " + result);
+        }
+
+        LOGGER.info("Console realm successfully imported");
+    }
+
+    public static String importRealm(String baseURI, String userName, String password, String realmData) {
+        String token = getToken(userName, password);
         return executeRequestAndReturnData(
             new String[]{
                 "curl",
@@ -58,25 +212,9 @@ public class KeycloakUtils {
         );
     }
 
-    /**
-     * Retrieves the client secret for a given Keycloak client.
-     *
-     * <p>This method resolves the client's internal UUID, obtains an admin access token,
-     * and then performs an authenticated HTTP GET request (via a shell-executed
-     * {@code curl} command) to the Keycloak Admin API to fetch the client's secret.</p>
-     *
-     * <p>The response is parsed as JSON and the {@code "value"} field—representing the
-     * actual client secret—is returned.</p>
-     *
-     * @param keycloakConfig  the configuration object containing Keycloak connection details
-     * @param realm           the name of the Keycloak realm where the client resides
-     * @param clientName      the display name of the client whose secret should be retrieved
-     *
-     * @return the client secret value extracted from the Keycloak Admin API response
-     */
-    public static String getClientSecret(KeycloakConfig keycloakConfig, String realm, String clientName) {
-        final String clientUuid = getClientUuid(keycloakConfig, realm, clientName);
-        final String token = getToken(keycloakConfig);
+    public static String getClientSecret(String userName, String password, String realm, String clientName) {
+        final String clientUuid = getClientUuid(userName, password, realm, clientName);
+        final String token = getToken(userName, password);
         return new JsonObject(executeRequestAndReturnData(
             new String[]{
                 "curl",
@@ -89,30 +227,8 @@ public class KeycloakUtils {
         )).getString("value");
     }
 
-    /**
-     * Resolves the internal UUID of a Keycloak client by its client name.
-     *
-     * <p>This method authenticates against Keycloak using an admin token, retrieves the list
-     * of all clients within the specified realm via an HTTP GET request (executed through
-     * a shell-based {@code curl} command), and parses the JSON response to locate the client
-     * whose {@code clientId} matches the provided {@code clientName}.</p>
-     *
-     * <p>Once found, the method extracts and returns the client's internal UUID
-     * (the {@code "id"} field). If no matching client is found, an empty string is returned.</p>
-     *
-     * <p>If the returned JSON cannot be parsed, a {@link SetupException} is thrown.</p>
-     *
-     * @param keycloakConfig  the configuration object containing Keycloak connection and credential details
-     * @param realm           the Keycloak realm to search within
-     * @param clientName      the client identifier to look up
-     *
-     * @return the internal UUID of the matching Keycloak client, or an empty string if not found
-     *
-     * @throws SetupException if the JSON response cannot be parsed
-     */
-    public static String getClientUuid(KeycloakConfig keycloakConfig, String realm, String clientName) {
-        final String token = getToken(keycloakConfig);
-
+    public static String getClientUuid(String userName, String password, String realm, String clientName) {
+        final String token = getToken(userName, password);
         String response = executeRequestAndReturnData(
             new String[]{
                 "curl",
@@ -167,7 +283,7 @@ public class KeycloakUtils {
      * @param policyName    the name of the NetworkPolicy resource
      * @param matchLabels   the labels identifying which Pods the policy applies to
      */
-    public static void allowNetworkPolicyAllIngressForMatchingLabel(String namespaceName, String policyName, Map<String, String> matchLabels) {
+    public static void allowNetworkPolicyAllIngressForMatchingLabel(String namespaceName, String policyName, LabelSelector matchLabels) {
         if (Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
             LOGGER.info("Apply NetworkPolicy with Ingress to accept all connections to the Pods matching labels: {}", matchLabels);
 
@@ -180,9 +296,7 @@ public class KeycloakUtils {
                     // keeping ingress empty to allow all connections
                     .addNewIngress()
                     .endIngress()
-                    .withNewPodSelector()
-                        .addToMatchLabels(matchLabels)
-                    .endPodSelector()
+                    .withPodSelector(matchLabels)
                 .endSpec()
                 .build();
 
@@ -190,26 +304,7 @@ public class KeycloakUtils {
         }
     }
 
-    /**
-     * Retrieves an access token from Keycloak using the configured admin credentials.
-     *
-     * <p>The method issues a direct token request to the master realm’s
-     * OpenID Connect token endpoint. It constructs a form-encoded POST body containing:</p>
-     *
-     * <ul>
-     *     <li>{@code client_id=admin-cli} — relying on Keycloak’s built-in admin CLI client.</li>
-     *     <li>{@code grant_type=password} — performing a resource-owner-password credential exchange.</li>
-     *     <li>{@code username} and {@code password} — taken from the provided {@link KeycloakConfig}.</li>
-     * </ul>
-     *
-     * <p>The response is parsed as JSON, and the {@code access_token} field is returned.
-     * If the request fails or the response is malformed, the caller’s handling logic decides
-     * how to surface errors.</p>
-     *
-     * @param keycloakConfig configuration providing Keycloak hostname and admin credentials
-     * @return the extracted Keycloak access token string
-     */
-    public static String getToken(KeycloakConfig keycloakConfig) {
+    public static String getToken(String userName, String password) {
         return new JsonObject(
             executeRequestAndReturnData(
                 new String[]{
@@ -218,7 +313,7 @@ public class KeycloakUtils {
                     "--insecure",
                     "-X",
                     "POST",
-                    "-d", "client_id=admin-cli&grant_type=password&username=" + keycloakConfig.getUsername() + "&password=" + keycloakConfig.getPassword(),
+                    "-d", "client_id=admin-cli&grant_type=password&username=" + userName + "&password=" + password,
                     getKeycloakHostname(true) + "/realms/master/protocol/openid-connect/token"
                 }
             )).getString("access_token");
@@ -285,5 +380,32 @@ public class KeycloakUtils {
      */
     public static String getKeycloakRealmUri(String realm) {
         return getKeycloakHostname(true) + "/realms/" + realm;
+    }
+
+    public static void createTrustStorePasswordAndConfigmap(String namespace, String secretName, String configMapName, String trustStorePassword) {
+        LOGGER.info("Create secret with trust store password for console");
+        KubeResourceManager.get().createOrUpdateResourceWithWait(new SecretBuilder()
+            .withNewMetadata()
+                .withName(secretName)
+                .withNamespace(namespace)
+                .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+            .endMetadata()
+            .addToData(Constants.PASSWORD_KEY_NAME, Base64.getEncoder().encodeToString(trustStorePassword.getBytes()))
+            .build());
+
+        // Configmap with truststore
+        LOGGER.info("Create configmap with trust store");
+        String encodedTrustStore = Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH));
+
+        LOGGER.info("Encoded TrustStore: {}", encodedTrustStore);
+
+        KubeResourceManager.get().createOrUpdateResourceWithWait(new ConfigMapBuilder()
+            .withNewMetadata()
+                .withName(configMapName)
+                .withNamespace(namespace)
+                .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+            .endMetadata()
+            .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, encodedTrustStore)
+            .build());
     }
 }

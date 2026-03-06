@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.setup.prometheus;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
@@ -86,24 +87,8 @@ public class PrometheusInstanceSetup {
         }
 
         allResources.forEach(resource -> {
-            String kind = resource.getKind();
-            // Set namespace for all resources except cluster-scoped ones
-            if (!HasMetadata.getKind(ClusterRole.class).equals(kind) &&
-                !HasMetadata.getKind(ClusterRoleBinding.class).equals(kind)) {
-                resource.getMetadata().setNamespace(deploymentNamespace);
-            }
-
-            // Set ClusterRoleBinding subjects namespace
-            if (HasMetadata.getKind(ClusterRoleBinding.class).equals(kind)) {
-                ClusterRoleBinding crb = (ClusterRoleBinding) resource;
-                if (crb.getSubjects() != null) {
-                    crb.getSubjects().forEach(subject -> {
-                        LOGGER.info("Replacing subject namespace 'default' with '{}' in ClusterRoleBinding: {}",
-                                deploymentNamespace, crb.getMetadata().getName());
-                        subject.setNamespace(deploymentNamespace);
-                    });
-                }
-            }
+            SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);
+            SetupUtils.fixClusterRoleBindingNamespace(resource, deploymentNamespace);
         });
     }
 

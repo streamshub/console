@@ -4,11 +4,11 @@ import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaClusterBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
+import com.github.streamshub.console.api.v1alpha1.spec.security.Role;
+import com.github.streamshub.console.api.v1alpha1.spec.security.RoleBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.security.Rule;
-import com.github.streamshub.console.config.security.ResourceTypes;
-import com.github.streamshub.systemtests.constants.AuthTestConstants;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
@@ -20,77 +20,41 @@ import java.util.List;
 public class AuthTestSetupUtils {
     private AuthTestSetupUtils() {}
 
-    public static List<KafkaCluster> getOidcKafkaClusters(String namespace) {
-        return List.of(
-            new KafkaClusterBuilder()
-                .withId(AuthTestConstants.TEAM_DEV_KAFKA_NAME)
-                .withName(AuthTestConstants.TEAM_DEV_KAFKA_NAME)
-                .withListener(Constants.SECURE_LISTENER_NAME)
-                .withNamespace(namespace)
-                .withNewCredentials()
-                    .withNewKafkaUser()
-                        .withName(KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
-                    .endKafkaUser()
-                .endCredentials()
-                // Map KafkaResources-to-ConsoleRoles with privileges
-                .withNewSecurity()
-                    .addNewRole()
-                        .withName(AuthTestConstants.DEV_ROLE_NAME)
+    public static List<KafkaCluster> getOidcKafkaClusters(String namespace, List<KeycloakTestConfig.KafkaConfig> kafkaConfig) {
+        return kafkaConfig.stream()
+            .map(kc -> {
+                List<Role> roles = kc.roles().stream()
+                    .map(r -> new RoleBuilder()
+                        .withName(r.roleName())
                         .addNewRule()
-                            .withResources(ResourceTypes.Kafka.ALL.expand().stream().map(ResourceTypes.ResourceType::value).toList())
-                            .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
+                            .withResources(r.resources())
+                            .withPrivileges(r.privileges().toArray(new Rule.Privilege[0]))
                         .endRule()
-                    .endRole()
-                    .addNewRole()
-                        .withName(AuthTestConstants.ADMIN_ROLE_NAME)
-                        .addNewRule()
-                            .withResources(ResourceTypes.Kafka.ALL.expand().stream().map(ResourceTypes.ResourceType::value).toList())
-                            .withPrivileges(Rule.Privilege.ALL)
-                        .endRule()
-                    .endRole()
-                    .addNewRole()
-                        .withName(AuthTestConstants.TOPICS_VIEW_ROLE_NAME)
-                        .addNewRule()
-                            .addToResources(
-                                ResourceTypes.Kafka.TOPICS.value(),
-                                ResourceTypes.Kafka.TOPIC_RECORDS.value())
-                            .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
-                        .endRule()
-                    .endRole()
-                    .addNewRole()
-                        .withName(AuthTestConstants.CONSUMERGROUPS_VIEW_ROLE_NAME)
-                        .addNewRule()
-                            .addToResources(
-                                ResourceTypes.Kafka.GROUPS.value())
-                            .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
-                        .endRule()
-                    .endRole()
-                .endSecurity()
-            .build(),
-            new KafkaClusterBuilder()
-                .withId(AuthTestConstants.TEAM_ADMIN_KAFKA_NAME)
-                .withName(AuthTestConstants.TEAM_ADMIN_KAFKA_NAME)
-                .withListener(Constants.SECURE_LISTENER_NAME)
-                .withNamespace(namespace)
-                .withNewCredentials()
-                    .withNewKafkaUser()
-                        .withName(KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_ADMIN_KAFKA_NAME))
-                    .endKafkaUser()
-                .endCredentials()
-                // Map KafkaResources-to-ConsoleRoles with privileges
-                .withNewSecurity()
-                    .addNewRole()
-                        .withName(AuthTestConstants.ADMIN_ROLE_NAME)
-                        .addNewRule()
-                            .withResources(ResourceTypes.Kafka.ALL.expand().stream().map(ResourceTypes.ResourceType::value).toList())
-                            .withPrivileges(Rule.Privilege.ALL)
-                        .endRule()
-                    .endRole()
-                .endSecurity()
-            .build());
+                        .build())
+                    .toList();
+
+                return new KafkaClusterBuilder()
+                    .withId(kc.kafkaName())
+                    .withName(kc.kafkaName())
+                    .withListener(Constants.SECURE_LISTENER_NAME)
+                    .withNamespace(namespace)
+                    .withNewCredentials()
+                        .withNewKafkaUser()
+                            .withName(KafkaNamingUtils.kafkaUserName(kc.kafkaName()))
+                        .endKafkaUser()
+                    .endCredentials()
+                    .withNewSecurity()
+                        .withRoles(roles)
+                    .endSecurity()
+                    .build();
+            })
+            .toList();
     }
 
-    public static ConsoleBuilder getOidcConsoleInstance(String namespace, String consoleInstanceName, KeycloakConfig keycloakConfig) {
+    public static ConsoleBuilder getOidcConsoleInstance(String namespace, String consoleInstanceName, String userName, String password,
+        String trustStoreSecretName, String trustStoreConfigMap, List<KeycloakTestConfig.GroupRoleMapping> roleMapping,
+        List<KeycloakTestConfig.KafkaConfig> kafkaConfig
+    ) {
         ConsoleBuilder builder = new ConsoleBuilder()
             .withMetadata(new ObjectMetaBuilder()
                 .withName(consoleInstanceName)
@@ -98,91 +62,47 @@ public class AuthTestSetupUtils {
                 .build())
             .withNewSpec()
                 .withHostname(consoleInstanceName + "." + ClusterUtils.getClusterDomain())
-                .addAllToKafkaClusters(getOidcKafkaClusters(namespace))
+                .addAllToKafkaClusters(getOidcKafkaClusters(namespace, kafkaConfig))
                 // OIDC Config
                 .withNewSecurity()
                     .withNewOidc()
                         .withAuthServerUrl(KeycloakUtils.getKeycloakRealmUri(Constants.KEYCLOAK_REALM))
                         .withClientId(Constants.KEYCLOAK_CLIENT_ID)
                         .withNewClientSecret()
-                            .withValue(KeycloakUtils.getClientSecret(keycloakConfig, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID))
+                            .withValue(KeycloakUtils.getClientSecret(userName, password, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID))
                         .endClientSecret()
                         .withNewTrustStore()
                             .withType(TrustStore.Type.JKS)
                             .withNewPassword()
                                 .withNewValueFrom()
-                                    .withNewSecretKeyRef(Constants.PASSWORD_KEY_NAME, Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME, false)
+                                    .withNewSecretKeyRef(Constants.PASSWORD_KEY_NAME, trustStoreSecretName, false)
                                 .endValueFrom()
                             .endPassword()
                             .withNewContent()
                                 .withNewValueFrom()
-                                    .withNewConfigMapKeyRef(Constants.TRUST_STORE_KEY_NAME, Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME, false)
+                                    .withNewConfigMapKeyRef(Constants.TRUST_STORE_KEY_NAME, trustStoreConfigMap, false)
                                 .endValueFrom()
                             .endContent()
                         .endTrustStore()
                     .endOidc()
                     // Subjects (Keycloak Groups → Console Roles)
                     // Map JWT claims to console roles
-                    .addNewSubject()
-                        .withClaim(AuthTestConstants.CLAIM_GROUPS)
-                        .addToInclude(AuthTestConstants.DEV_GROUP_NAME)
-                        .addToRoleNames(AuthTestConstants.DEV_ROLE_NAME)
-                    .endSubject()
-                    .addNewSubject()
-                        .withClaim(AuthTestConstants.CLAIM_GROUPS)
-                        .addToInclude(AuthTestConstants.ADMIN_GROUP_NAME)
-                        .addToRoleNames(AuthTestConstants.ADMIN_ROLE_NAME)
-                    .endSubject()
-                    .addNewSubject()
-                        .withClaim(AuthTestConstants.CLAIM_GROUPS)
-                        .addToInclude(AuthTestConstants.TOPICS_VIEW_GROUP_NAME)
-                        .addToRoleNames(AuthTestConstants.TOPICS_VIEW_ROLE_NAME)
-                    .endSubject()
-                    .addNewSubject()
-                        .withClaim(AuthTestConstants.CLAIM_GROUPS)
-                        .addToInclude(AuthTestConstants.CONSUMERGROUPS_VIEW_GROUP_NAME)
-                        .addToRoleNames(AuthTestConstants.CONSUMERGROUPS_VIEW_ROLE_NAME)
-                    .endSubject()
+                    .addAllToSubjects(KeycloakTestConfig.getSubjects(roleMapping))
                     // Roles (Console Role → Kafka Privileges)
                     // Map which role can see which kafka
-                    .addNewRole()
-                        .withName(AuthTestConstants.DEV_ROLE_NAME)
-                        .addNewRule()
-                            .withResources(ResourceTypes.Global.KAFKAS.value())
-                            .withResourceNames(AuthTestConstants.TEAM_DEV_KAFKA_NAME)
-                            .withPrivileges(Rule.Privilege.ALL)
-                        .endRule()
-                    .endRole()
-                    .addNewRole()
-                        .withName(AuthTestConstants.ADMIN_ROLE_NAME)
-                        .addNewRule()
-                            .withResources(ResourceTypes.Global.KAFKAS.value())
-                            .withResourceNames(AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_DEV_KAFKA_NAME)
-                            .withPrivileges(Rule.Privilege.ALL)
-                        .endRule()
-                    .endRole()
-                    .addNewRole()
-                        .withName(AuthTestConstants.TOPICS_VIEW_ROLE_NAME)
-                        .addNewRule()
-                            .withResources(ResourceTypes.Global.KAFKAS.value())
-                            .withResourceNames(AuthTestConstants.TEAM_DEV_KAFKA_NAME)
-                            .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
-                        .endRule()
-                    .endRole()
-                    .addNewRole()
-                        .withName(AuthTestConstants.CONSUMERGROUPS_VIEW_ROLE_NAME)
-                        .addNewRule()
-                            .withResources(ResourceTypes.Global.KAFKAS.value())
-                            .withResourceNames(AuthTestConstants.TEAM_DEV_KAFKA_NAME)
-                            .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
-                        .endRule()
-                    .endRole()
+                    .addAllToRoles(KeycloakTestConfig.getRoles(roleMapping))
                 .endSecurity()
             .endSpec();
 
+        builder = forceNodeJsToAcceptSelfSignedCerts(builder);
+
+        return builder;
+    }
+
+    public static ConsoleBuilder forceNodeJsToAcceptSelfSignedCerts(ConsoleBuilder builder) {
         if (!ClusterUtils.isOcp()) {
             // Force NextJS to accept self signed certs
-            builder = builder
+            return builder
                 .editSpec()
                     .editContainers()
                         .withNewUi()
@@ -196,7 +116,6 @@ public class AuthTestSetupUtils {
                     .endContainers()
                 .endSpec();
         }
-
         return builder;
     }
 }

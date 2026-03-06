@@ -128,7 +128,6 @@ public class Constants {
     public static final String TRUST_STORE_KEY_NAME = "truststore";
 
     public static final String KEYCLOAK_REALM = "console-realm";
-    public static final String TRUST_STORE_PASSWORD = "changeit"; // NOSONAR - test password
 
     // --------------------------------
     // ------------- Kroxy ------------
@@ -168,4 +167,9 @@ public class Constants {
     public static final String SERIALIZER_PROTOBUF = "io.apicurio.registry.serde.protobuf.ProtobufKafkaSerializer";
     public static final String SERIALIZER_AVRO = "io.apicurio.registry.serde.avro.AvroKafkaSerializer";
     public static final String SERIALIZER_JSON = "io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaSerializer";
+
+    // --------------------------------
+    // ------------ Keycloak ----------
+    // --------------------------------
+    public static final String KEYCLOAK = "keycloak";
 }
