@@ -27,12 +27,12 @@ public class Environment {
     // Console
     public static final String CONSOLE_API_IMAGE = ENVS.getOrDefault("CONSOLE_API_IMAGE", "");
     public static final String CONSOLE_UI_IMAGE = ENVS.getOrDefault("CONSOLE_UI_IMAGE", "");
-    public static final String CONSOLE_OPERATOR_IMAGE = ENVS.getOrDefault("CONSOLE_OPERATOR_IMAGE", "");
     public static final InstallType CONSOLE_INSTALL_TYPE = ENVS.getOrDefault("CONSOLE_INSTALL_TYPE", InstallType::fromString, InstallType.Yaml);
     public static final String CONSOLE_DEPLOYMENT_NAME = ENVS.getOrDefault("CONSOLE_DEPLOYMENT_NAME", "streamshub-console");
     public static final String CONSOLE_CLUSTER_DOMAIN = ENVS.getOrDefault("CONSOLE_CLUSTER_DOMAIN", "");
+    public static final boolean DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL = ENVS.getOrDefault("DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL", Boolean::parseBoolean, true);
 
-     // YAML bundle
+    // YAML bundle
     public static final String CONSOLE_OPERATOR_BUNDLE_URL = ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "");
 
     // OLM
@@ -66,9 +66,12 @@ public class Environment {
     public static final String TEST_CLIENTS_PULL_SECRET = ENVS.getOrDefault("TEST_CLIENTS_PULL_SECRET", "");
 
     // Keycloak
-    public static final String KEYCLOAK_VERSION = ENVS.getOrDefault("KEYCLOAK_VERSION", "26.2.5");
+    public static final String KEYCLOAK_VERSION = ENVS.getOrDefault("KEYCLOAK_VERSION", "26.4.0");
     public static final boolean DEFAULT_TO_DENY_NETWORK_POLICIES = ENVS.getOrDefault("DEFAULT_TO_DENY_NETWORK_POLICIES", Boolean::parseBoolean, true);
     public static final String KEYCLOAK_TRUST_STORE_FILE_PATH = ENVS.getOrDefault("TRUST_STORE_FILE_PATH", "/tmp/keycloak/keycloak-truststore.jks");
+    // For custom keycloak images
+    public static final String KEYCLOAK_OPERATOR_IMAGE = ENVS.getOrDefault("KEYCLOAK_OPERATOR_IMAGE", "");
+    public static final String KEYCLOAK_SERVER_IMAGE = ENVS.getOrDefault("KEYCLOAK_SERVER_IMAGE", "");
 
     // Postgres
     public static final String POSTGRES_IMAGE = ENVS.getOrDefault("POSTGRES_IMAGE", "mirror.gcr.io/postgres:18");
@@ -76,9 +79,11 @@ public class Environment {
     // Proxy
     public static final String KROXYLICIOUS_VERSION = ENVS.getOrDefault("KROXYLICIOUS_VERSION", "0.18.0");
 
-
     // Apicurio
     public static final String APICURIO_VERSION = ENVS.getOrDefault("APICURIO_VERSION", "3.1.7");
+
+    // Prometheus
+    public static final String PROMETHEUS_VERSION = ENVS.getOrDefault("PROMETHEUS_VERSION", "0.89.0");
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation

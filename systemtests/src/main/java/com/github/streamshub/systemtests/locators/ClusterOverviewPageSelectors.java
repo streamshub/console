@@ -123,6 +123,10 @@ public class ClusterOverviewPageSelectors {
         .withElementTbody().withComponentTable().withSubComponentTbody()
         .build();
 
+    public static String getTableRowItemLink(int nth) {
+        return CssBuilder.joinLocators(new CssBuilder(COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS_LINK);
+    }
+
     public static final String COPS_TOPICS_CARD = new CssBuilder(COPS_TOPIC_COLUMN_CARD_ITEMS)
         .nth(2)
         .withElementDiv().withComponentCard()

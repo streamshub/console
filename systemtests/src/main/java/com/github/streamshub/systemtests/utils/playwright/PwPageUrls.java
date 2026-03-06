@@ -10,7 +10,7 @@ public class PwPageUrls {
     private PwPageUrls() {}
 
     public static String getConsoleUrl(TestCaseConfig tcc) {
-        return ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true);
+        return ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true);
     }
 
     public static String getKafkaBaseUrl(TestCaseConfig tcc, String kafkaName) {

@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.upgrade;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
@@ -11,11 +12,11 @@ import com.github.streamshub.systemtests.setup.console.YamlConfig;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
@@ -70,22 +71,16 @@ public class YamlUpgradeST extends AbstractUpgradeST {
         YamlConfig yamlConfig = new YamlConfig(Constants.CO_NAMESPACE, yamlVersionData.getOldOperatorCrdsUrl());
 
         consoleOperatorSetup.setInstallConfig(yamlConfig);
-        consoleOperatorSetup.install();
+        consoleOperatorSetup.install(false);
 
         LOGGER.info("Setup console instance");
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
 
         LOGGER.info("Verify console operator version");
         String currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_DEPLOYMENT_NAME)
-            .get(0)
-            .getMetadata()
-            .getLabels()
-            .get("app.kubernetes.io/version");
+            .getFirst().getMetadata().getLabels().get(Labels.K8S_VERSION_LABEL);
 
         assertEquals(yamlVersionData.getOldOperatorVersion(), currentOperatorVersion);
-        // Take snapshot for future assertion
-        String oldInstanceSnapshot = ResourceUtils.getKubeResource(Deployment.class, tcc.namespace(), ConsoleUtils.getConsoleDeploymentName(tcc.consoleInstanceName()))
-            .getMetadata().getUid();
 
         LOGGER.info("Perform basic checks to validate UI is working");
         PwUtils.login(tcc);
@@ -100,18 +95,8 @@ public class YamlUpgradeST extends AbstractUpgradeST {
         // Do not delete resources to verify instance upgrades
         consoleOperatorSetup.install(false);
 
-        LOGGER.info("Wait for console instance to roll");
-        WaitUtils.waitForConsoleInstanceToRoll(tcc.namespace(), ConsoleUtils.getConsoleDeploymentName(tcc.consoleInstanceName()), oldInstanceSnapshot);
-
-        LOGGER.info("Verify upgraded console operator version is: {}", yamlVersionData.getNewOperatorVersion());
-
-        currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_DEPLOYMENT_NAME)
-            .get(0)
-            .getMetadata()
-            .getLabels()
-            .get("app.kubernetes.io/version");
-
-        assertEquals(yamlVersionData.getNewOperatorVersion(), currentOperatorVersion);
+        WaitUtils.waitForConsoleDeploymentToReachVersion(Constants.CO_NAMESPACE, Environment.CONSOLE_DEPLOYMENT_NAME, yamlVersionData.getNewOperatorVersion(),
+            deployment -> deployment.getMetadata().getLabels().get(Labels.K8S_VERSION_LABEL));
 
         LOGGER.info("Perform basic checks after upgrade to validate UI is still working");
         PwUtils.login(tcc);
@@ -136,10 +121,10 @@ public class YamlUpgradeST extends AbstractUpgradeST {
 
         // Setup topics
         final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
-        KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
-        KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
-        KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, 1, 1, 1);
+        KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1);
+        KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
+        KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1);
     }
 
     @AfterAll

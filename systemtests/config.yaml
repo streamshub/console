@@ -4,6 +4,8 @@
 # -------------------------------------------
 # Cleanup environment after test. In case of debugging, this env lets you skip afterEach and afterAll.
 CLEANUP_ENVIRONMENT: true
+# This allows re-deployment of console operator if it already exists
+DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL: true
 # Log level used in file output
 TEST_FILE_LOG_LEVEL: DEBUG
 # Log level used in console output
@@ -41,12 +43,12 @@ CONSOLE_OLM_CHANNEL_NAME: alpha
 # YAML
 # -------------------------------------------
 # Which released version of Strimzi Cluster Operator to install
-STRIMZI_OPERATOR_VERSION: 0.49.0
+STRIMZI_OPERATOR_VERSION: 0.50.1
 # URL or local path for Console Operator installation
 # 1. URL - released console-operator.yaml
 # 2. Local path that is relative to the root project dir
 # 3. Local path that is absolute
-CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.8.4/streamshub-console-operator.yaml
+CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.11.0/streamshub-console-operator.yaml
 # Custom Console Operator image. Overrides default image used in bundle yaml
 CONSOLE_OPERATOR_IMAGE:
 # -------------------------------------------
@@ -56,6 +58,27 @@ CONSOLE_OPERATOR_IMAGE:
 CONSOLE_API_IMAGE:
 # Custom Console UI image. Overrides default image installed automatically by Operator
 CONSOLE_UI_IMAGE:
+# -------------------------------------------
+# Kroxy
+# -------------------------------------------
+# Kroxy released yaml manifests version
+KROXYLICIOUS_VERSION: 0.18.0
+# -------------------------------------------
+# Apicurio
+# -------------------------------------------
+# Apicurio schema registry version
+APICURIO_VERSION: 3.1.7
+# -------------------------------------------
+# Keycloak
+# -------------------------------------------
+# Keycloak released yaml manifest tag version
+KEYCLOAK_VERSION: 26.4.0
+# -------------------------------------------
+# Prometheus
+# -------------------------------------------
+# Used for custom prometheus tests
+# version of the released yaml manifests
+PROMETHEUS_VERSION: 0.89.0
 # -------------------------------------------
 # Kafka
 # -------------------------------------------
