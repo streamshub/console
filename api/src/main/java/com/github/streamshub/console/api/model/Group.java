@@ -94,8 +94,8 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
                 ", " + STATE +
                 ", " + MEMBERS +
                 ", " + COORDINATOR +
-                ", " + OFFSETS
-                + ", " + SIMPLE_CONSUMER_GROUP;
+                ", " + OFFSETS +
+                ", " + SIMPLE_CONSUMER_GROUP;
 
         private Fields() {
             // Prevent instances

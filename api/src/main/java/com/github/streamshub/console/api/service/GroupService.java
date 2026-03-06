@@ -915,27 +915,27 @@ public class GroupService {
     }
 
     CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<String, Group> groups, List<String> fields) {
-        if (fields.contains(Group.Fields.CONFIGS)) {
-            List<ConfigResource> keys = groups.values()
-                    .stream()
-                    .map(Group::groupId)
-                    .filter(groupId -> {
-                        if (permissionService.permitted(ResourceTypes.Kafka.GROUP_CONFIGS, Privilege.GET, groupId)) {
-                            return true;
-                        }
-                        var error = permissionService.forbidden(ResourceTypes.Kafka.GROUP_CONFIGS, Privilege.GET, groupId);
-                        groups.get(groupId).addConfigs(Either.ofAlternate(error));
-                        return false;
-                    })
-                    .map(groupId -> new ConfigResource(ConfigResource.Type.GROUP, groupId))
-                    .toList();
-
-            return configService.describeConfigs(adminClient, keys)
-                .thenAccept(configs ->
-                    configs.forEach((groupId, either) -> groups.get(groupId).addConfigs(either)))
-                .toCompletableFuture();
+        if (!fields.contains(Group.Fields.CONFIGS)) {
+            return CompletableFuture.completedFuture(null);
         }
 
-        return CompletableFuture.completedFuture(null);
+        List<ConfigResource> keys = groups.values()
+                .stream()
+                .map(Group::groupId)
+                .filter(groupId -> {
+                    if (permissionService.permitted(ResourceTypes.Kafka.GROUP_CONFIGS, Privilege.GET, groupId)) {
+                        return true;
+                    }
+                    var error = permissionService.forbidden(ResourceTypes.Kafka.GROUP_CONFIGS, Privilege.GET, groupId);
+                    groups.get(groupId).addConfigs(Either.ofAlternate(error));
+                    return false;
+                })
+                .map(groupId -> new ConfigResource(ConfigResource.Type.GROUP, groupId))
+                .toList();
+
+        return configService.describeConfigs(adminClient, keys)
+            .thenAccept(configs ->
+                configs.forEach((groupId, either) -> groups.get(groupId).addConfigs(either)))
+            .toCompletableFuture();
     }
 }
