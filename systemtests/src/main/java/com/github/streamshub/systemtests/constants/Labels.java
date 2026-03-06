@@ -47,6 +47,11 @@ public class Labels {
     public static final String KAFKA_CLIENTS_LABEL_KEY = "user-test-app";
     public static final String KAFKA_CLIENTS_LABEL_VALUE = "kafka-clients";
 
+    // ------------
+    // Kafka
+    // ------------
+    private static final String PROMETHEUS_APP_LABEL_VALUE = "prometheus";
+
     public static Map<String, String> getClientsLabels(String clientName) {
         Map<String, String> matchLabels = new HashMap<>();
         matchLabels.put(APP, clientName);
@@ -131,6 +136,18 @@ public class Labels {
     public static LabelSelector getKeycloakLabelSelector() {
         return new LabelSelectorBuilder()
             .addToMatchLabels(APP, Constants.KEYCLOAK)
+            .build();
+    }
+
+    public static LabelSelector getPostgresLabelSelector() {
+        return new LabelSelectorBuilder()
+            .addToMatchLabels(APP, Constants.POSTGRES)
+            .build();
+    }
+
+    public static LabelSelector getPrometheusLabel() {
+        return new LabelSelectorBuilder()
+            .withMatchLabels(Map.of(K8S_NAME_LABEL, PROMETHEUS_APP_LABEL_VALUE))
             .build();
     }
 }

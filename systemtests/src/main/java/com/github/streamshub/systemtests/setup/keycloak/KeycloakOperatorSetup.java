@@ -6,8 +6,8 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.Namespace;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,22 +36,14 @@ public class KeycloakOperatorSetup {
         try {
             for (String resourceUrl : List.of(KEYCLOAK_CRD_URL, KEYCLOAK_REALM_IMPORTS_CRD_URL, KEYCLOAK_OPERATOR_URL)) {
                 tempYaml = FileUtils.getYamlFileFromURL(resourceUrl);
-                List<HasMetadata> resourcesFromYaml = KubeResourceManager.get()
-                    .kubeClient()
-                    .getClient()
-                    .load(tempYaml)
-                    .items()
-                    .stream()
-                    .filter(r -> !(r instanceof Namespace))
-                    .toList();
-
+                List<HasMetadata> resourcesFromYaml = KubeResourceManager.get().kubeClient().getClient().load(tempYaml).items();
                 allResources.addAll(resourcesFromYaml);
             }
 
         } catch (Exception e) {
             throw new SetupException("Unable to load Keycloak Operator resources: " + e.getMessage());
         }
-
+        allResources = ResourceOrder.sort(allResources);
         LOGGER.info("Loaded {} resources for Keycloak operator", allResources.size());
         prepareKeycloakCrs();
     }

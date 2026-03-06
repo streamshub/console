@@ -52,15 +52,16 @@ public class FileUtils {
     }
 
     public static FileInputStream getYamlFileFromURL(String url) throws IOException {
-        File deploymentFile = Files.createTempFile("tempfile", ".yaml", getDefaultPosixFilePermissions()).toFile();
+        LOGGER.info("Fetching resources from {}", url);
+        File yamlFile = Files.createTempFile("tempfile", ".yaml", getDefaultPosixFilePermissions()).toFile();
         copyURLToFile(
                 URI.create(url).toURL(),
-                deploymentFile,
+                yamlFile,
                 5000,
                 10000);
-        deploymentFile.deleteOnExit();
+        yamlFile.deleteOnExit();
 
-        return new FileInputStream(deploymentFile);
+        return new FileInputStream(yamlFile);
     }
 
     /**

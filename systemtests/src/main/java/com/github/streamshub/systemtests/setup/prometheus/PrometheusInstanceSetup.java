@@ -5,6 +5,7 @@ import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
@@ -36,6 +37,31 @@ public class PrometheusInstanceSetup {
     public PrometheusInstanceSetup(String namespace) {
         this.deploymentNamespace = namespace;
         this.deploymentName = PROMETHEUS_INSTANCE_NAME;
+
+        try {
+            Path directory = Paths.get(PROMETHEUS_INSTANCE_EXAMPLES);
+            try (Stream<Path> paths = Files.list(directory)) {
+                paths.filter(Files::isRegularFile)
+                     .filter(path -> path.toString().endsWith(".yaml") || path.toString().endsWith(".yml"))
+                     .forEach(path -> {
+                         try (InputStream stream = Files.newInputStream(path)) {
+                             List<HasMetadata> resources = KubeResourceManager.get()
+                                 .kubeClient()
+                                 .getClient()
+                                 .load(stream)
+                                 .items();
+                             allResources.addAll(resources);
+                         } catch (IOException e) {
+                             throw new UncheckedIOException(e);
+                         }
+                     });
+            }
+        } catch (IOException e) {
+            throw new SetupException("Unable to parse prometheus examples: " + e.getMessage());
+        }
+
+        allResources = ResourceOrder.sort(allResources);
+        LOGGER.info("Loaded {} resources from Prometheus operator YAML", allResources.size());
         preparePrometheusCrs();
     }
 
@@ -64,28 +90,6 @@ public class PrometheusInstanceSetup {
      * and compatible with the target test environment before being applied.</p>
      */
     private void preparePrometheusCrs() {
-        try {
-            Path directory = Paths.get(PROMETHEUS_INSTANCE_EXAMPLES);
-            try (Stream<Path> paths = Files.list(directory)) {
-                paths.filter(Files::isRegularFile)
-                     .filter(path -> path.toString().endsWith(".yaml") || path.toString().endsWith(".yml"))
-                     .forEach(path -> {
-                         try (InputStream stream = Files.newInputStream(path)) {
-                             List<HasMetadata> resources = KubeResourceManager.get()
-                                 .kubeClient()
-                                 .getClient()
-                                 .load(stream)
-                                 .items();
-                             allResources.addAll(resources);
-                         } catch (IOException e) {
-                             throw new UncheckedIOException(e);
-                         }
-                     });
-            }
-        } catch (IOException e) {
-            throw new SetupException("Unable to parse prometheus examples: " + e.getMessage());
-        }
-
         allResources.forEach(resource -> {
             SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);
             SetupUtils.fixClusterRoleBindingNamespace(resource, deploymentNamespace);

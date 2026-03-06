@@ -6,8 +6,8 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.Namespace;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.resources.ResourceItem;
 import org.apache.logging.log4j.Logger;
@@ -24,8 +24,6 @@ public class KroxyliciousOperatorSetup {
     private static final String KROXYLICIOUS_BUNDLE_URL = "https://github.com/kroxylicious/kroxylicious/releases/download/v" + Environment.KROXYLICIOUS_VERSION + "/kroxylicious-operator-" + Environment.KROXYLICIOUS_VERSION + ".tar.gz";
     private static final String KROXY_TEMP_FILE_PREFIX = "kroxy_tmp";
     private static final String KROXY_INSTALL_DIR_NAME = "install";
-    private static final String KROXY_EXAMPLES_DIR_NAME = "examples";
-    private Path extractedArchive;
 
     private final String deploymentNamespace;
     private final String deploymentName;
@@ -35,25 +33,16 @@ public class KroxyliciousOperatorSetup {
         this.deploymentNamespace = deploymentNamespace;
         this.deploymentName = KROXYLICIOUS_OPERATOR_NAME;
 
+        InputStream multiYaml = null;
         try {
-            extractedArchive = FileUtils.downloadAndExtractTarGz(KROXYLICIOUS_BUNDLE_URL, KROXY_TEMP_FILE_PREFIX);
-
-            InputStream multiYaml = FileUtils.loadYamlsFromPath(extractedArchive.resolve(KROXY_INSTALL_DIR_NAME));
-
-            // Skip Namespace resource — the test framework manages namespaces separately
-            allResources = KubeResourceManager.get()
-                .kubeClient()
-                .getClient()
-                .load(multiYaml)
-                .items()
-                .stream()
-                .filter(resource -> !(resource instanceof Namespace))
-                .toList();
-
-            LOGGER.info("Loaded {} resources from archive", allResources.size());
+            Path extractedArchive = FileUtils.downloadAndExtractTarGz(KROXYLICIOUS_BUNDLE_URL, KROXY_TEMP_FILE_PREFIX);
+            multiYaml = FileUtils.loadYamlsFromPath(extractedArchive.resolve(KROXY_INSTALL_DIR_NAME));
         } catch (IOException e) {
             throw new SetupException("Unable to load Kroxylicious resources: " + e.getMessage());
         }
+
+        allResources = ResourceOrder.sort(KubeResourceManager.get().kubeClient().getClient().load(multiYaml).items());
+        LOGGER.info("Loaded {} resources from Kroxy archive", allResources.size());
         prepareKroxyliciousCrs();
     }
 

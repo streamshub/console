@@ -172,4 +172,5 @@ public class Constants {
     // ------------ Keycloak ----------
     // --------------------------------
     public static final String KEYCLOAK = "keycloak";
+    public static final String POSTGRES = "postgres";
 }

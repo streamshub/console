@@ -51,7 +51,7 @@ public class AuthTestSetupUtils {
             .toList();
     }
 
-    public static ConsoleBuilder getOidcConsoleInstance(String namespace, String consoleInstanceName, String userName, String password,
+    public static ConsoleBuilder getOidcConsoleInstance(String namespace, String httpsHostname, String consoleInstanceName, String userName, String password,
         String trustStoreSecretName, String trustStoreConfigMap, List<KeycloakTestConfig.GroupRoleMapping> roleMapping,
         List<KeycloakTestConfig.KafkaConfig> kafkaConfig
     ) {
@@ -66,10 +66,10 @@ public class AuthTestSetupUtils {
                 // OIDC Config
                 .withNewSecurity()
                     .withNewOidc()
-                        .withAuthServerUrl(KeycloakUtils.getKeycloakRealmUri(Constants.KEYCLOAK_REALM))
+                        .withAuthServerUrl(KeycloakUtils.getKeycloakRealmUri(httpsHostname, Constants.KEYCLOAK_REALM))
                         .withClientId(Constants.KEYCLOAK_CLIENT_ID)
                         .withNewClientSecret()
-                            .withValue(KeycloakUtils.getClientSecret(userName, password, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID))
+                            .withValue(KeycloakUtils.getClientSecret(httpsHostname, userName, password, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID))
                         .endClientSecret()
                         .withNewTrustStore()
                             .withType(TrustStore.Type.JKS)
@@ -101,21 +101,22 @@ public class AuthTestSetupUtils {
 
     public static ConsoleBuilder forceNodeJsToAcceptSelfSignedCerts(ConsoleBuilder builder) {
         if (!ClusterUtils.isOcp()) {
-            // Force NextJS to accept self signed certs
-            return builder
-                .editSpec()
-                    .editContainers()
-                        .withNewUi()
-                            .editSpec()
-                                .addToEnv(new EnvVarBuilder()
-                                    .withName("NODE_TLS_REJECT_UNAUTHORIZED")
-                                    .withValue("0")
-                                    .build())
-                            .endSpec()
-                        .endUi()
-                    .endContainers()
-                .endSpec();
+            return builder;
         }
-        return builder;
+
+        // Force NextJS to accept self signed certs
+        return builder
+            .editSpec()
+                .editContainers()
+                    .withNewUi()
+                        .editSpec()
+                            .addToEnv(new EnvVarBuilder()
+                                .withName("NODE_TLS_REJECT_UNAUTHORIZED")
+                                .withValue("0")
+                                .build())
+                        .endSpec()
+                    .endUi()
+                .endContainers()
+            .endSpec();
     }
 }

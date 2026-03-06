@@ -16,17 +16,24 @@ import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakInstanceSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakOperatorSetup;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
+import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
+import com.github.streamshub.systemtests.utils.testutils.AuthTestSetupUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -349,42 +356,46 @@ public class AuthST extends AbstractST {
     void testClassSetup() {
         // // Setup namespace and kafka + console instance
         tcc = getTestCaseConfig();
-        // NamespaceUtils.prepareNamespace(tcc.namespace());
-        // // Setup keycloak operator
-        // // Note from docs:
-        // // It is currently not fully supported for the operator to watch multiple or all namespaces.
-        // // In circumstances where you want to watch multiple namespaces, you can install multiple operators.
-        // keycloakOperator = new KeycloakOperatorSetup(tcc.namespace());
-        // keycloakOperator.setup();
-        //
-        // keycloakInstance = new KeycloakInstanceSetup(tcc.namespace());
-        // keycloakInstance.setup(Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME, Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME);
-        //
-        // // Setup Kafkas for both teams
-        // // Dev Kafka
-        // KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
-        // KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
-        //     AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-        //     AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
-        //
-        // // Admin Kafka
-        // KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
-        // KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-        //     AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
-        //
-        // //Import console auth realm
-        // KeycloakUtils.importConsoleRealm(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true),
-        //     keycloakInstance.getUserName(), keycloakInstance.getUserPassword(),
-        //     KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_USER_MAPPING);
-        //
-        // // Console instance
-        // ConsoleInstanceSetup.setupIfNeeded(AuthTestSetupUtils.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(),
-        //     keycloakInstance.getUserName(), keycloakInstance.getUserPassword(),
-        //     Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME, Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME, KeycloakTestConfig.DEFAULT_ROLE_MAPPING,
-        //     KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING
-        //     ).build());
-        //
-        // ConsoleUtils.patchConsoleNginxBuffer(tcc.namespace(), tcc.consoleInstanceName());
+        NamespaceUtils.prepareNamespace(tcc.namespace());
+        // Setup keycloak operator
+        // Note from docs:
+        // It is currently not fully supported for the operator to watch multiple or all namespaces.
+        // In circumstances where you want to watch multiple namespaces, you can install multiple operators.
+        keycloakOperator = new KeycloakOperatorSetup(tcc.namespace());
+        keycloakOperator.setup();
+
+        keycloakInstance = new KeycloakInstanceSetup(tcc.namespace());
+        keycloakInstance.setup(Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME, Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME);
+
+        // Setup Kafkas for both teams
+        // Dev Kafka
+        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+            AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+            AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+
+        // Admin Kafka
+        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+            AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+
+        //Import console auth realm
+        KeycloakUtils.importConsoleRealm(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true),
+            keycloakInstance.httpsHostname(),
+            keycloakInstance.getUserName(), keycloakInstance.getUserPassword(),
+            KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_USER_MAPPING);
+
+        // Console instance
+        ConsoleInstanceSetup.setupIfNeeded(AuthTestSetupUtils.getOidcConsoleInstance(
+            tcc.namespace(),
+            keycloakInstance.httpsHostname(),
+            tcc.consoleInstanceName(),
+            keycloakInstance.getUserName(), keycloakInstance.getUserPassword(),
+            Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME, Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME, KeycloakTestConfig.DEFAULT_ROLE_MAPPING,
+            KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING
+        ).build());
+
+        ConsoleUtils.patchConsoleNginxBuffer(tcc.namespace(), tcc.consoleInstanceName());
     }
 
     @AfterAll

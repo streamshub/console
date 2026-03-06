@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.utils;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.resourcetypes.apicurio.ApicurioRegistry3Type;
 import com.github.streamshub.systemtests.resourcetypes.console.ConsoleType;
@@ -225,6 +226,24 @@ public class SetupUtils {
         if (resource instanceof Namespaced) {
             LOGGER.info("Setting resource {} to namespace {}", resource.getMetadata().getName(), targetNamespace);
             resource.getMetadata().setNamespace(targetNamespace);
+        }
+    }
+
+    public static void setContainerImage(HasMetadata resource, String deploymentName, String containerName, String image) {
+        if (resource instanceof Deployment deployment &&
+            deployment.getMetadata().getName().equals(deploymentName)) {
+            deployment.getSpec().getTemplate().getSpec().getContainers().stream()
+                .filter(c -> c.getName().equals(containerName))
+                .findFirst()
+                .ifPresentOrElse(
+                    c -> {
+                        LOGGER.info("Setting image on container {}/{} to {}", deploymentName, containerName, image);
+                        c.setImage(image);
+                    },
+                    () -> {
+                        throw new SetupException("Container %s not found in Deployment %s".formatted(containerName, deploymentName));
+                    }
+                );
         }
     }
 }

@@ -6,6 +6,7 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.resources.ResourceItem;
@@ -18,7 +19,9 @@ import java.util.List;
 public class PrometheusOperatorSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(PrometheusOperatorSetup.class);
     private static final String PROMETHEUS_OPERATOR_NAME = "prometheus-operator";
-    private static final String PROMETHEUS_BUNDLE_URL = "https://github.com/prometheus-operator/prometheus-operator/releases/download/v" + Environment.PROMETHEUS_VERSION + "/bundle.yaml";
+    private static final String PROMETHEUS_BUNDLE_URL = "https://github.com/prometheus-operator/prometheus-operator/releases/download/v" +
+        Environment.PROMETHEUS_VERSION +
+        "/bundle.yaml";
 
     private final String deploymentNamespace;
     private final String deploymentName;
@@ -34,8 +37,8 @@ public class PrometheusOperatorSetup {
         } catch (IOException e) {
             throw new SetupException("Unable to load prometheus CRs: " + e.getMessage());
         }
-        allResources = KubeResourceManager.get().kubeClient().getClient().load(multiYaml).items();
-        LOGGER.info("Loaded {} resources from YAML", allResources.size());
+        allResources = ResourceOrder.sort(KubeResourceManager.get().kubeClient().getClient().load(multiYaml).items());
+        LOGGER.info("Loaded {} resources from Prometheus operator YAML", allResources.size());
         preparePrometheusCrs();
     }
 
