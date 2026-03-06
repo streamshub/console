@@ -98,9 +98,6 @@ public class MessageStore {
         return jsonResources.get(RECONCILIATION).get("cancel").textValue();
     }
 
-    public static String reconciliationResume() {
-        return jsonResources.get(RECONCILIATION).get("resume").textValue();
-    }
 
     public static String reconciliationPausedWarning() {
         return jsonResources.get(RECONCILIATION).get("reconciliation_paused_warning").textValue();
@@ -117,9 +114,6 @@ public class MessageStore {
     public static String noDataTitle() {
         return jsonResources.get(MESSAGE_BROWSER).get("no_data_title").textValue();
     }
-    public static String noDataBody() {
-        return jsonResources.get(MESSAGE_BROWSER).get("no_data_body").textValue();
-    }
 
     public static String noConsumerGroups() {
         return jsonResources.get(GROUPS_TABLE).get("no_consumer_groups").textValue();
@@ -131,14 +125,6 @@ public class MessageStore {
 
     public static String kafkaConnect() {
         return jsonResources.get(APP_LAYOUT).get("kafka_connect").textValue();
-    }
-
-    public static String connectorsTitle() {
-        return jsonResources.get(KAFKA_CONNECT).get("connectors_title").textValue();
-    }
-
-    public static String connectClustersTitle() {
-        return jsonResources.get(KAFKA_CONNECT).get("connect_clusters_title").textValue();
     }
 
 }
