@@ -1,3 +1,5 @@
+"use client";
+
 import { ButtonLink } from "@/components/Navigation/ButtonLink";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import {
@@ -10,8 +12,9 @@ import {
 import { PlusCircleIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { clientConfig as config } from "@/utils/config";
+import { useEffect, useState } from "react";
 
-export async function EmptyStateNoTopics({
+export function EmptyStateNoTopics({
   canCreate,
   createHref,
   onShowHiddenTopics,
@@ -21,7 +24,13 @@ export async function EmptyStateNoTopics({
   onShowHiddenTopics: () => void;
 }) {
   const t = useTranslations();
-  const showLearning = await config().then((cfg) => cfg.showLearning);
+  const [showLearning, setShowLearning] = useState(false);
+
+  useEffect(() => {
+    config().then((cfg) => {
+      setShowLearning(cfg.showLearning);
+    });
+  }, []);
 
   return (
     <EmptyState titleText="No topics" headingLevel="h4" icon={PlusCircleIcon}>

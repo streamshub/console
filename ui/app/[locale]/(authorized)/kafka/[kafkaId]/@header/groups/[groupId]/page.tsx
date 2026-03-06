@@ -2,17 +2,18 @@ import { getConsumerGroup } from "@/api/groups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 import RichText from "@/components/RichText";
 import { resetButtonDisabled } from "@/utils/groups";
 import { hasPrivilege } from "@/utils/privileges";
 
-export default function Page({
-  params: { kafkaId, groupId },
+export default async function Page({
+  params: paramsPromise,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: Promise<KafkaConsumerGroupMembersParams>;
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
   return (
     <Suspense
       fallback={<Header params={{ kafkaId, groupId, groupIdDisplay: "" }} disabled={true} />}
@@ -39,14 +40,14 @@ async function ConnectedAppHeader({
   return <Header params={{ kafkaId, groupId, groupIdDisplay }} disabled={disabled} />;
 }
 
-function Header({
+async function Header({
   disabled,
   params: { kafkaId, groupId, groupIdDisplay },
 }: {
   disabled: boolean;
   params: { kafkaId: string; groupId: string; groupIdDisplay: string };
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
 
   return (
     <AppHeader

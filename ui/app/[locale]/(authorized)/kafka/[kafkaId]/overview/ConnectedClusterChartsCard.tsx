@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Alert,
   Card,
@@ -8,7 +6,7 @@ import {
   CardTitle,
   Title,
 } from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { ClusterDetail } from "@/api/kafka/schema";
 import { ClusterChartsCard } from "@/components/ClusterOverview/ClusterChartsCard";
 import { timeSeriesMetrics } from "@/components/ClusterOverview/components/timeSeriesMetrics";
@@ -18,7 +16,7 @@ export async function ConnectedClusterChartsCard({
 }: {
   cluster: Promise<ClusterDetail | null>;
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
   const res = await cluster;
 
   const isVirtualKafkaCluster =
