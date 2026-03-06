@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.auth;
 
 import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
@@ -318,7 +319,7 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Verify groups page is available");
         tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT, "No groups", true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT, MessageStore.noConsumerGroups(), true);
 
         String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "continuous-msg";
         KafkaClients clients = new KafkaClientsBuilder()

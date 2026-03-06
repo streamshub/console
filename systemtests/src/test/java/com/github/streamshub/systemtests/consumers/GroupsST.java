@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.consumers;
 
 import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
@@ -11,9 +12,9 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
-import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.SingleGroupPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
@@ -22,13 +23,13 @@ import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaCmdUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.GroupsTestUtils;
 import com.microsoft.playwright.Locator;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -131,7 +132,7 @@ public class GroupsST extends AbstractST {
         LOGGER.info("Navigate to groups page to check group is present");
         tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName(), ""), PwUtils.getDefaultNavigateOpts());
 
-        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, "Groups", true);
+        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
         PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_TABLE_ITEMS, consumerGroupName, true);
 
         LOGGER.info("Try click-through link and get redirected to a correct page");

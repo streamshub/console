@@ -58,6 +58,9 @@ public class MessageStore {
     static final String BRAND = "brand";
     static final String RECONCILIATION = "reconciliation";
     static final String MESSAGE_BROWSER = "message-browser";
+    static final String APP_LAYOUT = "AppLayout";
+    static final String KAFKA_CONNECT = "KafkaConnect";
+    static final String GROUPS_TABLE = "GroupsTable";
 
     public static String getProductName() {
         return jsonResources.get(COMMON).get(PRODUCT).textValue();
@@ -115,8 +118,27 @@ public class MessageStore {
         return jsonResources.get(MESSAGE_BROWSER).get("no_data_title").textValue();
     }
     public static String noDataBody() {
-        return jsonResources.get(MESSAGE_BROWSER).get("no_data_title").textValue();
+        return jsonResources.get(MESSAGE_BROWSER).get("no_data_body").textValue();
     }
 
+    public static String noConsumerGroups() {
+        return jsonResources.get(GROUPS_TABLE).get("no_consumer_groups").textValue();
+    }
+
+    public static String groupsTitle() {
+        return jsonResources.get(GROUPS_TABLE).get("title").textValue();
+    }
+
+    public static String kafkaConnect() {
+        return jsonResources.get(APP_LAYOUT).get("kafka_connect").textValue();
+    }
+
+    public static String connectorsTitle() {
+        return jsonResources.get(KAFKA_CONNECT).get("connectors_title").textValue();
+    }
+
+    public static String connectClustersTitle() {
+        return jsonResources.get(KAFKA_CONNECT).get("connect_clusters_title").textValue();
+    }
 
 }
