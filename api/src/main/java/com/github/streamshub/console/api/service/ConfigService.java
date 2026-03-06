@@ -63,7 +63,7 @@ public class ConfigService {
     }
 
     CompletionStage<Map<String, Either<Map<String, ConfigEntry>, Throwable>>> describeConfigs(Admin adminClient, List<ConfigResource> keys) {
-        Map<String, Either<Map<String, ConfigEntry>, Throwable>> result = new LinkedHashMap<>(keys.size());
+        Map<String, Either<Map<String, ConfigEntry>, Throwable>> result = LinkedHashMap.newLinkedHashMap(keys.size());
 
         var pendingDescribes = adminClient.describeConfigs(keys)
             .values()
