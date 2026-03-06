@@ -20,10 +20,19 @@ import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 export async function getConsumerGroup(
   kafkaId: string,
   groupId: string,
+  params?: {
+    fields?: string;
+  },
 ): Promise<ApiResponse<ConsumerGroup>> {
+  const sp = new URLSearchParams(
+    filterUndefinedFromObj({
+      "fields[groups]": params?.fields,
+    }),
+  );
+
   return fetchData(
     `/api/kafkas/${kafkaId}/groups/${groupId}`,
-    "",
+    sp,
     (rawData) => ConsumerGroupResponseSchema.parse(rawData).data,
   );
 }
