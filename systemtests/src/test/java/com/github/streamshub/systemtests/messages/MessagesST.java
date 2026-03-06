@@ -201,7 +201,7 @@ public class MessagesST extends AbstractST {
         final DateTimeFormatter dateFormatterForm = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         final DateTimeFormatter timeFormatterForm = DateTimeFormatter.ofPattern("hh:mm a");
 
-        String kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, TOPIC_COUNT, true, 1, 1, 1)
+        String kafkaTopicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, TOPIC_COUNT, 1, 1, 1)
             .get(0).getMetadata().getName();
 
         // Set timestamps
@@ -442,7 +442,7 @@ public class MessagesST extends AbstractST {
     public void prepareVariousMessageTypes() {
         LOGGER.info("Prepare filter messages scenario by creating topic and producing various messages");
 
-        kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, true, 1, 1, 1)
+        kafkaTopicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, 1, 1, 1)
             .get(0).getMetadata().getName();
 
         // Setup UI form filtering

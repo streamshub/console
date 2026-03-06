@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -131,19 +132,21 @@ public class FileUtils {
         ByteArrayOutputStream combined = new ByteArrayOutputStream();
 
         try (Stream<Path> files = Files.walk(targetPath)) {
-            List<Path> yamPaths = files.filter(Files::isRegularFile)
+            List<Path> yamlPaths = files.filter(Files::isRegularFile)
                 .filter(p -> p.toString().endsWith(".yaml") || p.toString().endsWith(".yml"))
                 .sorted()
                 .toList();
 
-            for (Path yaml : yamPaths) {
+            for (Path yaml : yamlPaths) {
                 LOGGER.debug("Adding to multi-YAML: {}", yaml);
+                combined.write("---\n".getBytes(StandardCharsets.UTF_8));
                 combined.write(Files.readAllBytes(yaml));
                 combined.write('\n');
             }
+
+            LOGGER.info("Combined {} YAML files from dir: {}", yamlPaths.size(), targetPath);
         }
 
-        LOGGER.info("Combined total of {} YAML files from dir: {}", combined.size(), targetPath);
         return new ByteArrayInputStream(combined.toByteArray());
     }
 }

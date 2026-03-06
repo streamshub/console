@@ -395,7 +395,7 @@ public class GroupsST extends AbstractST {
     public void setupConsumerGroupResetOffset() {
         LOGGER.info("Prepare consumer offset scenario by creating topic(s) and then producing and consuming messages");
 
-        List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), RESET_OFFSET_TOPIC_PREFIX, RESET_OFFSET_TOPIC_COUNT, true, 1, 1, 1)
+        List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), RESET_OFFSET_TOPIC_PREFIX, RESET_OFFSET_TOPIC_COUNT, 1, 1, 1)
             .stream()
             .map(kt -> kt.getMetadata().getName())
             .toList();

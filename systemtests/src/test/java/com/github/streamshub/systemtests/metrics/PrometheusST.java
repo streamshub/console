@@ -103,7 +103,7 @@ public class PrometheusST extends AbstractST {
                 .endSpec()
             .build());
 
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, 1, true, 1, 1, 1);
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, 1, 1, 1, 1);
         KafkaClients clients = new KafkaClientsBuilder()
             .withNamespaceName(tcc.namespace())
             .withTopicName(Constants.REPLICATED_TOPICS_PREFIX)

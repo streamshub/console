@@ -31,9 +31,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsU
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
-import com.github.streamshub.systemtests.utils.testutils.AuthTestSetupUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -365,35 +363,27 @@ public class AuthST extends AbstractST {
         keycloakOperator.setup();
 
         keycloakInstance = new KeycloakInstanceSetup(tcc.namespace());
-        keycloakInstance.setup(Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME, Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME);
+        keycloakInstance.setup();
 
         // Setup Kafkas for both teams
         // Dev Kafka
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
             AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-            AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+            AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 1, 1, 1);
 
         // Admin Kafka
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-            AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+            AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, 1, 1, 1);
 
-        //Import console auth realm
-        KeycloakUtils.importConsoleRealm(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true),
-            keycloakInstance.httpsHostname(),
-            keycloakInstance.getUserName(), keycloakInstance.getUserPassword(),
+        // Import console auth realm
+        keycloakInstance.importConsoleRealm(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), true,
             KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_USER_MAPPING);
 
         // Console instance
-        ConsoleInstanceSetup.setupIfNeeded(AuthTestSetupUtils.getOidcConsoleInstance(
-            tcc.namespace(),
-            keycloakInstance.httpsHostname(),
-            tcc.consoleInstanceName(),
-            keycloakInstance.getUserName(), keycloakInstance.getUserPassword(),
-            Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME, Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME, KeycloakTestConfig.DEFAULT_ROLE_MAPPING,
-            KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING
-        ).build());
+        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(),
+            keycloakInstance, KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING).build());
 
         ConsoleUtils.patchConsoleNginxBuffer(tcc.namespace(), tcc.consoleInstanceName());
     }

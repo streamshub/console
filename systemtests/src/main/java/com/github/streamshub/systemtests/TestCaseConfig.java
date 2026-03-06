@@ -10,12 +10,15 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Tracing;
+import com.microsoft.playwright.options.ColorScheme;
+import com.microsoft.playwright.options.ViewportSize;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.lang.reflect.Method;
 import java.util.Locale;
 
 public class TestCaseConfig {
+    private static final ViewportSize FULL_HD = new ViewportSize(1920, 1080);
     private final String testName;
     private final String namespace;
     private final Playwright playwright;
@@ -50,8 +53,14 @@ public class TestCaseConfig {
             .orElse("nullClass");
 
         this.playwright = Playwright.create();
+
         Browser browser = PwUtils.createBrowser(playwright);
-        this.context = browser.newContext(new Browser.NewContextOptions().setIgnoreHTTPSErrors(true));
+
+        this.context = browser.newContext(new Browser.NewContextOptions()
+            .setColorScheme(ColorScheme.DARK)
+            .setViewportSize(FULL_HD)
+            .setIgnoreHTTPSErrors(true));
+
         // Allow tracing
         this.context.tracing().start(new Tracing.StartOptions().setScreenshots(true).setSnapshots(true).setSources(true));
 

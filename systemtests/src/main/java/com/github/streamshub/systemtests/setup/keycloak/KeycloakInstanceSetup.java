@@ -11,55 +11,80 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakApiUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.skodjob.testframe.TestFrameEnv;
 import io.skodjob.testframe.resources.KubeResourceManager;
+import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 public class KeycloakInstanceSetup {
 
     private static final Logger LOGGER = LogWrapper.getLogger(KeycloakInstanceSetup.class);
 
     public static final String KEYCLOAK_RESOURCES_PATH =
-        TestFrameEnv.USER_PATH + "/src/main/java/com/github/streamshub/systemtests/setup/keycloak/";
+        TestFrameEnv.USER_PATH + "/src/main/java/com/github/streamshub/systemtests/setup/keycloak";
 
     // File paths
-    private static final String POSTGRES_DEPLOYMENT_FILE_PATH = KEYCLOAK_RESOURCES_PATH + "postgres.yaml";
-    private static final String KEYCLOAK_INSTANCE_FILE_PATH = KEYCLOAK_RESOURCES_PATH + "keycloak-instance.yaml";
+    private static final String POSTGRES_RESOURCES = KEYCLOAK_RESOURCES_PATH + "/postgres";
+    private static final String KEYCLOAK_INSTANCE_FILE_PATH = KEYCLOAK_RESOURCES_PATH + "/keycloak-instance.yaml";
+    private static final String DEFAULT_REALM_TEMPLATE_PATH = KEYCLOAK_RESOURCES_PATH + "/console-realm-template.json";
 
-    // Keycloak
-    private static final String KEYCLOAK_INGRESS_NAME = "keycloak-ingress";
-    private static final String KEYCLOAK_SECRET_NAME = "keycloak-initial-admin";
-    private static final String KEYCLOAK_TLS_SECRET_NAME = "example-tls-secret";
-    private static final String TRUST_STORE_PASSWORD = "changeit"; // NOSONAR - test password
+    private static final String KEYCLOAK_HOSTNAME_PREFIX = "console-oidc";
 
     // Class related
+    private final String namespace;
+    private final String keycloakIngressName;
+    private final String keycloakSecretName;
+    private final String keycloakTlsSecretName;
+    private final String trustStorePassword;
+    private final String trustStoreSecretName;
+    private final String trustStoreConfigMap;
+    private final String realmName;
+    private final String keycloakName;
+
     private HasMetadata keycloakInstance;
     private List<HasMetadata> postgresResources;
 
-    private final String namespace;
+    private String clientId;
+    private String clientSecret;
+
     private String userName;
     private String userPassword;
 
     public KeycloakInstanceSetup(String namespace) {
         this.namespace = namespace;
+        this.keycloakName = "keycloak-" + namespace;
+        this.keycloakIngressName = "keycloak-ingress-" + namespace;
+        this.keycloakSecretName = keycloakName + "-initial-admin";
+        this.keycloakTlsSecretName = "keycloak-tls-secret-" + namespace;
+        this.trustStorePassword = "changeit"; // NOSONAR
+        this.trustStoreSecretName = "keycloak-truststore-secret-" + namespace;
+        this.trustStoreConfigMap = "keycloak-truststore-configmap-" + namespace;
+        this.realmName = "console-realm-" + namespace;
+        this.clientId = "console-client-" + namespace;
 
         InputStream tempYaml = null;
         try {
-            tempYaml = FileUtils.getYamlFileFromURL(POSTGRES_DEPLOYMENT_FILE_PATH);
+            tempYaml = FileUtils.loadYamlsFromPath(Path.of(POSTGRES_RESOURCES));
             postgresResources = ResourceOrder.sort(KubeResourceManager.get().kubeClient().getClient().load(tempYaml).items());
 
             // Keycloak does not have CRDs API so we are forced to modify CRD custom fields
-            tempYaml = new ByteArrayInputStream(
-                FileUtils.readFile(KEYCLOAK_INSTANCE_FILE_PATH).replace("${HOSTNAME}", httpsHostname())
+            tempYaml = new ByteArrayInputStream(FileUtils.readFile(KEYCLOAK_INSTANCE_FILE_PATH)
+                    .replace("${NAME}", keycloakName)
+                    .replace("${HOSTNAME}", httpsHostname())
+                    .replace("${NAMESPACE}", namespace)
+                    .replace("${TLS_SECRET_NAME}", keycloakTlsSecretName)
                     .getBytes(StandardCharsets.UTF_8));
 
             keycloakInstance = KubeResourceManager.get().kubeClient().getClient().load(tempYaml).items().getFirst();
@@ -75,12 +100,11 @@ public class KeycloakInstanceSetup {
             SetupUtils.setContainerImage(resource, Constants.POSTGRES, Constants.POSTGRES, Environment.POSTGRES_IMAGE);
         });
 
-        SetupUtils.setNamespaceOnNamespacedResources(keycloakInstance, namespace);
     }
 
-    public void setup(String secretName, String configMapName) {
+    public void setup() {
         LOGGER.info("----------- Install Keycloak Instance -----------");
-        KeycloakUtils.createTlsSecret(namespace, KEYCLOAK_TLS_SECRET_NAME, httpHostname());
+        KeycloakUtils.createTlsSecret(namespace, keycloakTlsSecretName, httpHostname());
 
         // Deploy postgres
         LOGGER.info("Deploying postgres into namespace {}", namespace);
@@ -93,36 +117,40 @@ public class KeycloakInstanceSetup {
         LOGGER.info("Deploying Keycloak instance into namespace {}", namespace);
         KubeResourceManager.get().createOrUpdateResourceWithWait(keycloakInstance);
 
-        WaitUtils.waitForStatefulSetReady(namespace, Constants.KEYCLOAK);
-        WaitUtils.waitForSecretReady(namespace, KEYCLOAK_SECRET_NAME);
+        WaitUtils.waitForStatefulSetReady(namespace, keycloakName);
+        WaitUtils.waitForSecretReady(namespace, keycloakSecretName);
 
         KeycloakUtils.allowNetworkPolicyAllIngressForMatchingLabel(
             namespace, Constants.KEYCLOAK + "-allow", Labels.getKeycloakLabelSelector());
 
-        KeycloakUtils.patchIngressTls(namespace, httpHostname(), KEYCLOAK_INGRESS_NAME, KEYCLOAK_TLS_SECRET_NAME);
+        KeycloakUtils.patchIngressTls(namespace, httpHostname(), keycloakIngressName, keycloakTlsSecretName);
 
         // After keycloak instance is present
-        LOGGER.info("Reading Keycloak admin secret '{}'", KEYCLOAK_SECRET_NAME);
-        Secret adminSecret = ResourceUtils.getKubeResource(Secret.class, namespace, KEYCLOAK_SECRET_NAME);
+        LOGGER.info("Reading Keycloak admin secret '{}'", keycloakSecretName);
+        Secret adminSecret = ResourceUtils.getKubeResource(Secret.class, namespace, keycloakSecretName);
 
         userName = new String(Base64.getDecoder().decode(adminSecret.getData().get("username")), StandardCharsets.UTF_8);
         userPassword = new String(Base64.getDecoder().decode(adminSecret.getData().get("password")), StandardCharsets.UTF_8);
 
         LOGGER.info("Preparing truststore for HTTPS communication with Keycloak");
-        KeycloakUtils.prepareTrustStore(httpHostname(), TRUST_STORE_PASSWORD);
-        KeycloakUtils.createTrustStorePasswordAndConfigmap(namespace, secretName, configMapName, TRUST_STORE_PASSWORD);
+        KeycloakUtils.importCertificatesIntoTruststore(httpHostname(), trustStorePassword);
+
+        KeycloakUtils.createTrustStorePasswordAndConfigmap(namespace, trustStoreSecretName, trustStoreConfigMap,
+            Map.of(Constants.PASSWORD_KEY_NAME, Base64.getEncoder().encodeToString(trustStorePassword.getBytes())));
     }
 
-    public String getUserName() {
-        return userName;
-    }
+    public void importConsoleRealm(String consoleUiUrl, boolean deleteRealmBefore, List<KeycloakTestConfig.GroupRoleMapping> roleMapping, List<KeycloakTestConfig.User> userMapping) {
+        if (deleteRealmBefore && KeycloakApiUtils.realmExists(httpsHostname(), userName, userPassword, realmName)) {
+            LOGGER.info("Realm {} already exists, deleting before reimport", realmName);
+            KeycloakApiUtils.deleteRealm(httpsHostname(), userName, userPassword, realmName);
+            WaitUtils.waitForKeycloakRealmDeleted(httpsHostname(), userName, userPassword, realmName);
+        }
+        JsonObject realmJson = KeycloakUtils.loadRealmTemplate(consoleUiUrl, DEFAULT_REALM_TEMPLATE_PATH, realmName, clientId, roleMapping, userMapping);
+        KeycloakApiUtils.importRealm(httpsHostname(), userName, userPassword, realmJson.encode());
+        WaitUtils.waitForKeycloakRealmReady(httpsHostname(), userName, userPassword, realmName);
 
-    public String getUserPassword() {
-        return userPassword;
-    }
-
-    public String getTrustStorePassword() {
-        return TRUST_STORE_PASSWORD;
+        // Once realm is ready, client can get it's ID assigned
+        clientSecret = KeycloakApiUtils.getClientSecret(httpsHostname(), userName, userPassword, realmName, clientId);
     }
 
     public String httpHostname() {
@@ -134,6 +162,37 @@ public class KeycloakInstanceSetup {
     }
 
     private static String getKeycloakHostname(Boolean https) {
-        return (Boolean.TRUE.equals(https) ? "https://"  : "") + Constants.KEYCLOAK_HOSTNAME_PREFIX + "." + ClusterUtils.getClusterDomain();
+        return (Boolean.TRUE.equals(https) ? "https://"  : "") + KEYCLOAK_HOSTNAME_PREFIX + "." + ClusterUtils.getClusterDomain();
+    }
+
+    public String namespace() {
+        return namespace;
+    }
+
+    public String userName() {
+        return userName;
+    }
+    public String userPassword() {
+        return userPassword;
+    }
+
+    public String getTrustStoreSecretName() {
+        return trustStoreSecretName;
+    }
+
+    public String getTrustStoreConfigMap() {
+        return trustStoreConfigMap;
+    }
+
+    public String realmName() {
+        return realmName;
+    }
+
+    public String clientId() {
+        return clientId;
+    }
+
+    public String clientSecret() {
+        return clientSecret;
     }
 }

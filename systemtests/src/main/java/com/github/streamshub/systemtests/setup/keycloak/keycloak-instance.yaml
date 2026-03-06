@@ -1,7 +1,8 @@
 apiVersion: k8s.keycloak.org/v2alpha1
 kind: Keycloak
 metadata:
-  name: keycloak
+  name: ${NAME}
+  namespace: ${NAMESPACE}
   labels:
     app: sso
 spec:
@@ -16,7 +17,7 @@ spec:
       name: keycloak-db-secret
       key: password
   http:
-    tlsSecret: example-tls-secret
+    tlsSecret: ${TLS_SECRET_NAME}
     httpEnabled: true
     httpPort: 9595
     httpsPort: 8443

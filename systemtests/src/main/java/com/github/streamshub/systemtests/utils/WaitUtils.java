@@ -10,6 +10,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.JobUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakApiUtils;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -520,5 +521,17 @@ public class WaitUtils {
                         .findFirst()
                         .orElse(false);
             });
+    }
+
+    public static void waitForKeycloakRealmReady(String httpsHostname, String userName, String password, String realmName) {
+        Wait.until(String.format("Keycloak realm '%s' to be present at %s", realmName, httpsHostname),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            () -> KeycloakApiUtils.realmExists(httpsHostname, userName, password, realmName));
+    }
+
+    public static void waitForKeycloakRealmDeleted(String httpsHostname, String userName, String password, String realmName) {
+        Wait.until(String.format("Keycloak realm '%s' to be deleted at %s", realmName, httpsHostname),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            () -> !KeycloakApiUtils.realmExists(httpsHostname, userName, password, realmName));
     }
 }

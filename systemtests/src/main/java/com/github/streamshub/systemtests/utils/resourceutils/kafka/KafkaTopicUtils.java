@@ -31,28 +31,34 @@ public class KafkaTopicUtils {
      * <p>Each topic is configured with the specified number of {@code partitions}, {@code replicas}, and {@code minIsr} (minimum in-sync replicas).</p>
      * <p>Depending on the {@code waitForTopics} flag, the method either waits for the topics to be fully created or proceeds without waiting.</p>
      *
-     * @param namespace the namespace in which the topics will be created
-     * @param kafkaName the name of the Kafka cluster these topics belong to
+     * @param namespace       the namespace in which the topics will be created
+     * @param kafkaName       the name of the Kafka cluster these topics belong to
      * @param topicNamePrefix the prefix used to generate topic names
-     * @param numberToCreate the number of topics to create
-     * @param waitForTopics whether to wait for the topics to become ready
-     * @param partitions the number of partitions for each topic
-     * @param replicas the replication factor for each topic
-     * @param minIsr the minimum number of in-sync replicas required for writes
+     * @param numberToCreate  the number of topics to create
+     * @param partitions      the number of partitions for each topic
+     * @param replicas        the replication factor for each topic
+     * @param minIsr          the minimum number of in-sync replicas required for writes
      * @return a list of {@link KafkaTopic} objects representing the created topics
      */
-    public static List<KafkaTopic> setupTopicsAndReturn(String namespace, String kafkaName, String topicNamePrefix, int numberToCreate, boolean waitForTopics, int partitions, int replicas, int minIsr) {
+    public static List<KafkaTopic> setupTopicsIfNeededAndReturn(String namespace, String kafkaName, String topicNamePrefix, int numberToCreate, int partitions, int replicas, int minIsr) {
+        return setupTopicsIfNeededAndReturn(namespace, kafkaName, true, topicNamePrefix, numberToCreate, partitions, replicas, minIsr);
+    }
+
+    public static List<KafkaTopic> setupTopicsIfNeededAndReturn(String namespace, String kafkaName, boolean clearTopicsBefore, String topicNamePrefix, int numberToCreate, int partitions, int replicas, int minIsr) {
         LOGGER.info("Create {} topics for cluster {} with topic name prefix {}", numberToCreate, kafkaName, topicNamePrefix);
 
         List<KafkaTopic> topics = IntStream.range(0, numberToCreate)
             .mapToObj(i -> defaultTopic(namespace, kafkaName, topicNamePrefix + "-" + i, partitions, replicas, minIsr).build())
             .toList();
 
-        if (waitForTopics) {
-            KubeResourceManager.get().createResourceWithWait(topics.toArray(new KafkaTopic[0]));
-        } else {
-            KubeResourceManager.get().createResourceWithoutWait(topics.toArray(new KafkaTopic[0]));
+        if (clearTopicsBefore) {
+            List<KafkaTopic> existingTopics = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, namespace, topicNamePrefix);
+            LOGGER.info("Replace {} topics with prefix {}", existingTopics.size(), topicNamePrefix);
+            KubeResourceManager.get().deleteResourceWithWait(existingTopics.toArray(new KafkaTopic[0]));
         }
+
+        KubeResourceManager.get().createResourceWithWait(topics.toArray(new KafkaTopic[0]));
+
         return topics;
     }
 
@@ -89,7 +95,7 @@ public class KafkaTopicUtils {
         KafkaUtils.scaleBrokerReplicasWithWait(namespace, kafkaName, scaledBrokersCount);
 
         // Create new topics for under replication
-        List<KafkaTopic> kafkaTopics = KafkaTopicUtils.setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
+        List<KafkaTopic> kafkaTopics = KafkaTopicUtils.setupTopicsIfNeededAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, partitions, replicas, minIsr);
 
         kafkaTopics.forEach(kt -> {
             KafkaClients clients = new KafkaClientsBuilder()
@@ -154,7 +160,7 @@ public class KafkaTopicUtils {
 
         KafkaUtils.scaleBrokerReplicasWithWait(namespace, kafkaName, scaledBrokersCount);
 
-        List<KafkaTopic> kafkaTopics = setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
+        List<KafkaTopic> kafkaTopics = setupTopicsIfNeededAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, partitions, replicas, minIsr);
 
         // Reassign the topic partition to last created broker that will be deleted
         // https://strimzi.io/blog/2022/09/16/reassign-partitions/

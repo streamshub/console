@@ -15,13 +15,6 @@ public class Constants {
     // --------------------------------
     public static final int MAX_ACTION_RETRIES = 10;
     public static final int LOGOUT_RETRIES = 5;
-    /**
-     * Cluster
-     */
-    public static final String OPENSHIFT_CONSOLE = "openshift-console";
-    public static final String OPENSHIFT_CONSOLE_ROUTE_NAME = "console";
-    public static final String DEFAULT_NAMESPACE = "default";
-    public static final String PROMETHEUS_NAME = "prometheus";
 
     /**
      * Commands
@@ -37,7 +30,6 @@ public class Constants {
     /**
      * Test values
      */
-    public static final String USER_USERNAME = "Anonymous";
     public static final int SELECTOR_RETRIES = 10;
     public static final String VALUE_ATTRIBUTE = "value";
     public static final String CHECKED_ATTRIBUTE = "checked";
@@ -56,35 +48,11 @@ public class Constants {
     public static final int MESSAGE_COUNT_HIGH = 10_000;
 
     /**
-     * CRDs
-     */
-    public static final String RBAC_AUTH_API_GROUP = "rbac.authorization.k8s.io";
-
-    // --------------------------------
-    // ----------- Strimzi ------------
-    // --------------------------------
-    public static final String STRIMZI_NAME = "strimzi";
-    public static final String STRIMZI_CO_NAME = STRIMZI_NAME + "-cluster-operator";
-    public static final String STRIMZI_NAMESPACE_KEY = "STRIMZI_NAMESPACE";
-    public static final String STRIMZI_WATCH_ALL_NAMESPACES = "*";
-
-    /**
-     * Clients
-     */
-    public static final String PRODUCER = "producer";
-    public static final String CONSUMER = "consumer";
-
-    /**
-     * Topics
-     */
-    public static final String KAFKA_TOPIC_PREFIX = "kt";
-    public static final String CONSUMER_OFFSETS_TOPIC_NAME = "__consumer_offsets";
-
-    /**
      *  Kafka
      */
     public static final String KAFKA_USER_PREFIX = "ku";
     public static final String KAFKA_CLUSTER_PREFIX = "kc";
+    public static final String KAFKA_TOPIC_PREFIX = "kt";
     public static final String KAFKA_CONNECT_CLUSTER_PREFIX = "kcc";
     public static final String BROKER_ROLE_PREFIX = "brk";
     public static final String CONTROLLER_ROLE_PREFIX = "ctrl";
@@ -120,14 +88,8 @@ public class Constants {
     /**
      * Keycloak
      */
-    public static final String KEYCLOAK_HOSTNAME_PREFIX = "console-oidc";
-    public static final String KEYCLOAK_CLIENT_ID = "console-client";
-    public static final String KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME = "truststore-configmap";
-    public static final String KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME = "access-to-truststore";
     public static final String PASSWORD_KEY_NAME = "password"; // NOSONAR - test password
     public static final String TRUST_STORE_KEY_NAME = "truststore";
-
-    public static final String KEYCLOAK_REALM = "console-realm";
 
     // --------------------------------
     // ------------- Kroxy ------------
@@ -137,7 +99,6 @@ public class Constants {
     public static final String KAFKA_PROXY_PREFIX = "kp";
     public static final String KAFKA_SERVICE_PREFIX = "ks";
     public static final String VIRTUAL_KAFKA_CLUSTER_PREFIX = "vkc";
-    public static final String KROXY_INSTANCE_PREFIX = "kroxy";
 
     public static final int REGULAR_KAFKA_PROXY_REPLICAS = 1;
 

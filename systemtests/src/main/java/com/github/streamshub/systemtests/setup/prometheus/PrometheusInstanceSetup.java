@@ -1,13 +1,12 @@
 package com.github.streamshub.systemtests.setup.prometheus;
 
-import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.skodjob.testframe.TestFrameEnv;
@@ -22,7 +21,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 public class PrometheusInstanceSetup {
@@ -99,9 +97,7 @@ public class PrometheusInstanceSetup {
     public void setup() {
         allResources.forEach(resource -> KubeResourceManager.get().createOrUpdateResourceWithoutWait(resource));
         // Additional check that Prometheus pod is running
-        WaitUtils.waitForPodsReadyAndStable(deploymentNamespace,
-            new LabelSelectorBuilder().withMatchLabels(Map.of(Constants.PROMETHEUS_NAME, deploymentName)).build(),
-            1, true);
+        WaitUtils.waitForPodsReadyAndStable(deploymentNamespace, Labels.getPrometheusInstanceLabel(deploymentName), 1, true);
     }
 
     public String getName() {

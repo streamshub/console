@@ -50,7 +50,7 @@ public class Labels {
     // ------------
     // Kafka
     // ------------
-    private static final String PROMETHEUS_APP_LABEL_VALUE = "prometheus";
+    private static final String PROMETHEUS = "prometheus";
 
     public static Map<String, String> getClientsLabels(String clientName) {
         Map<String, String> matchLabels = new HashMap<>();
@@ -147,7 +147,13 @@ public class Labels {
 
     public static LabelSelector getPrometheusLabel() {
         return new LabelSelectorBuilder()
-            .withMatchLabels(Map.of(K8S_NAME_LABEL, PROMETHEUS_APP_LABEL_VALUE))
+            .withMatchLabels(Map.of(K8S_NAME_LABEL, PROMETHEUS))
+            .build();
+    }
+
+    public static LabelSelector getPrometheusInstanceLabel(String prometheusName) {
+        return new LabelSelectorBuilder()
+            .withMatchLabels(Map.of(PROMETHEUS, prometheusName))
             .build();
     }
 }

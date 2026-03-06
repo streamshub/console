@@ -231,7 +231,7 @@ public class ConnectST extends AbstractST {
 
         WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getConsolePodSelector(tcc.consoleInstanceName()), oldSnap);
 
-        String topicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), CONNECTOR_TOPIC, 1, true, 1, 1, 1)
+        String topicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), CONNECTOR_TOPIC, 1, 1, 1, 1)
             .get(0)
             .getMetadata()
             .getName();
