@@ -191,14 +191,32 @@ export function ConsumerGroupsTable({
             );
           case "type":
             return (
-              <Th key={key} width={10}>
-                {t("GroupsTable.type")}
+              <Th key={key} width={15}>
+                {t("GroupsTable.type")}{" "}
+                <Tooltip
+                  content={
+                    <RichText>
+                      {(tags) => t.rich("GroupsTable.type_tooltip", tags)}
+                    </RichText>
+                  }
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "protocol":
             return (
               <Th key={key} width={15}>
-                {t("GroupsTable.protocol")}
+                {t("GroupsTable.protocol")}{" "}
+                <Tooltip
+                  content={
+                    <RichText>
+                      {(tags) => t.rich("GroupsTable.protocol_tooltip", tags)}
+                    </RichText>
+                  }
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "state":
