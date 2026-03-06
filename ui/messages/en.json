@@ -641,7 +641,9 @@
     "committed_offset": "Committed offset",
     "committed_offset_tooltip": "The offset in the Kafka topic marking the last successfully consumed message by a member.",
     "end_offset": "End offset",
-    "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
+    "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message.",
+    "not_topic_found": "No topics assigned",
+    "no_offsets_description": "This member is not currently assigned to any topic partitions."
   },
   "Groups": {
     "title": "Groups"
