@@ -116,7 +116,7 @@ public class Certificates {
     }
 
     /**
-     * Generates a self-signed RSA-2048 X.509 certificate for the given hostname.
+     * Generates a self-signed RSA-4096 X.509 certificate for the given hostname.
      *
      * @param hostname the CN to embed in the certificate subject
      * @param organization the O field in the certificate subject
@@ -124,7 +124,7 @@ public class Certificates {
      */
     public static Map.Entry<KeyPair, X509Certificate> generateSelfSignedCertificate(String hostname, String organization) throws Exception {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(2048, new SecureRandom());
+        keyGen.initialize(4096, new SecureRandom());
         KeyPair keyPair = keyGen.generateKeyPair();
 
         X500Name subject = new X500Name("CN=" + hostname + ", O=" + organization + ", C=US");
