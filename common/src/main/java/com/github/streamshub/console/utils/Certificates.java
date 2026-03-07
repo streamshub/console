@@ -195,8 +195,8 @@ public class Certificates {
 
         byte[] derBytes = Base64.getDecoder().decode(
             pemCertificate
-                .replaceAll("-----BEGIN CERTIFICATE-----", "")
-                .replaceAll("-----END CERTIFICATE-----", "")
+                .replace("-----BEGIN CERTIFICATE-----", "")
+                .replace("-----END CERTIFICATE-----", "")
                 .replaceAll("\\s", ""));
 
         Certificate cert = CertificateFactory.getInstance("X.509")
