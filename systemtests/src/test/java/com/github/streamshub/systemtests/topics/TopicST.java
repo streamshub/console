@@ -203,7 +203,7 @@ public class TopicST extends AbstractST {
         LOGGER.info("Verify Topics Filtering");
         tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
 
-        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).get(0).getMetadata().getName();
+        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).getFirst().getMetadata().getName();
         final List<String> unmanagedReplicatedTopicsNames = KafkaCmdUtils.listKafkaTopicsByPrefix(tcc.namespace(), tcc.kafkaName(), brokerPodName,
             KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX);
 

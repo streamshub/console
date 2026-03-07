@@ -182,7 +182,7 @@ public class KafkaTopicUtils {
                 .build();
 
             KafkaCmdUtils.reassignTopicPartitionToAnotherBroker(namespace, kafkaName, ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace,
-                KafkaNamingUtils.brokerPodNamePrefix(kafkaName)).get(0).getMetadata().getName(), kt.getMetadata().getName(), lastBrokerId, clients);
+                KafkaNamingUtils.brokerPodNamePrefix(kafkaName)).getFirst().getMetadata().getName(), kt.getMetadata().getName(), lastBrokerId, clients);
 
             // Produce + consume messages
             KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());

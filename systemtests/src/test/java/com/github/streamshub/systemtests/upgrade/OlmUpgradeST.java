@@ -12,11 +12,10 @@ import com.github.streamshub.systemtests.setup.console.OlmConfig;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
@@ -69,7 +68,7 @@ public class OlmUpgradeST extends AbstractUpgradeST {
 
         olmConfig.setChannelName(olmVersionData.getOldOlmChannel());
         consoleOperatorSetup.setInstallConfig(olmConfig);
-        consoleOperatorSetup.install();
+        consoleOperatorSetup.install(false);
 
         LOGGER.info("Setup console instance");
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
@@ -77,15 +76,9 @@ public class OlmUpgradeST extends AbstractUpgradeST {
         LOGGER.info("Verify console operator version");
 
         String currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_OLM_PACKAGE_NAME)
-            .get(0)
-            .getMetadata()
-            .getName()
-            .replace(Environment.CONSOLE_OLM_PACKAGE_NAME + "-v", "");
+            .getFirst().getMetadata().getName().replace(Environment.CONSOLE_OLM_PACKAGE_NAME + "-v", "");
 
         assertEquals(olmVersionData.getOldOperatorVersion(), currentOperatorVersion);
-        // Take snapshot for future assertion
-        String oldInstanceSnapshot = ResourceUtils.getKubeResource(Deployment.class, tcc.namespace(), ConsoleUtils.getConsoleDeploymentName(tcc.consoleInstanceName()))
-            .getMetadata().getUid();
 
         LOGGER.info("Perform basic checks to validate UI is working");
         PwUtils.login(tcc);
@@ -97,19 +90,10 @@ public class OlmUpgradeST extends AbstractUpgradeST {
         LOGGER.info("Perform console operator upgrade to channel {}", olmVersionData.getNewOlmChannel());
         olmConfig.setChannelName(olmVersionData.getNewOlmChannel());
         consoleOperatorSetup.setInstallConfig(olmConfig);
-        consoleOperatorSetup.install();
+        consoleOperatorSetup.install(false);
 
-        WaitUtils.waitForConsoleInstanceToRoll(tcc.namespace(), ConsoleUtils.getConsoleDeploymentName(tcc.consoleInstanceName()), oldInstanceSnapshot);
-
-        LOGGER.info("Verify upgraded console operator version is: {}", olmVersionData.getNewOperatorVersion());
-
-        currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_OLM_PACKAGE_NAME)
-            .get(0)
-            .getMetadata()
-            .getName()
-            .replace(Environment.CONSOLE_OLM_PACKAGE_NAME + "-v", "");
-
-        assertEquals(olmVersionData.getNewOperatorVersion(), currentOperatorVersion);
+        WaitUtils.waitForConsoleDeploymentToReachVersion(Constants.CO_NAMESPACE, Environment.CONSOLE_OLM_PACKAGE_NAME, olmVersionData.getNewOperatorVersion(),
+            deployment -> deployment.getMetadata().getName().replace(Environment.CONSOLE_OLM_PACKAGE_NAME + "-v", ""));
 
         LOGGER.info("Perform basic checks after upgrade to validate UI is still working");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);

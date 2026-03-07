@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.upgrade;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
@@ -70,22 +71,16 @@ public class YamlUpgradeST extends AbstractUpgradeST {
         YamlConfig yamlConfig = new YamlConfig(Constants.CO_NAMESPACE, yamlVersionData.getOldOperatorCrdsUrl());
 
         consoleOperatorSetup.setInstallConfig(yamlConfig);
-        consoleOperatorSetup.install();
+        consoleOperatorSetup.install(false);
 
         LOGGER.info("Setup console instance");
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
 
         LOGGER.info("Verify console operator version");
         String currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_DEPLOYMENT_NAME)
-            .get(0)
-            .getMetadata()
-            .getLabels()
-            .get("app.kubernetes.io/version");
+            .getFirst().getMetadata().getLabels().get(Labels.K8S_VERSION_LABEL);
 
         assertEquals(yamlVersionData.getOldOperatorVersion(), currentOperatorVersion);
-        // Take snapshot for future assertion
-        String oldInstanceSnapshot = ResourceUtils.getKubeResource(Deployment.class, tcc.namespace(), ConsoleUtils.getConsoleDeploymentName(tcc.consoleInstanceName()))
-            .getMetadata().getUid();
 
         LOGGER.info("Perform basic checks to validate UI is working");
         PwUtils.login(tcc);
@@ -100,18 +95,8 @@ public class YamlUpgradeST extends AbstractUpgradeST {
         // Do not delete resources to verify instance upgrades
         consoleOperatorSetup.install(false);
 
-        LOGGER.info("Wait for console instance to roll");
-        WaitUtils.waitForConsoleInstanceToRoll(tcc.namespace(), ConsoleUtils.getConsoleDeploymentName(tcc.consoleInstanceName()), oldInstanceSnapshot);
-
-        LOGGER.info("Verify upgraded console operator version is: {}", yamlVersionData.getNewOperatorVersion());
-
-        currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_DEPLOYMENT_NAME)
-            .get(0)
-            .getMetadata()
-            .getLabels()
-            .get("app.kubernetes.io/version");
-
-        assertEquals(yamlVersionData.getNewOperatorVersion(), currentOperatorVersion);
+        WaitUtils.waitForConsoleDeploymentToReachVersion(Constants.CO_NAMESPACE, Environment.CONSOLE_DEPLOYMENT_NAME, yamlVersionData.getNewOperatorVersion(),
+            deployment -> deployment.getMetadata().getLabels().get(Labels.K8S_VERSION_LABEL));
 
         LOGGER.info("Perform basic checks after upgrade to validate UI is still working");
         PwUtils.login(tcc);

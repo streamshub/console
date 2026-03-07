@@ -65,14 +65,14 @@ public class KeycloakInstanceSetup {
     public KeycloakInstanceSetup(String namespace) {
         this.namespace = namespace;
         this.keycloakName = "keycloak-" + namespace;
-        this.keycloakIngressName = "keycloak-ingress-" + namespace;
+        this.keycloakIngressName = keycloakName + "-ingress";
         this.keycloakSecretName = keycloakName + "-initial-admin";
-        this.keycloakTlsSecretName = "keycloak-tls-secret-" + namespace;
+        this.keycloakTlsSecretName = keycloakName + "-tls-secret";
         this.trustStorePassword = "changeit"; // NOSONAR
-        this.trustStoreSecretName = "keycloak-truststore-secret-" + namespace;
-        this.trustStoreConfigMap = "keycloak-truststore-configmap-" + namespace;
-        this.realmName = "console-realm-" + namespace;
-        this.clientId = "console-client-" + namespace;
+        this.trustStoreSecretName = keycloakName + "-truststore-secret";
+        this.trustStoreConfigMap = keycloakName + "-truststore-configmap";
+        this.realmName = keycloakName + "-console-realm";
+        this.clientId = keycloakName + "-console-client";
 
         InputStream tempYaml = null;
         try {

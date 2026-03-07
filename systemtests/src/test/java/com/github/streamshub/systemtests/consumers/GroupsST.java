@@ -255,7 +255,7 @@ public class GroupsST extends AbstractST {
     void testResetConsumerOffsetAllTopicsAllPartitions(int messageCount,
         ResetOffsetType resetType, ResetOffsetDateTimeType dateTimeType, String expectedOffset) {
 
-        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).get(0).getMetadata().getName();
+        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).getFirst().getMetadata().getName();
 
         // Get topics for test from prepared scenario
         List<String> kafkaTopicNames = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), RESET_OFFSET_TOPIC_PREFIX)
@@ -311,7 +311,7 @@ public class GroupsST extends AbstractST {
     void testResetConsumerOffsetSelectedTopic(int messageCount,
         ResetOffsetType resetType, ResetOffsetDateTimeType dateTimeType, String expectedOffset) {
 
-        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).get(0).getMetadata().getName();
+        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).getFirst().getMetadata().getName();
 
         // Get topics for test from prepared scenario
         String kafkaTopicName = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), RESET_OFFSET_TOPIC_PREFIX)

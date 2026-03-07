@@ -7,9 +7,9 @@ import com.github.streamshub.systemtests.enums.ConditionStatus;
 import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.JobUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakApiUtils;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.LabelSelector;
@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.function.Function;
 
 import static com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils.listKubeResourcesByPrefix;
 
@@ -51,10 +51,10 @@ public class WaitUtils {
             TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
                 List<Deployment> dep = listKubeResourcesByPrefix(Deployment.class, namespaceName, deploymentNamePrefix);
-                if (dep.isEmpty() || dep.get(0) == null) {
+                if (dep.isEmpty() || dep.getFirst() == null) {
                     return false;
                 }
-                return Readiness.isDeploymentReady(dep.get(0));
+                return Readiness.isDeploymentReady(dep.getFirst());
             });
     }
 
@@ -395,56 +395,32 @@ public class WaitUtils {
     }
 
     /**
-     * Waits for a ConsoleInstance to complete a roll by detecting a change in its UID.
+     * Waits until a Deployment reaches the expected version.
      *
-     * <p>This method checks the ConsoleInstance pods in given namespace with specified
-     * pod name prefix until a new pod (with a UID different from {@code oldUid}) appears, indicating
-     * that the Console instance has successfully rolled and re-deployed.</p>
+     * <p>The version is obtained using the provided {@code versionGetter} function
+     * and the method blocks until the expected value is observed or the global
+     * timeout is reached.</p>
      *
-     * @param namespace the Kubernetes namespace where the Console instance is deployed
-     * @param podPrefix the name prefix used to identify Console pods
-     * @param oldUid the UID of the previous Console Pod, used to detect rollout completion
+     * @param namespace       namespace where the Deployment is located
+     * @param deploymentPrefix prefix used to locate the Deployment
+     * @param expectedVersion expected version value
+     * @param versionGetter   function used to extract the version from the Deployment
+     *
+     * @return the version value once the expected version is reached
      */
-    public static void waitForConsoleInstanceToRoll(String namespace, String podPrefix, String oldUid) {
-        Wait.until(String.format("ConsoleInstance %s/%s* to roll", namespace, podPrefix), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+    public static void waitForConsoleDeploymentToReachVersion(String namespace, String deploymentPrefix, String expectedVersion, Function<Deployment, String> versionGetter) {
+        Wait.until(String.format("Deployment to reach version %s", expectedVersion),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_MEDIUM, TestFrameConstants.GLOBAL_TIMEOUT,
             () -> {
-                List<Pod> pods = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace, podPrefix);
+                List<Deployment> deployments = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, namespace, deploymentPrefix);
 
-                if (pods.isEmpty()) {
-                    LOGGER.debug("ConsoleInstance {}/{} has not rolled yet", namespace, podPrefix);
+                if (deployments.isEmpty()) {
                     return false;
                 }
 
-                for (Pod pod : pods) {
-                    if (!Objects.equals(oldUid, pod.getMetadata().getUid())) {
-                        LOGGER.debug("ConsoleInstance {}/{} has rolled", namespace, podPrefix);
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        );
-    }
-
-    /**
-     * Wait for the Deployment resource to be deleted.
-     *
-     * @param namespace name of the Namespace in which the Deployment resides
-     * @param name      name of the Deployment
-     */
-    public static void waitForDeploymentDeletion(String namespace, String name) {
-        Wait.until(String.format("deletion of Deployment: %s/%s", namespace, name),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
-            () -> {
-                Deployment deployment = ResourceUtils.getKubeResource(Deployment.class, namespace, name);
-                if (deployment == null) {
-                    return true;
-                } else {
-                    LOGGER.warn("Deployment: {}/{} has not been deleted yet!", namespace, name);
-                    KubeResourceManager.get().deleteResourceWithWait(deployment);
-                    return false;
-                }
+                String currentVersion = versionGetter.apply(deployments.getFirst());
+                LOGGER.info("Deployment {}/{} current version: {}, expected: {}", namespace, deploymentPrefix, currentVersion, expectedVersion);
+                return expectedVersion.equals(currentVersion);
             });
     }
 

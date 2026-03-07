@@ -24,6 +24,7 @@ public class Labels {
     public static final String K8S_COMPONENT_LABEL = "app.kubernetes.io/component";
     public static final String K8S_INSTANCE_LABEL = "app.kubernetes.io/instance";
     public static final String K8S_NAME_LABEL = "app.kubernetes.io/name";
+    public static final String K8S_VERSION_LABEL = "app.kubernetes.io/version";
 
     // ------------
     // Console

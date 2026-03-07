@@ -32,9 +32,7 @@ public class Environment {
     public static final String CONSOLE_CLUSTER_DOMAIN = ENVS.getOrDefault("CONSOLE_CLUSTER_DOMAIN", "");
     public static final boolean DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL = ENVS.getOrDefault("DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL", Boolean::parseBoolean, true);
 
-
-
-     // YAML bundle
+    // YAML bundle
     public static final String CONSOLE_OPERATOR_BUNDLE_URL = ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "");
 
     // OLM

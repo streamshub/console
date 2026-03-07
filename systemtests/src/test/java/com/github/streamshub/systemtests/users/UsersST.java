@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.locators.KafkaUsersPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
@@ -17,8 +18,10 @@ import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.KafkaUserTestUtils;
 import com.microsoft.playwright.Locator;
 import io.skodjob.testframe.resources.KubeResourceManager;
+import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserAuthorizationSimple;
+import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
 import io.strimzi.api.kafka.model.user.acl.AclRule;
@@ -39,6 +42,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
@@ -145,72 +149,96 @@ public class UsersST extends AbstractST {
 
     @SetupTestBucket(VARIOUS_USER_ACLS_BUCKET)
     public void setupVariousAcl() {
-        KafkaUser user1 = KafkaSetup.getDefaultKafkaUser(tcc.namespace(), tcc.kafkaName())
-            .editSpec()
-            .withNewKafkaUserAuthorizationSimple()
-                .addNewAcl()
-                    .withNewAclRuleClusterResource()
-                    .endAclRuleClusterResource()
-                    .withOperations(AclOperation.DELETE)
-                    .withOperations(AclOperation.DESCRIBE)
-                    .withOperations(AclOperation.IDEMPOTENTWRITE)
-                .endAcl()
-                .addNewAcl()
-                    .withNewAclRuleGroupResource()
-                        .withName("*")
-                        .withPatternType(AclResourcePatternType.LITERAL)
-                    .endAclRuleGroupResource()
-                    .withOperations(AclOperation.ALL)
-                .endAcl()
-                .addNewAcl()
-                    .withNewAclRuleTopicResource()
-                        .withName("*")
-                        .withPatternType(AclResourcePatternType.LITERAL)
-                    .endAclRuleTopicResource()
-                    .withOperations(AclOperation.ALTERCONFIGS)
-                    .withOperations(AclOperation.CLUSTERACTION)
-                    .withOperations(AclOperation.DESCRIBECONFIGS)
-                .endAcl()
-                .addNewAcl()
-                    .withNewAclRuleTransactionalIdResource()
-                        .withName("testAclName")
-                        .withPatternType(AclResourcePatternType.PREFIX)
-                    .endAclRuleTransactionalIdResource()
-                    .withOperations(AclOperation.ALTER)
-                    .withOperations(AclOperation.CREATE)
-                    .withOperations(AclOperation.WRITE)
-                .endAcl()
-            .endKafkaUserAuthorizationSimple()
+        KafkaUser user1 = new KafkaUserBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
+            .withNewMetadata()
+                .withName(KAFKA_USER_1)
+                .withNamespace(tcc.namespace())
+                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, tcc.kafkaName()))
+            .endMetadata()
+            .withNewSpec()
+                .withNewKafkaUserScramSha512ClientAuthentication()
+                .endKafkaUserScramSha512ClientAuthentication()
+                .withNewKafkaUserAuthorizationSimple()
+                    .addNewAcl()
+                        .withNewAclRuleClusterResource()
+                        .endAclRuleClusterResource()
+                        .withOperations(AclOperation.DELETE)
+                        .withOperations(AclOperation.DESCRIBE)
+                        .withOperations(AclOperation.IDEMPOTENTWRITE)
+                    .endAcl()
+                    .addNewAcl()
+                        .withNewAclRuleGroupResource()
+                            .withName("*")
+                            .withPatternType(AclResourcePatternType.LITERAL)
+                        .endAclRuleGroupResource()
+                        .withOperations(AclOperation.ALL)
+                    .endAcl()
+                    .addNewAcl()
+                        .withNewAclRuleTopicResource()
+                            .withName("*")
+                            .withPatternType(AclResourcePatternType.LITERAL)
+                        .endAclRuleTopicResource()
+                        .withOperations(AclOperation.ALTERCONFIGS)
+                        .withOperations(AclOperation.CLUSTERACTION)
+                        .withOperations(AclOperation.DESCRIBECONFIGS)
+                    .endAcl()
+                    .addNewAcl()
+                        .withNewAclRuleTransactionalIdResource()
+                            .withName("testAclName")
+                            .withPatternType(AclResourcePatternType.PREFIX)
+                        .endAclRuleTransactionalIdResource()
+                        .withOperations(AclOperation.ALTER)
+                        .withOperations(AclOperation.CREATE)
+                        .withOperations(AclOperation.WRITE)
+                    .endAcl()
+                .endKafkaUserAuthorizationSimple()
             .endSpec()
             .build();
 
-        KafkaUser user2 = KafkaSetup.getDefaultKafkaUser(tcc.namespace(), tcc.kafkaName())
-            .editSpec()
-            .withNewKafkaUserAuthorizationSimple()
-                .addNewAcl()
-                    .withNewAclRuleTransactionalIdResource()
-                        .withName("testAclName")
-                        .withPatternType(AclResourcePatternType.LITERAL)
-                    .endAclRuleTransactionalIdResource()
-                    .withOperations(AclOperation.ALTER)
-                    .withOperations(AclOperation.DELETE)
-                .endAcl()
-            .endKafkaUserAuthorizationSimple()
+        KafkaUser user2 = new KafkaUserBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
+            .withNewMetadata()
+                .withName(KAFKA_USER_2)
+                .withNamespace(tcc.namespace())
+                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, tcc.kafkaName()))
+            .endMetadata()
+            .withNewSpec()
+                .withNewKafkaUserScramSha512ClientAuthentication()
+                .endKafkaUserScramSha512ClientAuthentication()
+                .withNewKafkaUserAuthorizationSimple()
+                    .addNewAcl()
+                        .withNewAclRuleTransactionalIdResource()
+                            .withName("testAclName")
+                            .withPatternType(AclResourcePatternType.LITERAL)
+                        .endAclRuleTransactionalIdResource()
+                        .withOperations(AclOperation.ALTER)
+                        .withOperations(AclOperation.DELETE)
+                    .endAcl()
+                .endKafkaUserAuthorizationSimple()
             .endSpec()
             .build();
 
-        KafkaUser user3 = KafkaSetup.getDefaultKafkaUser(tcc.namespace(), tcc.kafkaName())
-            .editSpec()
-            .withNewKafkaUserAuthorizationSimple()
-                .addNewAcl()
-                    .withNewAclRuleGroupResource()
-                        .withName("testAclName")
-                        .withPatternType(AclResourcePatternType.PREFIX)
-                    .endAclRuleGroupResource()
-                    .withOperations(AclOperation.IDEMPOTENTWRITE)
-                    .withOperations(AclOperation.DESCRIBECONFIGS)
-                .endAcl()
-            .endKafkaUserAuthorizationSimple()
+        KafkaUser user3 = new KafkaUserBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
+            .withNewMetadata()
+                .withName(KAFKA_USER_3)
+                .withNamespace(tcc.namespace())
+                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, tcc.kafkaName()))
+            .endMetadata()
+            .withNewSpec()
+                .withNewKafkaUserScramSha512ClientAuthentication()
+                .endKafkaUserScramSha512ClientAuthentication()
+                .withNewKafkaUserAuthorizationSimple()
+                    .addNewAcl()
+                        .withNewAclRuleGroupResource()
+                            .withName("testAclName")
+                            .withPatternType(AclResourcePatternType.PREFIX)
+                        .endAclRuleGroupResource()
+                        .withOperations(AclOperation.IDEMPOTENTWRITE)
+                        .withOperations(AclOperation.DESCRIBECONFIGS)
+                    .endAcl()
+                .endKafkaUserAuthorizationSimple()
             .endSpec()
             .build();
 

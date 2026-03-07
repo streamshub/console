@@ -7,6 +7,7 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.resourcetypes.apicurio.ApicurioRegistry3Type;
 import com.github.streamshub.systemtests.resourcetypes.console.ConsoleType;
 import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaConnectType;
+import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaRebalanceType;
 import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaTopicType;
 import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaUserType;
@@ -84,6 +85,7 @@ public class SetupUtils {
             new KafkaTopicType(),
             new KafkaUserType(),
             new KafkaConnectType(),
+            new KafkaRebalanceType(),
             new NamespaceType(),
             new OperatorGroupType(),
             new RoleBindingType(),

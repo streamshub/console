@@ -47,7 +47,7 @@ public class OlmConfig extends InstallConfig {
 
         // Get and set the deployment full name from known OLM bundle prefix
         deploymentName = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, olmAppBundlePrefix)
-            .get(0)
+            .getFirst()
             .getMetadata()
             .getName();
     }
@@ -59,10 +59,10 @@ public class OlmConfig extends InstallConfig {
         List<Deployment> deploymentList = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, deploymentName);
         if (!deploymentList.isEmpty()) {
             // delete csv
-            String csvFullName = ResourceUtils.listKubeResourcesByPrefix(ClusterServiceVersion.class, deploymentNamespace, packageName).get(0).getMetadata().getName();
+            String csvFullName = ResourceUtils.listKubeResourcesByPrefix(ClusterServiceVersion.class, deploymentNamespace, packageName).getFirst().getMetadata().getName();
             ClusterServiceVersion csv = ResourceUtils.getKubeResource(ClusterServiceVersion.class, deploymentNamespace, csvFullName);
             KubeResourceManager.get().deleteResourceWithWait(csv);
-            KubeResourceManager.get().deleteResourceWithWait(deploymentList.get(0));
+            KubeResourceManager.get().deleteResourceWithWait(deploymentList.getFirst());
         }
     }
 
