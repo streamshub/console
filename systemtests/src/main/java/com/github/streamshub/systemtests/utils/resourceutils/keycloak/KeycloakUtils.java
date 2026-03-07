@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.utils.resourceutils.keycloak;
 
 import com.github.streamshub.console.dependents.ConsoleResource;
-import com.github.streamshub.console.utils.Certificates;
+import com.github.streamshub.systemtests.utils.Certificates;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
