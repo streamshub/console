@@ -1,9 +1,7 @@
 package com.github.streamshub.systemtests.auth;
 
-import com.github.streamshub.console.dependents.ConsoleIngress;
-import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.systemtests.AbstractST;
-import com.github.streamshub.systemtests.Environment;
+import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
@@ -13,34 +11,28 @@ import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
-import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
-import com.github.streamshub.systemtests.setup.keycloak.KeycloakSetup;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakInstanceSetup;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakOperatorSetup;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
-import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
-import com.github.streamshub.systemtests.utils.testutils.AuthTestSetupUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
-import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
-import io.fabric8.kubernetes.api.model.SecretBuilder;
-import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -51,8 +43,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import java.util.Base64;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -65,8 +55,8 @@ public class AuthST extends AbstractST {
     private TestCaseConfig tcc;
 
     // Keycloak
-    private final KeycloakSetup keycloakSetup = new KeycloakSetup();
-    protected KeycloakConfig keycloakConfig;
+    protected KeycloakOperatorSetup keycloakOperator;
+    protected KeycloakInstanceSetup keycloakInstance;
 
     /**
      * Verifies that a developer user can log in via OIDC and access their assigned Kafka cluster.
@@ -90,7 +80,7 @@ public class AuthST extends AbstractST {
     void testAccessDevUser() {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_DEV_BOB, AuthTestConstants.USER_DEV_BOB);
         // Check correct user is logged in
-        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
 
         LOGGER.info("Check navbar data");
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_DEV_BOB, true);
@@ -123,7 +113,7 @@ public class AuthST extends AbstractST {
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
         tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true));
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
 
     /**
@@ -149,7 +139,7 @@ public class AuthST extends AbstractST {
     void testAccessAdminUser() {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, AuthTestConstants.USER_ADMIN_ALICE);
         // Check correct user is logged in
-        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
 
         LOGGER.info("Check navbar data");
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_ADMIN_ALICE, true);
@@ -208,11 +198,11 @@ public class AuthST extends AbstractST {
         // Dev
         tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true));
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
         // Admin
         tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true));
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
 
     /**
@@ -239,7 +229,7 @@ public class AuthST extends AbstractST {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, AuthTestConstants.USER_TOPICONLY_FRANK);
 
         // Check correct user is logged in
-        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
 
         LOGGER.info("Check navbar data");
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_TOPICONLY_FRANK, true);
@@ -305,7 +295,7 @@ public class AuthST extends AbstractST {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, AuthTestConstants.USER_CONSUMERONLY_GRACE);
 
         // Check correct user is logged in
-        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
 
         LOGGER.info("Check navbar data");
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
@@ -334,7 +324,7 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Verify groups page is available");
         tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT, "No groups", true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT, MessageStore.noConsumerGroups(), true);
 
         String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "continuous-msg";
         KafkaClients clients = new KafkaClientsBuilder()
@@ -357,7 +347,7 @@ public class AuthST extends AbstractST {
 
         WaitUtils.waitForClientsSuccess(clients);
         // Logout and check user is no longer logged in
-        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
     }
 
     @BeforeAll
@@ -365,69 +355,37 @@ public class AuthST extends AbstractST {
         // // Setup namespace and kafka + console instance
         tcc = getTestCaseConfig();
         NamespaceUtils.prepareNamespace(tcc.namespace());
-
         // Setup keycloak operator
-        keycloakConfig = keycloakSetup.setupKeycloakAndReturnConfig(tcc.namespace());
+        // Note from docs:
+        // It is currently not fully supported for the operator to watch multiple or all namespaces.
+        // In circumstances where you want to watch multiple namespaces, you can install multiple operators.
+        keycloakOperator = new KeycloakOperatorSetup(tcc.namespace());
+        keycloakOperator.setup();
+
+        keycloakInstance = new KeycloakInstanceSetup(tcc.namespace());
+        keycloakInstance.setup();
 
         // Setup Kafkas for both teams
         // Dev Kafka
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
             AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-            AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+            AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 1, 1, 1);
 
         // Admin Kafka
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-            AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+            AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, 1, 1, 1);
 
         // Import console auth realm
-        KeycloakSetup.importConsoleRealm(keycloakConfig, "https://" + tcc.consoleInstanceName() + "." + ClusterUtils.getClusterDomain());
-
-        LOGGER.info("Create secret with trust store password for console");
-        KubeResourceManager.get().createOrUpdateResourceWithWait(new SecretBuilder()
-            .withNewMetadata()
-                .withName(Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME)
-                .withNamespace(tcc.namespace())
-                .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
-            .endMetadata()
-            .addToData(Constants.PASSWORD_KEY_NAME, Base64.getEncoder().encodeToString(Constants.TRUST_STORE_PASSWORD.getBytes()))
-            .build());
-
-        // Configmap with truststore
-        LOGGER.info("Create configmap with trust store");
-        String encodedTrustStore = Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH));
-
-        LOGGER.info("Encoded TrustStore: {}", encodedTrustStore);
-
-        KubeResourceManager.get().createOrUpdateResourceWithWait(new ConfigMapBuilder()
-            .withNewMetadata()
-                .withName(Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME)
-                .withNamespace(tcc.namespace())
-                .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
-            .endMetadata()
-            .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, encodedTrustStore)
-            .build());
+        keycloakInstance.importConsoleRealm(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), true,
+            KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_USER_MAPPING);
 
         // Console instance
-        ConsoleInstanceSetup.setupIfNeeded(AuthTestSetupUtils.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), keycloakConfig).build());
+        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(),
+            keycloakInstance, KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING).build());
 
-        if (!ClusterUtils.isOcp()) {
-            LOGGER.info("Edit console ingress, annotate for bigger buffer");
-            WaitUtils.waitForIngressToBePresent(tcc.namespace(), tcc.consoleInstanceName() + "-" + ConsoleIngress.NAME);
-            Ingress consoleIngress = ResourceUtils.getKubeResource(Ingress.class, tcc.namespace(), tcc.consoleInstanceName() + "-" + ConsoleIngress.NAME);
-            // Add nginx ingress annotation to increase buffer
-            // This is required to correctly receive bigger header containing keycloak token - session cookie
-            consoleIngress = consoleIngress.edit()
-                .editMetadata()
-                    .addToAnnotations("nginx.ingress.kubernetes.io/proxy-buffer-size", "16k")
-                    .addToAnnotations("nginx.ingress.kubernetes.io/proxy-buffers-number", "8")
-                    .addToAnnotations("nginx.ingress.kubernetes.io/proxy-busy-buffers-size", "16k")
-                .endMetadata()
-                .build();
-
-            KubeResourceManager.get().createOrUpdateResourceWithWait(consoleIngress);
-        }
+        ConsoleUtils.patchConsoleNginxBuffer(tcc.namespace(), tcc.consoleInstanceName());
     }
 
     @AfterAll

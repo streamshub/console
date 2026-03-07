@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.kafka;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
@@ -20,13 +21,13 @@ import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaCmdUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.connect.KafkaConnectResources;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -100,7 +101,7 @@ public class ConnectST extends AbstractST {
         tcc.page().navigate(PwPageUrls.getKafkaConnectorPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Verifying Kafka Connect page header is visible");
-        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, "Kafka Connect", true);
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, MessageStore.kafkaConnect(), true);
 
         LOGGER.debug("Waiting for connectors table and verifying initial count (expected: 2)");
         PwUtils.waitForLocatorVisible(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT);
@@ -133,7 +134,7 @@ public class ConnectST extends AbstractST {
         tcc.page().navigate(PwPageUrls.getKafkaConnectClusterPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Verifying Kafka Connect clusters page header");
-        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, "Kafka Connect", true);
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, MessageStore.kafkaConnect(), true);
 
         LOGGER.debug("Waiting for clusters table and verifying initial count (expected: 2)");
         PwUtils.waitForLocatorVisible(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT);
@@ -230,8 +231,8 @@ public class ConnectST extends AbstractST {
 
         WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getConsolePodSelector(tcc.consoleInstanceName()), oldSnap);
 
-        String topicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), CONNECTOR_TOPIC, 1, true, 1, 1, 1)
-            .get(0)
+        String topicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), CONNECTOR_TOPIC, 1, 1, 1, 1)
+            .getFirst()
             .getMetadata()
             .getName();
 

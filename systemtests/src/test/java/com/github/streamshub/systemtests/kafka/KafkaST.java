@@ -289,7 +289,7 @@ public class KafkaST extends AbstractST {
         // Expect a warning message
         String warningMessage = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()).getStatus().getConditions().stream()
             .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()) && condition.getStatus().equals(ConditionStatus.TRUE.toString()))
-            .toList().get(0).getMessage();
+            .toList().getFirst().getMessage();
         LOGGER.debug("Kafka currently contains warning message: [{}]", warningMessage);
 
         // Reload using on page button

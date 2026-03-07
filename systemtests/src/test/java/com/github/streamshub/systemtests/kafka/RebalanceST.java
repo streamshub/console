@@ -43,7 +43,7 @@ public class RebalanceST extends AbstractST {
         final String rebalanceTopicName = "rebalance-topic";
 
         LOGGER.info("Create imbalance by creating topics and scaling brokers afterwards");
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), rebalanceTopicName, 5, true, imbalancedPartitions, 1, 1);
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), rebalanceTopicName, 5, imbalancedPartitions, 1, 1);
         KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         LOGGER.info("Create basic rebalance CR");

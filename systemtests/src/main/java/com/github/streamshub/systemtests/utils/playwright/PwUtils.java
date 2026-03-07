@@ -507,14 +507,14 @@ public class PwUtils {
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.LOGIN_KEYCLOAK_SIGN_IN_BUTTON);
         // Go to overview page
-        tcc.page().waitForURL(ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true), getDefaultWaitForUrlOpts());
+        tcc.page().waitForURL(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), getDefaultWaitForUrlOpts());
         LOGGER.info("Successfully logged into Console");
     }
 
     public static void logoutUser(TestCaseConfig tcc, String userName, boolean https) {
 
         Utils.retryAction("Log-out user " + userName, () -> {
-            String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), https) + "/";
+            String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), https) + "/";
 
             // There is a xpath difference between logout button in dashboard and in navbar on other pages
             if (tcc.page().url().equals(dashboardUrl)) {

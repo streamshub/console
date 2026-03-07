@@ -27,6 +27,27 @@
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
         <skipSTs>${skipTests}</skipSTs>
+
+        <!-- Sonarqube CI only - for lint -->
+
+        <!-- Tell Sonar this whole module is tests -->
+        <sonar.sources>src/main/java</sonar.sources>
+        <sonar.tests>src/test/java</sonar.tests>
+
+        <!-- Exclude specific rules -->
+        <sonar.issue.ignore.multicriteria>e1,e2,e3</sonar.issue.ignore.multicriteria>
+
+        <!-- Classes should not be public (test classes don't need to be) -->
+        <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S5786</sonar.issue.ignore.multicriteria.e1.ruleKey>
+        <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
+
+        <!-- Assertions should be in test code -->
+        <sonar.issue.ignore.multicriteria.e2.ruleKey>java:S2699</sonar.issue.ignore.multicriteria.e2.ruleKey>
+        <sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
+
+        <!-- Test classes should comply with naming convention -->
+        <sonar.issue.ignore.multicriteria.e3.ruleKey>java:S3577</sonar.issue.ignore.multicriteria.e3.ruleKey>
+        <sonar.issue.ignore.multicriteria.e3.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e3.resourceKey>
     </properties>
 
     <dependencyManagement>
@@ -256,6 +277,14 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
+        </profile>
+
+        <profile>
+            <id>acceptance</id>
+            <properties>
+                <skipTests>false</skipTests>
+                <groups>regression, olm-upgrade, yaml-upgrade</groups>
+            </properties>
         </profile>
 
         <profile>

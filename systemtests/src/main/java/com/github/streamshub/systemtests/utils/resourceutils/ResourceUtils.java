@@ -8,8 +8,6 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.skodjob.testframe.resources.KubeResourceManager;
 
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.stream.Stream;
 
 public class ResourceUtils {
 
@@ -43,20 +41,5 @@ public class ResourceUtils {
 
     public static <T extends HasMetadata> List<T> listKubeResourcesByLabelSelector(Class<T> resourceClass, String namespaceName, LabelSelector labelSelector) {
         return getKubeResourceClient(resourceClass).inNamespace(namespaceName).withLabelSelector(labelSelector).list().getItems();
-    }
-
-    // --------------------
-    // Resources kind cast
-    // --------------------
-    public static <T> Stream<T> getResourcesStreamFromListOfResources(List<HasMetadata> resources, Class<T> type) {
-        return resources.stream()
-            .filter(type::isInstance)
-            .map(type::cast);
-    }
-
-    public static <T> T getResourceFromListOfResources(List<HasMetadata> resources, Class<T> type) {
-        return getResourcesStreamFromListOfResources(resources, type)
-            .findFirst()
-            .orElseThrow(() -> new NoSuchElementException("No resources of type " + type.getSimpleName() + " found."));
     }
 }
