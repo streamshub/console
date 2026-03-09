@@ -70,7 +70,7 @@ jobs:
           npm run build
 
       - name: Build and Push UI Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ui/
           platforms: ${{ env.PLATFORMS }}
@@ -105,7 +105,7 @@ jobs:
         run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.NEXT_VERSION }}" "PLATFORMS=${{ env.PLATFORMS }}"
 
       - name: Build and Push Operator Bundle Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: operator/target/bundle/streamshub-console-operator/
           platforms: ${{ env.PLATFORMS }}
@@ -125,7 +125,7 @@ jobs:
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle
 
       - name: Build and Push Operator Catalog Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: operator/
           platforms: ${{ env.PLATFORMS }}
