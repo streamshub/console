@@ -1,0 +1,30 @@
+:_mod-docs-content-type: CONCEPT
+
+[id='con-groups-page-{context}']
+= Groups page
+
+[role="_abstract"]
+The *Groups* page lists all groups associated with a Kafka cluster.
+Groups represent client applications that coordinate work across multiple instances.
+
+You can filter the list by group name or status.
+
+Kafka supports the following group types:
+
+* *Consumer groups* coordinate message consumption across multiple consumer instances. Each consumer in the group processes a subset of topic partitions.
+* *Classic groups* use the older Kafka consumer group protocol that existed before the newer consumer protocol was introduced.
+* *Streams groups* are created by Kafka Streams applications to coordinate stream processing tasks.
+* *Share groups* distribute message processing across multiple consumers using a shared consumption model. Multiple consumers can process messages from the same partition concurrently.
+
+For each group, the page shows information such as the group type and membership.
+For consumer groups, the console also displays the overall consumer lag across partitions and the number of members.
+Click on associated topics to view topic information available from the xref:con-topics-page-{context}[*Topics* page tabs].
+
+Consumer group status can be one of the following:
+
+* *Stable* indicates normal operation.
+* *Rebalancing* indicates that group membership is being adjusted.
+* *Empty* indicates that the group has no active members.
+
+Click a group name to view group details and membership information.
+Select the options icon (three vertical dots) for a consumer group to reset consumer offsets.

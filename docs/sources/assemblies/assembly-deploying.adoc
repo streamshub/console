@@ -16,14 +16,14 @@ You can configure the console to use an existing Prometheus source.
 If no source is set, the operator creates a private Prometheus instance when the console is deployed. 
 However, this default setup is not recommended for production and should only be used for development or evaluation purposes.
 
-Connect the console to one or more Kafka clusters to provide visibility into topics, Kafka nodes, and consumer groups.
+Connect the console to one or more Kafka clusters to provide visibility into topics, Kafka nodes, and groups used by Kafka client applications to coordinate work.
 
 Configure the console to integrate with related services, including:
 
-* **Authentication providers** for securing access to Kafka clusters
-* **Kafka Connect clusters** for viewing connector and configuration details
-* **Metrics providers** for monitoring Kafka cluster performance
-* **Schema registries** for validating and decoding messages using data schemas
+* **Authentication providers** to secure access to Kafka clusters
+* **Kafka Connect clusters** to view connector and configuration details
+* **Metrics providers** to monitor Kafka cluster performance
+* **Schema registries** to validate and decode messages using data schemas
 
 Define these integrations in the `Console` custom resource configuration YAML file.
 
