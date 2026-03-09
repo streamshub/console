@@ -474,7 +474,9 @@
     "no_consumer_groups": "No groups",
     "group_id": "Group ID",
     "type": "Type",
+    "type_tooltip": "<p>The implementation type of the Kafka group (for example Classic, Consumer, or Streams).</p>",
     "protocol": "Protocol",
+    "protocol_tooltip": "<p>The protocol used by group members to coordinate partition assignments and rebalancing (for example consumer, connect, or streams).</p>",
     "state": "State",
     "state_tooltip": "<p>Reflects the current operational state of the group.</p><p>Possible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning, 'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.</p><p>If in the 'Empty' state, consider adding members to the group.</p>",
     "overall_lag": "Overall lag",
@@ -641,7 +643,9 @@
     "committed_offset": "Committed offset",
     "committed_offset_tooltip": "The offset in the Kafka topic marking the last successfully consumed message by a member.",
     "end_offset": "End offset",
-    "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
+    "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message.",
+    "not_topic_found": "No topics assigned",
+    "no_offsets_description": "This member is not currently assigned to any topic partitions."
   },
   "Groups": {
     "title": "Groups"
