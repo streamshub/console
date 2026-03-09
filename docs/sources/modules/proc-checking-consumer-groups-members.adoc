@@ -4,14 +4,14 @@
 = Checking consumer group members
 
 [role="_abstract"]
-Check the members of a specific consumer group from the *Consumer Groups* page.
+Check the members of a consumer group from the *Groups* page.
 
 .Procedure
 
-. Log in to the Kafka cluster in the StreamsHub Console, then click *Consumer Groups*. 
-. On the *Consumer Groups* page, click the name of the consumer group you want to inspect.
-. Click on the right arrow (>) next to a member ID to view the topic partitions a member is associated with, as well as any possible consumer lag.
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Groups*. 
+. On the *Groups* page, click the name of the consumer group you want to inspect.
+. Click the right arrow (>) next to a member ID to view the topic partitions that the member is assigned, along with any consumer lag.
 +
-For each group member, you see the unique (consumer) client ID assigned to the consumer within the consumer group, overall consumer lag, and the number of assigned partitions.
+For each group member, the console shows the unique client ID assigned to the consumer within the consumer group, the overall consumer lag, and the number of assigned partitions.
 +
-Any consumer lag for a specific topic partition reflects the gap between the last message a consumer has picked up (committed offset position) and the latest message written by the producer (end offset position).
+Consumer lag for a topic partition reflects the gap between the last message a consumer processed (committed offset position) and the latest message written by the producer (end offset position).

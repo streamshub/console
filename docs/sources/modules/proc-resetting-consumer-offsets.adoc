@@ -1,10 +1,10 @@
 :_mod-docs-content-type: PROCEDURE
 
-[id='proc-restting-consumer-offsets-{context}']
+[id='proc-resetting-consumer-offsets-{context}']
 = Resetting consumer offsets
 
 [role="_abstract"]
-Reset the consumer offsets of a specific consumer group from the *Consumer Groups* page.
+Reset the consumer offsets of a specific consumer group from the *Groups* page.
 
 You might want to do this when reprocessing old data, skipping unwanted messages, or recovering from downtime.
 
@@ -14,22 +14,21 @@ All active members of the consumer group must be shut down before resetting the 
 
 .Procedure
 
-. Log in to the Kafka cluster in the StreamsHub Console, then click *Consumer Groups*. 
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Groups*. 
 
-. Click the options icon (three vertical dots) for the consumer group and click the reset consumer offsets option to display the *Reset consumer offset* page.
+. Click the options icon (three vertical dots) for the consumer group and select the reset consumer offsets option to open the *Reset consumer offset* page.
 
-. Choose to apply the offset reset to all consumer topics associated with the consumer group or select a specific topic.
+. Choose whether to apply the offset reset to all consumer topics associated with the consumer group or to a specific topic.
 +
-If you selected a topic, choose to apply the offset reset to all partitions or select a specific partition.
+If you selected a topic, choose whether to apply the offset reset to all partitions or to a specific partition.
 
 . Choose the position to reset the offset:
 +
-* Custom offset (available only if you selected a specific topic _and_ a specific partition).
-If you select this option, enter the custom offset value.
+* Custom offset (available only if you selected a specific topic and a specific partition). Enter the custom offset value.
 * Latest offset
 * Earliest offset
 * Specific date and time
-* Delete committed offsets (available only if you selected a specific topic).
+* Delete committed offsets (available only if you selected a specific topic)
 +
 If you selected date and time, choose the appropriate format and enter the date in that format.
 +
@@ -37,11 +36,11 @@ IMPORTANT: The *Delete committed offsets* option removes the stored offsets from
 When the group resumes, offset behavior depends on the consumer configuration (for example, the `auto.offset.reset` setting). 
 Use this option with caution.
 
-. (Optional) Perform a dry run before applying the offset reset.  
+. (Optional) Perform a dry run before applying the offset reset.
 +
-.. Click the down arrow next to *Dry run*.  
-.. Choose the option to run the dry run and view the results in the console, or copy the command to run it independently against the consumer group.
-+  
+.. Click the down arrow next to *Dry run*.
+.. Choose to run the dry run and view the results in the console, or copy the command to run it independently against the consumer group.
++
 The results display the new offsets for each topic partition included in the reset operation.  
 A download option is available for the results.
 
