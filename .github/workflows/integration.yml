@@ -78,7 +78,7 @@ jobs:
           npm run build
 
       - name: Build UI Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ui/
           platforms: ${{ env.PLATFORMS }}
@@ -104,7 +104,7 @@ jobs:
         run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.PROJECT_VERSION }}" "PLATFORMS=${{ env.PLATFORMS }}"
 
       - name: Build Operator Bundle Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: operator/target/bundle/streamshub-console-operator/
           platforms: ${{ env.PLATFORMS }}
@@ -120,7 +120,7 @@ jobs:
           operator/bin/generate-catalog.sh localhost:5000/streamshub/console-operator-bundle true
 
       - name: Build Operator Catalog Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: operator/
           platforms: ${{ env.PLATFORMS }}
