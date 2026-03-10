@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import { ReactNode, useEffect, useState } from "react";
 import RichText from "@/components/RichText";
 import { TableVariant } from "@patternfly/react-table";
+import { describeEnabled } from "@/utils/groups";
 
 const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   STABLE: {
@@ -231,12 +232,13 @@ export function ConsumerGroupsTable({
                 key={key}
                 dataLabel={t("GroupsTable.group_id")}
               >
-                {row.attributes.protocol === "consumer" && row.meta?.describeAvailable
-                    ? <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
-                        {row.attributes.groupId}
-                      </Link>
-                    : <>{row.attributes.groupId}</>
-                }
+                {describeEnabled(row) && row.meta?.describeAvailable ? (
+                  <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
+                    {row.attributes.groupId}
+                  </Link>
+                ) : (
+                  <>{row.attributes.groupId}</>
+                )}
               </Td>
             );
           case "type":

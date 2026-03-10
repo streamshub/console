@@ -280,7 +280,7 @@ export function ConsumerGroupsTable({
           case "groupId":
             return (
               <Td key={key} dataLabel={t("GroupsTable.group_id")}>
-                {describeEnabled(row) ? (
+                {describeEnabled(row) && row.meta?.describeAvailable ? (
                   <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
                     {row.attributes.groupId}
                   </Link>
