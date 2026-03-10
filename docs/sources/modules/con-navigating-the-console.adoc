@@ -12,7 +12,8 @@ Nodes:: Details broker and controller nodes, including roles, status, and partit
 Topics:: Lists topics with configuration details, partition data, and associated groups.
 Kafka Connect:: Displays information about Kafka Connect clusters, including connector status, configuration details, and available plugins.
 Kafka Users:: Lists Kafka users associated with the selected cluster and shows the namespace for each user.
-Consumer groups:: Shows group activity, offsets, lag metrics, and partition assignments.
+Groups:: Lists groups associated with the cluster and shows group activity, membership, and assignments. 
+Offset and lag metrics are available for consumer groups.
 
 NOTE: If the cluster navigation menu is hidden, click the navigation menu icon (three horizontal lines) in the console header to reveal it.
 
