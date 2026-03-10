@@ -1,5 +1,5 @@
 import { getConsumerGroup } from "@/api/groups/actions";
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { GroupParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/Group.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
@@ -8,7 +8,7 @@ import RichText from "@/components/RichText";
 export default function Page({
   params: { kafkaId, groupId },
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
 }) {
   return (
     <Suspense fallback={<Header groupIdDisplay={""} />}>
@@ -20,7 +20,7 @@ export default function Page({
 async function ConnectedAppHeader({
   params: { kafkaId, groupId },
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
 }) {
   const consumerGroup = (await getConsumerGroup(kafkaId, groupId)).payload;
   let groupIdDisplay = "";

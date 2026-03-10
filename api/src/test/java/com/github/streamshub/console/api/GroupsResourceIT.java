@@ -29,6 +29,7 @@ import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.ListShareGroupOffsetsResult;
+import org.apache.kafka.clients.admin.ListStreamsGroupOffsetsResult;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.SharePartitionOffsetInfo;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -53,12 +54,17 @@ import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
+import com.github.streamshub.console.api.model.Group;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
+import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
+import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils.ConsumerType;
+import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
 import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.TestHelper;
@@ -71,10 +77,12 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 
+import static com.github.streamshub.console.test.EveryEntry.everyEntry;
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static java.util.regex.Pattern.compile;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
@@ -84,6 +92,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -92,6 +101,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 
 @QuarkusTest
 @TestHTTPEndpoint(GroupsResource.class)
@@ -451,7 +461,7 @@ class GroupsResourceIT {
         "SHARE, ", // startOffset for share groups is not reliable so we just check for a numeric value
         "STREAMS, 5"
     })
-    void testDescribeGroupDefault(ConsumerType consumerType, Integer expectedOffset) {
+    void testDescribeGroupExtendedFields(ConsumerType consumerType, Integer expectedOffset) {
         String topic1 = "t1-" + consumerType.name() + "-" + UUID.randomUUID().toString();
         String group1 = "g1-" + consumerType.name() +  "-" + UUID.randomUUID().toString();
 
@@ -467,7 +477,9 @@ class GroupsResourceIT {
                 .autoClose(false)
                 .consume()) {
 
-            whenRequesting(req -> req.get("{groupId}", clusterId1, Identifiers.encode(group1)))
+            whenRequesting(req -> req
+                    .param("fields[groups]", Group.Fields.DESCRIBE_DEFAULT + "," + Group.Fields.CONFIGS)
+                    .get("{groupId}", clusterId1, Identifiers.encode(group1)))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.attributes.groupId", is(group1))
@@ -485,7 +497,17 @@ class GroupsResourceIT {
                 .body("data.attributes.offsets[0].offset", offsetMatcher)
                 .body("data.attributes.offsets[1].topicName", is(topic1))
                 .body("data.attributes.offsets[1].partition", is(1))
-                .body("data.attributes.offsets[1].offset", offsetMatcher);
+                .body("data.attributes.offsets[1].offset", offsetMatcher)
+                .body("data.attributes.configs", not(anEmptyMap()))
+                .body("data.attributes.configs", everyEntry(
+                        Matchers.any(String.class), // any string key
+                        // all entries have same keys
+                        allOf(
+                            hasKey("value"),
+                            hasKey("source"),
+                            hasKey("sensitive"),
+                            hasKey("readOnly"),
+                            hasKey("type"))));
         }
     }
 
@@ -586,6 +608,42 @@ class GroupsResourceIT {
     }
 
     @Test
+    void testDescribeStreamsGroupWithFetchTopicOffsetsError() throws Exception {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        Answer<ListStreamsGroupOffsetsResult> listOffsetsFailed = args -> {
+            KafkaFutureImpl<Map<TopicPartition, OffsetAndMetadata>> failure = new KafkaFutureImpl<>();
+            failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
+
+            ListStreamsGroupOffsetsResult result = Mockito.mock(ListStreamsGroupOffsetsResult.class);
+            when(result.partitionsToOffsetAndMetadata(group1)).thenReturn(failure);
+            return result;
+        };
+
+        AdminClientSpy.install(adminClient -> {
+            // Mock listOffsets
+            doAnswer(listOffsetsFailed)
+                .when(adminClient)
+                .listStreamsGroupOffsets(anyMap());
+        });
+
+        try (var consumer = groupUtils.consume(ConsumerType.STREAMS, group1, topic1, client1, 2, false)) {
+            whenRequesting(req -> req
+                    .param("fields[groups]", "offsets")
+                    .get("{groupId}", clusterId1, group1Id))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.id", is(group1Id))
+                .body("data.meta.errors", hasSize(1))
+                .body("data.meta.errors.title", everyItem(startsWith("Unable to list group offsets")))
+                .body("data.meta.errors.detail", everyItem(is("EXPECTED TEST EXCEPTION")));
+        }
+    }
+
+    @Test
     void testDescribeConsumerGroupWithFetchTopicOffsetsError() {
         Answer<ListOffsetsResult> listOffsetsFailed = args -> {
             Map<TopicPartition, OffsetSpec> topicPartitionOffsets = args.getArgument(0);
@@ -620,6 +678,82 @@ class GroupsResourceIT {
                 .body("data.meta.errors.size()", is(2)) // 2 partitions, both failed
                 .body("data.meta.errors.title", everyItem(startsWith("Unable to list offsets for topic/partition")))
                 .body("data.meta.errors.detail", everyItem(is("EXPECTED TEST EXCEPTION")));
+        }
+    }
+
+    @Test
+    void testDescribeGroupConfigsWithLimitedAuthorization() {
+        utils.resetSecurity(consoleConfig, true);
+        TokenUtils tokens = new TokenUtils(config);
+
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
+                .addNewSubject()
+                    .withInclude("alice")
+                    .withRoleNames("limited-group-configs-role")
+                .endSubject()
+            .build());
+
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        String topic2 = "t2-" + UUID.randomUUID().toString();
+        String group2 = "g2-" + UUID.randomUUID().toString();
+        String client2 = "c2-" + UUID.randomUUID().toString();
+
+        consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
+                    .addNewRole()
+                        .withName("limited-group-configs-role")
+                        .addNewRule()
+                            .withResources("groups")
+                            .withResourceNames("*")
+                            .withPrivileges(Privilege.GET)
+                        .endRule()
+                        .addNewRule()
+                            .withResources("groups/configs")
+                            .withResourceNames(group1)
+                            .withPrivileges(Privilege.GET)
+                        .endRule()
+                        // access to group2 configs is not granted
+                    .endRole()
+                    .build());
+        });
+
+        try (var consumer1 = groupUtils.consume(group1, topic1, client1, 2, false);
+            var consumer2 = groupUtils.consume(group2, topic2, client2, 2, false)) {
+            whenRequesting(req -> req
+                    .auth()
+                        .oauth2(tokens.getToken("alice"))
+                    .param("fields[groups]", "groupId,configs")
+                    .get("{groupId}", clusterId1, Identifiers.encode(group1)))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.attributes.groupId", is(group1))
+                .body("data.attributes.configs", not(anEmptyMap()))
+                .body("data.attributes.configs", everyEntry(
+                        Matchers.any(String.class), // any string key
+                        // all entries have same keys
+                        allOf(
+                            hasKey("value"),
+                            hasKey("source"),
+                            hasKey("sensitive"),
+                            hasKey("readOnly"),
+                            hasKey("type"))));
+
+            whenRequesting(req -> req
+                    .auth()
+                        .oauth2(tokens.getToken("alice"))
+                    .param("fields[groups]", "groupId,configs")
+                    .get("{groupId}", clusterId1, Identifiers.encode(group2)))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.attributes.groupId", is(group2))
+                .body("data.attributes.configs", not(anEmptyMap()))
+                .body("data.attributes.configs", hasEntry(is("meta"), hasEntry("type", "error")))
+                .body("data.attributes.configs", allOf(
+                            hasEntry("title", "Unable to describe group configs"),
+                            hasEntry(is("detail"), startsWith("Access denied:"))));
         }
     }
 

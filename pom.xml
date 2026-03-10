@@ -6,7 +6,7 @@
     <groupId>com.github.streamshub</groupId>
     <artifactId>console</artifactId>
     <packaging>pom</packaging>
-    <version>0.11.1-SNAPSHOT</version>
+    <version>0.12.0-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,7 +17,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.27.2</quarkus.platform.version>
-        <strimzi-api.version>0.50.1</strimzi-api.version>
+        <strimzi-api.version>0.51.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
         <apicurio-registry.version>3.1.7</apicurio-registry.version>
         <kiota-http-jdk.version>0.0.34</kiota-http-jdk.version>
@@ -25,7 +25,7 @@
 
         <!-- Test Dependencies -->
         <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
-        <kroxy-api.version>0.18.0</kroxy-api.version>
+        <kroxy-api.version>0.19.0</kroxy-api.version>
         <apicurio-registry-api.version>3.1.7</apicurio-registry-api.version>
 
         <!-- Plugin Versions -->

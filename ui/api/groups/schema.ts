@@ -47,6 +47,16 @@ const MemberDescriptionSchema = z.object({
 });
 export type MemberDescription = z.infer<typeof MemberDescriptionSchema>;
 
+const ConfigSchema = z.object({
+  value: z.string(),
+  source: z.string(),
+  sensitive: z.boolean(),
+  readOnly: z.boolean(),
+  type: z.string(),
+});
+const ConfigMapSchema = z.record(z.string(), ConfigSchema);
+export type ConfigMap = z.infer<typeof ConfigMapSchema>;
+
 export const ConsumerGroupSchema = z.object({
   id: z.string(),
   type: z.literal("groups"),
@@ -66,6 +76,7 @@ export const ConsumerGroupSchema = z.object({
     partitionAssignor: z.string().nullable().optional(),
     coordinator: NodeSchema.nullable().optional(),
     authorizedOperations: z.array(z.string()).nullable().nullable().optional(),
+    configs: z.union([ ConfigMapSchema, ApiErrorSchema ]).optional(),
     offsets: z.array(OffsetAndMetadataSchema).nullable().optional(),
     errors: z.array(ApiErrorSchema).optional(),
   }),
