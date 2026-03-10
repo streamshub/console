@@ -3,3 +3,4 @@
 @import "@patternfly/quickstarts/dist/quickstarts.min.css";
 @import "react-json-view-lite/dist/index.css";
 @import "@patternfly/patternfly/patternfly-charts.css";
+@import "@patternfly/react-user-feedback/dist/esm/Feedback/Feedback.css";
