@@ -16,7 +16,7 @@ Click on a topic name to view additional topic information presented on a series
 
 Messages:: Shows the message log for the topic.
 Partitions:: Shows the replication status of each partition.
-Groups:: Lists the groups associated with the topic, including their status and members. Offset and lag information is available for consumer groups.
+Groups:: Lists the groups associated with the topic, including their status and members. Offset and lag information is available for groups.
 Configuration:: Shows the topic configuration.
 
 If a topic is shown as *Managed*, it means that it is managed by the Strimzi Topic Operator and was not created directly in the Kafka cluster.
