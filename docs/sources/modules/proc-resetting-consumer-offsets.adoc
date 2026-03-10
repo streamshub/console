@@ -8,6 +8,9 @@ Reset the consumer offsets of a specific consumer group from the *Groups* page.
 
 You might want to do this when reprocessing old data, skipping unwanted messages, or recovering from downtime.
 
+NOTE: Resetting offsets is supported only for consumer groups. 
+Streams groups and Share groups do not currently support offset reset operations.
+
 .Prerequisites
 
 All active members of the consumer group must be shut down before resetting the consumer offsets.

@@ -42,3 +42,6 @@ Some group types might display additional states depending on the group protocol
 
 Click a group name to view group details and membership information.
 Select the options icon (three vertical dots) for a consumer group to reset consumer offsets.
+
+NOTE: Resetting offsets is supported only for consumer groups. 
+Streams groups and Share groups do not currently support offset reset operations.
