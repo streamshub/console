@@ -74,14 +74,20 @@ public class ResourceTypes {
                 return value().equals(value) || "consumerGroups".equals(value);
             }
         },
-        NODE_CONFIGS("nodes/configs"),
+        GROUP_CONFIGS("groups/configs"),
+        //
         NODES("nodes"),
+        NODE_CONFIGS("nodes/configs"),
         NODE_METRICS("nodes/metrics"),
+        //
         REBALANCES("rebalances"),
+        //
         TOPICS("topics"),
         TOPIC_RECORDS("topics/records"),
         TOPIC_METRICS("topics/metrics"),
+        //
         USERS("users"),
+        //
         ALL("*") {
             @Override
             public Set<ResourceType<Kafka>> expand() {

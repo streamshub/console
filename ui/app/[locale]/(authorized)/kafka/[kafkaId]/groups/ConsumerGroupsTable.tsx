@@ -1,5 +1,9 @@
-
-import { ConsumerGroup, GroupType, GroupTypeValues, ConsumerGroupState } from "@/api/groups/schema";
+import {
+  ConsumerGroup,
+  GroupType,
+  GroupTypeValues,
+  ConsumerGroupState,
+} from "@/api/groups/schema";
 import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView, TableViewProps } from "@/components/Table";
@@ -126,8 +130,6 @@ const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   },
 };
 
-
-
 export function ConsumerGroupsTable({
   kafkaId,
   page,
@@ -170,9 +172,7 @@ export function ConsumerGroupsTable({
       perPage={perPage}
       onPageChange={onPageChange}
       data={groups}
-      emptyStateNoData={
-        <div>{t("GroupsTable.no_consumer_groups")}</div>
-      }
+      emptyStateNoData={<div>{t("GroupsTable.no_consumer_groups")}</div>}
       emptyStateNoResults={
         <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
       }
@@ -191,26 +191,42 @@ export function ConsumerGroupsTable({
             );
           case "type":
             return (
-              <Th key={key}>
-                {t("GroupsTable.type")}
+              <Th key={key} width={15}>
+                {t("GroupsTable.type")}{" "}
+                <Tooltip
+                  content={
+                    <RichText>
+                      {(tags) => t.rich("GroupsTable.type_tooltip", tags)}
+                    </RichText>
+                  }
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "protocol":
             return (
-              <Th key={key}>
-                {t("GroupsTable.protocol")}
+              <Th key={key} width={15}>
+                {t("GroupsTable.protocol")}{" "}
+                <Tooltip
+                  content={
+                    <RichText>
+                      {(tags) => t.rich("GroupsTable.protocol_tooltip", tags)}
+                    </RichText>
+                  }
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "state":
             return (
-              <Th key={key}>
+              <Th key={key} width={15}>
                 {t("GroupsTable.state")}{" "}
                 <Tooltip
                   content={
                     <RichText>
-                      {(tags) =>
-                        t.rich("GroupsTable.state_tooltip", tags)
-                      }
+                      {(tags) => t.rich("GroupsTable.state_tooltip", tags)}
                     </RichText>
                   }
                 >
@@ -220,7 +236,7 @@ export function ConsumerGroupsTable({
             );
           case "lag":
             return (
-              <Th key={key}>
+              <Th key={key} width={15}>
                 {t("GroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
@@ -238,14 +254,12 @@ export function ConsumerGroupsTable({
             );
           case "members":
             return (
-              <Th key={key}>
+              <Th key={key} width={10}>
                 {t("GroupsTable.members")}{" "}
                 <Tooltip
                   content={
                     <RichText>
-                      {(tags) =>
-                        t.rich("GroupsTable.members_tooltip", tags)
-                      }
+                      {(tags) => t.rich("GroupsTable.members_tooltip", tags)}
                     </RichText>
                   }
                 >
@@ -254,23 +268,25 @@ export function ConsumerGroupsTable({
               </Th>
             );
           case "topics":
-            return <Th key={key}>{t("GroupsTable.topics")}</Th>;
+            return (
+              <Th key={key} width={30}>
+                {t("GroupsTable.topics")}
+              </Th>
+            );
         }
       }}
       renderCell={({ row, column, key, Td }) => {
         switch (column) {
           case "groupId":
             return (
-              <Td
-                key={key}
-                dataLabel={t("GroupsTable.group_id")}
-              >
-                { describeEnabled(row)
-                    ? <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
-                        {row.attributes.groupId}
-                      </Link>
-                    : <>{row.attributes.groupId}</>
-                }
+              <Td key={key} dataLabel={t("GroupsTable.group_id")}>
+                {describeEnabled(row) && row.meta?.describeAvailable ? (
+                  <Link href={`/kafka/${kafkaId}/groups/${row.id}`}>
+                    {row.attributes.groupId}
+                  </Link>
+                ) : (
+                  <>{row.attributes.groupId}</>
+                )}
               </Td>
             );
           case "type":
@@ -342,12 +358,14 @@ export function ConsumerGroupsTable({
               title: t("GroupsTable.reset_offset"),
               description:
                 row.attributes.protocol !== "consumer"
-                  ? t("GroupsTable.reset_offset_description_non_consumer", { protocol: row.attributes.protocol! })
-                  :
-                row.attributes.state === "EMPTY"
-                  ? null
-                  : t("GroupsTable.reset_offset_description"),
-              isDisabled: !hasPrivilege("UPDATE", row) || resetMenuDisabled(row),
+                  ? t("GroupsTable.reset_offset_description_non_consumer", {
+                      protocol: row.attributes.protocol!,
+                    })
+                  : row.attributes.state === "EMPTY"
+                    ? null
+                    : t("GroupsTable.reset_offset_description"),
+              isDisabled:
+                !hasPrivilege("UPDATE", row) || resetMenuDisabled(row),
               onClick: () => onResetOffset(row),
             },
           ]}
@@ -384,7 +402,7 @@ export function ConsumerGroupsTable({
             onFilterTypeChange(undefined);
           },
           options: Object.fromEntries(
-            GroupTypeValues.map(v => [v, { label: <>{v}</> }])
+            GroupTypeValues.map((v) => [v, { label: <>{v}</> }]),
           ) as Record<string, { label: React.ReactNode }>,
         },
         State: {

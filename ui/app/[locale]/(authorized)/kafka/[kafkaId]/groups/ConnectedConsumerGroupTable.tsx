@@ -10,7 +10,7 @@ import {
   ConsumerGroupsTable,
   SortableColumns,
 } from "./ConsumerGroupsTable";
-import { ResetOffsetModal } from "./[groupId]/ResetOffsetModal";
+import { ResetOffsetModal } from "./[groupId]/members/ResetOffsetModal";
 
 export type ConnectedConsumerGroupTableProps = {
   kafkaId: string;

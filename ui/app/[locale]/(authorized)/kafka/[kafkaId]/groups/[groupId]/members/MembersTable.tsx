@@ -4,7 +4,7 @@ import {
   MemberDescription,
   OffsetAndMetadata,
 } from "@/api/groups/schema";
-import { LagTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/LagTable";
+import { LagTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/members/LagTable";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
