@@ -43,7 +43,7 @@ CONSOLE_OLM_CHANNEL_NAME: alpha
 # YAML
 # -------------------------------------------
 # Which released version of Strimzi Cluster Operator to install
-STRIMZI_OPERATOR_VERSION: 0.50.1
+STRIMZI_OPERATOR_VERSION: 0.51.0
 # URL or local path for Console Operator installation
 # 1. URL - released console-operator.yaml
 # 2. Local path that is relative to the root project dir
@@ -83,6 +83,6 @@ PROMETHEUS_VERSION: 0.89.0
 # Kafka
 # -------------------------------------------
 # Kafka version used in system tests
-ST_KAFKA_VERSION: 4.1.0
+ST_KAFKA_VERSION: 4.2.0
 # Image for test client containers in system tests
 TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:0.12.0-kafka-4.1.0
