@@ -20,7 +20,7 @@ import {
   OffsetValue,
   TopicSelection,
   partitionSelection,
-} from "../types";
+} from "../members/types";
 import { TypeaheadSelect } from "./TypeaheadSelect";
 import { DryrunSelect } from "./DryrunSelect";
 import { SelectComponent } from "./SelectComponent";
