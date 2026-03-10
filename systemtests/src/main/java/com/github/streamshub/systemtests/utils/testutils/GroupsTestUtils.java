@@ -73,12 +73,13 @@ public class GroupsTestUtils {
         switch (dateTimeType) {
             case UNIX_EPOCH:
                 PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO);
+                PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_UNIX, value);
                 break;
             case ISO_8601:
                 PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO);
+                PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_ISO, value);
                 break;
         }
-        PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT, value);
     }
 
     /**
