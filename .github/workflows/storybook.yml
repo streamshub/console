@@ -31,9 +31,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-          storybookBuildDir: "storybook-static"
-          workingDir: "./ui"
-          exitOnceUploaded: true
+          storybookBuildDir: 'storybook-static'
+          workingDir: './ui'
 
       - name: Test Storybook
         working-directory: ./ui
