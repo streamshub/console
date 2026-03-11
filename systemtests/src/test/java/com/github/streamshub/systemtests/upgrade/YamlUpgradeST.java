@@ -65,7 +65,7 @@ public class YamlUpgradeST extends AbstractUpgradeST {
      * </ul>
      */
     @Test
-    void testUpgragdeYamlOperator() {
+    void testUpgradeYamlOperator() {
         // Setup
         LOGGER.info("Setup console operator from specified URL: {}", yamlVersionData.getOldOperatorCrdsUrl());
         YamlConfig yamlConfig = new YamlConfig(Constants.CO_NAMESPACE, yamlVersionData.getOldOperatorCrdsUrl());
