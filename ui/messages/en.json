@@ -546,7 +546,7 @@
     "no_offsets_found_description": "The selected timestamp did not match any offsets.",
     "groups_alert": "Group types identify how Kafka client applications coordinate work. Types include Classic, Consumer, Share, and Streams.",
     "learn_more": "Learn more",
-    "external_link": ""
+    "external_link": "https://www.streamshub.io/docs/StreamsHub-Console/main/#con-groups-page-str"
   },
   "CreateTopic": {
     "title": "Topic creation wizard",
