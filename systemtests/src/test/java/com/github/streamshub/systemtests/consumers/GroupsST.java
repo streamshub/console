@@ -42,6 +42,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -50,6 +51,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -69,98 +71,104 @@ public class GroupsST extends AbstractST {
     private static final int RESET_OFFSET_TOPIC_COUNT = 2;
     private static final String RESET_OFFSET_CONSUMER_GROUP_NAME = "reset-offset-consumer-group";
 
-    public Stream<Arguments> variableConsumerGroupNamesScenario() {
-        final int messageCount = Constants.MESSAGE_COUNT;
-        return Stream.of(
-            Arguments.of("Special chars", messageCount, "group$$$$$%^^&*"),
-            Arguments.of("Semicolon separated", messageCount, "group;part;;1"),
-            Arguments.of("Dot separated", messageCount, "group.1.3.5"),
-            Arguments.of("Colon separated", messageCount, "group:12::3:"),
-            Arguments.of("Symbols", messageCount, "group'@!\"#?"),
-            Arguments.of("Underscores", messageCount, "group_with__underscores_"),
-            Arguments.of("Hyphenated", messageCount, "group-hyphen--name-"),
-            Arguments.of("With slash", messageCount, "group/with//slash/"),
-            Arguments.of("Equals sign", messageCount, "group=equals==two"),
-            Arguments.of("Comma separated", messageCount, "group,comma,separated,,"),
-            Arguments.of("With spaces", messageCount, "group space allowed"),
-            Arguments.of("Pipe symbol", messageCount, "group|pipe||secondpipe"),
-            Arguments.of("Tilde", messageCount, "group~tilde~~name"),
-            Arguments.of("Very long name", messageCount,
-                "consumer_group_with_really_really_really_long_name_1234567890-1234567890-1234567890")
+    @Test
+    void testVariableConsumerGroupNames() {
+
+        List<Map.Entry<String, String>> scenarios = List.of(
+            Map.entry("Special chars", "group$$$$$%^^&*"),
+            Map.entry("Semicolon separated", "group;part;;1"),
+            Map.entry("Dot separated", "group.1.3.5"),
+            Map.entry("Colon separated", "group:12::3:"),
+            Map.entry("Symbols", "group'@!\"#?"),
+            Map.entry("Underscores", "group_with__underscores_"),
+            Map.entry("Hyphenated", "group-hyphen--name-"),
+            Map.entry("With slash", "group/with//slash/"),
+            Map.entry("Equals sign", "group=equals==two"),
+            Map.entry("Comma separated", "group,comma,separated,,"),
+            Map.entry("With spaces", "group space allowed"),
+            Map.entry("Pipe symbol", "group|pipe||secondpipe"),
+            Map.entry("Tilde", "group~tilde~~name"),
+            Map.entry("Very long name", "consumer_group_with_really_really_really_long_name_1234567890-1234567890-1234567890")
         );
-    }
 
-    @ParameterizedTest(name = "Scenario: {0} - ConsumerGroupName: [{2}]")
-    @MethodSource("variableConsumerGroupNamesScenario")
-    void testVariableConsumerGroupNames(String displayName, int messageCount, String consumerGroupName) {
-        LOGGER.info("NAMESPACE {}", tcc.namespace());
+        LOGGER.info("Create all topics + produce messages");
+        for (var scenario : scenarios) {
+            String displayName = scenario.getKey();
+            String consumerGroupName = scenario.getValue();
+            String topicName = "topic-" + Utils.hashStub(displayName);
 
-        String topicName = "topic-" + Utils.hashStub(displayName);
-        String consumerGroupEncodedName = Identifiers.encode(consumerGroupName);
+            // Must be done due to k8s ENV parsing results
+            // https://jellepelgrims.com/posts/dollar_signs
+            String k8sFriendlyName = consumerGroupName.replace("$", "$$");
 
-        // Must be done due to k8s ENV parsing results
-        // https://jellepelgrims.com/posts/dollar_signs
-        String k8sFriendlyName = consumerGroupName.replace("$", "$$");
+            LOGGER.info("Create KafkaTopic CR for '{}'", displayName);
+            KubeResourceManager.get().createResourceWithWait(
+                KafkaTopicUtils.defaultTopic(tcc.namespace(), tcc.kafkaName(), topicName, 1, 1, 1).build());
 
-        LOGGER.info("Create KafkaTopic CR");
-        KubeResourceManager.get().createResourceWithWait(
-            KafkaTopicUtils.defaultTopic(tcc.namespace(), tcc.kafkaName(), topicName, 1, 1, 1).build());
+            LOGGER.info("Produce and consume messages for '{}'", displayName);
+            KafkaClients clients = new KafkaClientsBuilder()
+                .withNamespaceName(tcc.namespace())
+                .withTopicName(topicName)
+                .withMessageCount(Constants.MESSAGE_COUNT)
+                .withDelayMs(0)
+                .withProducerName(KafkaNamingUtils.producerName(topicName))
+                .withConsumerName(KafkaNamingUtils.consumerName(topicName))
+                .withConsumerGroup(k8sFriendlyName)
+                .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+                .withUsername(tcc.kafkaUserName())
+                .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+                .build();
 
-        LOGGER.info("Produce and consume messages");
-        KafkaClients clients = new KafkaClientsBuilder()
-            .withNamespaceName(tcc.namespace())
-            .withTopicName(topicName)
-            .withMessageCount(messageCount)
-            .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(topicName))
-            .withConsumerName(KafkaNamingUtils.consumerName(topicName))
-            .withConsumerGroup(k8sFriendlyName)
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
-            .withUsername(tcc.kafkaUserName())
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
-            .build();
+            KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+            WaitUtils.waitForClientsSuccess(clients);
+        }
 
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
+        LOGGER.info("Verify group names");
+        for (var scenario : scenarios) {
+            String displayName = scenario.getKey();
+            String consumerGroupName = scenario.getValue();
+            String consumerGroupEncodedName = Identifiers.encode(consumerGroupName);
 
-        LOGGER.info("Verify consumer group is displaying correctly");
+            // Verify row on groups page
+            LOGGER.info("Verify group '{}' is present in groups table", displayName);
+            tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+            PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
+            GroupsTestUtils.waitForGroupInTable(tcc, consumerGroupName);
 
-        LOGGER.info("Navigate to single consumer group page encoded to '{}'", consumerGroupEncodedName);
-        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName));
-        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+            // Verify single group page
+            LOGGER.info("Navigate to single consumer group page for '{}'", displayName);
+            tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName));
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+            PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
 
-        LOGGER.info("Navigate to groups page to check group is present");
-        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+            // Click through from groups page
+            LOGGER.info("Navigate back to groups page and test click-through for '{}'", displayName);
+            tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+            PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
+            GroupsTestUtils.clickGroupInTable(tcc, consumerGroupName);
 
-        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
-        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.getTableRowItem(1, 1), consumerGroupName, true);
+            tcc.page().waitForURL(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+            PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
 
-        LOGGER.info("Try click-through link and get redirected to a correct page");
-        PwUtils.waitForLocatorAndClick(tcc.page()
-            .locator(GroupsPageSelectors.getTableRowItem(1, 1))
-            .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
+            // Verify group on topic page
+            LOGGER.info("Check topic page if consumer group '{}' is present", displayName);
+            String topicName = "topic-" + Utils.hashStub(displayName);
+            final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
 
-        tcc.page().waitForURL(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
-        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+            tcc.page().navigate(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
+            tcc.page().waitForURL(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
 
-        LOGGER.info("Check topic page if consumer group is present");
-        final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
+            // Topic page is focused on one topic so filter by text is safer than row index
+            PwUtils.waitForLocatorAndClick(tcc.page().locator(TopicsPageSelectors.TPS_GROUPS_TABLE_ITEMS)
+                .filter(new Locator.FilterOptions().setHasText(consumerGroupName))
+                .locator("a")
+                .first());
 
-        tcc.page().navigate(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
-        tcc.page().waitForURL(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
-
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getGroupsTableRowItem(1, 1), consumerGroupName, true);
-
-        LOGGER.info("Try click-through link and get redirected to a correct page");
-        PwUtils.waitForLocatorAndClick(tcc.page()
-            .locator(TopicsPageSelectors.getGroupsTableRowItem(1, 1))
-            .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
-
-        tcc.page().waitForURL(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
-        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+            tcc.page().waitForURL(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+            PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+        }
     }
 
     /**

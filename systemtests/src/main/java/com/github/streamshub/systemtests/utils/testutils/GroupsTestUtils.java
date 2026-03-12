@@ -4,11 +4,14 @@ import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
+import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.SingleGroupPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.microsoft.playwright.Locator;
 import org.apache.logging.log4j.Logger;
+
+import java.util.List;
 
 public class GroupsTestUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(GroupsTestUtils.class);
@@ -154,5 +157,39 @@ public class GroupsTestUtils {
         LOGGER.info("Reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
         selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
         PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_RESET_BUTTON);
+    }
+
+    /**
+     * Verifies that a consumer group with the given name is present in the Groups table.
+     *
+     * @param tcc               test case configuration containing the Playwright page
+     * @param consumerGroupName name of the consumer group expected to be visible
+     *
+     * @throws AssertionError if the consumer group is not found in the table
+     */
+    public static void waitForGroupInTable(TestCaseConfig tcc, String consumerGroupName) {
+        List<String> visibleGroups = tcc.page().locator(GroupsPageSelectors.GPS_TABLE_ITEMS)
+            .all()
+            .stream()
+            .map(locator -> PwUtils.getTrimmedText(locator.allInnerTexts().toString()))
+            .toList();
+
+        if (visibleGroups.stream().noneMatch(group -> group.contains(consumerGroupName))) {
+            throw new AssertionError("Consumer group not found in UI, expected: " + consumerGroupName +
+                " - Visible groups: " + visibleGroups);
+        }
+    }
+
+    /**
+     * Clicks the consumer group with the given name in the Groups table.
+     *
+     * @param tcc               test case configuration containing the Playwright page
+     * @param consumerGroupName name of the consumer group to open
+     */
+    public static void clickGroupInTable(TestCaseConfig tcc, String consumerGroupName) {
+        PwUtils.waitForLocatorAndClick(tcc.page().locator(GroupsPageSelectors.GPS_TABLE_ITEMS)
+            .filter(new Locator.FilterOptions().setHasText(consumerGroupName))
+            .locator("a")
+            .first());
     }
 }
