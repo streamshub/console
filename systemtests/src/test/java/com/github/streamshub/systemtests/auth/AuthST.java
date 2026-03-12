@@ -261,7 +261,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify consumer groups page is unavailable");
-        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
         // Logout and check user is no longer logged in
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
@@ -323,7 +323,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify groups page is available");
-        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT, MessageStore.noConsumerGroups(), true);
 
         String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "continuous-msg";
@@ -342,7 +342,7 @@ public class AuthST extends AbstractST {
 
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
 
-        tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
         PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_TABLE, KafkaNamingUtils.consumerGroupName(newTopicName), true);
 
         WaitUtils.waitForClientsSuccess(clients);

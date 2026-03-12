@@ -250,7 +250,7 @@ public class TopicST extends AbstractST {
         // Sort by name
         TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME_BUTTON, "descending");
         PwUtils.waitForLocatorCount(tcc, UNAVAILABLE_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1), true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1), true);
 
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
 
@@ -265,7 +265,7 @@ public class TopicST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Last managed replicated has utilized more storage
         final String topicWithLargestStorageUsage = Constants.REPLICATED_TOPICS_PREFIX + "-" + (REPLICATED_TOPICS_COUNT - 1);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItem(1, 1), topicWithLargestStorageUsage, true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, 1), topicWithLargestStorageUsage, true);
     }
 
     // ------
