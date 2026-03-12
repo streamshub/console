@@ -440,19 +440,19 @@ public class PwUtils {
     public static Page.NavigateOptions getDefaultNavigateOpts() {
         return new Page.NavigateOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.NETWORKIDLE);
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static Page.ReloadOptions getDefaultReloadOpts() {
         return new Page.ReloadOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.NETWORKIDLE);
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static Page.WaitForURLOptions getDefaultWaitForUrlOpts() {
         return new Page.WaitForURLOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.NETWORKIDLE);
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static void screenshot(TestCaseConfig tcc, String kafkaName, String additionalSuffix) {

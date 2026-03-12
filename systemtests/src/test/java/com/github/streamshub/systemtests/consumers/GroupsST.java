@@ -131,7 +131,7 @@ public class GroupsST extends AbstractST {
 
             // Verify row on groups page
             LOGGER.info("Verify group '{}' is present in groups table", displayName);
-            tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+            tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
             PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
             GroupsTestUtils.waitForGroupInTable(tcc, consumerGroupName);
 
@@ -143,7 +143,7 @@ public class GroupsST extends AbstractST {
 
             // Click through from groups page
             LOGGER.info("Navigate back to groups page and test click-through for '{}'", displayName);
-            tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+            tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
             PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
             GroupsTestUtils.clickGroupInTable(tcc, consumerGroupName);
 
@@ -156,7 +156,7 @@ public class GroupsST extends AbstractST {
             String topicName = "topic-" + Utils.hashStub(displayName);
             final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
 
-            tcc.page().navigate(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
+            tcc.page().navigate(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId));
             tcc.page().waitForURL(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
 
             // Topic page is focused on one topic so filter by text is safer than row index
