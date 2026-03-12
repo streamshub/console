@@ -1,0 +1,41 @@
+:_mod-docs-content-type: REFERENCE
+
+[id='ref-virtual-kafka-clusters-{context}']
+= Adding virtual Kafka clusters
+
+[role="_abstract"]
+You can configure the console to connect to Kroxylicious virtual Kafka clusters. 
+A virtual cluster is a logical Kafka endpoint exposed by the Kroxylicious proxy.
+
+When configured, virtual clusters appear in the console alongside physical Kafka clusters. 
+Virtual clusters are identified with a *Virtual* label in the cluster selector.
+
+Virtual clusters are defined using the `kafkaClusters.kind` property.
+
+`kafkaClusters.kind`:: Specifies the type of Kafka cluster resource.
+If not specified, the console assumes a Strimzi-managed Kafka cluster (`kafkas.kafka.strimzi.io`).
+Set this property to `virtualkafkaclusters.kroxylicious.io` when configuring a Kroxylicious virtual Kafka cluster.
+
+.Deploying the console with an example configuration for connecting to a virtual Kafka cluster
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  kafkaClusters:
+    - name: my-cluster
+      kind: virtualkafkaclusters.kroxylicious.io
+      namespace: my-proxy
+      properties:
+        values:
+          - name: bootstrap.servers
+            value: 'my-cluster-cluster-ip-bootstrap.my-proxy.svc.cluster.local:9292'
+----
+
+* `kafkaClusters.name` specifies the name of the Kroxylicious `VirtualKafkaCluster` resource that represents the cluster.
+* `kafkaClusters.kind` specifies that the cluster is a Kroxylicious virtual Kafka cluster.
+* `kafkaClusters.namespace` specifies the namespace where the `VirtualKafkaCluster` resource is deployed.
+* `kafkaClusters.properties.values` specifies Kafka client connection properties, such as the bootstrap server address.

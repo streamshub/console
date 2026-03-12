@@ -24,7 +24,7 @@ If you deployed the xref:proc-deploying-kafka-{context}[example Kafka cluster] p
 +
 Otherwise, configure the resource to connect to your Kafka cluster.
 +
-.Example console configuration
+.Deploying the console with an example configuration for connecting to a Kafka cluster
 [source,yaml]
 ----
 apiVersion: console.streamshub.github.com/v1alpha1
@@ -46,8 +46,8 @@ spec:
 ----
 
 * `hostname` defines the hostname used to access the console over HTTP.
-* `kafkaClusters.name` defines the name of the `Kafka` resource that represents the cluster.
-* `kafkaClusters.namespace` specifies the namespace where the Kafka cluster is deployed.
+* `kafkaClusters.name` specifies the name of the Strimzi `Kafka` resource that represents the cluster.
+* `kafkaClusters.namespace` specifies the namespace where the `Kafka` resource is deployed.
 * `kafkaClusters.listener` specifies the listener used to expose the Kafka cluster for console connections.
 * `kafkaClusters.properties.values` optionally defines additional connection properties.
 * `kafkaClusters.properties.valuesFrom` optionally specifies ConfigMaps or Secrets that provide connection properties.
