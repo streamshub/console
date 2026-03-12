@@ -36,14 +36,6 @@ import javax.net.ssl.X509TrustManager;
 
 /**
  * Utility class for loading X.509 certificates from live TLS endpoints.
- *
- * <p>The certificate-fetching logic is shared between:
- * <ul>
- *   <li>{@code TrustAllCertificateManager} — which uses it at runtime in dev
- *       mode to dynamically trust Kafka cluster certificates.</li>
- *   <li>System test infrastructure — which uses it to fetch the Keycloak
- *       certificate for import into a truststore.</li>
- * </ul>
  */
 public class Certificates {
 
