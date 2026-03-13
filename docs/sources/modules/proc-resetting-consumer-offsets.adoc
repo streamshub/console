@@ -19,7 +19,12 @@ All active members of the consumer group must be shut down before resetting the 
 
 . Log in to the Kafka cluster in the StreamsHub Console, then click *Groups*. 
 
-. Click the options icon (three vertical dots) for the consumer group and select the reset consumer offsets option to open the *Reset consumer offset* page.
+. Start the offset reset operation in one of the following ways:
++
+* On the *Groups* page, click the options icon (three vertical dots) for the consumer group and select *Reset offsets*.
+* On the *Groups* page, click the name of the consumer group to open the group details page, then click *Reset offset*.
++
+This opens the *Reset consumer offset* page.
 
 . Choose whether to apply the offset reset to all consumer topics associated with the consumer group or to a specific topic.
 +

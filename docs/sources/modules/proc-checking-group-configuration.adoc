@@ -1,0 +1,20 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id='proc-checking-group-configuration-{context}']
+= Checking group configuration
+
+[role="_abstract"]
+Check the configuration of a specific group from the *Configuration* tab.
+The *Configuration* tab lists the configuration values for the group.
+
+.Procedure
+
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Groups*.
+. On the *Groups* page, click the name of the group you want to inspect.
+. Check the information on the *Configuration* tab.
++
+Filter by configuration property to narrow results.
++
+Group configuration values typically use the following data source:
++
+* *DEFAULT_CONFIG*: The fallback value used when no other configuration is specified.

@@ -22,7 +22,7 @@ Streams groups and Share groups were introduced in Apache Kafka 4.2.
 
 For each group, the page shows information such as the group type and membership.
 The console also displays the overall consumer lag across partitions and the number of members.
-Click associated topics to view topic information available from the xref:con-topics-page-{context}[*Topics* page tabs].
+Click a topic to view topic information available from the xref:con-topics-page-{context}[*Topics* page tabs].
 
 Group status indicates the current state of a group.
 The exact states that appear depend on the group type.
