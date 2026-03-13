@@ -7,6 +7,8 @@
 The *Cluster overview* page shows the status of a Kafka cluster. 
 Use this page to assess broker readiness, identify cluster errors or warnings, and monitor overall health.
 
+Virtual Kafka clusters are identified with a *Virtual* label next to the cluster name.
+
 At a glance, the page displays:
 
 * Number of topics and partitions
@@ -22,7 +24,9 @@ At a glance, the page displays:
 Metrics are presented as interactive charts.
 
 * For *Cluster metrics*, use the dropdown menu to view data for a specific node or for all nodes.  
-* For *Topic metrics*, use the dropdown menu to view data for a specific topic or for all topics.  
+* For *Topic metrics*, use the dropdown menu to view data for a specific topic or for all topics. 
+
+NOTE: Metrics are not available for virtual Kafka clusters.
 
 You can adjust the time range for the charts, from the last 5 minutes up to 7 days.
 
