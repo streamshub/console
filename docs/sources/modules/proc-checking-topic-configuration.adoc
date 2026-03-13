@@ -15,7 +15,9 @@ TIP: The Strimzi Topic Operator simplifies the process of creating and managing 
 . On the *Topics* page, click the name of the topic you want to inspect.
 . Check the information on the *Configuration* tab.
 +
-Filter the configuration properties to narrow results by data source:
+Filter by configuration property name or data source to narrow results.
++
+Data sources can include:
 +
 * *DEFAULT_CONFIG*: The fallback value used when no other configuration is specified.
 * *STATIC_BROKER_CONFIG*: Predefined, broker-wide values that apply to all topics by default.
