@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.messages;
 
 import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
@@ -18,11 +19,11 @@ import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.MessagesChecks;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -106,7 +107,7 @@ public class MessagesST extends AbstractST {
                 MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE + " - 42",
                 MessagesPageSelectors.getTableRowItem(1, 1), "42")),
             Arguments.of(1, "messages=latest retrieve=40 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
-                MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, "No messages data")),
+                MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, MessageStore.noDataTitle())),
             Arguments.of(50, "messages=totalyNotOkay retrieve=-9", Map.of(
                 MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
                 MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98"))
@@ -198,10 +199,10 @@ public class MessagesST extends AbstractST {
         // Formatters
         final DateTimeFormatter timestampFormatterQuery = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         final DateTimeFormatter dateFormatterForm = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        final DateTimeFormatter timeFormatterForm = DateTimeFormatter.ofPattern("hh:mm a");
+        final DateTimeFormatter timeFormatterForm = DateTimeFormatter.ofPattern("HH:mm");
 
-        String kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, TOPIC_COUNT, true, 1, 1, 1)
-            .get(0).getMetadata().getName();
+        String kafkaTopicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, TOPIC_COUNT, 1, 1, 1)
+            .getFirst().getMetadata().getName();
 
         // Set timestamps
         final OffsetDateTime earlierUtcTime = Instant.now().atOffset(ZoneOffset.UTC).minusMinutes(offsetMinutes);
@@ -214,6 +215,7 @@ public class MessagesST extends AbstractST {
         final String earlierDateTimeUnix = String.valueOf(earlierUtcTime.toEpochSecond());
         final String currentDateForm = currentUtcTime.format(dateFormatterForm);
         final String currentTimeForm = currentLocalTime.format(timeFormatterForm);
+        final String earlierTimeForm = earlierUtcTime.format(timeFormatterForm);
 
         LOGGER.info("Current ISO: {}, Earlier ISO: {}, Current Unix: {}, Earlier Unix: {}",
             currentDateTimeQuery, earlierTimeQuery, currentDateTimeUnix, earlierDateTimeUnix);
@@ -281,7 +283,7 @@ public class MessagesST extends AbstractST {
 
         LOGGER.info("Verifying timestamp filtering using UI popover (ISO mode) (current)");
         MessagesChecks.checkPopoverIsoFilter(tcc, currentDateForm, currentTimeForm, newMessageCount, newMessageText);
-        // TODO: once issue with form resetting earlier dates is resolved, check for earlier sent messages can be added
+        MessagesChecks.checkPopoverIsoFilter(tcc, currentDateForm, earlierTimeForm, oldMessageCount, oldMessageText);
 
         // Verify via UI popover (Unix mode)
         LOGGER.info("Verifying timestamp filtering using UI popover (Unix mode) (current)");
@@ -337,7 +339,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, KEY_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_FILTER_SEARCH_CONTENT, "No messages data", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_FILTER_SEARCH_CONTENT, MessageStore.noDataTitle(), true);
 
         LOGGER.info("Set correct offset to display messages");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
@@ -441,8 +443,8 @@ public class MessagesST extends AbstractST {
     public void prepareVariousMessageTypes() {
         LOGGER.info("Prepare filter messages scenario by creating topic and producing various messages");
 
-        kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, true, 1, 1, 1)
-            .get(0).getMetadata().getName();
+        kafkaTopicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, 1, 1, 1)
+            .getFirst().getMetadata().getName();
 
         // Setup UI form filtering
         // First set clients to send messages with KEY

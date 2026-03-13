@@ -82,12 +82,12 @@ public class TopicsPageSelectors {
         .withElementSpan()
         .build();
 
-    public static String getTableRowItems(int nth) {
+    public static String getTopicsTableRowItems(int nth) {
         return CssBuilder.joinLocators(new CssBuilder(TPS_TABLE_ROWS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
     }
 
-    public static String getTableRowItem(int nthRow, int nthColumn) {
-        return new CssBuilder(getTableRowItems(nthRow)).nth(nthColumn).build();
+    public static String getTopicsTableRowItem(int nthRow, int nthColumn) {
+        return new CssBuilder(getTopicsTableRowItems(nthRow)).nth(nthColumn).build();
     }
 
     public static final String TPS_TOP_TOOLBAR = new CssBuilder(CssSelectors.PAGES_CONTENT)
@@ -250,4 +250,25 @@ public class TopicsPageSelectors {
         .withChild()
         .withElementDiv().withComponentPagination().withSubComponentNavControl().nth(2)
         .build();
+
+    public static final String TPS_GROUPS_TABLE = new CssBuilder(CssSelectors.PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withComponentScrollOuterWrapper().withChild()
+        .withElementDiv().withComponentScrollInnerWrapper().withChild()
+        .withElementTable().withComponentTable()
+        .build();
+
+    public static final String TPS_GROUPS_TABLE_ITEMS = new CssBuilder(TPS_GROUPS_TABLE)
+        .withChild()
+        .withElementTbody().withComponentTable().withSubComponentTbody()
+        .build();
+
+    public static String getGroupsTableRowItems(int nth) {
+        return CssBuilder.joinLocators(new CssBuilder(TPS_GROUPS_TABLE_ITEMS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
+    }
+
+    public static String getGroupsTableRowItem(int nthRow, int nthColumn) {
+        return new CssBuilder(getTopicsTableRowItems(nthRow)).nth(nthColumn).build();
+    }
 }

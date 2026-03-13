@@ -156,6 +156,12 @@ public class CssSelectors {
         .withElementTd().withComponentTable().withSubComponentTd()
         .build();
 
+    public static final String PAGES_AD_TABLE_ROW_ITEMS_LINK = new CssBuilder()
+        .withElementTr().withComponentTable().withSubComponentTr().withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().withChild()
+        .withElementA()
+        .build();
+
     // Logged user
     public static final String PAGES_CURRENTLY_LOGGED_USER_BUTTON = new CssBuilder(CssSelectors.PAGE_DIV)
         .withChild()

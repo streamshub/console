@@ -2,13 +2,12 @@ package com.github.streamshub.systemtests.setup.strimzi;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.ExampleFiles;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -31,12 +30,18 @@ import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import static io.skodjob.testframe.TestFrameEnv.USER_PATH;
+
 public class KafkaSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaSetup.class);
+
+    public static final String EXAMPLE_KAFKA_PATH = USER_PATH + "/../examples/kafka/";
+    public static final File EXAMPLES_KAFKA_METRICS_CONFIG_MAP = new File(EXAMPLE_KAFKA_PATH + "010-ConfigMap-console-kafka-metrics.yaml");
 
     private KafkaSetup() {}
 
@@ -101,7 +106,7 @@ public class KafkaSetup {
      * @return a {@link ConfigMapBuilder} configured with default Kafka metrics settings
      */
     public static ConfigMapBuilder getDefaultKafkaConfigMap(String namespaceName, String clusterName) {
-        return new ConfigMapBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLES_KAFKA_METRICS_CONFIG_MAP, ConfigMap.class))
+        return new ConfigMapBuilder(TestFrameUtils.configFromYaml(EXAMPLES_KAFKA_METRICS_CONFIG_MAP, ConfigMap.class))
             .editMetadata()
                 .withName(KafkaNamingUtils.kafkaMetricsConfigMapName(clusterName))
                 .withNamespace(namespaceName)

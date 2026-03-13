@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.utils;
 
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import io.skodjob.testframe.TestFrameEnv;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -14,9 +13,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,32 +31,6 @@ import static org.apache.commons.io.FileUtils.copyURLToFile;
 public class FileUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(FileUtils.class);
     private FileUtils() {}
-
-    public static URL resolveLocation(String location) throws SetupException {
-        // First check if the location is a local file, if not try parsing it as URL
-        try {
-            LOGGER.info("Resolving file location {}", location);
-            File file = new File(location);
-
-            // If it's not absolute, resolve it as relative path
-            if (!file.isAbsolute()) {
-                file = new File(Paths.get(TestFrameEnv.USER_PATH, "../", location).toString());
-                LOGGER.debug("File location is not an absolute path, resolve it as relative path from the project location. New path {}", file.getAbsolutePath());
-            }
-
-            if (file.exists()) {
-                LOGGER.debug("File was found on path {}", file.getAbsolutePath());
-                // Due to escape characters need to convert to URI first
-                return file.toURI().toURL();
-            }
-
-            LOGGER.debug("File was not found on path {}. Trying to parse location {} as a URL", file.getAbsolutePath(), location);
-            // Location is not a valid
-            return URI.create(location).toURL();
-        } catch (MalformedURLException e) {
-            throw new SetupException("Could not resolve given location: " + location);
-        }
-    }
 
     public static String readFile(String filePath) {
         try {
@@ -80,16 +52,17 @@ public class FileUtils {
         return PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
     }
 
-    public static FileInputStream getDeploymentFileFromURL(String url) throws IOException {
-        File deploymentFile = Files.createTempFile("tempfile", ".yaml", getDefaultPosixFilePermissions()).toFile();
+    public static FileInputStream getYamlFileFromURL(String url) throws IOException {
+        LOGGER.info("Fetching resources from {}", url);
+        File yamlFile = Files.createTempFile("tempfile", ".yaml", getDefaultPosixFilePermissions()).toFile();
         copyURLToFile(
                 URI.create(url).toURL(),
-                deploymentFile,
+                yamlFile,
                 5000,
                 10000);
-        deploymentFile.deleteOnExit();
+        yamlFile.deleteOnExit();
 
-        return new FileInputStream(deploymentFile);
+        return new FileInputStream(yamlFile);
     }
 
     /**
@@ -159,19 +132,21 @@ public class FileUtils {
         ByteArrayOutputStream combined = new ByteArrayOutputStream();
 
         try (Stream<Path> files = Files.walk(targetPath)) {
-            List<Path> yamPaths = files.filter(Files::isRegularFile)
+            List<Path> yamlPaths = files.filter(Files::isRegularFile)
                 .filter(p -> p.toString().endsWith(".yaml") || p.toString().endsWith(".yml"))
                 .sorted()
                 .toList();
 
-            for (Path yaml : yamPaths) {
+            for (Path yaml : yamlPaths) {
                 LOGGER.debug("Adding to multi-YAML: {}", yaml);
+                combined.write("---\n".getBytes(StandardCharsets.UTF_8));
                 combined.write(Files.readAllBytes(yaml));
                 combined.write('\n');
             }
+
+            LOGGER.info("Combined {} YAML files from dir: {}", yamlPaths.size(), targetPath);
         }
 
-        LOGGER.info("Combined total of {} YAML files from dir: {}", combined.size(), targetPath);
         return new ByteArrayInputStream(combined.toByteArray());
     }
 }

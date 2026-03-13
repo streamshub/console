@@ -10,10 +10,10 @@ import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
@@ -43,17 +43,17 @@ public class RebalanceST extends AbstractST {
         final String rebalanceTopicName = "rebalance-topic";
 
         LOGGER.info("Create imbalance by creating topics and scaling brokers afterwards");
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), rebalanceTopicName, 5, true, imbalancedPartitions, 1, 1);
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), rebalanceTopicName, 5, imbalancedPartitions, 1, 1);
         KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         LOGGER.info("Create basic rebalance CR");
         KubeResourceManager.get().createOrUpdateResourceWithWait(KafkaSetup.getKafkaRebalance(tcc.namespace(), tcc.kafkaName(), rebalanceName).build());
-        WaitUtils.waitForKafkaRebalanceProposalStatus(tcc.namespace(), rebalanceName, KafkaRebalanceState.PendingProposal);
+        WaitUtils.waitForKafkaRebalanceProposalStatus(tcc.namespace(), rebalanceName, KafkaRebalanceState.ProposalReady);
 
         LOGGER.info("Verify rebalance proposals table");
         tcc.page().navigate(PwPageUrls.getKafkaRebalancePage(tcc, tcc.kafkaName()));
         PwUtils.waitForLocatorCount(tcc, 1, NodesPageSelectors.NPS_REBALANCE_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_STATUS, KafkaRebalanceState.PendingProposal.name(), true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_STATUS, KafkaRebalanceState.ProposalReady.name(), true);
         assertTrue(tcc.page().locator(NodesPageSelectors.NPS_REBALANCE_PROPOSAL_NAME).allInnerTexts().toString().contains(rebalanceName));
 
         LOGGER.info("Inspect rebalance proposal");
@@ -61,8 +61,7 @@ public class RebalanceST extends AbstractST {
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_DROPDOWN_AUTO_APPROVAL_ENABLED, "false", true);
         assertTrue(tcc.page().locator(NodesPageSelectors.NPS_REBALANCE_PROPOSAL_DROPDOWN_MODE).allInnerTexts().toString().toLowerCase(Locale.ENGLISH).contains(KafkaRebalanceMode.FULL.toValue()));
 
-        LOGGER.info("Wait for proposal to be in Ready state and check values");
-        WaitUtils.waitForKafkaRebalanceProposalStatus(tcc.namespace(), rebalanceName, KafkaRebalanceState.ProposalReady);
+        LOGGER.info("Check proposal table of values");
         PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_NAME);
         // table values
         Map<String, Object> status = ResourceUtils.getKubeResource(KafkaRebalance.class, tcc.namespace(), rebalanceName).getStatus().getOptimizationResult();
