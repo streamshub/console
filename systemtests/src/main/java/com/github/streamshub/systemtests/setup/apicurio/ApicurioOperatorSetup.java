@@ -6,6 +6,7 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -39,16 +40,16 @@ public class ApicurioOperatorSetup {
         this.operatorNamespace = operatorNamespace;
         this.watchNamespace = watchNamespace;
 
+        InputStream installYaml = null;
         try {
             extractedArchive = FileUtils.downloadAndExtractTarGz(APICURIO_BUNDLE_URL, APICURIO_TEMP_FILE_PREFIX);
-            InputStream installYaml = FileUtils.loadYamlsFromPath(extractedArchive.resolve(APICURIO_INSTALL_DIR_NAME).resolve(APICURIO_INSTALL_FILE_NAME));
-            // Skip Namespace resources — the test framework manages namespaces separately
-            allResources = KubeResourceManager.get().kubeClient().getClient().load(installYaml).items().stream().toList();
-            LOGGER.info("Loaded {} resources from Apicurio install.yaml", allResources.size());
+            installYaml = FileUtils.loadYamlsFromPath(extractedArchive.resolve(APICURIO_INSTALL_DIR_NAME).resolve(APICURIO_INSTALL_FILE_NAME));
         } catch (IOException e) {
             throw new SetupException("Unable to load Apicurio Registry operator resources: " + e.getMessage());
         }
 
+        allResources = ResourceOrder.sort(KubeResourceManager.get().kubeClient().getClient().load(installYaml).items().stream().toList());
+        LOGGER.info("Loaded {} resources from Apicurio YAML", allResources.size());
         prepareApicurioCrs();
     }
 

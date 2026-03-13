@@ -259,6 +259,14 @@
         </profile>
 
         <profile>
+            <id>all</id>
+            <properties>
+                <skipTests>false</skipTests>
+                <groups>regression, olm-upgrade, yaml-upgrade</groups>
+            </properties>
+        </profile>
+
+        <profile>
             <id>regression</id>
             <properties>
                 <skipTests>false</skipTests>
