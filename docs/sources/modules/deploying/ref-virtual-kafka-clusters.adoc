@@ -1,5 +1,9 @@
 :_mod-docs-content-type: REFERENCE
 
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
 [id='ref-virtual-kafka-clusters-{context}']
 = Adding virtual Kafka clusters
 
