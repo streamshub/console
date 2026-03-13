@@ -9,6 +9,8 @@ public class GroupsPageSelectors {
     public static final String GPS_TABLE = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(2).withChild()
         .withElementDiv().withComponentScrollOuterWrapper().withChild()
         .withElementDiv().withComponentScrollInnerWrapper().withChild()
         .withElementTable().withComponentTable()

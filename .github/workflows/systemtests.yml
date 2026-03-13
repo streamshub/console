@@ -6,6 +6,9 @@ on:
       commit_sha:
         description: 'Commit sha'
         required: true
+      artifacts_run_id:
+        description: 'Run ID of the integration workflow to download artifacts from'
+        required: true
       testcase:
         description: 'Test case to run'
         required: false
@@ -65,6 +68,7 @@ jobs:
       TEST_CASE: ${{ matrix.testcase }}
       PROFILE: ${{ matrix.profile }}
       COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
+      ARTIFACTS_RUN_ID: ${{ github.event.inputs.artifacts_run_id }}
       GH_TOKEN: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
       REPO: ${{ github.repository }}
       INSTALL_TYPE: ${{ github.event.inputs.install_type }}
@@ -79,11 +83,6 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ env.COMMIT_SHA }}
-
-      - name: Get previously built artifacts
-        run: |
-          ARTIFACTS_RUN_ID=$(gh run list --repo $REPO --commit $COMMIT_SHA --workflow integration.yml --status success --json databaseId --jq '.[0].databaseId')
-          echo "ARTIFACTS_RUN_ID=$ARTIFACTS_RUN_ID" >> $GITHUB_ENV
 
       - name: Download Image Artifacts
         uses: actions/download-artifact@v8
@@ -113,17 +112,14 @@ jobs:
           echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           echo "CONSOLE_CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
 
-      # YAML INSTALL PATH
       - name: Prepare YAML install
         if: ${{ env.INSTALL_TYPE == 'yaml' }}
         run: |
           set -x
           echo "Preparing YAML-based installation..."
 
-          # Download k8s-resources artifact (same run as images)
-          gh run download ${{ env.ARTIFACTS_RUN_ID }} --repo ${{ env.REPO }}  -n k8s-resources --dir ./k8s-resources
+          gh run download ${{ env.ARTIFACTS_RUN_ID }} --repo ${{ env.REPO }} -n k8s-resources --dir ./k8s-resources
 
-          # Merge YAML files
           mkdir -p ./k8s-resources/merged
           cat ./k8s-resources/kubernetes/consoles.console.streamshub.github.com-v1.yml \
               ./k8s-resources/kubernetes/kubernetes.yml \

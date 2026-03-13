@@ -474,9 +474,9 @@
     "no_consumer_groups": "No groups",
     "group_id": "Group ID",
     "type": "Type",
-    "type_tooltip": "<p>The implementation type of the Kafka group (for example Classic, Consumer, or Streams).</p>",
+    "type_tooltip": "<p>The Kafka group type, such as Classic, Consumer, Streams, or Share.</p>",
     "protocol": "Protocol",
-    "protocol_tooltip": "<p>The protocol used by group members to coordinate partition assignments and rebalancing (for example consumer, connect, or streams).</p>",
+    "protocol_tooltip": "<p>The protocol used by group members to coordinate partition assignments and rebalancing.</p>",
     "state": "State",
     "state_tooltip": "<p>Reflects the current operational state of the group.</p><p>Possible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning, 'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.</p><p>If in the 'Empty' state, consider adding members to the group.</p>",
     "overall_lag": "Overall lag",
@@ -543,7 +543,10 @@
     "time_in_local": "Date-time is in local time zone",
     "change_to_utc": "Change to UTC",
     "no_offsets_found": "No offsets would be changed",
-    "no_offsets_found_description": "The selected timestamp did not match any offsets."
+    "no_offsets_found_description": "The selected timestamp did not match any offsets.",
+    "groups_alert": "Group types identify how Kafka client applications coordinate work. Types include Classic, Consumer, Share, and Streams. Consumer groups use a newer protocol than Classic groups.",
+    "learn_more": "Learn more",
+    "external_link": "https://www.streamshub.io/docs/StreamsHub-Console/main/#con-groups-page-str"
   },
   "CreateTopic": {
     "title": "Topic creation wizard",

@@ -35,7 +35,7 @@ public class SingleGroupPageSelectors {
 
     public static final String SGPS_FORM = new CssBuilder(SGPS_PAGE)
         .withChild()
-        .withComponentForm()
+        .withElementForm().withComponentForm()
         .build();
 
     public static final String SGPS_GROUPS_TABLE = new CssBuilder(CssSelectors.PAGES_CONTENT)
@@ -242,8 +242,7 @@ public class SingleGroupPageSelectors {
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
-
-    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT = new CssBuilder(SGPS_FORM)
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_UNIX = new CssBuilder(SGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
@@ -251,6 +250,18 @@ public class SingleGroupPageSelectors {
         .withElementSpan().withComponentFormControl().withChild()
         .withElementInput()
         .build();
+
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_ISO = new CssBuilder(SGPS_FORM)
+        .withChild()
+        .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
+        .withElementSpan().withComponentFormControl().withChild()
+        .withElementInput()
+        .build();
+
 
 
     public static final String SGPS_RESET_PAGE_RESET_BUTTONS = new CssBuilder(SGPS_FORM)
