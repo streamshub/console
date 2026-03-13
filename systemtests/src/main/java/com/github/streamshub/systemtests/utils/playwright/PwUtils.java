@@ -440,19 +440,19 @@ public class PwUtils {
     public static Page.NavigateOptions getDefaultNavigateOpts() {
         return new Page.NavigateOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.NETWORKIDLE);
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static Page.ReloadOptions getDefaultReloadOpts() {
         return new Page.ReloadOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.NETWORKIDLE);
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static Page.WaitForURLOptions getDefaultWaitForUrlOpts() {
         return new Page.WaitForURLOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.NETWORKIDLE);
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static void screenshot(TestCaseConfig tcc, String kafkaName, String additionalSuffix) {
@@ -507,14 +507,14 @@ public class PwUtils {
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.LOGIN_KEYCLOAK_SIGN_IN_BUTTON);
         // Go to overview page
-        tcc.page().waitForURL(ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true), getDefaultWaitForUrlOpts());
+        tcc.page().waitForURL(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), getDefaultWaitForUrlOpts());
         LOGGER.info("Successfully logged into Console");
     }
 
     public static void logoutUser(TestCaseConfig tcc, String userName, boolean https) {
 
         Utils.retryAction("Log-out user " + userName, () -> {
-            String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), https) + "/";
+            String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), https) + "/";
 
             // There is a xpath difference between logout button in dashboard and in navbar on other pages
             if (tcc.page().url().equals(dashboardUrl)) {

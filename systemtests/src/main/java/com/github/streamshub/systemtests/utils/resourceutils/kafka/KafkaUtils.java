@@ -187,7 +187,7 @@ public class KafkaUtils {
             .stream()
             .filter(listener -> listener.getName().equals(Constants.SECURE_LISTENER_NAME))
             .toList()
-            .get(0);
+            .getFirst();
 
 
         List<GenericKafkaListenerConfigurationBroker> newBrokerConfigList = new ArrayList<>();

@@ -11,140 +11,13 @@
   "rememberMe": false,
   "ssoSessionIdleTimeoutRememberMe": 0,
   "ssoSessionMaxLifespanRememberMe": 0,
-  "roles":{
-    "realm":[
-      {
-        "name":"developers-role",
-        "description":"Developer team member"
-      },
-      {
-        "name":"administrators-role",
-        "description":"Operations team member"
-      },
-      {
-        "name":"viewers-role",
-        "description":"Read-only access to all clusters"
-      },
-      {
-        "name":"topics-role",
-        "description":"Can view topics only"
-      },
-      {
-        "name":"consumergroups-role",
-        "description":"Can view consumer groups only"
-      }
-    ],
+  "roles": {
+    "realm": "${ROLES}",
     "client": {
-      "console-client": []
     }
   },
-  "groups":[
-    {
-      "name":"developers-team",
-      "path":"/developers-team",
-      "realmRoles":[
-        "developers-role"
-      ]
-    },
-    {
-      "name":"administrators-team",
-      "path":"/administrators-team",
-      "realmRoles":[
-        "administrators-role"
-      ]
-    },
-    {
-      "name":"topics-view-team",
-      "path":"/topics-view-team",
-      "realmRoles":[
-        "topics-role"
-      ]
-    },
-    {
-      "name":"consumergroups-view-team",
-      "path":"/consumergroups-view-team",
-      "realmRoles":[
-        "consumergroups-role"
-      ]
-    },
-    {
-      "name":"no-access",
-      "path":"/no-access",
-      "realmRoles":[
-
-      ]
-    }
-  ],
-  "users":[
-    {
-      "username":"bob",
-      "enabled":true,
-      "emailVerified":true,
-      "firstName":"Bob",
-      "lastName":"TheDeveloper",
-      "email":"bob@streamshub.io",
-      "credentials":[
-        {
-          "type":"password",
-          "value":"bob"
-        }
-      ],
-      "groups":[
-        "/developers-team"
-      ]
-    },
-    {
-      "username":"alice",
-      "enabled":true,
-      "emailVerified":true,
-      "firstName":"alice",
-      "lastName":"TheAdmin",
-      "email":"alice@streamshub.io",
-      "credentials":[
-        {
-          "type":"password",
-          "value":"alice"
-        }
-      ],
-      "groups":[
-        "/administrators-team"
-      ]
-    },
-    {
-      "username":"frank",
-      "enabled":true,
-      "emailVerified":true,
-      "firstName":"frank",
-      "lastName":"TopicOnlyViewer",
-      "email":"frank@streamshub.io",
-      "credentials":[
-        {
-          "type":"password",
-          "value":"frank"
-        }
-      ],
-      "groups":[
-        "/topics-view-team"
-      ]
-    },
-    {
-      "username":"grace",
-      "enabled":true,
-      "emailVerified":true,
-      "firstName":"grace",
-      "lastName":"ConsuemerOnlyViewer",
-      "email":"grace@streamshub.io",
-      "credentials":[
-        {
-          "type":"password",
-          "value":"grace"
-        }
-      ],
-      "groups":[
-        "/consumergroups-view-team"
-      ]
-    }
-  ],
+  "groups": "${GROUPS}",
+  "users": "${USERS}",
   "clients": [
     {
       "clientId": "console-client",
@@ -164,11 +37,7 @@
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": [
-        "profile",
-        "groups",
-        "email"
-      ]
+      "defaultClientScopes": ["profile", "groups", "email"]
     }
   ],
   "clientScopes":[
