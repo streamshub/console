@@ -13,10 +13,11 @@ import { HomeIcon } from "@/libs/patternfly/react-icons";
 import { getTranslations } from "next-intl/server";
 
 export async function GroupBreadcrumb({
-  params: { groupId, kafkaId },
+  params: paramsPromise,
 }: {
-  params: GroupParams;
+  params: Promise<GroupParams>;
 }) {
+  const { groupId, kafkaId } = await paramsPromise;
   const t = await getTranslations();
   const consumerGroup = (await getConsumerGroup(kafkaId, groupId));
 
