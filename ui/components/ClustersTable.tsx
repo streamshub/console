@@ -139,7 +139,12 @@ export function ClustersTable({
               </Td>
             );
           case "status":
-            return <Td key={key}>{row.attributes.status}</Td>;
+            return (
+              <Td key={key}>
+                {row.attributes.status ??
+                  t("ClustersTable.status_not_available")}
+              </Td>
+            );
           case "namespace":
             return (
               <Td key={key}>

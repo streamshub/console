@@ -416,7 +416,8 @@
     "no_data": "No clusters available.",
     "not_available": "n/a",
     "version_derived": "Version derived from Kafka metadata",
-    "status": "Status"
+    "status": "Status",
+    "status_not_available": "Not Available"
   },
   "metrics": {
     "all_brokers": "All Nodes",
