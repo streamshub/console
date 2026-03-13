@@ -30,7 +30,7 @@ jobs:
         if: ${{ contains(github.event.comment.body, '--help') }}
         run: ./.github/actions/systemtests/pr-help.sh
 
-      - name: Check if Build workflow succeeded
+      - name: Check if build-images job succeeded
         run: ./.github/actions/systemtests/verify-workflow-run-succeeded.sh
 
       - name: Parse parameters from comment
@@ -40,7 +40,7 @@ jobs:
       - name: Comment start of the build
         run: ./.github/actions/systemtests/update-pr-systemtests-started.sh
 
-      - name: Invoke workflow in another repo with inputs
+      - name: Invoke workflow with inputs
         uses: benc-uk/workflow-dispatch@7a027648b88c2413826b6ddd6c76114894dc5ec4
         with:
           token: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
@@ -48,6 +48,7 @@ jobs:
           inputs: >
             {
               "commit_sha": "${{ env.COMMIT_SHA }}",
+              "artifacts_run_id": "${{ env.ARTIFACTS_RUN_ID }}",
               "testcase": "${{ env.TESTCASE }}",
               "profile": "${{ env.PROFILE }}",
               "install_type": "${{ env.INSTALL_TYPE }}",
