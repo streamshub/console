@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import io.skodjob.testframe.TestFrameConstants;
-import io.skodjob.testframe.enums.LogLevel;
-import io.skodjob.testframe.executor.Exec;
-import io.skodjob.testframe.wait.Wait;
+import io.skodjob.kubetest4j.KubeTestConstants;
+import io.skodjob.kubetest4j.enums.LogLevel;
+import io.skodjob.kubetest4j.executor.Exec;
+import io.skodjob.kubetest4j.wait.Wait;
 import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.Logger;
 
@@ -232,7 +232,7 @@ public class KeycloakApiUtils {
     public static String executeRequestAndReturnData(String[] request) {
         AtomicReference<String> response = new AtomicReference<>("");
 
-        Wait.until("request to Keycloak API will be successful", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM, () -> {
+        Wait.until("request to Keycloak API will be successful", KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM, () -> {
             try {
                 String commandOutput = Exec.exec(LogLevel.DEBUG, false, request).out();
                 if (!commandOutput.contains("Connection refused")) {

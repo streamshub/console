@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.exceptions;
 
-import io.skodjob.testframe.clients.KubeClusterException;
-import io.skodjob.testframe.executor.ExecResult;
+import io.skodjob.kubetest4j.clients.KubeClusterException;
+import io.skodjob.kubetest4j.executor.ExecResult;
 
 public class ClusterUnreachableException extends KubeClusterException {
     public ClusterUnreachableException(ExecResult result) {

@@ -13,7 +13,7 @@ import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxy;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxyIngress;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaService;
 import io.kroxylicious.kubernetes.api.v1alpha1.VirtualKafkaCluster;
-import io.skodjob.testframe.interfaces.ResourceType;
+import io.skodjob.kubetest4j.interfaces.ResourceType;
 
 import java.util.List;
 import java.util.function.Consumer;

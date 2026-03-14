@@ -15,8 +15,8 @@ import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakAp
 import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
-import io.skodjob.testframe.TestFrameEnv;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.KubeTestEnv;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.Logger;
 
@@ -33,7 +33,7 @@ public class KeycloakInstanceSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KeycloakInstanceSetup.class);
 
     public static final String KEYCLOAK_RESOURCES_PATH =
-        TestFrameEnv.USER_PATH + "/src/main/java/com/github/streamshub/systemtests/setup/keycloak";
+        KubeTestEnv.USER_PATH + "/src/main/java/com/github/streamshub/systemtests/setup/keycloak";
 
     // File paths
     private static final String POSTGRES_RESOURCES = KEYCLOAK_RESOURCES_PATH + "/postgres";

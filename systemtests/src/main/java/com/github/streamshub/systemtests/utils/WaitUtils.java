@@ -20,9 +20,9 @@ import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.readiness.Readiness;
-import io.skodjob.testframe.TestFrameConstants;
-import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.wait.Wait;
+import io.skodjob.kubetest4j.KubeTestConstants;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.wait.Wait;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
@@ -49,7 +49,7 @@ public class WaitUtils {
      */
     public static void waitForDeploymentWithPrefixIsReady(String namespaceName, String deploymentNamePrefix) {
         Wait.until(String.format("creation of Deployment with prefix: %s in Namespace: %s", deploymentNamePrefix, namespaceName),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_1_SEC, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
                 List<Deployment> dep = listKubeResourcesByPrefix(Deployment.class, namespaceName, deploymentNamePrefix);
                 if (dep.isEmpty() || dep.getFirst() == null) {
@@ -67,7 +67,7 @@ public class WaitUtils {
      */
     public static void waitForSecretReady(String namespace, String secretName) {
         Wait.until(String.format("creation of Secret %s/%s", namespace, secretName),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_1_SEC, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
                 Secret secret = ResourceUtils.getKubeResource(Secret.class, namespace, secretName);
                 return secret != null && secret.getData() != null && !secret.getData().isEmpty();
@@ -100,7 +100,7 @@ public class WaitUtils {
      */
     public static void waitForPodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean checkContainers, Runnable onTimeout) {
         Wait.until("readiness of all Pods matching: " + selector,
-            TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> arePodsReady(namespaceName, selector, expectPods, checkContainers),
             onTimeout
         );
@@ -110,7 +110,7 @@ public class WaitUtils {
         LOGGER.info("Waiting for Pod in namespace {} with selector {} to have {} stable replicas", namespaceName, selector, expectedPods);
         int[] stableCounter = {0};
         Wait.until("Pod: " + namespaceName + " with selector" + selector + " to be stable",
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT,
             () -> {
                 if (ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, selector).size() == expectedPods &&
                     arePodsReady(namespaceName, selector, expectedPods, true)) {
@@ -243,7 +243,7 @@ public class WaitUtils {
      */
     public static void waitForKafkaHasAnnotationWithValue(String namespaceName, String clusterName, String annotationKey, String annotationValue) {
         Wait.until(String.format("Kafka %s/%s has annotation %s : %s", namespaceName, clusterName, annotationKey, annotationValue),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
                 Map<String, String> anno = ResourceUtils.getKubeResource(Kafka.class, namespaceName, clusterName).getMetadata().getAnnotations();
                 if (!annotationKey.isEmpty()) {
@@ -269,7 +269,7 @@ public class WaitUtils {
      */
     public static void waitForKafkaHasNoAnnotationWithKey(String namespaceName, String clusterName, String annotationKey) {
         Wait.until(String.format("Kafka %s/%s has annotation %s", namespaceName, clusterName, annotationKey),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
                 Map<String, String> anno = ResourceUtils.getKubeResource(Kafka.class, namespaceName, clusterName).getMetadata().getAnnotations();
                 if (anno.isEmpty()) {
@@ -361,7 +361,7 @@ public class WaitUtils {
      */
     public static void waitForClientSuccess(String namespaceName, String jobName, int messageCount, boolean deleteAfterSuccess) {
         LOGGER.info("Waiting for client Job: {}/{} to finish successfully", namespaceName, jobName);
-        Wait.until("client Job to finish successfully", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.timeoutForClientFinishJob(messageCount),
+        Wait.until("client Job to finish successfully", KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.timeoutForClientFinishJob(messageCount),
             () -> JobUtils.checkSucceededJobStatus(namespaceName, jobName, 1),
             () -> JobUtils.logCurrentJobStatus(namespaceName, jobName));
 
@@ -411,7 +411,7 @@ public class WaitUtils {
      */
     public static void waitForConsoleDeploymentToReachVersion(String namespace, String deploymentPrefix, String expectedVersion, Function<Deployment, String> versionGetter) {
         Wait.until(String.format("Deployment to reach version %s", expectedVersion),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_MEDIUM, TestFrameConstants.GLOBAL_TIMEOUT,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_MEDIUM, KubeTestConstants.GLOBAL_TIMEOUT,
             () -> {
                 List<Deployment> deployments = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, namespace, deploymentPrefix);
 
@@ -434,7 +434,7 @@ public class WaitUtils {
      * <p>This ensures that the StatefulSet has all its replicas ready before proceeding with further test steps.</p>
      */
     public static void waitForStatefulSetReady(String namespaceName, String statefulSetName) {
-        Wait.until(String.format("StatefulSet %s/%s to be ready", namespaceName, statefulSetName), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+        Wait.until(String.format("StatefulSet %s/%s to be ready", namespaceName, statefulSetName), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> Readiness.isStatefulSetReady(ResourceUtils.getKubeResource(StatefulSet.class, namespaceName, statefulSetName))
         );
     }
@@ -444,8 +444,8 @@ public class WaitUtils {
      *
      * <p>This method continuously polls the cluster for the presence of an Ingress with the given
      * name in the specified namespace. The wait operation repeats at the interval defined by
-     * {@link TestFrameConstants#GLOBAL_POLL_INTERVAL_SHORT} and times out after
-     * {@link TestFrameConstants#GLOBAL_TIMEOUT_MEDIUM}.</p>
+     * {@link KubeTestConstants#GLOBAL_POLL_INTERVAL_SHORT} and times out after
+     * {@link KubeTestConstants#GLOBAL_TIMEOUT_MEDIUM}.</p>
      *
      * <p>The method succeeds as soon as the Ingress is found. It is typically used in scenarios
      * where the Console, Operator, or other components create an Ingress as part of their
@@ -456,7 +456,7 @@ public class WaitUtils {
      */
     public static void waitForIngressToBePresent(String namespace, String ingressName) {
         Wait.until(String.format("Ingress %s/%s to be present", namespace, ingressName),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
                 return ResourceUtils.getKubeResource(Ingress.class, namespace, ingressName) != null;
             });
@@ -467,9 +467,9 @@ public class WaitUtils {
      * Waits until a specific log message appears in the logs of a given Kubernetes Pod.
      *
      * <p>This method polls the Pod's logs at the interval defined by
-     * {@link TestFrameConstants#GLOBAL_POLL_INTERVAL_SHORT} and stops as soon as the log output
+     * {@link KubeTestConstants#GLOBAL_POLL_INTERVAL_SHORT} and stops as soon as the log output
      * contains the provided {@code expectedLog} string. If the message does not appear before
-     * {@link TestFrameConstants#GLOBAL_TIMEOUT_SHORT} elapses, the wait operation fails.</p>
+     * {@link KubeTestConstants#GLOBAL_TIMEOUT_SHORT} elapses, the wait operation fails.</p>
      *
      * <p>Useful for verifying that a Pod has reached a specific operational state or emitted
      * an expected event during startup or execution.</p>
@@ -480,7 +480,7 @@ public class WaitUtils {
      */
     public static void waitForLogInPod(String namespace, String podName, String expectedLog) {
         Wait.until(String.format("Pod %s/%s to contain log [%s]", namespace, podName, expectedLog),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
                 return KubeResourceManager.get().kubeClient().getLogsFromPod(namespace, podName).contains(expectedLog);
             });
@@ -488,7 +488,7 @@ public class WaitUtils {
 
     public static void waitForKafkaRebalanceProposalStatus(String namespace, String rebalanceName, KafkaRebalanceState kafkaRebalanceState) {
         Wait.until(String.format("KafkaRebalance %s/%s to be in state [%s]", namespace, rebalanceName, kafkaRebalanceState),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_MEDIUM, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_MEDIUM, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
                 KafkaRebalance rebalance = ResourceUtils.getKubeResource(KafkaRebalance.class, namespace, rebalanceName);
 
@@ -527,13 +527,13 @@ public class WaitUtils {
 
     public static void waitForKeycloakRealmReady(String httpsHostname, String userName, String password, String realmName) {
         Wait.until(String.format("Keycloak realm '%s' to be present at %s", realmName, httpsHostname),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_1_SEC, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> KeycloakApiUtils.realmExists(httpsHostname, userName, password, realmName));
     }
 
     public static void waitForKeycloakRealmDeleted(String httpsHostname, String userName, String password, String realmName) {
         Wait.until(String.format("Keycloak realm '%s' to be deleted at %s", realmName, httpsHostname),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_1_SEC, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> !KeycloakApiUtils.realmExists(httpsHostname, userName, password, realmName));
     }
 }
