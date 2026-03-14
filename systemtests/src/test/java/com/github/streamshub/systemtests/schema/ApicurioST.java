@@ -25,7 +25,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import io.apicurio.registry.client.RegistryClientFactory;
 import io.apicurio.registry.client.common.RegistryClientOptions;
 import io.apicurio.registry.rest.client.RegistryClient;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;

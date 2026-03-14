@@ -25,7 +25,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUt
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.MessagesChecks;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;

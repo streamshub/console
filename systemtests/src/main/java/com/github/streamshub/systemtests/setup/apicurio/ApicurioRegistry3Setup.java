@@ -10,7 +10,7 @@ import io.apicurio.registry.operator.api.v1.spec.IngressSpec;
 import io.apicurio.registry.operator.api.v1.spec.UiSpec;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;

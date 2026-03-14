@@ -14,7 +14,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceState;

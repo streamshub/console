@@ -8,7 +8,7 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;

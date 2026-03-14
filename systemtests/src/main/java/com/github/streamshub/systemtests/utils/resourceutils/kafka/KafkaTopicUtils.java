@@ -7,7 +7,7 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;

@@ -5,13 +5,13 @@ import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import io.fabric8.kubernetes.api.model.Service;
-import io.skodjob.testframe.enums.InstallType;
-import io.skodjob.testframe.environment.TestEnvironmentVariables;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.enums.InstallType;
+import io.skodjob.kubetest4j.environment.TestEnvironmentVariables;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 
 import java.io.IOException;
 
-import static io.skodjob.testframe.TestFrameEnv.USER_PATH;
+import static io.skodjob.kubetest4j.KubeTestEnv.USER_PATH;
 
 public class Environment {
     private static final TestEnvironmentVariables ENVS = new TestEnvironmentVariables();

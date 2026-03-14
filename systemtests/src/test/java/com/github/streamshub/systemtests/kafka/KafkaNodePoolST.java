@@ -19,7 +19,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUt
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.KafkaNodePoolChecks;
 import com.github.streamshub.systemtests.utils.testutils.KafkaTestUtils;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBroker;

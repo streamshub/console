@@ -17,7 +17,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.KafkaUserTestUtils;
 import com.microsoft.playwright.Locator;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserAuthorizationSimple;
