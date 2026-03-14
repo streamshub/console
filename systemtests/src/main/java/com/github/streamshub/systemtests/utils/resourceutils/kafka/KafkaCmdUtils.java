@@ -5,9 +5,9 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.skodjob.testframe.TestFrameConstants;
-import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.wait.Wait;
+import io.skodjob.kubetest4j.KubeTestConstants;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.wait.Wait;
 import io.strimzi.api.kafka.model.connect.KafkaConnectResources;
 import org.apache.logging.log4j.Logger;
 
@@ -300,7 +300,7 @@ public class KafkaCmdUtils {
         String expectedLog = "\"connector\":\"" + connectorName + "\"";
 
         Wait.until(String.format("Pod %s/%s to contain log [%s]", namespace, podName, expectedLog),
-            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
                 String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespace).execInPod(podName, "/bin/bash", "-c", "curl " + service + "/connectors/" + connectorName).out();
 

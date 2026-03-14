@@ -10,8 +10,8 @@ import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
-import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.utils.TestFrameUtils;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.utils.KubeTestUtils;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.common.template.ContainerEnvVarBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static io.skodjob.testframe.TestFrameEnv.USER_PATH;
+import static io.skodjob.kubetest4j.KubeTestEnv.USER_PATH;
 
 public class KafkaSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaSetup.class);
@@ -106,7 +106,7 @@ public class KafkaSetup {
      * @return a {@link ConfigMapBuilder} configured with default Kafka metrics settings
      */
     public static ConfigMapBuilder getDefaultKafkaConfigMap(String namespaceName, String clusterName) {
-        return new ConfigMapBuilder(TestFrameUtils.configFromYaml(EXAMPLES_KAFKA_METRICS_CONFIG_MAP, ConfigMap.class))
+        return new ConfigMapBuilder(KubeTestUtils.configFromYaml(EXAMPLES_KAFKA_METRICS_CONFIG_MAP, ConfigMap.class))
             .editMetadata()
                 .withName(KafkaNamingUtils.kafkaMetricsConfigMapName(clusterName))
                 .withNamespace(namespaceName)

@@ -1,6 +1,6 @@
 package com.github.streamshub.systemtests.constants;
 
-import io.skodjob.testframe.TestFrameConstants;
+import io.skodjob.kubetest4j.KubeTestConstants;
 
 import java.time.Duration;
 
@@ -29,6 +29,6 @@ public class TimeConstants {
 
     // Time values depending on variable
     public static long timeoutForClientFinishJob(int messagesCount) {
-        return messagesCount * (TestFrameConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS + TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
+        return messagesCount * (KubeTestConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS + KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM);
     }
 }

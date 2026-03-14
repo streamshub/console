@@ -8,8 +8,8 @@ import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.resources.ResourceItem;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.ResourceItem;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;

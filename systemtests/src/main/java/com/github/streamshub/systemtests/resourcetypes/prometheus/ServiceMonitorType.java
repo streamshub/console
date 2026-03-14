@@ -8,7 +8,7 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.openshift.api.model.monitoring.v1.ServiceMonitor;
-import io.skodjob.testframe.interfaces.ResourceType;
+import io.skodjob.kubetest4j.interfaces.ResourceType;
 
 import java.util.function.Consumer;
 

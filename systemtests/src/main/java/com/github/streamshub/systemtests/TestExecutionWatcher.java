@@ -4,7 +4,7 @@ import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.logs.TestLogCollector;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;

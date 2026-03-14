@@ -8,7 +8,7 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.skodjob.testframe.interfaces.ResourceType;
+import io.skodjob.kubetest4j.interfaces.ResourceType;
 
 import java.util.Optional;
 import java.util.function.Consumer;

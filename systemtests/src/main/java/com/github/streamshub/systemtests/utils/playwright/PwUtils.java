@@ -23,9 +23,9 @@ import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
 import io.fabric8.kubernetes.api.model.Secret;
-import io.skodjob.testframe.TestFrameConstants;
-import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.wait.Wait;
+import io.skodjob.kubetest4j.KubeTestConstants;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.wait.Wait;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
@@ -376,7 +376,7 @@ public class PwUtils {
      */
     public static void waitForConsoleUiAnonymousLoginToBecomeReady(TestCaseConfig tcc) {
         LOGGER.info("============= Waiting for Console Website to be online =============");
-        Wait.until("Console Web to become available", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+        Wait.until("Console Web to become available", KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
                 try {
                     LOGGER.debug("Console website reach-out try");
@@ -406,7 +406,7 @@ public class PwUtils {
 
     public static void waitForConsoleUiWithKeycloakToBecomeReady(TestCaseConfig tcc) {
         LOGGER.info("============= Waiting for Console Website to be online =============");
-        Wait.until("Console Web to become available", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+        Wait.until("Console Web to become available", KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
                 try {
                     LOGGER.debug("Console website reach-out try");
@@ -439,19 +439,19 @@ public class PwUtils {
     // ----------------
     public static Page.NavigateOptions getDefaultNavigateOpts() {
         return new Page.NavigateOptions()
-            .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
+            .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
             .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static Page.ReloadOptions getDefaultReloadOpts() {
         return new Page.ReloadOptions()
-            .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
+            .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
             .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static Page.WaitForURLOptions getDefaultWaitForUrlOpts() {
         return new Page.WaitForURLOptions()
-            .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
+            .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
             .setWaitUntil(WaitUntilState.LOAD);
     }
 

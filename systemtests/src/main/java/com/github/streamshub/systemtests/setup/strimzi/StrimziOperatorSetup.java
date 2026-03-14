@@ -6,8 +6,8 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.marcnuri.helm.Helm;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.resources.ResourceItem;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.ResourceItem;
 import org.apache.logging.log4j.Logger;
 
 public class StrimziOperatorSetup {

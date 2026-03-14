@@ -5,8 +5,8 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.skodjob.testframe.TestFrameConstants;
-import io.skodjob.testframe.interfaces.ResourceType;
+import io.skodjob.kubetest4j.KubeTestConstants;
+import io.skodjob.kubetest4j.interfaces.ResourceType;
 import io.strimzi.api.kafka.model.common.Condition;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
@@ -22,7 +22,7 @@ public class KafkaType implements ResourceType<Kafka> {
 
     @Override
     public Long getTimeoutForResourceReadiness() {
-        return TestFrameConstants.GLOBAL_TIMEOUT;
+        return KubeTestConstants.GLOBAL_TIMEOUT;
     }
 
     @Override
