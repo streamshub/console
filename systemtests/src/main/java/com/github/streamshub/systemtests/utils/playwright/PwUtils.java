@@ -19,6 +19,7 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.TimeoutError;
 import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
@@ -170,11 +171,15 @@ public class PwUtils {
     // Wait for text
     // --------------------------
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload) {
-        waitForContainsText(tcc, selector, text, reload, true);
+        waitForContainsText(tcc, selector, text, reload, true, TimeConstants.COMPONENT_LOAD_TIMEOUT, Constants.SELECTOR_RETRIES);
     }
 
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload, boolean exactCase) {
-        waitForContainsText(tcc, selector, text, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload, exactCase);
+        waitForContainsText(tcc, selector, text, reload, exactCase, TimeConstants.COMPONENT_LOAD_TIMEOUT, Constants.SELECTOR_RETRIES);
+    }
+
+    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, long waitTime) {
+        waitForContainsText(tcc, selector, text, true, true, waitTime, Constants.SELECTOR_RETRIES);
     }
 
     /**
@@ -186,10 +191,10 @@ public class PwUtils {
      * @param tcc config {@link TestCaseConfig} instance to reload if needed
      * @param selector the selector to check for the expected text
      * @param text the expected substring text to wait for in the locator
-     * @param componentLoadTimeout maximum time in milliseconds to wait for the text to appear
      * @param reload if true, reloads the page on each poll when the text is not found
+     * @param exactCase if true, text must match exactly, if false String.contains is used instead
      */
-    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, long componentLoadTimeout, boolean reload, boolean exactCase) {
+    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload, boolean exactCase, long waitTime, int retries) {
         LOGGER.debug("Waiting for locator [{}] to contain text [{}]", selector, text);
         Utils.retryAction("waitForContainsText: " + text,
             () -> {
@@ -204,7 +209,7 @@ public class PwUtils {
                 }
 
                 return false;
-            }
+            }, retries, waitTime
         );
     }
 
@@ -454,21 +459,25 @@ public class PwUtils {
      * @return {@link Page.NavigateOptions} configured with {@code DOMCONTENTLOADED} and the short global timeout
      */
     public static Page.NavigateOptions getDefaultNavigateOpts() {
+        return getDefaultNavigateOpts(KubeTestConstants.GLOBAL_TIMEOUT_SHORT);
+    }
+
+    public static Page.NavigateOptions getDefaultNavigateOpts(long timeout) {
         return new Page.NavigateOptions()
-            .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.DOMCONTENTLOADED);
+            .setTimeout(timeout)
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static Page.ReloadOptions getDefaultReloadOpts() {
         return new Page.ReloadOptions()
             .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.DOMCONTENTLOADED);
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static Page.WaitForURLOptions getDefaultWaitForUrlOpts() {
         return new Page.WaitForURLOptions()
             .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.DOMCONTENTLOADED);
+            .setWaitUntil(WaitUntilState.LOAD);
     }
 
     public static void screenshot(TestCaseConfig tcc, String kafkaName, String additionalSuffix) {
@@ -573,7 +582,20 @@ public class PwUtils {
 
     public static void navigate(TestCaseConfig tcc, String url, boolean waitForUrl, boolean waitForExactUrl) {
         LOGGER.info("Navigating to '{}'", url);
-        tcc.page().navigate(url, getDefaultNavigateOpts());
+        Utils.retryAction("Navigate to page: " + url,
+            () -> {
+                try {
+                    tcc.page().navigate(url, getDefaultNavigateOpts(TimeConstants.ELEMENT_VISIBILITY_TIMEOUT));
+                    return true;
+                } catch (TimeoutError e) {
+                    LOGGER.warn("Navigation to '{}' timed out, retrying...", url);
+                    // Force reload to reset broken HTTP/2 connection state
+                    Utils.sleepWait(TimeConstants.ACTION_WAIT_SHORT);
+                    tcc.page().reload();
+                    return false;
+                }
+            }
+        );
 
         if (waitForUrl) {
             LOGGER.info("Waiting for url '{}'", url);

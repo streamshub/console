@@ -10,6 +10,7 @@ import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
+import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
@@ -21,12 +22,11 @@ import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
@@ -100,8 +100,7 @@ public class KafkaCredentialsST extends AbstractST {
         LOGGER.info("Check default kafka broker replicas count");
         PwUtils.waitForContainsText(tcc,
             ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS,
-            PodUtils.getTimeoutForPodOperations(Constants.REGULAR_BROKER_REPLICAS), true, false);
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, TimeConstants.ACTION_WAIT_LONG);
 
         LOGGER.debug("Verify default Kafka node count on Nodes page");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));

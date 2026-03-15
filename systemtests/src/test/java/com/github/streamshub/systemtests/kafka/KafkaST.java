@@ -6,6 +6,7 @@ import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
+import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.ConditionStatus;
 import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
@@ -18,11 +19,10 @@ import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.JbodStorageBuilder;
@@ -129,7 +129,7 @@ public class KafkaST extends AbstractST {
 
         // Check UI displays the broker count change
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            scaledBrokersCount + "/" + scaledBrokersCount, PodUtils.getTimeoutForPodOperations(scaledBrokersCount - Constants.REGULAR_BROKER_REPLICAS), true, true);
+            scaledBrokersCount + "/" + scaledBrokersCount, TimeConstants.ACTION_WAIT_LONG);
 
         // Now verify resume from top notification and just check the annotation on Kafka cluster
         LOGGER.info("Pause Kafka reconciliation using UI");
@@ -205,7 +205,7 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify new Kafka broker count on OverviewPage is {}", scaledBrokersCount);
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            scaledBrokersCount + "/" + scaledBrokersCount, PodUtils.getTimeoutForPodOperations(scaledBrokersCount - Constants.REGULAR_BROKER_REPLICAS), true, true);
+            scaledBrokersCount + "/" + scaledBrokersCount, TimeConstants.ACTION_WAIT_LONG);
 
         LOGGER.debug("Verify new Kafka node count on Nodes page");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
@@ -232,8 +232,7 @@ public class KafkaST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         // broker scaling needs longer to be displayed
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS,
-            PodUtils.getTimeoutForPodOperations(scaledBrokersCount), true, true);
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, TimeConstants.ACTION_WAIT_LONG);
 
         LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));

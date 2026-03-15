@@ -13,7 +13,7 @@ public class Constants {
     // --------------------------------
     // ------------ General -----------
     // --------------------------------
-    public static final int DEFAULT_ACTION_RETRIES = 10;
+    public static final int DEFAULT_ACTION_RETRIES = 8;
     public static final int LOGOUT_RETRIES = 5;
     public static final int SELECTOR_RETRIES = 10;
 
