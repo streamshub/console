@@ -78,7 +78,7 @@ public class UsersST extends AbstractST {
         String creationTimestamp = creationDateTimeOffset.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX"));
 
         // Verify navigation via url
-        tcc.page().navigate(PwPageUrls.getSingleKafkaUserPage(tcc, tcc.kafkaName(), tcc.namespace(), userName));
+        PwUtils.navigate(tcc, PwPageUrls.getSingleKafkaUserPage(tcc, tcc.kafkaName(), tcc.namespace(), userName));
         PwUtils.waitForContainsText(tcc, KafkaUsersPageSelectors.KUPS_KAFKA_USER_NAME_HEADER, userName, true);
 
         // Verify description list

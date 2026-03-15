@@ -11,8 +11,8 @@ import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
@@ -73,11 +73,11 @@ public class PwUtils {
         LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
         waitForConsoleUiAnonymousLoginToBecomeReady(tcc);
         // Anonymous login
-        tcc.page().navigate(loginUrl, getDefaultNavigateOpts());
-        tcc.page().waitForURL(Pattern.compile(loginUrl + ".*"), getDefaultWaitForUrlOpts());
+        navigate(tcc, loginUrl);
+        waitForUrl(tcc, loginUrl, false);
+        // Go to login
         waitForLocatorAndClick(tcc, CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
-        // Go to overview page
-        tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, kafkaName), getDefaultWaitForUrlOpts());
+        waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName), true);
         LOGGER.info("Successfully logged into Console");
     }
 
@@ -131,14 +131,15 @@ public class PwUtils {
     // Due to https://github.com/microsoft/playwright/issues/14946
     // some buttons or elements that change their visibility might throw errors onclick action
     public static void clickWithRetry(Locator locator) {
-        Utils.retryAction("click on locator", () -> click(locator), Constants.MAX_ACTION_RETRIES);
+        Utils.retryAction("click on locator", () -> click(locator), Constants.DEFAULT_ACTION_RETRIES);
     }
 
-    public static void click(Locator locator) {
+    public static boolean click(Locator locator) {
         LOGGER.debug("Clicking on locator [{}]", locator);
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
         locator.click(new Locator.ClickOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        return true;
     }
 
     // --------------------------
@@ -154,14 +155,15 @@ public class PwUtils {
     }
 
     public static void fillWithRetry(Locator locator, String text) {
-        Utils.retryAction("fill locator", () -> fill(locator, text), Constants.MAX_ACTION_RETRIES);
+        Utils.retryAction("fill locator", () -> fill(locator, text), Constants.DEFAULT_ACTION_RETRIES);
     }
 
-    public static void fill(Locator locator, String text) {
+    public static boolean fill(Locator locator, String text) {
         LOGGER.debug("Fill locator [{}] with text [{}]", locator, text);
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
         locator.fill(text, new Locator.FillOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        return true;
     }
 
     // --------------------------
@@ -189,19 +191,20 @@ public class PwUtils {
      */
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, long componentLoadTimeout, boolean reload, boolean exactCase) {
         LOGGER.debug("Waiting for locator [{}] to contain text [{}]", selector, text);
-        Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
+        Utils.retryAction("waitForContainsText: " + text,
             () -> {
                 if (locatorContainsText(tcc.page().locator(selector), text, exactCase)) {
                     return true;
                 }
+
+                LOGGER.warn("Locator did not contain text [{}]", text);
 
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
                 }
 
                 return false;
-            },
-            () -> LOGGER.error("Locator did not contain text [{}]", text)
+            }
         );
     }
 
@@ -241,10 +244,6 @@ public class PwUtils {
     // --------------------------
     // Wait for attribute
     // --------------------------
-    public static void waitForAttributeContainsText(TestCaseConfig tcc, String selector, String text, String attribute, boolean reload, boolean exactCase) {
-        waitForAttributeContainsText(tcc, selector, text, attribute, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload, exactCase);
-    }
-
     /**
      * Waits until a specified attribute of a locator contains an expected value.
      * <p>
@@ -257,25 +256,29 @@ public class PwUtils {
      * @param selector the {@link Locator} whose attribute is being checked
      * @param text the expected value to be matched in the attribute
      * @param attribute the name of the attribute to inspect (e.g., "value", "aria-label")
-     * @param componentLoadTimeout the maximum time (in milliseconds) to wait before failing
      * @param reload if {@code true}, the page will be reloaded between polling attempts
      *
      * @throws AssertionError if the attribute value does not match the expected text within the timeout
      */
-    public static void waitForAttributeContainsText(TestCaseConfig tcc, String selector, String text, String attribute, long componentLoadTimeout, boolean reload, boolean exactCase) {
+    public static void waitForAttributeContainsText(TestCaseConfig tcc, String selector, String text, String attribute, boolean reload, boolean exactCase) {
         LOGGER.debug("Waiting for locator [{}] to contain value [{}]", selector, text);
-        Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
+        Utils.retryAction("waitForAttributeContainsText: " + text,
             () -> {
+                // For reliability let's wait for the selector before getting it's value
+                waitForLocatorVisible(tcc, selector);
+
                 if (attributeContainsText(tcc.page().locator(selector), attribute, text, exactCase)) {
                     return true;
                 }
 
+                LOGGER.warn("Locator atribute did not contain text [{}]", text);
+
                 if (reload) {
-                    tcc.page().reload(getDefaultReloadOpts());
+                    reload(tcc);
                 }
+
                 return false;
-            },
-            () -> LOGGER.error("Locator atribute did not contain text [{}]", text)
+            }
         );
     }
 
@@ -314,31 +317,28 @@ public class PwUtils {
      */
     public static void waitForLocatorCount(TestCaseConfig tcc, int count, String selector, boolean reload) {
         LOGGER.debug("Waiting for locator [{}] to contain item count [{}] reload={}", selector, count, reload);
-        Wait.until("locator to have item count: " + count, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.COMPONENT_LOAD_TIMEOUT,
+        Utils.retryAction("waitForLocatorCount: " + count,
             () -> {
                 int locatorCount = tcc.page().locator(selector).all().size();
                 if (locatorCount == count) {
-
                     LOGGER.debug("Locator has correct item count {}", count);
                     return true;
                 }
-                LOGGER.debug("Locator has incorrect item count {}, need {}", locatorCount, count);
+
+                LOGGER.warn("Locator has incorrect item count {}, need {}", locatorCount, count);
+
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
                 }
+
                 return false;
-            },
-            () -> LOGGER.error("Page did not contain enough locators before timeout")
+            }
         );
     }
 
     // --------------------------
     // Wait for enabled element
     // --------------------------
-    public static void waitForElementEnabledState(TestCaseConfig tcc, String selector, boolean shouldBeEnabled, boolean reload, long timeout) {
-        waitForElementEnabledState(tcc, tcc.page().locator(selector), shouldBeEnabled, reload, timeout);
-    }
-
     /**
      * Waits until a specific locator reaches the desired enabled or disabled state within the given timeout.
      * <p>
@@ -346,25 +346,28 @@ public class PwUtils {
      * </p>
      *
      * @param tcc             the test case configuration containing the Playwright page
-     * @param locator         the Playwright {@link Locator} to check the enabled state for
+     * @param selector         the Playwright selector {@link String} to check the enabled state for
      * @param shouldBeEnabled {@code true} if the element should be enabled; {@code false} if it should be disabled
      * @param reload          {@code true} if the page should be reloaded on each failed check
-     * @param timeout         the maximum amount of time (in milliseconds) to wait for the state to be achieved
      */
-    public static void waitForElementEnabledState(TestCaseConfig tcc, Locator locator, boolean shouldBeEnabled, boolean reload, long timeout) {
-        Wait.until("locator to be in state enabled=" + shouldBeEnabled, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, timeout,
+    public static void waitForElementEnabledState(TestCaseConfig tcc, String selector, boolean shouldBeEnabled, boolean reload) {
+        Utils.retryAction("waitForElementEnabledState enabled=" + shouldBeEnabled,
             () -> {
+                Locator locator = tcc.page().locator(selector);
+
                 if (locator.isEnabled() == shouldBeEnabled) {
                     LOGGER.debug("Locator has correct state enabled={}", locator.isEnabled());
                     return true;
                 }
-                LOGGER.debug("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled);
+
+                LOGGER.warn("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled);
+
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
                 }
+
                 return false;
-            },
-            () -> LOGGER.error("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled)
+            }
         );
     }
 
@@ -376,83 +379,96 @@ public class PwUtils {
      */
     public static void waitForConsoleUiAnonymousLoginToBecomeReady(TestCaseConfig tcc) {
         LOGGER.info("============= Waiting for Console Website to be online =============");
-        Wait.until("Console Web to become available", KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
+        Utils.retryAction("waitForConsoleUiAnonymousLoginToBecomeReady",
             () -> {
-                try {
-                    LOGGER.debug("Console website reach-out try");
+                LOGGER.debug("Try to reach out to the console web");
 
-                    // First test if application is fully running
-                    tcc.page().navigate(PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName()), getDefaultNavigateOpts());
-
-                    if (tcc.page().locator("body").innerText().contains("Application is not available")) {
-                        return false;
-                    }
-
-                    // Second test if login page is able to display a login button
-                    if (tcc.page().locator(CssSelectors.LOGIN_ANONYMOUSLY_BUTTON).isVisible()) {
-                        LOGGER.info("Console website is ready");
-                        return true;
-                    }
-
+                // First test if application is fully running
+                navigate(tcc, PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName()));
+                Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+                if (tcc.page().locator("body").innerText().contains("Application is not available")) {
+                    LOGGER.info("Application is not available yet");
                     return false;
-                } catch (Exception e) {
-                    LOGGER.warn("Console UI has not been loaded yet");
                 }
+
+                // Second test if login page is able to display a login button
+                if (tcc.page().locator(CssSelectors.LOGIN_ANONYMOUSLY_BUTTON).isVisible()) {
+                    LOGGER.info("Console website is ready");
+                    return true;
+                }
+
                 return false;
-            },
-            () -> LOGGER.error("Console UI did not load in time")
+            }
         );
     }
 
     public static void waitForConsoleUiWithKeycloakToBecomeReady(TestCaseConfig tcc) {
         LOGGER.info("============= Waiting for Console Website to be online =============");
-        Wait.until("Console Web to become available", KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
+        Utils.retryAction("waitForConsoleUiWithKeycloakToBecomeReady",
             () -> {
-                try {
-                    LOGGER.debug("Console website reach-out try");
+                LOGGER.debug("Console website reach-out try");
 
-                    // First test if application is fully running
-                    tcc.page().navigate(PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName()), getDefaultNavigateOpts());
+                // First test if application is fully running
+                navigate(tcc, PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName()));
+                Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
 
-                    if (tcc.page().locator("body").innerText().contains("Error")) {
-                        return false;
-                    }
-
-                    // Second test if login page is able to display a login button
-                    if (tcc.page().locator(CssSelectors.LOGIN_KEYCLOAK_PAGE_TITLE).isVisible()) {
-                        LOGGER.info("Console website is ready");
-                        return true;
-                    }
-
+                if (tcc.page().locator("body").innerText().contains("Error")) {
+                    LOGGER.info("Console website contains Error display");
                     return false;
-                } catch (Exception e) {
-                    LOGGER.warn("Console UI has not been loaded yet");
                 }
+
+                // Second test if login page is able to display a login button
+                if (tcc.page().locator(CssSelectors.LOGIN_KEYCLOAK_PAGE_TITLE).isVisible()) {
+                    LOGGER.info("Console website is ready");
+                    return true;
+                }
+
                 return false;
-            },
-            () -> LOGGER.error("Console UI did not load in time")
+            }
         );
     }
 
     // ----------------
     // Default options
     // ----------------
+    /**
+     * Returns the default Playwright options used across system tests.
+     *
+     * <p>Uses {@link WaitUntilState#COMMIT} with a {@link KubeTestConstants#GLOBAL_TIMEOUT_SHORT} timeout.
+     *
+     * <h3>WaitUntilState options:</h3>
+     * <ul>
+     *   <li>{@code DOMCONTENTLOADED} - Resolves when the HTML is parsed. Too early for React/Next.js
+     *       as the component tree has not mounted yet.</li>
+     *   <li>{@code LOAD} - Resolves on the browser {@code load} event. Unreliable with Next.js App Router
+     *       since client-side redirects and RSC hydration continue after this fires, causing subsequent
+     *       {@code navigate()} calls to abort in-flight redirects with {@code ERR_ABORTED}.</li>
+     *   <li>{@code NETWORKIDLE} - Resolves after 500ms of zero in-flight requests. Times out on dynamic
+     *       pages due to continuous RSC streaming, Kafka metrics polling, and health check endpoints.</li>
+     *   <li>{@code COMMIT} - Resolves as soon as the HTTP response headers are received. Navigation
+     *       completes immediately without waiting for page content, preventing conflicts with
+     *       client-side redirects. Explicit {@code waitFor*} calls after each navigate act as
+     *       the real readiness gate.</li>
+     * </ul>
+     *
+     * @return {@link Page.NavigateOptions} configured with {@code DOMCONTENTLOADED} and the short global timeout
+     */
     public static Page.NavigateOptions getDefaultNavigateOpts() {
         return new Page.NavigateOptions()
             .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.DOMCONTENTLOADED);
     }
 
     public static Page.ReloadOptions getDefaultReloadOpts() {
         return new Page.ReloadOptions()
             .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.DOMCONTENTLOADED);
     }
 
     public static Page.WaitForURLOptions getDefaultWaitForUrlOpts() {
         return new Page.WaitForURLOptions()
             .setTimeout(KubeTestConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.DOMCONTENTLOADED);
     }
 
     public static void screenshot(TestCaseConfig tcc, String kafkaName, String additionalSuffix) {
@@ -501,18 +517,17 @@ public class PwUtils {
         final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
         LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
         waitForConsoleUiWithKeycloakToBecomeReady(tcc);
-        tcc.page().navigate(loginUrl, getDefaultNavigateOpts());
+        navigate(tcc, loginUrl);
         // Login with user
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_USERNAME_INPUT, username);
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.LOGIN_KEYCLOAK_SIGN_IN_BUTTON);
         // Go to overview page
-        tcc.page().waitForURL(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), getDefaultWaitForUrlOpts());
+        waitForUrl(tcc, ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), true);
         LOGGER.info("Successfully logged into Console");
     }
 
     public static void logoutUser(TestCaseConfig tcc, String userName, boolean https) {
-
         Utils.retryAction("Log-out user " + userName, () -> {
             String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), https) + "/";
 
@@ -528,8 +543,11 @@ public class PwUtils {
 
             if (tcc.page().url().equals(dashboardUrl) ||
                 tcc.page().locator(KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON).allInnerTexts().contains(userName)) {
-                throw new IllegalStateException("User [" + userName + "] has not been logged out");
+                LOGGER.warn("User [" + userName + "] has not been logged out");
+                return false;
             }
+
+            return true;
         }, Constants.LOGOUT_RETRIES);
     }
 
@@ -546,6 +564,35 @@ public class PwUtils {
         waitForLocatorAndFill(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON);
         // Wait for overview page
-        tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), getDefaultWaitForUrlOpts());
+        waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), true);
+    }
+
+    public static void navigate(TestCaseConfig tcc, String url) {
+        navigate(tcc, url, false, false);
+    }
+
+    public static void navigate(TestCaseConfig tcc, String url, boolean waitForUrl, boolean waitForExactUrl) {
+        LOGGER.info("Navigating to '{}'", url);
+        tcc.page().navigate(url, getDefaultNavigateOpts());
+
+        if (waitForUrl) {
+            LOGGER.info("Waiting for url '{}'", url);
+            waitForUrl(tcc, url, waitForExactUrl);
+        }
+    }
+
+    public static void reload(TestCaseConfig tcc) {
+        LOGGER.info("Reloading page with current url '{}'", tcc.page().url());
+        tcc.page().reload(getDefaultReloadOpts());
+    }
+
+    public static void waitForUrl(TestCaseConfig tcc, String url, boolean exact) {
+        if (exact) {
+            LOGGER.info("Waiting for exact url '{}'", url);
+            tcc.page().waitForURL(url, getDefaultWaitForUrlOpts());
+        } else {
+            LOGGER.info("Waiting for url starting with '{}'", url);
+            tcc.page().waitForURL(Pattern.compile(Pattern.quote(url) + ".*"), getDefaultWaitForUrlOpts());
+        }
     }
 }

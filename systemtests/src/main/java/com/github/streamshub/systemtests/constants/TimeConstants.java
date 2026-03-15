@@ -26,6 +26,7 @@ public class TimeConstants {
     // HTML elements
     public static final long ELEMENT_VISIBILITY_TIMEOUT = minutesInMilis(1);
     public static final long UI_COMPONENT_REACTION_INTERVAL_SHORT = secondsInMilis(5);
+    public static final long ACTION_WAIT_MEDIUM = secondsInMilis(20);
 
     // Time values depending on variable
     public static long timeoutForClientFinishJob(int messagesCount) {

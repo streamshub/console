@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.utils;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.exceptions.PlaywrightActionExecutionException;
 import com.github.streamshub.systemtests.exceptions.SetupException;
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.function.BooleanSupplier;
 
 public class Utils {
     private static final Logger LOGGER = LogWrapper.getLogger(Utils.class);
@@ -72,24 +74,37 @@ public class Utils {
      * @param actionName a descriptive name for the action, used in logging to identify what is being retried
      * @param action     the {@link Runnable} task to execute
      * @param maxRetries the maximum number of retry attempts before failing the execution
+     * @param waitRetryTime wait time before another retry of the action
      *
      * @throws PlaywrightActionExecutionException if the action fails after the specified number of retries
      */
-    public static void retryAction(String actionName, Runnable action, int maxRetries) {
+    public static void retryAction(String actionName, BooleanSupplier action, int maxRetries, long waitRetryTime) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 LOGGER.debug("Running action '{}' (attempt {}/{})", actionName, attempt, maxRetries);
-                action.run();
-                LOGGER.debug("Action '{}' succeeded on attempt {}/{}", actionName, attempt, maxRetries);
-                return;
-            } catch (Exception e) {
-                if (attempt == maxRetries) {
-                    throw new PlaywrightActionExecutionException(String.format("Action '%s' failed after %d attempts", actionName, maxRetries), e);
+                if (action.getAsBoolean()) {
+                    LOGGER.debug("Action '{}' succeeded on attempt {}/{}", actionName, attempt, maxRetries);
+                    return;
                 }
-                LOGGER.debug("Action '{}' failed on attempt {}/{}, retrying...", actionName, attempt, maxRetries);
-                sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+            } catch (Exception e) {
+                LOGGER.debug("Action '{}' failed on attempt {}/{}. Will retry shortly. Action failed due to exception {}",
+                    actionName, attempt, maxRetries, e.getMessage());
             }
+
+            if (attempt == maxRetries) {
+                throw new PlaywrightActionExecutionException(String.format("Action '%s' failed after %d attempts", actionName, maxRetries));
+            }
+
+            sleepWait(waitRetryTime);
         }
+    }
+
+    public static void retryAction(String actionName, BooleanSupplier action, int maxRetries) {
+        retryAction(actionName, action, maxRetries, TimeConstants.ACTION_WAIT_MEDIUM);
+    }
+
+    public static void retryAction(String actionName, BooleanSupplier action) {
+        retryAction(actionName, action, Constants.DEFAULT_ACTION_RETRIES, TimeConstants.ACTION_WAIT_MEDIUM);
     }
 
     public static void sleepWait(long timeInMilis) {

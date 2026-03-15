@@ -51,7 +51,7 @@ public class RebalanceST extends AbstractST {
         WaitUtils.waitForKafkaRebalanceProposalStatus(tcc.namespace(), rebalanceName, KafkaRebalanceState.ProposalReady);
 
         LOGGER.info("Verify rebalance proposals table");
-        tcc.page().navigate(PwPageUrls.getKafkaRebalancePage(tcc, tcc.kafkaName()));
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaRebalancePage(tcc, tcc.kafkaName()));
         PwUtils.waitForLocatorCount(tcc, 1, NodesPageSelectors.NPS_REBALANCE_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_STATUS, KafkaRebalanceState.ProposalReady.name(), true);
         assertTrue(tcc.page().locator(NodesPageSelectors.NPS_REBALANCE_PROPOSAL_NAME).allInnerTexts().toString().contains(rebalanceName));

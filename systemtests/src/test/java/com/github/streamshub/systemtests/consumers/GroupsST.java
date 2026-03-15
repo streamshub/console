@@ -34,7 +34,6 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testutils.GroupsTestUtils;
 import com.microsoft.playwright.Locator;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.skodjob.kubetest4j.KubeTestConstants;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -131,23 +130,23 @@ public class GroupsST extends AbstractST {
 
             // Verify row on groups page
             LOGGER.info("Verify group '{}' is present in groups table", displayName);
-            tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+            PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
             PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
             GroupsTestUtils.waitForGroupInTable(tcc, consumerGroupName);
 
             // Verify single group page
             LOGGER.info("Navigate to single consumer group page for '{}'", displayName);
-            tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName));
+            PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName));
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
             PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
 
             // Click through from groups page
             LOGGER.info("Navigate back to groups page and test click-through for '{}'", displayName);
-            tcc.page().navigate(PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+            PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
             PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
             GroupsTestUtils.clickGroupInTable(tcc, consumerGroupName);
 
-            tcc.page().waitForURL(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
+            PwUtils.waitForUrl(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), true);
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
             PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
 
@@ -156,8 +155,7 @@ public class GroupsST extends AbstractST {
             String topicName = "topic-" + Utils.hashStub(displayName);
             final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
 
-            tcc.page().navigate(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
-            tcc.page().waitForURL(PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
+            PwUtils.navigate(tcc, PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), true, true);
 
             // Topic page is focused on one topic so filter by text is safer than row index
             PwUtils.waitForLocatorAndClick(tcc.page().locator(TopicsPageSelectors.TPS_GROUPS_TABLE_ITEMS)
@@ -165,7 +163,7 @@ public class GroupsST extends AbstractST {
                 .locator("a")
                 .first());
 
-            tcc.page().waitForURL(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
+            PwUtils.waitForUrl(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), true);
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
             PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
         }
@@ -274,9 +272,9 @@ public class GroupsST extends AbstractST {
 
         assertFalse(kafkaTopicNames.isEmpty());
 
-        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
         PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
-        PwUtils.waitForElementEnabledState(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM);
+        PwUtils.waitForElementEnabledState(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true);
 
         // Look at the offset in UI
         for (String kafkaTopicName : kafkaTopicNames) {
@@ -301,7 +299,7 @@ public class GroupsST extends AbstractST {
                 }
             }
 
-            tcc.page().navigate(PwPageUrls.getGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+            PwUtils.navigate(tcc, PwPageUrls.getGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
 
             GroupsTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
@@ -330,9 +328,9 @@ public class GroupsST extends AbstractST {
 
         assertFalse(kafkaTopicName.isEmpty());
 
-        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
         PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
-        PwUtils.waitForElementEnabledState(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM);
+        PwUtils.waitForElementEnabledState(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true);
 
         LOGGER.info("Verify default consumer offset");
         KafkaCmdUtils.setConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, RESET_OFFSET_CONSUMER_GROUP_NAME, kafkaTopicName, String.valueOf(messageCount),
@@ -355,7 +353,7 @@ public class GroupsST extends AbstractST {
             }
         }
 
-        tcc.page().navigate(PwPageUrls.getGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
         PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
         // Dry-run
         PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_RADIO);

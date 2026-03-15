@@ -37,6 +37,7 @@ import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -80,7 +81,7 @@ public class AuthST extends AbstractST {
     void testAccessDevUser() {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_DEV_BOB, AuthTestConstants.USER_DEV_BOB);
         // Check correct user is logged in
-        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
 
         LOGGER.info("Check navbar data");
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_DEV_BOB, true);
@@ -90,7 +91,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
 
         LOGGER.info("Check available kafka");
-        tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
 
         LOGGER.info("Check navbar data are still correct");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_DEV_BOB, true);
@@ -101,7 +102,7 @@ public class AuthST extends AbstractST {
         TopicChecks.checkTopicsPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
 
         LOGGER.info("Verify that Admin Kafka topics won't appear in search");
-        tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
 
         LOGGER.debug("Verify topic name containing {} cannot be retrieved", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
@@ -111,7 +112,7 @@ public class AuthST extends AbstractST {
 
         // Logout and check user is no longer logged in
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
-        tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
@@ -139,7 +140,7 @@ public class AuthST extends AbstractST {
     void testAccessAdminUser() {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, AuthTestConstants.USER_ADMIN_ALICE);
         // Check correct user is logged in
-        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
 
         LOGGER.info("Check navbar data");
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_ADMIN_ALICE, true);
@@ -149,7 +150,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 2, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
 
         LOGGER.info("Check Dev kafka");
-        tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
 
         LOGGER.info("Check navbar data are correct");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_ADMIN_ALICE, true);
@@ -160,7 +161,7 @@ public class AuthST extends AbstractST {
         TopicChecks.checkTopicsPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
 
         LOGGER.info("Verify Dev Kafka does not have topics from Admin kafka");
-        tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
 
         LOGGER.debug("Verify topic name containing {} cannot be retrieved", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
@@ -169,7 +170,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
         LOGGER.info("Check Admin kafka");
-        tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
 
         LOGGER.info("Check navbar data are still correct");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_ADMIN_ALICE, true);
@@ -180,7 +181,7 @@ public class AuthST extends AbstractST {
         TopicChecks.checkTopicsPageTopicState(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, 0, 0);
 
         LOGGER.info("Verify Admin Kafka does not have topics from Dev kafka");
-        tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
 
         LOGGER.debug("Verify topic name containing {} cannot be retrieved from Admin Kafka", AuthTestConstants.TEAM_DEV_TOPIC_PREFIX);
@@ -196,11 +197,11 @@ public class AuthST extends AbstractST {
         // Logout and check user is no longer logged in
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
         // Dev
-        tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
         // Admin
-        tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
@@ -229,7 +230,7 @@ public class AuthST extends AbstractST {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, AuthTestConstants.USER_TOPICONLY_FRANK);
 
         // Check correct user is logged in
-        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getConsoleUrl(tcc));
 
         LOGGER.info("Check navbar data");
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_TOPICONLY_FRANK, true);
@@ -239,7 +240,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
 
         LOGGER.info("Verify developers Kafka cluster is accessible");
-        tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
 
         LOGGER.info("Check navbar data are correct");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_TOPICONLY_FRANK, true);
@@ -250,21 +251,21 @@ public class AuthST extends AbstractST {
         TopicChecks.checkTopicsPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
 
         LOGGER.info("Verify Topics");
-        tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
         PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
         LOGGER.info("Verify Nodes page is unavailable");
-        tcc.page().navigate(PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify consumer groups page is unavailable");
-        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""));
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
         // Logout and check user is no longer logged in
-        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
     }
 
     /**
@@ -295,7 +296,7 @@ public class AuthST extends AbstractST {
         PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, AuthTestConstants.USER_CONSUMERONLY_GRACE);
 
         // Check correct user is logged in
-        tcc.page().navigate(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
 
         LOGGER.info("Check navbar data");
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
@@ -305,7 +306,7 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
 
         LOGGER.info("Verify developers Kafka cluster is accessible");
-        tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
 
         LOGGER.info("Check navbar data are correct");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "1", true);
@@ -315,15 +316,15 @@ public class AuthST extends AbstractST {
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD, "Not Authorized", true);
 
         LOGGER.info("Verify Topics page is unavailable");
-        tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify Nodes page is unavailable");
-        tcc.page().navigate(PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify groups page is available");
-        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT, MessageStore.noConsumerGroups(), true);
 
         String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "continuous-msg";
@@ -342,7 +343,7 @@ public class AuthST extends AbstractST {
 
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
 
-        tcc.page().navigate(PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_TABLE, KafkaNamingUtils.consumerGroupName(newTopicName), true);
 
         WaitUtils.waitForClientsSuccess(clients);
@@ -352,7 +353,7 @@ public class AuthST extends AbstractST {
 
     @BeforeAll
     void testClassSetup() {
-        // // Setup namespace and kafka + console instance
+        // Setup namespace and kafka + console instance
         tcc = getTestCaseConfig();
         NamespaceUtils.prepareNamespace(tcc.namespace());
         // Setup keycloak operator
@@ -386,6 +387,11 @@ public class AuthST extends AbstractST {
             keycloakInstance, KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING).build());
 
         ConsoleUtils.patchConsoleNginxBuffer(tcc.namespace(), tcc.consoleInstanceName());
+    }
+
+    @AfterEach
+    void testCaseTeardown() {
+        tcc.resetBrowserContext();
     }
 
     @AfterAll

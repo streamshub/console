@@ -45,12 +45,13 @@ public class TopicsTestUtils {
             if (!expectedAttr.equals(currentAttr)) {
                 PwUtils.screenshot(tcc, tcc.kafkaName(), "topicStatusFilterIncorrect");
                 PwUtils.waitForLocatorAndClick(tcc, selectorSortButton);
-                throw new IllegalStateException(
-                    "Locator had aria-sort=" + currentAttr + ", expected=" + expectedAttr
-                );
+                LOGGER.warn("Locator had incorrect aria-sort=" + currentAttr + ", expected=" + expectedAttr);
+                return false;
             }
 
             LOGGER.info("Locator attribute matched expected value: {}", expectedAttr);
+            return true;
+
         }, Constants.SELECTOR_RETRIES);
     }
 
@@ -78,7 +79,7 @@ public class TopicsTestUtils {
             // Already correct - stop retrying
             if (currentText != null && currentText.contains(filterType.getName())) {
                 LOGGER.debug("Filter [{}] already selected", filterType.getName());
-                return;
+                return true;
             }
 
             // Try to select the filter
@@ -95,7 +96,8 @@ public class TopicsTestUtils {
             }
 
             // Fail this attempt so retryAction will try again
-            throw new IllegalStateException("Filter [" + filterType.getName() + "] not yet selected");
+            LOGGER.warn("Filter [" + filterType.getName() + "] not yet selected");
+            return false;
         }, Constants.SELECTOR_RETRIES);
     }
 
@@ -126,7 +128,7 @@ public class TopicsTestUtils {
             // Already selected - success
             if (currentFilters != null && currentFilters.contains(topicStatus.getName())) {
                 LOGGER.debug("Topic status [{}] selected", topicStatus.getName());
-                return;
+                return true;
             }
 
             // Try selecting it
@@ -143,8 +145,8 @@ public class TopicsTestUtils {
             PwUtils.waitForLocatorAndClick(tcc, dropdownItemInput);
             Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
 
-            // Fail this attempt so retryAction retries if needed
-            throw new IllegalStateException("Topic status [" + topicStatus.getName() + "] not yet selected");
+            LOGGER.warn("Topic status [" + topicStatus.getName() + "] not yet selected");
+            return false;
         }, Constants.SELECTOR_RETRIES);
     }
 

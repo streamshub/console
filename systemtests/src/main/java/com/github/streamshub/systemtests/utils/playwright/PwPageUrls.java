@@ -55,7 +55,7 @@ public class PwPageUrls {
     }
 
     public static String getGroupsResetOffsetPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
-        return getGroupsMembersPage(tcc, kafkaName, consumerGroupName) + "/reset-offset";
+        return getGroupsPage(tcc, kafkaName) + "/" + consumerGroupName + "/reset-offset";
     }
 
     /** This name might be unintuitive, but connector page is linked as Kafka Connect in the sidebar.
