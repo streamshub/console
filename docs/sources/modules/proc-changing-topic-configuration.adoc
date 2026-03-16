@@ -13,11 +13,13 @@ If you are using the Topic Operator to manage topics in unidirectional mode, con
 .Procedure
 
 . Log in to the Kafka cluster in the StreamsHub Console, then click *Topics*.
-. Select the options icon (three vertical dots) for the relevant topic and click *Edit configuration*.
-Or you can click the name of the topic you want to configure from the *Topics* page and click the *Configuration* tab.
+. On the *Topics* page, click the name of the topic you want to configure.
+. Check the information on the *Configuration* tab.
 . Edit the configuration by updating individual property values.
 +
-Filter the configuration properties to narrow results by data source:
+Filter by property name or data source to narrow results.
++
+Data sources include:
 +
 * *DEFAULT_CONFIG*: The fallback value used when no other configuration is specified.
 * *STATIC_BROKER_CONFIG*: Predefined, broker-wide values that apply to all topics by default.
