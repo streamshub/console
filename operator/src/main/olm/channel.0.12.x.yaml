@@ -6,3 +6,5 @@ properties: []
 entries:
   - name: streamshub-console-operator.v0.12.0
     replaces: streamshub-console-operator.v0.11.0
+  - name: streamshub-console-operator.v0.12.1-snapshot
+    replaces: streamshub-console-operator.v0.12.0
