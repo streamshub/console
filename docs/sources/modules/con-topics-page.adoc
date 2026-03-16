@@ -7,18 +7,18 @@
 The *Topics* page lists all topics created for a Kafka cluster. 
 You can filter the list by topic name, ID, or status.
 
-The *Topics* page shows the overall replication status for partitions in the topic, as well as counts for the partitions in the topic and the number of associated consumer groups.
-The overall storage used by the topic is also shown.
+The *Topics* page shows the overall replication status of topic partitions, the number of partitions, and the number of associated groups.
+The page also shows the total storage used by the topic data.
 
 WARNING: Internal topics must not be modified. You can choose to hide internal topics from the list of topics returned on the *Topics* page.
 
 Click on a topic name to view additional topic information presented on a series of tabs:
 
-Messages:: Messages shows the message log for a topic.
-Partitions:: Partitions shows the replication status of each partition in a topic. 
-Consumer groups:: Consumer groups lists the names and status of the consumer groups and group members connected to a topic.
-Configuration:: Configuration shows the configuration of a topic.
+Messages:: Shows the message log for the topic.
+Partitions:: Shows the replication status of each partition.
+Groups:: Lists the groups associated with the topic, including their status and members. Offset and lag information is available for groups.
+Configuration:: Shows the topic configuration.
 
-If a topic is shown as *Managed*, it means that is managed using the Strimzi Topic Operator and was not created directly in the Kafka cluster. 
+If a topic is shown as *Managed*, it means that it is managed by the Strimzi Topic Operator and was not created directly in the Kafka cluster.
 
 Use the information provided on the tabs to check and modify the configuration of your topics. 

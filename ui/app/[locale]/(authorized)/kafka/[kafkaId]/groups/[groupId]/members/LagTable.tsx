@@ -1,8 +1,12 @@
 import { OffsetAndMetadata } from "@/api/groups/schema";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
-import { Tooltip } from "@/libs/patternfly/react-core";
-import { HelpIcon } from "@/libs/patternfly/react-icons";
+import {
+  EmptyState,
+  EmptyStateBody,
+  Tooltip,
+} from "@/libs/patternfly/react-core";
+import { HelpIcon, InfoCircleIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
@@ -92,6 +96,14 @@ export function LagTable({
             );
         }
       }}
-    />
+    >
+      <EmptyState
+        titleText={t("not_topic_found")}
+        headingLevel="h4"
+        icon={InfoCircleIcon}
+      >
+        <EmptyStateBody>{t("no_offsets_description")}</EmptyStateBody>
+      </EmptyState>
+    </ResponsiveTable>
   );
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ClusterKind {
-    STRIMI_KAFKA("kafkas.kafka.strimzi.io"),
+    STRIMZI_KAFKA("kafkas.kafka.strimzi.io"),
     KROXYLICIOUS_VIRTUAL_KAFKA_CLUSTER("virtualkafkaclusters.kroxylicious.io");
 
     private final String value;

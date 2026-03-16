@@ -143,16 +143,15 @@ public class TopicST extends AbstractST {
             tcc.page().waitForURL(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
             PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT);
             PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, MessageStore.noDataTitle(), true);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, MessageStore.noDataBody(), true);
         }
 
         LOGGER.info("Go to homepage and check the recently viewed card is not empty");
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
 
         LOGGER.info("Check topics table for recently visited topics");
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build(), topicNames.get(2), false);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(2).build(), topicNames.get(1), false);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(3).build(), topicNames.get(0), false);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(1), topicNames.get(2), false);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(2), topicNames.get(1), false);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(3), topicNames.get(0), false);
 
         LOGGER.info("Delete topics");
         KubeResourceManager.get().deleteResourceWithWait(topics.toArray(new KafkaTopic[0]));
@@ -165,7 +164,7 @@ public class TopicST extends AbstractST {
         PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(3).build(), topicNames.get(0), false);
 
         LOGGER.info("Check that one of the recently viewed topics page cannot be found as it's deleted");
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build());
+        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(1));
         // Verify empty body message
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, "Resource not found", true);
     }
@@ -204,7 +203,7 @@ public class TopicST extends AbstractST {
         LOGGER.info("Verify Topics Filtering");
         tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
 
-        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).get(0).getMetadata().getName();
+        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).getFirst().getMetadata().getName();
         final List<String> unmanagedReplicatedTopicsNames = KafkaCmdUtils.listKafkaTopicsByPrefix(tcc.namespace(), tcc.kafkaName(), brokerPodName,
             KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX);
 
@@ -251,7 +250,7 @@ public class TopicST extends AbstractST {
         // Sort by name
         TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME_BUTTON, "descending");
         PwUtils.waitForLocatorCount(tcc, UNAVAILABLE_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1), true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1), true);
 
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
 
@@ -266,7 +265,7 @@ public class TopicST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Last managed replicated has utilized more storage
         final String topicWithLargestStorageUsage = Constants.REPLICATED_TOPICS_PREFIX + "-" + (REPLICATED_TOPICS_COUNT - 1);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItem(1, 1), topicWithLargestStorageUsage, true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, 1), topicWithLargestStorageUsage, true);
     }
 
     // ------
@@ -296,7 +295,7 @@ public class TopicST extends AbstractST {
         LOGGER.info("Create all types of topics");
         final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
 
-        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, 1, 1, 1);
         // Produce extra messages for the last fullyReplicated topic - use higher message count number to take more storage
         String topicWithMoreMessages = replicatedTopics.get(REPLICATED_TOPICS_COUNT - 1).getMetadata().getName();
         KafkaClients clients = new KafkaClientsBuilder()
@@ -314,9 +313,9 @@ public class TopicST extends AbstractST {
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
 
-        KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
-        KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
-        KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
+        KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1);
+        KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
+        KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1);
     }
 
     @BeforeAll

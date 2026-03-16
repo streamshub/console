@@ -1,5 +1,5 @@
 import { getConsumerGroup } from "@/api/groups/actions";
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { GroupParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/Group.params";
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import RichText from "@/components/RichText";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
@@ -15,7 +15,7 @@ import { getTranslations } from "next-intl/server";
 export default async function ConsumerGroupsActiveBreadcrumb({
   params: { groupId, kafkaId },
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
 }) {
   const t = await getTranslations();
   const consumerGroup = (await getConsumerGroup(kafkaId, groupId));

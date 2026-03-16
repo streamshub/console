@@ -1,26 +1,35 @@
 package com.github.streamshub.systemtests.utils.resourceutils.keycloak;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.streamshub.console.dependents.ConsoleResource;
+import com.github.streamshub.systemtests.utils.Certificates;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
+import com.github.streamshub.systemtests.utils.FileUtils;
+import com.github.streamshub.systemtests.utils.Utils;
+import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
-import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelector;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
-import io.skodjob.testframe.TestFrameConstants;
-import io.skodjob.testframe.enums.LogLevel;
-import io.skodjob.testframe.executor.Exec;
 import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.wait.Wait;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Base64;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class KeycloakUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KeycloakUtils.class);
@@ -28,262 +37,248 @@ public class KeycloakUtils {
     private KeycloakUtils() {}
 
     /**
-     * Imports a Keycloak realm by sending a POST request with the provided realm JSON definition.
+     * Loads and patches a Keycloak realm template with dynamic roles, groups, users,
+     * and console client configuration.
      *
-     * <p>This method performs an HTTP POST request (via a shell-executed {@code curl} command)
-     * to the {@code /admin/realms} endpoint of the target Keycloak instance. The request uses the
-     * supplied bearer token for authentication and sends the {@code realmData} payload as JSON.</p>
+     * @param consoleURL console base URL
+     * @param realmPath  path to the realm template file
+     * @param realmName  name of the realm to create
+     * @param clientId   client ID used by the console
+     * @param mapping    role/group mappings
+     * @param users      users to include in the realm
      *
-     * <p>The response body from the request is returned as a string. If the request fails,
-     * the underlying executor is expected to throw or return error output accordingly.</p>
-     *
-     * @param baseURI    the base URI of the Keycloak instance (e.g. {@code https://keycloak.example.com})
-     * @param token      the bearer token used for authorization
-     * @param realmData  the JSON payload representing the realm to import
-     *
-     * @return the raw response body from the Keycloak API call
+     * @return patched realm definition as JsonObject
      */
-    public static String importRealm(String baseURI, String token, String realmData) {
-        return executeRequestAndReturnData(
-            new String[]{
-                "curl",
-                "--insecure",
-                "-X",
-                "POST",
-                "-H", "Content-Type: application/json",
-                "-d", realmData,
-                baseURI + "/admin/realms",
-                "-H", "Authorization: Bearer " + token
-            }
-        );
+    public static JsonObject loadRealmTemplate(String consoleURL, String realmPath, String realmName, String clientId,
+        List<KeycloakTestConfig.GroupRoleMapping> mapping, List<KeycloakTestConfig.User> users
+    ) {
+        JsonObject realm = new JsonObject(FileUtils.readFile(realmPath));
+
+        // Realm name
+        realm.put("realm", realmName);
+
+        // Patch dynamic roles
+        realm.getJsonObject("roles").put("realm", new JsonArray(
+            mapping.stream()
+                .map(m -> new JsonObject()
+                    .put("name", m.roleName())
+                    .put("description", m.roleDescription()))
+                .toList()));
+
+        // Patch dynamic groups
+        realm.put("groups", new JsonArray(
+            mapping.stream()
+                .map(m -> new JsonObject()
+                    .put("name", m.groupName())
+                    .put("path", m.groupPath())
+                    .put("realmRoles", new JsonArray(List.of(m.roleName()))))
+                .toList()));
+
+        // Patch dynamic users
+        realm.put("users", new JsonArray(
+            users.stream()
+                .map(u -> new JsonObject()
+                    .put("username", u.username())
+                    .put("enabled", true)
+                    .put("emailVerified", true)
+                    .put("firstName", u.firstName())
+                    .put("lastName", u.lastName())
+                    .put("email", u.email())
+                    .put("credentials", new JsonArray(List.of(
+                        new JsonObject().put("type", "password").put("value", u.password()))))
+                    .put("groups", new JsonArray(List.of(u.groupPath()))))
+                .toList()));
+
+        // Patch console URL in client
+        JsonArray clients = realm.getJsonArray("clients");
+        JsonObject client = clients.getJsonObject(0);
+        client.put("clientId", clientId);
+        client.put("redirectUris", new JsonArray(List.of(consoleURL + "/*")));
+        client.put("webOrigins", new JsonArray(List.of(consoleURL + "/")));
+
+        JsonObject rolesClient = realm.getJsonObject("roles").getJsonObject("client");
+        rolesClient.put(clientId, new JsonArray());
+
+        return realm;
     }
 
     /**
-     * Retrieves the client secret for a given Keycloak client.
+     * Creates a NetworkPolicy allowing all ingress traffic to pods matching the given labels.
      *
-     * <p>This method resolves the client's internal UUID, obtains an admin access token,
-     * and then performs an authenticated HTTP GET request (via a shell-executed
-     * {@code curl} command) to the Keycloak Admin API to fetch the client's secret.</p>
-     *
-     * <p>The response is parsed as JSON and the {@code "value"} field—representing the
-     * actual client secret—is returned.</p>
-     *
-     * @param keycloakConfig  the configuration object containing Keycloak connection details
-     * @param realm           the name of the Keycloak realm where the client resides
-     * @param clientName      the display name of the client whose secret should be retrieved
-     *
-     * @return the client secret value extracted from the Keycloak Admin API response
+     * @param namespaceName namespace where the policy is created
+     * @param policyName    name of the NetworkPolicy
+     * @param matchLabels   pod selector for allowed ingress
      */
-    public static String getClientSecret(KeycloakConfig keycloakConfig, String realm, String clientName) {
-        final String clientUuid = getClientUuid(keycloakConfig, realm, clientName);
-        final String token = getToken(keycloakConfig);
-        return new JsonObject(executeRequestAndReturnData(
-            new String[]{
-                "curl",
-                "--insecure",
-                "-X",
-                "GET",
-                getKeycloakHostname(true) + "/admin/realms/" + realm + "/clients/" + clientUuid + "/client-secret",
-                "-H", "Authorization: Bearer " + token
-            }
-        )).getString("value");
+    public static void allowNetworkPolicyAllIngressForMatchingLabel(String namespaceName, String policyName, LabelSelector matchLabels) {
+        if (!Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
+            return;
+        }
+        LOGGER.info("Apply NetworkPolicy with Ingress to accept all connections to the Pods matching labels: {}", matchLabels);
+
+        KubeResourceManager.get().createOrUpdateResourceWithWait(new NetworkPolicyBuilder()
+            .withNewMetadata()
+                .withName(policyName)
+                .withNamespace(namespaceName)
+            .endMetadata()
+            .editSpec()
+                // keeping ingress empty to allow all connections
+                .addNewIngress()
+                .endIngress()
+                .withPodSelector(matchLabels)
+            .endSpec()
+            .build());
     }
 
     /**
-     * Resolves the internal UUID of a Keycloak client by its client name.
+     * Creates a NetworkPolicy allowing Keycloak pods to access Postgres pods.
      *
-     * <p>This method authenticates against Keycloak using an admin token, retrieves the list
-     * of all clients within the specified realm via an HTTP GET request (executed through
-     * a shell-based {@code curl} command), and parses the JSON response to locate the client
-     * whose {@code clientId} matches the provided {@code clientName}.</p>
-     *
-     * <p>Once found, the method extracts and returns the client's internal UUID
-     * (the {@code "id"} field). If no matching client is found, an empty string is returned.</p>
-     *
-     * <p>If the returned JSON cannot be parsed, a {@link SetupException} is thrown.</p>
-     *
-     * @param keycloakConfig  the configuration object containing Keycloak connection and credential details
-     * @param realm           the Keycloak realm to search within
-     * @param clientName      the client identifier to look up
-     *
-     * @return the internal UUID of the matching Keycloak client, or an empty string if not found
-     *
-     * @throws SetupException if the JSON response cannot be parsed
+     * @param namespace     namespace where the policy is created
+     * @param policyName    name of the NetworkPolicy
+     * @param postgresLabel label selector identifying Postgres pods
      */
-    public static String getClientUuid(KeycloakConfig keycloakConfig, String realm, String clientName) {
-        final String token = getToken(keycloakConfig);
+    public static void allowNetworkPolicyBetweenKeycloakAndPostgres(String namespace, String policyName, LabelSelector postgresLabel) {
+        if (!Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
+            return;
+        }
+        LOGGER.info("Applying NetworkPolicy: Keycloak → Postgres");
 
-        String response = executeRequestAndReturnData(
-            new String[]{
-                "curl",
-                "--insecure",
-                "-X",
-                "GET",
-                getKeycloakHostname(true) + "/admin/realms/" + realm + "/clients/",
-                "-H", "Authorization: Bearer " + token
-            }
-        );
+        KubeResourceManager.get().createOrUpdateResourceWithWait(new NetworkPolicyBuilder()
+            .withNewMetadata()
+                .withName(policyName)
+                .withNamespace(namespace)
+            .endMetadata()
+            .withNewSpec()
+                .addNewIngress()
+                    .addNewFrom()
+                        .withPodSelector(Labels.getKeycloakLabelSelector())
+                    .endFrom()
+                .endIngress()
+                .withPodSelector(postgresLabel)
+                .withPolicyTypes(Ingress.class.getSimpleName())
+            .endSpec()
+            .build());
+    }
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode clientsArray;
-
+    /**
+     * Generates a self-signed certificate and creates a TLS secret for Keycloak.
+     *
+     * @param namespace     namespace where the secret will be created
+     * @param tlsSecretName name of the TLS secret
+     * @param hostname      hostname for the generated certificate
+     */
+    public static void createTlsSecret(String namespace, String tlsSecretName, String hostname) {
+        LOGGER.info("Creating TLS secret '{}' for hostname '{}' in namespace '{}'", tlsSecretName, hostname, namespace);
         try {
-            clientsArray = mapper.readTree(response);
-        } catch (JsonProcessingException e) {
-            throw new SetupException("Keycloak client uuid response cannot be mapped to json node", e);
-        }
+            var entry = Certificates.generateSelfSignedCertificate(hostname, "StreamsHub");
+            Map<String, String> pem = Certificates.toPemStrings(entry.getKey(), entry.getValue());
 
-        String clientUuid = "";
-        for (JsonNode client: clientsArray) {
-            if (client.get("clientId").textValue().equals(clientName)) {
-                clientUuid = client.get("id").textValue();
-                break;
-            }
-        }
-
-        return clientUuid;
-    }
-
-    /**
-     * Creates and applies a permissive NetworkPolicy that allows all ingress traffic to Pods
-     * matching a set of labels, but only if the environment is configured to use default-deny
-     * network policies.
-     *
-     * <p>This method checks the {@code Environment.DEFAULT_TO_DENY_NETWORK_POLICIES} flag to
-     * determine whether network policies should be applied. If enabled, it constructs a
-     * Kubernetes {@link NetworkPolicy} resource that:</p>
-     *
-     * <ul>
-     *     <li>Targets Pods in the given namespace whose labels match {@code matchLabels}.</li>
-     *     <li>Defines an empty <em>ingress</em> rule block, which Kubernetes interprets as
-     *         "allow all ingress traffic" to the selected Pods.</li>
-     *     <li>Creates the policy in the cluster and waits for it to become active via
-     *         {@code KubeResourceManager.createResourceWithWait}.</li>
-     * </ul>
-     *
-     * <p>If the environment flag is disabled, no action is performed.</p>
-     *
-     * @param namespaceName the namespace in which the NetworkPolicy should be created
-     * @param policyName    the name of the NetworkPolicy resource
-     * @param matchLabels   the labels identifying which Pods the policy applies to
-     */
-    public static void allowNetworkPolicyAllIngressForMatchingLabel(String namespaceName, String policyName, Map<String, String> matchLabels) {
-        if (Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
-            LOGGER.info("Apply NetworkPolicy with Ingress to accept all connections to the Pods matching labels: {}", matchLabels);
-
-            NetworkPolicy networkPolicy = new NetworkPolicyBuilder()
+            KubeResourceManager.get().createOrUpdateResourceWithoutWait(new SecretBuilder()
                 .withNewMetadata()
-                    .withName(policyName)
-                    .withNamespace(namespaceName)
+                    .withName(tlsSecretName)
+                    .withNamespace(namespace)
                 .endMetadata()
-                .editSpec()
-                    // keeping ingress empty to allow all connections
-                    .addNewIngress()
-                    .endIngress()
-                    .withNewPodSelector()
-                        .addToMatchLabels(matchLabels)
-                    .endPodSelector()
-                .endSpec()
-                .build();
-
-            KubeResourceManager.get().createResourceWithWait(networkPolicy);
+                .withType("kubernetes.io/tls")
+                .addToData("tls.crt",
+                    Base64.getEncoder().encodeToString(pem.get("tls.crt").getBytes(StandardCharsets.UTF_8)))
+                .addToData("tls.key",
+                    Base64.getEncoder().encodeToString(pem.get("tls.key").getBytes(StandardCharsets.UTF_8)))
+                .build());
+        } catch (Exception e) {
+            throw new SetupException("Failed to generate TLS secret for Keycloak: " + e.getMessage());
         }
     }
 
     /**
-     * Retrieves an access token from Keycloak using the configured admin credentials.
+     * Patches the Keycloak Ingress resource to enable TLS using the provided secret.
      *
-     * <p>The method issues a direct token request to the master realm’s
-     * OpenID Connect token endpoint. It constructs a form-encoded POST body containing:</p>
-     *
-     * <ul>
-     *     <li>{@code client_id=admin-cli} — relying on Keycloak’s built-in admin CLI client.</li>
-     *     <li>{@code grant_type=password} — performing a resource-owner-password credential exchange.</li>
-     *     <li>{@code username} and {@code password} — taken from the provided {@link KeycloakConfig}.</li>
-     * </ul>
-     *
-     * <p>The response is parsed as JSON, and the {@code access_token} field is returned.
-     * If the request fails or the response is malformed, the caller’s handling logic decides
-     * how to surface errors.</p>
-     *
-     * @param keycloakConfig configuration providing Keycloak hostname and admin credentials
-     * @return the extracted Keycloak access token string
+     * @param namespace     namespace of the ingress
+     * @param httpHostname  hostname exposed by the ingress
+     * @param ingressName   name of the ingress resource
+     * @param tlsSecretName TLS secret used for HTTPS
      */
-    public static String getToken(KeycloakConfig keycloakConfig) {
-        return new JsonObject(
-            executeRequestAndReturnData(
-                new String[]{
-                    "curl",
-                    "-v",
-                    "--insecure",
-                    "-X",
-                    "POST",
-                    "-d", "client_id=admin-cli&grant_type=password&username=" + keycloakConfig.getUsername() + "&password=" + keycloakConfig.getPassword(),
-                    getKeycloakHostname(true) + "/realms/master/protocol/openid-connect/token"
-                }
-            )).getString("access_token");
+    public static void patchIngressTls(String namespace, String httpHostname, String ingressName, String tlsSecretName) {
+        if (ClusterUtils.isOcp()) {
+            return;
+        }
+
+        LOGGER.info("Non-OCP cluster detected — patching Keycloak Ingress with TLS");
+        WaitUtils.waitForIngressToBePresent(namespace, ingressName);
+
+        KubeResourceManager.get().createOrUpdateResourceWithWait(ResourceUtils.getKubeResource(Ingress.class, namespace, ingressName)
+            .edit()
+                .editSpec()
+                    .addNewTl()
+                        .withHosts(httpHostname)
+                        .withSecretName(tlsSecretName)
+                    .endTl()
+                .endSpec()
+            .build());
+
+        Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT);
+
+        String nginxController = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, Constants.NGINX_INGRESS_NAMESPACE, Labels.getNginxPodLabelSelector())
+            .getFirst().getMetadata().getName();
+
+        WaitUtils.waitForLogInPod(Constants.NGINX_INGRESS_NAMESPACE, nginxController, httpHostname);
     }
 
     /**
-     * Executes a shell request (typically a {@code curl} command) and returns the response
-     * once it succeeds. The method retries until the command produces a valid output that
-     * does not contain a "Connection refused" error.
+     * Imports the Keycloak server certificate into the local truststore.
      *
-     * <p>The request is executed via {@link Exec#exec}, and the output is captured. If the
-     * request fails or the Keycloak API is temporarily unavailable, the method waits and
-     * retries using the {@link Wait#until} utility with standard polling and timeout
-     * intervals.</p>
-     *
-     * <p>Any exceptions during command execution are logged and cause a retry. When the
-     * request eventually succeeds, the output from the command is returned.</p>
-     *
-     * @param request the command to execute, represented as a string array suitable for {@code Exec.exec}
-     * @return the full command output once the request succeeds
+     * @param httpHostname       Keycloak hostname
+     * @param trustStorePassword password protecting the truststore
      */
-    public static String executeRequestAndReturnData(String[] request) {
-        AtomicReference<String> response = new AtomicReference<>("");
-
-        Wait.until("request to Keycloak API will be successful", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM, () -> {
-            try {
-                String commandOutput = Exec.exec(LogLevel.DEBUG, false, request).out();
-                if (!commandOutput.contains("Connection refused")) {
-                    response.set(commandOutput);
-                    return true;
-                }
-
-                return false;
-            } catch (Exception e) {
-                LOGGER.warn("Exception occurred during doing request on Keycloak API: {}", e.getMessage());
-                return false;
-            }
-        });
-
-        return response.get();
+    public static void importCertificatesIntoTruststore(String httpHostname, String trustStorePassword) {
+        try {
+            Certificates.importCertificateIntoTrustStore(httpHostname, 443,
+                Path.of(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH), trustStorePassword, "keycloak-ca");
+        } catch (Exception e) {
+            throw new SetupException("Failed to prepare Keycloak truststore: " + e.getMessage());
+        }
     }
+
     /**
-     * Builds the base Keycloak hostname using the cluster domain and optional HTTPS scheme.
-     * <p>
-     * The hostname is constructed using the predefined {@link Constants#KEYCLOAK_HOSTNAME_PREFIX}
-     * followed by the detected cluster domain. If {@code https} is {@code true}, the URI will be
-     * prefixed with {@code "https://"}, otherwise no scheme is added.
+     * Creates a secret with the truststore password and a configmap containing the truststore.
      *
-     * @param https whether to include the {@code https://} scheme in the returned hostname
-     * @return the fully resolved Keycloak hostname for the current cluster
+     * @param namespace               namespace where resources are created
+     * @param secretName              name of the secret storing the password
+     * @param configMapName           name of the configmap storing the truststore
+     * @param trustStorePasswordData  encoded truststore password data
      */
-    public static String getKeycloakHostname(Boolean https) {
-        return (Boolean.TRUE.equals(https) ? "https://"  : "") + Constants.KEYCLOAK_HOSTNAME_PREFIX + "." + ClusterUtils.getClusterDomain();
+    public static void createTrustStorePasswordAndConfigmap(String namespace, String secretName, String configMapName, Map<String, String> trustStorePasswordData) {
+        LOGGER.info("Create secret with trust store password for console");
+        KubeResourceManager.get().createOrUpdateResourceWithWait(new SecretBuilder()
+            .withNewMetadata()
+                .withName(secretName)
+                .withNamespace(namespace)
+                .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+            .endMetadata()
+            .addToData(trustStorePasswordData)
+            .build());
+
+        // Configmap with truststore
+        LOGGER.info("Create configmap with trust store");
+        String encodedTrustStore = Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH));
+
+        LOGGER.info("Encoded TrustStore: {}", encodedTrustStore);
+
+        KubeResourceManager.get().createOrUpdateResourceWithWait(new ConfigMapBuilder()
+            .withNewMetadata()
+                .withName(configMapName)
+                .withNamespace(namespace)
+                .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+            .endMetadata()
+            .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, encodedTrustStore)
+            .build());
     }
 
     /**
      * Constructs the full URI for accessing a specific Keycloak realm.
-     * <p>
-     * This method uses {@link #getKeycloakHostname(Boolean)} with HTTPS enabled and appends the
-     * standard Keycloak realm path ({@code /realms/<realm>}).
      *
      * @param realm the name of the Keycloak realm
      * @return the full URI for the given realm (e.g. {@code https://keycloak.example.com/realms/myrealm})
      */
-    public static String getKeycloakRealmUri(String realm) {
-        return getKeycloakHostname(true) + "/realms/" + realm;
+    public static String getKeycloakRealmUri(String httpsHostname, String realm) {
+        return httpsHostname + "/realms/" + realm;
     }
 }

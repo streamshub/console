@@ -24,6 +24,8 @@ const generateConsumerGroup = (
   attributes: {
     groupId,
     state,
+    type: ["Classic", "Consumer", "Share", "Streams"][Number(id) % 4],
+    protocol: ["consumer", "connect", "share", "streams"][Number(id) % 4],
     offsets:
       lag3 !== undefined
         ? [{ lag: lag1 }, { lag: lag2 }, { lag: lag3 }]

@@ -24,6 +24,7 @@ public class Labels {
     public static final String K8S_COMPONENT_LABEL = "app.kubernetes.io/component";
     public static final String K8S_INSTANCE_LABEL = "app.kubernetes.io/instance";
     public static final String K8S_NAME_LABEL = "app.kubernetes.io/name";
+    public static final String K8S_VERSION_LABEL = "app.kubernetes.io/version";
 
     // ------------
     // Console
@@ -46,6 +47,11 @@ public class Labels {
     // ------------
     public static final String KAFKA_CLIENTS_LABEL_KEY = "user-test-app";
     public static final String KAFKA_CLIENTS_LABEL_VALUE = "kafka-clients";
+
+    // ------------
+    // Kafka
+    // ------------
+    private static final String PROMETHEUS = "prometheus";
 
     public static Map<String, String> getClientsLabels(String clientName) {
         Map<String, String> matchLabels = new HashMap<>();
@@ -125,6 +131,30 @@ public class Labels {
             .addToMatchLabels(K8S_COMPONENT_LABEL, "proxy")
             .addToMatchLabels(K8S_INSTANCE_LABEL, instanceName)
             .addToMatchLabels(K8S_NAME_LABEL, "kroxylicious")
+            .build();
+    }
+
+    public static LabelSelector getKeycloakLabelSelector() {
+        return new LabelSelectorBuilder()
+            .addToMatchLabels(APP, Constants.KEYCLOAK)
+            .build();
+    }
+
+    public static LabelSelector getPostgresLabelSelector() {
+        return new LabelSelectorBuilder()
+            .addToMatchLabels(APP, Constants.POSTGRES)
+            .build();
+    }
+
+    public static LabelSelector getPrometheusLabel() {
+        return new LabelSelectorBuilder()
+            .withMatchLabels(Map.of(K8S_NAME_LABEL, PROMETHEUS))
+            .build();
+    }
+
+    public static LabelSelector getPrometheusInstanceLabel(String prometheusName) {
+        return new LabelSelectorBuilder()
+            .withMatchLabels(Map.of(PROMETHEUS, prometheusName))
             .build();
     }
 }

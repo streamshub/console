@@ -63,6 +63,7 @@ import org.awaitility.core.ConditionEvaluationListener;
 import org.awaitility.core.EvaluatedCondition;
 import org.eclipse.microprofile.config.Config;
 import org.hamcrest.Description;
+import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 import org.jboss.logging.Logger;
 import org.json.JSONException;
@@ -114,6 +115,7 @@ import io.strimzi.api.kafka.model.kafka.entityoperator.EntityOperatorSpec;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
 
+import static com.github.streamshub.console.test.EveryEntry.everyEntry;
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -278,15 +280,18 @@ class TopicsResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data.attributes", contains(aMapWithSize(2)))
-            .body("data.attributes.name", contains(topicName))
-            .body("data.attributes.configs[0]", not(anEmptyMap()))
-            .body("data.attributes.configs[0].findAll { it }.collect { it.value }",
-                    everyItem(allOf(
-                            hasKey("source"),
-                            hasKey("sensitive"),
-                            hasKey("readOnly"),
-                            hasKey("type"))));
+            .body("data[0].attributes", is(aMapWithSize(2)))
+            .body("data[0].attributes.name", is(topicName))
+            .body("data[0].attributes.configs", not(anEmptyMap()))
+            .body("data[0].attributes.configs", everyEntry(
+                    Matchers.any(String.class), // any string key
+                    // all entries have same keys
+                    allOf(
+                        hasKey("value"),
+                        hasKey("source"),
+                        hasKey("sensitive"),
+                        hasKey("readOnly"),
+                        hasKey("type"))));
     }
 
     @Test

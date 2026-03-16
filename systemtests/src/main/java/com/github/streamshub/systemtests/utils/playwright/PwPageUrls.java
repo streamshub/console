@@ -10,7 +10,7 @@ public class PwPageUrls {
     private PwPageUrls() {}
 
     public static String getConsoleUrl(TestCaseConfig tcc) {
-        return ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true);
+        return ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true);
     }
 
     public static String getKafkaBaseUrl(TestCaseConfig tcc, String kafkaName) {
@@ -46,12 +46,16 @@ public class PwPageUrls {
         return getSingleTopicPage(tcc, kafkaName, topicId) + "/messages";
     }
 
-    public static String getGroupsPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
-        return getKafkaBaseUrl(tcc, kafkaName) + "/groups/" + consumerGroupName;
+    public static String getGroupsMembersPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
+        return getGroupsPage(tcc, kafkaName) + "/" + consumerGroupName + "/members";
+    }
+
+    public static String getGroupsPage(TestCaseConfig tcc, String kafkaName) {
+        return getKafkaBaseUrl(tcc, kafkaName) + "/groups";
     }
 
     public static String getGroupsResetOffsetPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
-        return getGroupsPage(tcc, kafkaName, consumerGroupName) + "/reset-offset";
+        return getGroupsMembersPage(tcc, kafkaName, consumerGroupName) + "/reset-offset";
     }
 
     /** This name might be unintuitive, but connector page is linked as Kafka Connect in the sidebar.

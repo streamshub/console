@@ -1,5 +1,5 @@
 import { updateConsumerGroup } from "@/api/groups/actions";
-import { KafkaConsumerGroupMembersParams } from "../../KafkaConsumerGroupMembers.params";
+import { GroupParams } from "../../Group.params";
 import { Suspense } from "react";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { ConnectedDryrunPage } from "./ConnectedDryrunPage";
@@ -10,7 +10,7 @@ export default function DryrunPage({
   params: { kafkaId, groupId },
   searchParams,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
   searchParams: { data?: string; cliCommand?: string };
 }) {
   return (
@@ -38,7 +38,7 @@ async function AsyncConnectedDryrunPage({
   params: { kafkaId, groupId },
   searchParams,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
   searchParams: { data?: string; cliCommand?: string };
 }) {
   const data = searchParams?.data;

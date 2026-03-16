@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { getConsumerGroup } from "@/api/groups/actions";
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { GroupParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/Group.params";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
@@ -18,7 +18,7 @@ export async function generateMetadata(props: { params: { kafkaId: string, group
 export default function ResetOffsetPage({
   params: { kafkaId, groupId },
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
 }) {
   return (
     <PageSection>

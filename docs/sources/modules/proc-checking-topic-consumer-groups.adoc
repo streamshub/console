@@ -18,7 +18,7 @@ NOTE: Monitoring consumer group behavior is essential for ensuring optimal distr
 
 Consumer groups::
 For each consumer group, view the status, the overall consumer lag across all partitions, and the number of members.
-For more information on checking consumer groups, see xref:con-consumer-groups-page-{context}[].
+For more information on checking consumer groups, see xref:con-groups-page-{context}[].
 
 Group members::
 For each group member, you see the unique (consumer) client ID assigned to the consumer within the consumer group, overall consumer lag, and the number of assigned partitions.

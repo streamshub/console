@@ -1,4 +1,4 @@
-import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/KafkaConsumerGroupMembers.params";
+import { GroupParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/[groupId]/Group.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
@@ -13,7 +13,7 @@ export default function Page({
   params: { kafkaId, groupId },
   searchParams,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
   searchParams: { data?: string };
 }) {
   return (
@@ -30,7 +30,7 @@ async function ConnectedAppHeader({
   params: { kafkaId, groupId },
   searchParams,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: GroupParams;
   searchParams: { data?: string };
 }) {
   const data = searchParams?.data;
