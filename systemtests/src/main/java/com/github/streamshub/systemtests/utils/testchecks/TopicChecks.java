@@ -181,7 +181,7 @@ public class TopicChecks {
             LOGGER.debug("Verify topic name {}", topicName);
             PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, topicName);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
-            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), topicName, false);
+            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
         }
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
     }
@@ -203,7 +203,7 @@ public class TopicChecks {
             LOGGER.debug("Verify topic {} with id {}", topicName, topicId);
             PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, topicId);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
-            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), topicName, false);
+            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
         }
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
     }

@@ -2,23 +2,25 @@ package com.github.streamshub.systemtests.utils;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.resourcetypes.ConsoleType;
-import com.github.streamshub.systemtests.resourcetypes.KafkaConnectType;
-import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
-import com.github.streamshub.systemtests.resourcetypes.KafkaType;
-import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.resourcetypes.apicurio.ApicurioRegistry3Type;
+import com.github.streamshub.systemtests.resourcetypes.console.ConsoleType;
+import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaConnectType;
+import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaRebalanceType;
+import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaTopicType;
+import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaType;
+import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaUserType;
 import com.github.streamshub.systemtests.resourcetypes.kroxy.KroxyResourceType;
+import com.github.streamshub.systemtests.resourcetypes.prometheus.ServiceMonitorType;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.Namespaced;
 import io.fabric8.kubernetes.api.model.PodSpec;
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProtocolFilter;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxy;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxyIngress;
@@ -84,6 +86,7 @@ public class SetupUtils {
             new KafkaTopicType(),
             new KafkaUserType(),
             new KafkaConnectType(),
+            new KafkaRebalanceType(),
             new NamespaceType(),
             new OperatorGroupType(),
             new RoleBindingType(),
@@ -96,7 +99,8 @@ public class SetupUtils {
             new KroxyResourceType<>(KafkaProxyIngress.class),
             new KroxyResourceType<>(VirtualKafkaCluster.class),
             new KroxyResourceType<>(KafkaProtocolFilter.class),
-            new ApicurioRegistry3Type());
+            new ApicurioRegistry3Type(),
+            new ServiceMonitorType());
 
         KubeResourceManager.get().addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF
@@ -191,10 +195,32 @@ public class SetupUtils {
     }
 
     /**
+     * Rewrites subject namespaces in a {@link RoleBinding}.
+     *
+     * <p>If the provided resource is a {@link RoleBinding}, this method
+     * updates the namespace of all defined subjects to the given target namespace.
+     * This ensures RBAC bindings reference the correct namespace in
+     * namespace-scoped deployments.</p>
+     *
+     * @param resource         the Kubernetes resource to inspect
+     * @param targetNamespace  the namespace to set on all subjects
+     */
+    public static void fixRoleBindingNamespace(HasMetadata resource, String targetNamespace) {
+        if (resource instanceof RoleBinding rb) {
+            if (rb.getSubjects() != null) {
+                rb.getSubjects().forEach(subject -> {
+                    LOGGER.info("Setting subject namespace to '{}' in RoleBinding: {}",
+                        targetNamespace, rb.getMetadata().getName());
+                    subject.setNamespace(targetNamespace);
+                });
+            }
+        }
+    }
+
+    /**
      * Sets the namespace on supported namespaced Kubernetes resources.
      *
-     * <p>If the provided resource is a {@link ServiceAccount}, {@link Service},
-     * or {@link Deployment}, this method updates its metadata namespace
+     * <p> If the provided resource is instance of Namespace, this method updates its metadata namespace
      * to the specified target namespace.</p>
      *
      * @param resource        the Kubernetes resource to update
@@ -204,6 +230,24 @@ public class SetupUtils {
         if (resource instanceof Namespaced) {
             LOGGER.info("Setting resource {} to namespace {}", resource.getMetadata().getName(), targetNamespace);
             resource.getMetadata().setNamespace(targetNamespace);
+        }
+    }
+
+    public static void setContainerImage(HasMetadata resource, String deploymentName, String containerName, String image) {
+        if (resource instanceof Deployment deployment &&
+            deployment.getMetadata().getName().equals(deploymentName)) {
+            deployment.getSpec().getTemplate().getSpec().getContainers().stream()
+                .filter(c -> c.getName().equals(containerName))
+                .findFirst()
+                .ifPresentOrElse(
+                    c -> {
+                        LOGGER.info("Setting image on container {}/{} to {}", deploymentName, containerName, image);
+                        c.setImage(image);
+                    },
+                    () -> {
+                        throw new SetupException("Container %s not found in Deployment %s".formatted(containerName, deploymentName));
+                    }
+                );
         }
     }
 }

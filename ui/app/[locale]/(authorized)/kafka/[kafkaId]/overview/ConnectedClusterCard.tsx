@@ -7,10 +7,10 @@ export async function ConnectedClusterCard({
   cluster,
   groups,
 }: {
-  cluster: Promise<ClusterDetail | null>;
-  groups: Promise<ApiResponse<ConsumerGroupsResponse>>;
+  cluster: ClusterDetail | null;
+  groups: ApiResponse<ConsumerGroupsResponse>;
 }) {
-  const res = await cluster;
+  const res = cluster;
 
   const messages = res?.attributes.conditions
     ?.filter((c) => "Ready" !== c.type)
@@ -40,12 +40,16 @@ export async function ConnectedClusterCard({
       />
     );
   }
-  const groupCount = await groups.then((grpResp) =>
-    grpResp.errors ? undefined : (grpResp.payload?.meta.page.total ?? 0),
-  );
+  const groupCount = groups.errors
+    ? undefined
+    : (groups.payload?.meta.page.total ?? 0);
 
-  const brokerStatuses = res?.relationships.nodes?.meta?.summary?.statuses?.brokers || {};
-  const brokersTotal = Object.values(brokerStatuses).reduce((sum, count) => sum + count, 0);
+  const brokerStatuses =
+    res?.relationships.nodes?.meta?.summary?.statuses?.brokers || {};
+  const brokersTotal = Object.values(brokerStatuses).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
   const brokersOnline = brokerStatuses["Running"] ?? 0;
 
   return (

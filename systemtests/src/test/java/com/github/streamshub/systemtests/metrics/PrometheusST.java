@@ -19,12 +19,12 @@ import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -103,7 +103,7 @@ public class PrometheusST extends AbstractST {
                 .endSpec()
             .build());
 
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, 1, true, 1, 1, 1);
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, 1, 1, 1, 1);
         KafkaClients clients = new KafkaClientsBuilder()
             .withNamespaceName(tcc.namespace())
             .withTopicName(Constants.REPLICATED_TOPICS_PREFIX)
@@ -126,7 +126,6 @@ public class PrometheusST extends AbstractST {
     @AfterAll
     void testClassTeardown() {
         tcc.playwright().close();
-        prometheusOperator.teardown();
     }
 }
 

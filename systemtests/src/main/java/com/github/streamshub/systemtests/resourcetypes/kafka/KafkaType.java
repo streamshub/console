@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.resourcetypes;
+package com.github.streamshub.systemtests.resourcetypes.kafka;
 
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;

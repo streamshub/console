@@ -295,7 +295,7 @@ public class KafkaCmdUtils {
      * @param connectorName the name of the connector to wait for in the Connect API
      */
     public static void waitForConnectorInServiceApi(String namespace, String connectName, String connectorName) {
-        String podName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace, connectName).get(0).getMetadata().getName();
+        String podName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace, connectName).getFirst().getMetadata().getName();
         String service = KafkaConnectResources.url(connectName, namespace, Constants.CONNECT_SERVICE_PORT);
         String expectedLog = "\"connector\":\"" + connectorName + "\"";
 

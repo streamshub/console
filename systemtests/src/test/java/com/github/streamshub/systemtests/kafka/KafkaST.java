@@ -232,7 +232,8 @@ public class KafkaST extends AbstractST {
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
         // broker scaling needs longer to be displayed
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, PodUtils.getTimeoutForPodOperations(Constants.REGULAR_BROKER_REPLICAS), true, true);
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS,
+            PodUtils.getTimeoutForPodOperations(scaledBrokersCount), true, true);
 
         LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
@@ -289,7 +290,7 @@ public class KafkaST extends AbstractST {
         // Expect a warning message
         String warningMessage = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()).getStatus().getConditions().stream()
             .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()) && condition.getStatus().equals(ConditionStatus.TRUE.toString()))
-            .toList().get(0).getMessage();
+            .toList().getFirst().getMessage();
         LOGGER.debug("Kafka currently contains warning message: [{}]", warningMessage);
 
         // Reload using on page button

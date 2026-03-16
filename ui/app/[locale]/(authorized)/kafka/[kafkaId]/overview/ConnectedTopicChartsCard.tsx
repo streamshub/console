@@ -5,7 +5,6 @@ import {
   TopicChartsCard,
   TopicOption,
 } from "@/components/ClusterOverview/TopicChartsCard";
-import { Visibility } from "@patternfly/react-table";
 
 function timeSeriesMetrics(
   ranges: Record<string, { range: string[][]; nodeId?: string }[]> | undefined,
@@ -30,13 +29,13 @@ export async function ConnectedTopicChartsCard({
   topics,
   includeHidden,
 }: {
-  cluster: Promise<ClusterDetail | null>;
-  topics: Promise<ApiResponse<TopicsResponse>>;
+  cluster: ClusterDetail | null;
+  topics: ApiResponse<TopicsResponse>;
   includeHidden?: boolean;
 }) {
-  const res = await cluster;
+  const res = cluster;
 
-  const topicResponse = await topics;
+  const topicResponse = topics;
 
   const topicList: TopicOption[] =
     topicResponse.payload?.data
