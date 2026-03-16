@@ -38,6 +38,8 @@ include::../modules/deploying/proc-deploying-operator-crd.adoc[leveloffset=+2]
 //include::../modules/deploying/proc-deploying-operator-olm-ui.adoc[leveloffset=+2]
 //Using the operator to deploy the console
 include::../modules/deploying/proc-connecting-console.adoc[leveloffset=+1]
+//virtual kafka clusters
+include::../modules/deploying/ref-virtual-kafka-clusters.adoc[leveloffset=+2]
 //cluster connection authentication options
 include::../modules/deploying/ref-authentication-options.adoc[leveloffset=+2]
 //kafka connect 
