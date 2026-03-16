@@ -415,7 +415,10 @@
     "view_openshift_console": "View in OpenShift console",
     "no_data": "No clusters available.",
     "not_available": "n/a",
-    "version_derived": "Version derived from Kafka metadata"
+    "version_derived": "Version derived from Kafka metadata",
+    "status": "Status",
+    "status_not_available": "Not Available",
+    "status_tooltip": "Status is only available for Kafka clusters managed by a Strimzi Kafka resource."
   },
   "metrics": {
     "all_brokers": "All Nodes",

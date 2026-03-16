@@ -33,6 +33,7 @@ export const ClusterListSchema = z.object({
     name: z.string(),
     namespace: z.string().nullable().optional(),
     kafkaVersion: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
   }),
 });
 
