@@ -10,10 +10,12 @@ The broker page lists the configuration values for the broker.
 .Procedure
 
 . Log in to the Kafka cluster in the StreamsHub Console, then click *Kafka nodes*.
-. On the *Nodes* page, click the name of the broker you want to inspect.
+. On the *Nodes* page, click the ID of the broker you want to inspect.
 . Check the information on the broker page.
 +
-Filter the configuration properties to narrow results by data source:
+Filter by property name or data source to narrow results.
++
+Data sources include:
 +
 * *DEFAULT_CONFIG*: The fallback value used when no other configuration is specified.
 * *STATIC_BROKER_CONFIG*: Predefined, broker-wide values that apply to all topics by default.

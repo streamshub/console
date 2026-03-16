@@ -7,14 +7,19 @@
 Check the configuration of a specific group from the *Configuration* tab.
 The *Configuration* tab lists the configuration values for the group.
 
+NOTE: Default values apply only to the group type they are defined for. 
+Some settings may appear for all groups but take effect only for the relevant group type. 
+For example, `consumer.session.timeout.ms` appears globally but applies only to Consumer groups.
+
 .Procedure
 
 . Log in to the Kafka cluster in the StreamsHub Console, then click *Groups*.
-. On the *Groups* page, click the name of the group you want to inspect.
+. On the *Groups* page, click the ID of the group you want to inspect.
 . Check the information on the *Configuration* tab.
 +
-Filter by configuration property to narrow results.
+Filter by property name or data source to narrow results.
 +
-Group configuration values typically use the following data source:
+Data sources include:
 +
-* *DEFAULT_CONFIG*: The fallback value used when no other configuration is specified.
+* *DEFAULT_CONFIG*: The default configuration value used when no group-specific configuration is set.
+* *DYNAMIC_GROUP_CONFIG*: A configuration value that has been explicitly set for the group.
