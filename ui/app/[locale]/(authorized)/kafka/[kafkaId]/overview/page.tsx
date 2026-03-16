@@ -27,38 +27,42 @@ export default async function OverviewPage({
 }) {
   const includeHidden = searchParams.includeHidden === "true";
 
-  const kafkaCluster = getKafkaCluster(params.kafkaId, {
+  const kafkaClusterPromise = getKafkaCluster(params.kafkaId, {
     fields:
       "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,metrics",
   }).then((r) => r.payload ?? null);
 
-  const topicsSummary = getTopics(params.kafkaId, {
+  const topicsSummaryPromise = getTopics(params.kafkaId, {
     fields: "status",
     pageSize: 1,
   });
 
-  const topicsForCharts = getTopics(params.kafkaId, {
+  const topicsForChartsPromise = getTopics(params.kafkaId, {
     fields: "name,visibility",
     pageSize: 100,
     sort: "name",
     sortDir: "asc",
     includeHidden: true,
   });
-  const groups = getConsumerGroups(params.kafkaId, {
+  const groupsPromise = getConsumerGroups(params.kafkaId, {
     fields: "groupId,state",
   });
-  const viewedTopics = getViewedTopics().then((topics) =>
+  const viewedTopicsPromise = getViewedTopics().then((topics) =>
     topics.filter((t) => t.kafkaId === params.kafkaId),
   );
 
-  console.log("kafkaCLuster", kafkaCluster);
+  const [kafkaCluster, topicsSummary, topicsForCharts, groups, viewedTopics] =
+    await Promise.all([
+      kafkaClusterPromise,
+      topicsSummaryPromise,
+      topicsForChartsPromise,
+      groupsPromise,
+      viewedTopicsPromise,
+    ]);
   return (
     <PageLayout
       clusterOverview={
-        <ConnectedClusterCard
-          cluster={kafkaCluster}
-          groups={groups}
-        />
+        <ConnectedClusterCard cluster={kafkaCluster} groups={groups} />
       }
       topicsPartitions={<ConnectedTopicsPartitionsCard data={topicsSummary} />}
       clusterCharts={<ConnectedClusterChartsCard cluster={kafkaCluster} />}
