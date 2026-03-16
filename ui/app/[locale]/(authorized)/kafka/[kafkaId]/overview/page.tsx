@@ -59,8 +59,6 @@ export default async function OverviewPage({
       groupsPromise,
       viewedTopicsPromise,
     ]);
-
-  console.log("kafkaCluster", kafkaCluster);
   return (
     <PageLayout
       clusterOverview={

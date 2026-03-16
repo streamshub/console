@@ -29,8 +29,6 @@ export async function ConnectedClusterChartsCard({
 
   const metricsUnavailable = res?.attributes.metrics === null;
 
-  console.log("is virtual kafka cluster", isVirtualKafkaCluster);
-
   if (metricsUnavailable || isVirtualKafkaCluster) {
     /*
      * metrics being null (rather than undefined or empty) is how the server
