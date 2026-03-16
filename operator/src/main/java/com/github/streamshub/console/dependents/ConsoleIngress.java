@@ -16,7 +16,8 @@ import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 
 @ApplicationScoped
 @KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
-public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Console> implements ConsoleResource<Ingress> {
+public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Console>
+        implements ConsoleResource<Ingress> {
 
     public static final String NAME = "console-ingress";
 
@@ -70,11 +71,11 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     }
 
     /**
-     * Reconcile precondition: only create the plain Ingress on clusters that do
-     * NOT support OpenShift Routes. On OpenShift / MicroShift the Route-based
-     * dependent ({@code ConsoleRoute}) is used instead.
+     * Only create the plain Ingress on clusters that do NOT support OpenShift
+     * Routes. On OpenShift / MicroShift, {@link ConsoleRoute} is used instead.
+     * <p>
+     * Note: not a CDI bean — conditions are instantiated by the operator SDK.
      */
-    @ApplicationScoped
     public static class Precondition implements Condition<Ingress, Console> {
         @Override
         public boolean isMet(DependentResource<Ingress, Console> dependentResource, Console primary, Context<Console> context) {

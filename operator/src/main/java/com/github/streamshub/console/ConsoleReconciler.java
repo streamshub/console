@@ -142,6 +142,7 @@ import java.util.stream.Collectors;
                     name = ConsoleIngress.NAME,
                     type = ConsoleIngress.class,
                     reconcilePrecondition = ConsoleIngress.Precondition.class,
+                    activationCondition = ConsoleIngress.Precondition.class,
                     dependsOn = {
                         ConsoleService.NAME
                     },
@@ -150,6 +151,7 @@ import java.util.stream.Collectors;
                     name = ConsoleRoute.NAME,
                     type = ConsoleRoute.class,
                     reconcilePrecondition = ConsoleRoute.Precondition.class,
+                    activationCondition = ConsoleRoute.Precondition.class,
                     dependsOn = {
                         ConsoleService.NAME
                     },
