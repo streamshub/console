@@ -21,9 +21,8 @@ import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
-import com.github.streamshub.console.dependents.conditions.IngressReadyCondition;
+import com.github.streamshub.console.dependents.conditions.IngressOrRouteReadyCondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
-import com.github.streamshub.console.dependents.conditions.RouteReadyCondition;
 import com.github.streamshub.console.support.RootCause;
 import io.javaoperatorsdk.operator.AggregatedOperatorException;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
@@ -145,8 +144,7 @@ import java.util.stream.Collectors;
                     activationCondition = ConsoleIngress.Precondition.class,
                     dependsOn = {
                         ConsoleService.NAME
-                    },
-                    readyPostcondition = IngressReadyCondition.class),
+                    }),
             @Dependent(
                     name = ConsoleRoute.NAME,
                     type = ConsoleRoute.class,
@@ -154,16 +152,14 @@ import java.util.stream.Collectors;
                     activationCondition = ConsoleRoute.Precondition.class,
                     dependsOn = {
                         ConsoleService.NAME
-                    },
-                    readyPostcondition = RouteReadyCondition.class),
+                    }),
             @Dependent(
                     name = ConsoleDeployment.NAME,
                     type = ConsoleDeployment.class,
+                    reconcilePrecondition = IngressOrRouteReadyCondition.class,
                     dependsOn = {
                         ConsoleClusterRoleBinding.NAME,
-                        ConsoleSecret.NAME,
-                        ConsoleIngress.NAME,
-                        ConsoleRoute.NAME
+                        ConsoleSecret.NAME
                     },
                     readyPostcondition = DeploymentReadyCondition.class),
         })
