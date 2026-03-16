@@ -16,10 +16,10 @@ import { timeSeriesMetrics } from "@/components/ClusterOverview/components/timeS
 export async function ConnectedClusterChartsCard({
   cluster,
 }: {
-  cluster: Promise<ClusterDetail | null>;
+  cluster: ClusterDetail | null;
 }) {
   const t = useTranslations();
-  const res = await cluster;
+  const res = cluster;
 
   const isVirtualKafkaCluster =
     res?.meta?.kind === "virtualkafkaclusters.kroxylicious.io";
@@ -28,8 +28,6 @@ export async function ConnectedClusterChartsCard({
     res?.relationships?.nodes?.data?.map((n) => `Node ${n.id}`) ?? [];
 
   const metricsUnavailable = res?.attributes.metrics === null;
-
-  console.log("is virtual kafka cluster", isVirtualKafkaCluster);
 
   if (metricsUnavailable || isVirtualKafkaCluster) {
     /*
