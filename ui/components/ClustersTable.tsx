@@ -79,7 +79,15 @@ export function ClustersTable({
           case "version":
             return <Th key={key}>{t("ClustersTable.kafka_version")}</Th>;
           case "status":
-            return <Th key={key}>{t("ClustersTable.status")}</Th>;
+            return (
+              <Th key={key}>
+                {t("ClustersTable.status")}{" "}
+                <Tooltip content={t("ClustersTable.status_tooltip")}>
+                  <HelpIcon />
+                </Tooltip>
+              </Th>
+            );
+
           case "namespace":
             return <Th key={key}>{t("ClustersTable.project")}</Th>;
           case "authentication":
