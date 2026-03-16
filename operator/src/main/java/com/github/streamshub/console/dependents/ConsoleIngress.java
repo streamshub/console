@@ -9,8 +9,10 @@ import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
+import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
+import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 
 @ApplicationScoped
 @KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
@@ -43,7 +45,9 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                 .withLabels(commonLabels("console"))
             .endMetadata()
             .editSpec()
-                .withIngressClassName(getIngressClassName(context))
+                // Plain Kubernetes (non-OCP) clusters don't need a class name; the
+                // default ingress controller picks it up automatically.
+                .withIngressClassName(null)
                 .editDefaultBackend()
                     .editService()
                         .withName(service.instanceName(primary))
@@ -66,10 +70,15 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     }
 
     /**
-     * The class name is not required for functionality on OCP. However, monitoring
-     * will issue an alert if it is not present.
+     * Reconcile precondition: only create the plain Ingress on clusters that do
+     * NOT support OpenShift Routes. On OpenShift / MicroShift the Route-based
+     * dependent ({@code ConsoleRoute}) is used instead.
      */
-    private String getIngressClassName(Context<Console> context) {
-        return context.getClient().supports(Route.class) ? "openshift-default" : null;
+    @ApplicationScoped
+    public static class Precondition implements Condition<Ingress, Console> {
+        @Override
+        public boolean isMet(DependentResource<Ingress, Console> dependentResource, Console primary, Context<Console> context) {
+            return !context.getClient().supports(Route.class);
+        }
     }
 }
