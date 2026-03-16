@@ -5,8 +5,6 @@ import jakarta.inject.Inject;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
-import io.fabric8.openshift.api.model.RouteTargetReferenceBuilder;
-import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
@@ -55,29 +53,29 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
         }
 
         return new RouteBuilder()
-                .withNewMetadata()
-                    .withName(instanceName(primary))
-                    .withNamespace(primary.getMetadata().getNamespace())
-                    .withLabels(commonLabels("console"))
-                .endMetadata()
-                .withNewSpec()
-                    // null is valid — OpenShift assigns the host automatically
-                    .withHost(host)
-                    .withTo(new RouteTargetReferenceBuilder()
-                            .withKind("Service")
-                            .withName(serviceName)
-                            .withWeight(100)
-                            .build())
-                    .withNewPort()
-                        // 80 is the HTTP port on the console-ui service
-                        .withNewTargetPort(80)
-                    .endPort()
-                    .withTls(new TLSConfigBuilder()
-                            .withTermination("edge")
-                            .withInsecureEdgeTerminationPolicy("Redirect")
-                            .build())
-                .endSpec()
-                .build();
+            .withNewMetadata()
+                .withName(instanceName(primary))
+                .withNamespace(primary.getMetadata().getNamespace())
+                .withLabels(commonLabels("console"))
+            .endMetadata()
+            .withNewSpec()
+                // null is valid — OpenShift assigns the host automatically
+                .withHost(host)
+                .withNewTo()
+                    .withKind("Service")
+                    .withName(serviceName)
+                    .withWeight(100)
+                .endTo()
+                .withNewPort()
+                    // 80 is the HTTP port on the console-ui service
+                    .withNewTargetPort(80)
+                .endPort()
+                .withNewTls()
+                    .withTermination("edge")
+                    .withInsecureEdgeTerminationPolicy("Redirect")
+                .endTls()
+            .endSpec()
+            .build();
     }
 
     /**
@@ -92,9 +90,7 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
      */
     public static class Precondition implements Condition<Route, Console> {
         @Override
-        public boolean isMet(DependentResource<Route, Console> dependentResource,
-                Console primary,
-                Context<Console> context) {
+        public boolean isMet(DependentResource<Route, Console> dependentResource, Console primary, Context<Console> context) {
             return context.getClient().supports(Route.class);
         }
     }
