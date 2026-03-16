@@ -32,7 +32,7 @@ export async function getKafkaClusters(
     "/api/kafkas",
     new URLSearchParams(
       filterUndefinedFromObj({
-        "fields[kafkas]": "name,namespace,kafkaVersion",
+        "fields[kafkas]": "name,namespace,kafkaVersion,status",
         "filter[name]": filterLike(params?.name),
         "page[size]": params?.pageSize,
         "page[after]": params?.pageCursor?.startsWith("after:")

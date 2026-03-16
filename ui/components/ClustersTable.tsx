@@ -12,6 +12,7 @@ import { KroxyliciousClusterLabel } from "@/app/[locale]/(authorized)/kafka/[kaf
 export const ClusterColumns = [
   "name",
   "version",
+  "status",
   "namespace",
   "authentication",
   "login",
@@ -77,6 +78,16 @@ export function ClustersTable({
             );
           case "version":
             return <Th key={key}>{t("ClustersTable.kafka_version")}</Th>;
+          case "status":
+            return (
+              <Th key={key}>
+                {t("ClustersTable.status")}{" "}
+                <Tooltip content={t("ClustersTable.status_tooltip")}>
+                  <HelpIcon />
+                </Tooltip>
+              </Th>
+            );
+
           case "namespace":
             return <Th key={key}>{t("ClustersTable.project")}</Th>;
           case "authentication":
@@ -118,19 +129,28 @@ export function ClustersTable({
           case "version":
             return (
               <Td key={key}>
-                { row.attributes.kafkaVersion ?
-                    <>
-                        { row.attributes.kafkaVersion }
-                        {!row.meta.managed && <>
-                            {" "}
-                            <Tooltip content={t("ClustersTable.version_derived")}>
-                                <HelpIcon />
-                            </Tooltip>
-                            </>
-                        }
-                    </>
-                    : t("ClustersTable.not_available")
-                }
+                {row.attributes.kafkaVersion ? (
+                  <>
+                    {row.attributes.kafkaVersion}
+                    {!row.meta.managed && (
+                      <>
+                        {" "}
+                        <Tooltip content={t("ClustersTable.version_derived")}>
+                          <HelpIcon />
+                        </Tooltip>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  t("ClustersTable.not_available")
+                )}
+              </Td>
+            );
+          case "status":
+            return (
+              <Td key={key}>
+                {row.attributes.status ??
+                  t("ClustersTable.status_not_available")}
               </Td>
             );
           case "namespace":
