@@ -2,9 +2,7 @@ package com.github.streamshub.console.dependents;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import com.github.streamshub.console.api.v1alpha1.Console;
-
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.api.model.RouteTargetReferenceBuilder;
@@ -44,11 +42,17 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
 
     @Override
     protected Route desired(Console primary, Context<Console> context) {
+        // hostname is optional on openshift — when null, the router auto-assigns one from the route
+        // name, namespace, and cluster domain (issue #1471)
         String host = primary.getSpec().getHostname();
         String serviceName = service.instanceName(primary);
 
-        // Store the URL so ConsoleDeployment can use it for NEXTAUTH_URL
-        setAttribute(context, INGRESS_URL_KEY, "https://" + host);
+        // Only set INGRESS_URL_KEY now, if we already know the hostname
+        // when missing, RouteReadyCondition sets it once the router has set
+        // route.status.ingress[0].host so that ConsoleDeployment gets the right NEXTAUTH_URL
+        if (host != null) {
+            setAttribute(context, INGRESS_URL_KEY, "https://" + host);
+        }
 
         return new RouteBuilder()
                 .withNewMetadata()
@@ -57,6 +61,7 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
                     .withLabels(commonLabels("console"))
                 .endMetadata()
                 .withNewSpec()
+                    // null is valid — OpenShift assigns the host automatically
                     .withHost(host)
                     .withTo(new RouteTargetReferenceBuilder()
                             .withKind("Service")
@@ -64,7 +69,8 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
                             .withWeight(100)
                             .build())
                     .withNewPort()
-                        .withNewTargetPort("https")
+                        // 80 is the HTTP port on the console-ui service
+                        .withNewTargetPort(80)
                     .endPort()
                     .withTls(new TLSConfigBuilder()
                             .withTermination("edge")
@@ -75,10 +81,15 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
     }
 
     /**
-     * Reconcile precondition: only create the Route when the cluster supports
-     * OpenShift Route resources (i.e. OpenShift / MicroShift).
+     * Used as BOTH {@code reconcilePrecondition} AND {@code activationCondition}
+     * in the workflow so that:
+     * <ul>
+     *   <li>No Route is reconciled on plain Kubernetes clusters.</li>
+     *   <li>No informer/watch for {@link Route} is registered on clusters that
+     *       lack the Route API, avoiding API-discovery errors on startup.</li>
+     * </ul>
+     * Note: not a CDI bean — conditions are instantiated by the operator SDK.
      */
-    @ApplicationScoped
     public static class Precondition implements Condition<Route, Console> {
         @Override
         public boolean isMet(DependentResource<Route, Console> dependentResource,
