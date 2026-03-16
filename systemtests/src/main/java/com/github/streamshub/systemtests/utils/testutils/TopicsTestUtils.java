@@ -45,7 +45,7 @@ public class TopicsTestUtils {
             if (!expectedAttr.equals(currentAttr)) {
                 PwUtils.screenshot(tcc, tcc.kafkaName(), "topicStatusFilterIncorrect");
                 PwUtils.waitForLocatorAndClick(tcc, selectorSortButton);
-                LOGGER.warn("Locator had incorrect aria-sort=" + currentAttr + ", expected=" + expectedAttr);
+                LOGGER.warn("Locator had incorrect aria-sort={}, expected={}", currentAttr, expectedAttr);
                 return false;
             }
 
