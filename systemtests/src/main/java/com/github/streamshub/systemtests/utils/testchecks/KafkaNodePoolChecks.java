@@ -1,12 +1,12 @@
 package com.github.streamshub.systemtests.utils.testchecks;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.NodesPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.testutils.KafkaTestUtils;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 import org.apache.logging.log4j.Logger;
@@ -48,14 +48,14 @@ public class KafkaNodePoolChecks {
 
     public static void checkOverviewPageKafkaBrokerNodes(TestCaseConfig tcc, int brokerCount) {
         LOGGER.info("Verify kafka nodes on overview page");
-        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            brokerCount + "/" + brokerCount, PodUtils.getTimeoutForPodOperations(brokerCount), true, true);
+            brokerCount + "/" + brokerCount, TimeConstants.ACTION_WAIT_LONG);
     }
 
     public static void checkNodesPageKafkaNodes(TestCaseConfig tcc, int totalNodeCount) {
         LOGGER.info("Verify kafka nodes on nodes page");
-        tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
         PwUtils.waitForLocatorCount(tcc, totalNodeCount, NodesPageSelectors.NPS_TABLE_BODY, true);
     }
 

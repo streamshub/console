@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
@@ -12,19 +13,23 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.ColorScheme;
 import com.microsoft.playwright.options.ViewportSize;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.lang.reflect.Method;
 import java.util.Locale;
 
 public class TestCaseConfig {
+
+    private static final Logger LOGGER = LogWrapper.getLogger(TestCaseConfig.class);
+
     private static final ViewportSize FULL_HD = new ViewportSize(1920, 1080);
     private final String testName;
     private final String namespace;
-    private final Playwright playwright;
-    private final BrowserContext context;
-    private final Browser browser;
-    private final Page page;
+    private Playwright playwright;
+    private BrowserContext context;
+    private Browser browser;
+    private Page page;
     private final int defaultMessageCount;
 
     // Default Kafka
@@ -53,19 +58,7 @@ public class TestCaseConfig {
             .map(name -> name.toLowerCase(Locale.ENGLISH) + "-" + Utils.hashStub(testName))
             .orElse("nullClass");
 
-        this.playwright = Playwright.create();
-
-        // to keep browser context open it must exist within the TestCaseConfig context - can't be a local var
-        browser = PwUtils.createBrowser(playwright);
-        this.context = browser.newContext(new Browser.NewContextOptions()
-                .setColorScheme(ColorScheme.DARK)
-                .setViewportSize(FULL_HD)
-                .setIgnoreHTTPSErrors(true));
-
-        // Allow tracing
-        this.context.tracing().start(new Tracing.StartOptions().setScreenshots(true).setSnapshots(true).setSources(true));
-
-        this.page = context.newPage();
+        this.initPlaywright();
 
         this.kafkaName = KafkaNamingUtils.kafkaClusterName(namespace);
         this.connectName = KafkaNamingUtils.kafkaConnectName(namespace);
@@ -81,6 +74,38 @@ public class TestCaseConfig {
 
         this.defaultMessageCount = Constants.MESSAGE_COUNT;
         this.apicurioRegistry3Name = Constants.APICURIO_PREFIX + "-" + Utils.hashStub(namespace);
+    }
+
+    private void initPlaywright() {
+        this.playwright = Playwright.create();
+        // to keep browser context open it must exist within the TestCaseConfig context - can't be a local var
+        this.browser = PwUtils.createBrowser(playwright);
+
+        this.context = browser.newContext(new Browser.NewContextOptions()
+            .setColorScheme(ColorScheme.DARK)
+            .setViewportSize(FULL_HD)
+            .setIgnoreHTTPSErrors(true));
+
+        // Allow tracing
+        this.context.tracing().start(new Tracing.StartOptions()
+            .setScreenshots(true)
+            .setSnapshots(true)
+            .setSources(true));
+
+        this.page = context.newPage();
+    }
+
+    public void resetBrowserContext() {
+        try {
+            PwUtils.saveTracing(this.context);
+            // closes the context and its page(s), browser stays alive
+            this.context.close();
+            this.browser.close();
+            this.playwright.close();
+        } catch (Exception ignored) {
+            LOGGER.error("Cannot reset context");
+        }
+        initPlaywright();
     }
 
     // ----------

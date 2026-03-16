@@ -59,7 +59,7 @@ public class KroxyST extends AbstractST {
     @Test
     void testDisplayVirtualCluster() {
         LOGGER.info("Verify default kafka from strimzi CR");
-        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_NAME, tcc.kafkaName(), true);
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION, Environment.ST_KAFKA_VERSION, true);

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import io.skodjob.testframe.TestFrameEnv;
+import io.skodjob.kubetest4j.KubeTestEnv;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -33,7 +33,7 @@ public class MessageStore {
     private MessageStore() {}
 
     private static JsonNode jsonResources;
-    private static final Path MESSAGES_PATH = Path.of(TestFrameEnv.USER_PATH + "/../ui/messages/en.json");
+    private static final Path MESSAGES_PATH = Path.of(KubeTestEnv.USER_PATH + "/../ui/messages/en.json");
 
     static {
         try {

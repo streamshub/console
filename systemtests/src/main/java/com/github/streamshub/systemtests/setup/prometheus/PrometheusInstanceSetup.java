@@ -7,8 +7,8 @@ import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.skodjob.testframe.TestFrameEnv;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.KubeTestEnv;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 public class PrometheusInstanceSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(PrometheusInstanceSetup.class);
     private static final String PROMETHEUS_INSTANCE_NAME = "console-prometheus";
-    private static final String PROMETHEUS_INSTANCE_EXAMPLES = TestFrameEnv.USER_PATH + "/../examples/prometheus";
+    private static final String PROMETHEUS_INSTANCE_EXAMPLES = KubeTestEnv.USER_PATH + "/../examples/prometheus";
     private List<HasMetadata> allResources = new ArrayList<>();
 
     private final String deploymentNamespace;

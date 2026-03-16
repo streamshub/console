@@ -25,7 +25,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUt
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.MessagesChecks;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -138,7 +138,7 @@ public class MessagesST extends AbstractST {
     @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
     void testMessageSearchUsingQueries(int expectedResults, String searchQuery, Map<String, String> checks) {
         final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
-        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
+        PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         LOGGER.info("Wait for message search page toolbar to be fully there before filtering messages");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
@@ -240,7 +240,7 @@ public class MessagesST extends AbstractST {
         final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
         LOGGER.info("Using topic '{}' with id '{}'", kafkaTopicName, topicId);
 
-        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
+        PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
 
         LOGGER.info("Filtering messages using ISO query timestamp (current) - expect 0 new messages");
@@ -265,7 +265,7 @@ public class MessagesST extends AbstractST {
         LOGGER.info("New messages successfully produced and consumed");
 
         // Verify new messages via query bar (ISO + Unix)
-        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
+        PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         LOGGER.info("Verifying ISO filtering returns newly produced messages");
         MessagesChecks.checkQueryBarFilter(tcc, TIMESTAMP_FILTER, currentDateTimeQuery, newMessageCount, newMessageText);
@@ -277,7 +277,7 @@ public class MessagesST extends AbstractST {
         MessagesChecks.checkQueryBarFilter(tcc, EPOCH_FILTER, earlierDateTimeUnix, oldMessageCount, oldMessageText);
 
         // Verify via UI popover (ISO mode)
-        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
+        PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
@@ -319,7 +319,7 @@ public class MessagesST extends AbstractST {
     @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
     void testFilterMessagesUsingUIForm() {
         final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
-        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
+        PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         LOGGER.info("Wait for page toolbar to be fully loaded before filtering");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);

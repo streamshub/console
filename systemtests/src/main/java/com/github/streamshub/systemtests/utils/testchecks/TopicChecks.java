@@ -37,7 +37,7 @@ public class TopicChecks {
      */
     public static void checkOverviewPageTopicState(TestCaseConfig tcc, String kafkaName, int total, int partitions, int fullyReplicated, int underReplicated, int unavailable) {
         LOGGER.info("Verify Overview Page topic status [{} total topics] [{} Partitions]", total, partitions);
-        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, kafkaName), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName));
 
         // Status
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_TOPICS, total + " topics", true);
@@ -63,7 +63,7 @@ public class TopicChecks {
     public static void checkTopicsPageTopicState(TestCaseConfig tcc, String kafkaName, int total, int fullyReplicated, int underReplicated, int unavailable) {
         LOGGER.info("Verify Overview Page topic status [{} total topics] [FullyReplicated: {}] [UnderReplicated: {}] [Unavailabe: {}]", total, fullyReplicated, underReplicated, unavailable);
         // Total topic count
-        tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, kafkaName), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, kafkaName));
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_TOTAL_TOPICS_BADGE, total + " total", true);
         // Status
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_SUCCESS, Integer.toString(fullyReplicated), true);
@@ -99,7 +99,7 @@ public class TopicChecks {
             int topicsOnPage;
 
             // Go to topics page
-            tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+            PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()));
 
             LOGGER.debug("Click on topics per page selection");
             PwUtils.waitForLocatorAndClick(tcc, dropdownButtonSelector);

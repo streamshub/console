@@ -26,7 +26,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUt
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -49,7 +49,7 @@ public class PrometheusST extends AbstractST {
         LOGGER.info("Verify that the default prometheus is not deployed");
         assertTrue(ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(tcc.namespace()) + "-prometheus-deployment").isEmpty());
 
-        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         LOGGER.info("Verify charts are present and contain data");
         // Disk
         PwUtils.waitForContainsText(tcc,

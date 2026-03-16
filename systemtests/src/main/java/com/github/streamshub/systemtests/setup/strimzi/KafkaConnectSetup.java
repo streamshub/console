@@ -9,7 +9,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtil
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
 import io.strimzi.api.kafka.model.connect.KafkaConnectBuilder;

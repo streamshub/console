@@ -25,7 +25,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import io.apicurio.registry.client.RegistryClientFactory;
 import io.apicurio.registry.client.common.RegistryClientOptions;
 import io.apicurio.registry.rest.client.RegistryClient;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -203,7 +203,7 @@ public class ApicurioST extends AbstractST {
         LOGGER.info("Verifying message and schema in topic page for {}", topicName);
         String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
 
-        tcc.page().navigate(PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
+        PwUtils.navigate(tcc, PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
 
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.getTableRowItem(1, 1));
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_NAME, schemaName, true);
@@ -213,7 +213,7 @@ public class ApicurioST extends AbstractST {
 
         // Content Id depends on how much artifacts are present in the registry - just like globalId
         LOGGER.info("Navigating to schema page to verify artifact content for {}", artifactId);
-        tcc.page().navigate(PwPageUrls.getConsoleUrl(tcc) + schemaLink);
+        PwUtils.navigate(tcc, PwPageUrls.getConsoleUrl(tcc) + schemaLink);
 
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SCHEMA_PAGE_HEADER, schemaName, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SCHEMA_PAGE_CODE, PwUtils.getTrimmedText(schema), true);
@@ -319,7 +319,7 @@ public class ApicurioST extends AbstractST {
 
         LOGGER.info("Verifying message and schema in topic page for {}", topicName);
         String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
-        tcc.page().navigate(PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
+        PwUtils.navigate(tcc, PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
 
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.getTableRowItem(1, 1));
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_VALUE_FORMAT, valueFormat, true);

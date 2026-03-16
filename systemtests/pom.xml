@@ -22,7 +22,7 @@
         <!-- Playwright -->
         <playwright.version>1.58.0</playwright.version>
         <!-- Used for test-frame -->
-        <test-frame.version>1.4.0</test-frame.version>
+        <skodjob.kubetest4j.version>1.0.0</skodjob.kubetest4j.version>
         <!-- Allows skipping tests - unit, system or both types -->
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
@@ -87,24 +87,24 @@
         </dependency>
         <!-- Test Frame used for handling k8s resources -->
         <dependency>
-            <groupId>io.skodjob</groupId>
-            <artifactId>test-frame-common</artifactId>
-            <version>${test-frame.version}</version>
+            <groupId>io.skodjob.kubetest4j</groupId>
+            <artifactId>kubetest4j</artifactId>
+            <version>${skodjob.kubetest4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.skodjob</groupId>
-            <artifactId>test-frame-kubernetes</artifactId>
-            <version>${test-frame.version}</version>
+            <groupId>io.skodjob.kubetest4j</groupId>
+            <artifactId>kubernetes-resources</artifactId>
+            <version>${skodjob.kubetest4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.skodjob</groupId>
-            <artifactId>test-frame-openshift</artifactId>
-            <version>${test-frame.version}</version>
+            <groupId>io.skodjob.kubetest4j</groupId>
+            <artifactId>openshift-resources</artifactId>
+            <version>${skodjob.kubetest4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.skodjob</groupId>
-            <artifactId>test-frame-log-collector</artifactId>
-            <version>${test-frame.version}</version>
+            <groupId>io.skodjob.kubetest4j</groupId>
+            <artifactId>log-collector</artifactId>
+            <version>${skodjob.kubetest4j.version}</version>
         </dependency>
         <dependency>
             <groupId>io.fabric8</groupId>

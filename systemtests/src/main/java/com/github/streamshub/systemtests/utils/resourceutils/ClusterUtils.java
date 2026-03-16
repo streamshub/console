@@ -3,8 +3,8 @@ package com.github.streamshub.systemtests.utils.resourceutils;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
 import io.fabric8.openshift.api.model.config.v1.DNS;
-import io.skodjob.testframe.executor.ExecResult;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.executor.ExecResult;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 
 import java.util.Locale;
 

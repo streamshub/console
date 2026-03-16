@@ -1,6 +1,6 @@
 package com.github.streamshub.systemtests.constants;
 
-import io.skodjob.testframe.TestFrameConstants;
+import io.skodjob.kubetest4j.KubeTestConstants;
 
 import java.time.Duration;
 
@@ -26,9 +26,12 @@ public class TimeConstants {
     // HTML elements
     public static final long ELEMENT_VISIBILITY_TIMEOUT = minutesInMilis(1);
     public static final long UI_COMPONENT_REACTION_INTERVAL_SHORT = secondsInMilis(5);
+    public static final long ACTION_WAIT_LONG = minutesInMilis(1);
+    public static final long ACTION_WAIT_MEDIUM = secondsInMilis(20);
+    public static final long ACTION_WAIT_SHORT = secondsInMilis(10);
 
     // Time values depending on variable
     public static long timeoutForClientFinishJob(int messagesCount) {
-        return messagesCount * (TestFrameConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS + TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
+        return messagesCount * (KubeTestConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS + KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM);
     }
 }

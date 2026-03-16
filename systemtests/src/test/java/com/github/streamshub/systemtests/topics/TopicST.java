@@ -9,6 +9,7 @@ import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
+import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
@@ -18,20 +19,21 @@ import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaCmdUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -139,14 +141,14 @@ public class TopicST extends AbstractST {
         LOGGER.info("Mark topics as displayed on overview page by visiting their page");
         for (String topicName : topicNames) {
             String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
-            tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
-            tcc.page().waitForURL(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
+            PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), true, true);
             PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT);
             PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, MessageStore.noDataTitle(), true);
+            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
         }
 
         LOGGER.info("Go to homepage and check the recently viewed card is not empty");
-        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         LOGGER.info("Check topics table for recently visited topics");
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(1), topicNames.get(2), false);
@@ -201,7 +203,7 @@ public class TopicST extends AbstractST {
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         LOGGER.info("Verify Topics Filtering");
-        tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()));
 
         final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).getFirst().getMetadata().getName();
         final List<String> unmanagedReplicatedTopicsNames = KafkaCmdUtils.listKafkaTopicsByPrefix(tcc.namespace(), tcc.kafkaName(), brokerPodName,
@@ -238,7 +240,7 @@ public class TopicST extends AbstractST {
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
-        tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()));
 
         List<String> unavailableTopicsNames = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.UNAVAILABLE_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).sorted().toList();
 

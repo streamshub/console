@@ -24,7 +24,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaCmdUtils
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.connect.KafkaConnectResources;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -91,7 +91,7 @@ public class ConnectST extends AbstractST {
     @Test
     @TestBucket(CONNECT_CLUSTERS_WITH_SINK_SOURCE_CONNECTORS_BUCKET)
     void testFilterKafkaConnectClustersAndConnectors() {
-        tcc.page().navigate(PwPageUrls.getKafkaConnectorPage(tcc, tcc.kafkaName()));
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaConnectorPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Verifying Kafka Connect page header is visible");
         PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, MessageStore.kafkaConnect(), true);
@@ -124,7 +124,7 @@ public class ConnectST extends AbstractST {
 
         // Filter connect clusters
         LOGGER.info("Navigating to, Kafka Connect clusters page");
-        tcc.page().navigate(PwPageUrls.getKafkaConnectClusterPage(tcc, tcc.kafkaName()));
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaConnectClusterPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Verifying Kafka Connect clusters page header");
         PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, MessageStore.kafkaConnect(), true);

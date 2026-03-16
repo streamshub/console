@@ -3,7 +3,7 @@ package com.github.streamshub.systemtests.utils.resourceutils;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.skodjob.testframe.TestFrameConstants;
+import io.skodjob.kubetest4j.KubeTestConstants;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
@@ -69,6 +69,6 @@ public class PodUtils {
      * @return the calculated timeout value in milliseconds
      */
     public static long getTimeoutForPodOperations(int numberOfPods) {
-        return TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM * Math.max(1, numberOfPods);
+        return KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM * Math.max(1, numberOfPods);
     }
 }
