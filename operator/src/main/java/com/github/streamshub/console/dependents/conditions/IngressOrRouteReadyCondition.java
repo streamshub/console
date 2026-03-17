@@ -1,10 +1,10 @@
 package com.github.streamshub.console.dependents.conditions;
 
-import jakarta.inject.Inject;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.dependents.ConsoleIngress;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleRoute;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressLoadBalancerStatus;
@@ -14,35 +14,39 @@ import io.fabric8.openshift.api.model.RouteIngress;
 import io.fabric8.openshift.api.model.RouteStatus;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
+import io.javaoperatorsdk.operator.api.reconciler.dependent.managed.ManagedWorkflowAndDependentResourceContext;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 import org.jboss.logging.Logger;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 
 public class IngressOrRouteReadyCondition implements Condition<Deployment, Console> {
 
     private static final Logger LOGGER = Logger.getLogger(IngressOrRouteReadyCondition.class);
 
-    @Inject
-    ConsoleIngress consoleIngress;
-
-    @Inject
-    ConsoleRoute consoleRoute;
-
     @Override
     public boolean isMet(DependentResource<Deployment, Console> dependentResource, Console primary, Context<Console> context) {
         if (context.getClient().supports(Route.class)) {
-            return consoleRoute.getSecondaryResource(primary, context)
+            return getSecondaryResource(primary, context, ConsoleRoute.NAME, Route.class)
                 .map(route -> isRouteReady(route, context))
                 .orElse(false);
         } else {
-            return consoleIngress.getSecondaryResource(primary, context)
+            return getSecondaryResource(primary, context, ConsoleIngress.NAME, Ingress.class)
                 .map(this::isIngressReady)
                 .orElse(false);
         }
     }
 
+    private <R extends HasMetadata> Optional<R> getSecondaryResource(Console primary, Context<Console> context, String resourceName, Class<R> type) {
+        String instanceName = primary.getMetadata().getName() + "-" + resourceName;
+        return context.getSecondaryResourcesAsStream(type)
+            .filter(r -> Objects.equals(instanceName, r.getMetadata().getName()))
+            .findFirst();
+    }
+
+    // Route
     private boolean isRouteReady(Route route, Context<Console> context) {
         String routeName = route.getMetadata().getName();
 
@@ -62,12 +66,10 @@ public class IngressOrRouteReadyCondition implements Condition<Deployment, Conso
                 .map(RouteIngress::getHost)
                 .filter(host -> !host.isBlank())
                 .ifPresent(host -> {
-                    Optional<String> existing = context.managedWorkflowAndDependentResourceContext()
-                        .get(ConsoleResource.INGRESS_URL_KEY, String.class);
-                    if (existing.isEmpty()) {
+                    ManagedWorkflowAndDependentResourceContext ctx = context.managedWorkflowAndDependentResourceContext();
+                    if (ctx.get(ConsoleResource.INGRESS_URL_KEY, String.class).isEmpty()) {
                         LOGGER.debugf("Route %s: auto-assigned host %s", routeName, host);
-                        context.managedWorkflowAndDependentResourceContext()
-                            .put(ConsoleResource.INGRESS_URL_KEY, "https://" + host);
+                        ctx.put(ConsoleResource.INGRESS_URL_KEY, "https://" + host);
                     }
                 });
         }
@@ -87,6 +89,7 @@ public class IngressOrRouteReadyCondition implements Condition<Deployment, Conso
             .orElse(false);
     }
 
+    // Ingress
     private boolean isIngressReady(Ingress ingress) {
         Boolean ready = Optional.ofNullable(ingress.getStatus())
             .map(IngressStatus::getLoadBalancer)
