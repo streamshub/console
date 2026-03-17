@@ -66,10 +66,6 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
                     .withName(serviceName)
                     .withWeight(100)
                 .endTo()
-                .withNewPort()
-                    // 80 is the HTTP port on the console-ui service
-                    .withNewTargetPort(80)
-                .endPort()
                 .withNewTls()
                     .withTermination("edge")
                     .withInsecureEdgeTerminationPolicy("Redirect")
