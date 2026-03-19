@@ -2,9 +2,8 @@ package com.github.streamshub.console.dependents;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
+import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
-
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
@@ -16,8 +15,7 @@ import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 
 @ApplicationScoped
 @KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
-public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Console>
-        implements ConsoleResource<Ingress> {
+public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Console> implements ConsoleResource<Ingress> {
 
     public static final String NAME = "console-ingress";
 
@@ -36,6 +34,13 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     @Override
     protected Ingress desired(Console primary, Context<Console> context) {
         String host = primary.getSpec().getHostname();
+
+        if (host == null || host.isBlank()) {
+            throw new ReconciliationException(
+                "spec.hostname is required when running on plain Kubernetes vanila clusters. " +
+                "Please set a hostname in your Console resource.");
+        }
+
         setAttribute(context, INGRESS_URL_KEY, "https://" + host);
 
         return load(context, "console.ingress.yaml", Ingress.class)
