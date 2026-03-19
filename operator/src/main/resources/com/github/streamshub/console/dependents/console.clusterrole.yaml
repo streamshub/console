@@ -7,6 +7,18 @@ rules:
       - get
       - watch
       - list
+      - create
+      - update
+      - patch
+      - delete
+    apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+  - verbs:
+      - get
+      - watch
+      - list
     apiGroups:
       - kafka.strimzi.io
     resources:
