@@ -95,8 +95,12 @@ spec:
             rules:
               - resources:
                   - topics
+                  - topics/metrics
                   - topics/records
-                  - consumerGroups
+                  # `groups` replaces `consumerGroups` from earlier releases. `consumerGroups` is still accepted,
+                  # but is deprecated and will be removed in a future release.
+                  - groups
+                  - nodes/metrics
                   - rebalances
                 privileges:
                   - GET
@@ -107,16 +111,19 @@ spec:
             rules:
               - resources:
                   - topics
+                  - topics/metrics
                   - topics/records
-                  - consumerGroups
+                  - groups
+                  - groups/configs
                   - rebalances
-                  - nodes/configs
                   - nodes
+                  - nodes/configs
+                  - nodes/metrics
                 privileges:
                   - GET
                   - LIST
               - resources:
-                  - consumerGroups
+                  - groups
                   - rebalances
                 privileges:
                   - UPDATE

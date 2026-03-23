@@ -104,7 +104,7 @@ kafka:
               - resources:
                   - topics
                   - topics/records
-                  - consumerGroups
+                  - groups
                   - rebalances
                 privileges:
                   - GET
@@ -116,7 +116,8 @@ kafka:
               - resources:
                   - topics
                   - topics/records
-                  - consumerGroups
+                  - groups
+                  - groups/configs
                   - rebalances
                   - nodes/configs
                   - nodes
@@ -124,7 +125,7 @@ kafka:
                   - GET
                   - LIST
               - resources:
-                  - consumerGroups
+                  - groups
                   - rebalances
                 privileges:
                   - UPDATE
