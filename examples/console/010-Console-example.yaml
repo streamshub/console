@@ -40,4 +40,4 @@ spec:
     #   url: http://my-connect-cluster.example.com/
     #   kafkaClusters:
     #     - ${KAFKA_NAMESPACE}/console-kafka
-  ]                                    
+  ]
