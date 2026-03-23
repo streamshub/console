@@ -62,7 +62,7 @@
     "@storybook/react": "^10.1.11",
     "@storybook/test-runner": "^0.24.2",
     "@swc/helpers": "^0.5.19",
-    "eslint": "8.57.1",
+    "eslint": "10.1.0",
     "eslint-config-next": "14.2.33",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
