@@ -156,6 +156,7 @@ spec:
                   - topics/metrics
                   - topics/records
                   - groups
+                  - groups/configs
                   - rebalances
                   - nodes
                   - nodes/configs
