@@ -90,7 +90,7 @@ export async function getTopics(
   if (params.page) searchParams.set('page[number]', params.page.toString());
   if (params.perPage) searchParams.set('page[size]', params.perPage.toString());
   if (params.sort) searchParams.set('sort', `${params.sortDir === 'desc' ? '-' : ''}${params.sort}`);
-  if (params.name) searchParams.set('filter[name][like]', params.name);
+  if (params.name) searchParams.set('filter[name]', `like,*${params.name}*`);
   if (params.fields) searchParams.set('fields[topics]', params.fields.join(','));
 
   const query = searchParams.toString();

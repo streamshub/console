@@ -174,7 +174,7 @@ This PoC validates:
 | Overview | 🟡 Placeholder | Structure in place |
 | Topics | ✅ Complete | Full functionality |
 | Nodes | 🟡 Placeholder | Structure in place |
-| Kafka Connect | 🟡 Placeholder | Structure in place |
+| Kafka Connect | ✅ Complete | Tabs for connectors and connect clusters |
 | Kafka Users | 🟡 Placeholder | Structure in place |
 | Groups | 🟡 Placeholder | Structure in place |
 

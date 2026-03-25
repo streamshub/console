@@ -110,9 +110,9 @@ export async function getGroups(
 ): Promise<ApiResponse<GroupsResponse>> {
   const searchParams = new URLSearchParams();
   
-  if (params.id) searchParams.set('filter[groupId][contains]', params.id);
-  if (params.type?.length) searchParams.set('filter[type][in]', params.type.join(','));
-  if (params.consumerGroupState?.length) searchParams.set('filter[state][in]', params.consumerGroupState.join(','));
+  if (params.id) searchParams.set('filter[id]', `like,*${params.id}*`);
+  if (params.type?.length) searchParams.set('filter[type]', `in,${params.type.join(',')}`);
+  if (params.consumerGroupState?.length) searchParams.set('filter[state]', `in,${params.consumerGroupState.join(',')}`);
   if (params.fields) searchParams.set('fields[groups]', params.fields.join(','));
   if (params.sort) searchParams.set('sort', `${params.sortDir === 'desc' ? '-' : ''}${params.sort}`);
   if (params.pageSize) searchParams.set('page[size]', params.pageSize.toString());
