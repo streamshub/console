@@ -141,8 +141,10 @@ spec:
             rules:
               - resources:
                   - topics
+                  - topics/metrics
                   - topics/records
-                  - consumerGroups
+                  - groups
+                  - nodes/metrics
                   - rebalances
                 privileges:
                   - GET
@@ -151,19 +153,26 @@ spec:
             rules:
               - resources:
                   - topics
+                  - topics/metrics
                   - topics/records
-                  - consumerGroups
+                  - groups
+                  - groups/configs
                   - rebalances
+                  - nodes
                   - nodes/configs
+                  - nodes/metrics
                 privileges:
                   - GET
                   - LIST
               - resources:
-                  - consumerGroups
+                  - groups
                   - rebalances
                 privileges:
                   - UPDATE
 ----
+
+NOTE: Use `groups` instead of the deprecated `consumerGroups` resource name.
+`consumerGroups` is still supported for existing configurations but will be removed in a future release.
 
 == Optional OIDC authentication properties
 
