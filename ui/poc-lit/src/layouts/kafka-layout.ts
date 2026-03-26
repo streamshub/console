@@ -57,18 +57,18 @@ export class KafkaLayout extends LitElement {
     }
 
     .masthead {
-      background-color: var(--pf-v5-global--BackgroundColor--dark-100);
+      background-color: var(--pf-v6-global--BackgroundColor--dark-100);
       color: white;
-      padding: var(--pf-v5-global--spacer--md) var(--pf-v5-global--spacer--lg);
+      padding: var(--pf-v6-global--spacer--md) var(--pf-v6-global--spacer--lg);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
+      border-bottom: 1px solid var(--pf-v6-global--BorderColor--100);
     }
 
     .masthead h1 {
       margin: 0;
-      font-size: var(--pf-v5-global--FontSize--xl);
+      font-size: var(--pf-v6-global--FontSize--xl);
       font-weight: normal;
     }
 
@@ -85,10 +85,10 @@ export class KafkaLayout extends LitElement {
 
     .sidebar {
       width: 250px;
-      background-color: var(--pf-v5-global--BackgroundColor--100);
-      border-right: 1px solid var(--pf-v5-global--BorderColor--100);
+      background-color: var(--pf-v6-global--BackgroundColor--100);
+      border-right: 1px solid var(--pf-v6-global--BorderColor--100);
       overflow-y: auto;
-      padding: var(--pf-v5-global--spacer--md);
+      padding: var(--pf-v6-global--spacer--md);
     }
 
     .sidebar.hidden {
@@ -96,14 +96,14 @@ export class KafkaLayout extends LitElement {
     }
 
     .nav-group {
-      margin-bottom: var(--pf-v5-global--spacer--lg);
+      margin-bottom: var(--pf-v6-global--spacer--lg);
     }
 
     .nav-group-title {
       font-weight: bold;
-      margin-bottom: var(--pf-v5-global--spacer--sm);
-      font-size: var(--pf-v5-global--FontSize--sm);
-      color: var(--pf-v5-global--Color--200);
+      margin-bottom: var(--pf-v6-global--spacer--sm);
+      font-size: var(--pf-v6-global--FontSize--sm);
+      color: var(--pf-v6-global--Color--200);
     }
 
     .nav-list {
@@ -113,30 +113,30 @@ export class KafkaLayout extends LitElement {
     }
 
     .nav-item {
-      margin-bottom: var(--pf-v5-global--spacer--xs);
+      margin-bottom: var(--pf-v6-global--spacer--xs);
     }
 
     .nav-link {
       display: block;
-      padding: var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--md);
-      color: var(--pf-v5-global--link--Color);
+      padding: var(--pf-v6-global--spacer--sm) var(--pf-v6-global--spacer--md);
+      color: var(--pf-v6-global--link--Color);
       text-decoration: none;
-      border-radius: var(--pf-v5-global--BorderRadius--sm);
+      border-radius: var(--pf-v6-global--BorderRadius--sm);
     }
 
     .nav-link:hover {
-      background-color: var(--pf-v5-global--BackgroundColor--200);
+      background-color: var(--pf-v6-global--BackgroundColor--200);
     }
 
     .nav-link.active {
-      background-color: var(--pf-v5-global--active-color--100);
+      background-color: var(--pf-v6-global--active-color--100);
       color: white;
     }
 
     .main-content {
       flex: 1;
       overflow-y: auto;
-      background-color: var(--pf-v5-global--BackgroundColor--100);
+      background-color: var(--pf-v6-global--BackgroundColor--100);
     }
 
     .loading-state {
@@ -159,7 +159,7 @@ export class KafkaLayout extends LitElement {
       <div class="nav-group">
         <div class="nav-group-title">
           Cluster ${cluster.attributes.name}
-          ${isKroxy ? html`<span style="color: var(--pf-v5-global--info-color--100);"> (Virtual)</span>` : ''}
+          ${isKroxy ? html`<span style="color: var(--pf-v6-global--info-color--100);"> (Virtual)</span>` : ''}
         </div>
         <ul class="nav-list">
           <li class="nav-item">
@@ -226,10 +226,10 @@ export class KafkaLayout extends LitElement {
           ${this.clusterTask.render({
             pending: () => html`
               <div class="loading-state">
-                <div class="pf-v5-c-spinner pf-m-xl" role="progressbar">
-                  <span class="pf-v5-c-spinner__clipper"></span>
-                  <span class="pf-v5-c-spinner__lead-ball"></span>
-                  <span class="pf-v5-c-spinner__tail-ball"></span>
+                <div class="pf-v6-c-spinner pf-m-xl" role="progressbar">
+                  <span class="pf-v6-c-spinner__clipper"></span>
+                  <span class="pf-v6-c-spinner__lead-ball"></span>
+                  <span class="pf-v6-c-spinner__tail-ball"></span>
                 </div>
               </div>
             `,
@@ -249,7 +249,7 @@ export class KafkaLayout extends LitElement {
                     <h2>Error loading cluster</h2>
                     <p>${errorMessage}</p>
                     <button
-                      class="pf-v5-c-button pf-m-primary"
+                      class="pf-v6-c-button pf-m-primary"
                       @click=${() => this.clusterTask.run()}
                     >
                       Retry

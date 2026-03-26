@@ -23,42 +23,42 @@ export class TopicPartitionsPage extends LitElement {
       .partition-status {
         display: inline-flex;
         align-items: center;
-        gap: var(--pf-v5-global--spacer--xs);
+        gap: var(--pf-v6-global--spacer--xs);
       }
 
       .replica-list {
         display: flex;
         flex-direction: column;
-        gap: var(--pf-v5-global--spacer--xs);
+        gap: var(--pf-v6-global--spacer--xs);
       }
 
       .replica-item {
         display: flex;
         align-items: center;
-        gap: var(--pf-v5-global--spacer--sm);
-        font-size: var(--pf-v5-global--FontSize--sm);
+        gap: var(--pf-v6-global--spacer--sm);
+        font-size: var(--pf-v6-global--FontSize--sm);
       }
 
       .replica-badge {
         padding: 2px 8px;
-        border-radius: var(--pf-v5-global--BorderRadius--sm);
-        font-size: var(--pf-v5-global--FontSize--xs);
-        background: var(--pf-v5-global--BackgroundColor--200);
+        border-radius: var(--pf-v6-global--BorderRadius--sm);
+        font-size: var(--pf-v6-global--FontSize--xs);
+        background: var(--pf-v6-global--BackgroundColor--200);
       }
 
       .replica-badge.leader {
-        background: var(--pf-v5-global--primary-color--100);
-        color: var(--pf-v5-global--Color--light-100);
+        background: var(--pf-v6-global--primary-color--100);
+        color: var(--pf-v6-global--Color--light-100);
       }
 
       .replica-badge.in-sync {
-        background: var(--pf-v5-global--success-color--100);
-        color: var(--pf-v5-global--Color--light-100);
+        background: var(--pf-v6-global--success-color--100);
+        color: var(--pf-v6-global--Color--light-100);
       }
 
       .replica-badge.out-of-sync {
-        background: var(--pf-v5-global--warning-color--100);
-        color: var(--pf-v5-global--Color--dark-100);
+        background: var(--pf-v6-global--warning-color--100);
+        color: var(--pf-v6-global--Color--dark-100);
       }
     `
   ];
@@ -112,7 +112,7 @@ export class TopicPartitionsPage extends LitElement {
 
     return html`
       <div class="table-container">
-        <table class="pf-v5-c-table">
+        <table class="pf-v6-c-table">
           <thead>
             <tr>
               <th>Partition</th>

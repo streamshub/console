@@ -2,6 +2,10 @@ import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { Task } from '@lit/task';
 import { apiClient } from '../api/client';
+import '../components/pf/pf-text-input';
+import '../components/pf/pf-button';
+import '../components/pf/pf-card';
+import '../components/pf/pf-empty-state';
 
 interface KafkaCluster {
   id: string;
@@ -9,6 +13,7 @@ interface KafkaCluster {
     name: string;
     namespace?: string;
     kafkaVersion?: string;
+    status?: string;
   };
   meta?: {
     authentication?: {
@@ -34,7 +39,7 @@ export class HomePage extends LitElement {
     task: async ([searchTerm]) => {
       const params = new URLSearchParams();
       if (searchTerm) {
-        params.set('filter[name][like]', searchTerm as string);
+        params.set('filter[name]', `like,*${searchTerm}*` as string);
       }
       
       const response = await apiClient.get<ClustersResponse>(
@@ -56,69 +61,72 @@ export class HomePage extends LitElement {
     }
 
     .hero {
-      background: linear-gradient(to bottom, var(--pf-v5-global--BackgroundColor--200) 0%, var(--pf-v5-global--BackgroundColor--100) 100%);
-      padding: var(--pf-v5-global--spacer--xl) var(--pf-v5-global--spacer--lg);
-      border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
+      background: linear-gradient(to bottom, var(--pf-v6-global--BackgroundColor--200) 0%, var(--pf-v6-global--BackgroundColor--100) 100%);
+      padding: var(--pf-v6-global--spacer--xl) var(--pf-v6-global--spacer--lg);
+      border-bottom: 1px solid var(--pf-v6-global--BorderColor--100);
     }
 
     .hero h1 {
-      font-size: var(--pf-v5-global--FontSize--2xl);
-      margin: 0 0 var(--pf-v5-global--spacer--sm) 0;
+      font-size: var(--pf-v6-global--FontSize--2xl);
+      margin: 0 0 var(--pf-v6-global--spacer--sm) 0;
     }
 
     .hero p {
-      color: var(--pf-v5-global--Color--200);
+      color: var(--pf-v6-global--Color--200);
       margin: 0;
     }
 
     .content {
-      padding: var(--pf-v5-global--spacer--lg);
+      padding: var(--pf-v6-global--spacer--lg);
     }
 
     .search-bar {
-      margin-bottom: var(--pf-v5-global--spacer--md);
+      margin-bottom: var(--pf-v6-global--spacer--md);
     }
 
-    .clusters-table {
+    .table-container {
       background: white;
-      border: 1px solid var(--pf-v5-global--BorderColor--100);
-      border-radius: var(--pf-v5-global--BorderRadius--sm);
+      border: 1px solid var(--pf-v6-global--BorderColor--100);
+      border-radius: var(--pf-v6-global--BorderRadius--sm);
+      overflow: hidden;
     }
 
-    .cluster-row {
-      padding: var(--pf-v5-global--spacer--md);
-      border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .cluster-name {
+      font-weight: var(--pf-v6-global--FontWeight--bold);
     }
 
-    .cluster-row:last-child {
-      border-bottom: none;
+    .cluster-name a {
+      color: var(--pf-v6-global--link--Color);
+      text-decoration: none;
     }
 
-    .cluster-row:hover {
-      background-color: var(--pf-v5-global--BackgroundColor--200);
-    }
-
-    .cluster-info h3 {
-      margin: 0 0 var(--pf-v5-global--spacer--xs) 0;
-      font-size: var(--pf-v5-global--FontSize--lg);
+    .cluster-name a:hover {
+      text-decoration: underline;
     }
 
     .cluster-meta {
-      font-size: var(--pf-v5-global--FontSize--sm);
-      color: var(--pf-v5-global--Color--200);
-    }
-
-    .cluster-actions a {
-      text-decoration: none;
-      color: var(--pf-v5-global--link--Color);
+      font-size: var(--pf-v6-global--FontSize--sm);
+      color: var(--pf-v6-global--Color--200);
     }
 
     .empty-state {
       text-align: center;
-      padding: var(--pf-v5-global--spacer--2xl);
+      padding: var(--pf-v6-global--spacer--2xl);
+    }
+
+    .table-footer {
+      padding: var(--pf-v6-global--spacer--md);
+      color: var(--pf-v6-global--Color--200);
+      font-size: var(--pf-v6-global--FontSize--sm);
+      border-top: 1px solid var(--pf-v6-global--BorderColor--100);
+    }
+
+    tr {
+      cursor: pointer;
+    }
+
+    tr:hover {
+      background-color: var(--pf-v6-global--BackgroundColor--200);
     }
   `;
 
@@ -140,22 +148,21 @@ export class HomePage extends LitElement {
 
       <div class="content">
         <div class="search-bar">
-          <input
-            class="pf-v5-c-form-control"
-            type="text"
+          <pf-text-input
+            type="search"
             placeholder="Search clusters..."
-            @input=${this.handleSearch}
             .value=${this.searchTerm}
-          />
+            @input=${this.handleSearch}
+          ></pf-text-input>
         </div>
 
         ${this.clustersTask.render({
           pending: () => html`
             <div class="empty-state">
-              <div class="pf-v5-c-spinner pf-m-xl" role="progressbar">
-                <span class="pf-v5-c-spinner__clipper"></span>
-                <span class="pf-v5-c-spinner__lead-ball"></span>
-                <span class="pf-v5-c-spinner__tail-ball"></span>
+              <div class="pf-v6-c-spinner pf-m-xl" role="progressbar">
+                <span class="pf-v6-c-spinner__clipper"></span>
+                <span class="pf-v6-c-spinner__lead-ball"></span>
+                <span class="pf-v6-c-spinner__tail-ball"></span>
               </div>
               <p>Loading clusters...</p>
             </div>
@@ -163,48 +170,78 @@ export class HomePage extends LitElement {
           complete: (data: ClustersResponse) => {
             if (data.data.length === 0) {
               return html`
-                <div class="empty-state">
-                  <h2>No Kafka clusters found</h2>
+                <pf-empty-state title="No Kafka clusters found">
                   <p>There are no Kafka clusters configured.</p>
-                </div>
+                </pf-empty-state>
               `;
             }
 
             return html`
-              <div class="clusters-table">
-                ${data.data.map(cluster => html`
-                  <div class="cluster-row" @click=${() => this.navigateToCluster(cluster.id)}>
-                    <div class="cluster-info">
-                      <h3>${cluster.attributes.name}</h3>
-                      <div class="cluster-meta">
-                        ${cluster.attributes.namespace ? html`Namespace: ${cluster.attributes.namespace} • ` : ''}
-                        ${cluster.attributes.kafkaVersion ? html`Version: ${cluster.attributes.kafkaVersion}` : ''}
-                      </div>
-                    </div>
-                    <div class="cluster-actions">
-                      <a href="/kafka/${cluster.id}/overview">View →</a>
-                    </div>
-                  </div>
-                `)}
+              <div class="table-container">
+                <table class="pf-v6-c-table pf-m-compact" role="grid">
+                  <caption>Kafka Clusters</caption>
+                  <thead class="pf-v6-c-table__thead">
+                    <tr class="pf-v6-c-table__tr" role="row">
+                      <th class="pf-v6-c-table__th" role="columnheader" scope="col">
+                        Name
+                      </th>
+                      <th class="pf-v6-c-table__th" role="columnheader" scope="col">
+                        Kafka Version
+                      </th>
+                      <th class="pf-v6-c-table__th" role="columnheader" scope="col">
+                        Status
+                      </th>
+                      <th class="pf-v6-c-table__th" role="columnheader" scope="col">
+                        Namespace
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="pf-v6-c-table__tbody" role="rowgroup">
+                    ${data.data.map(cluster => html`
+                      <tr
+                        class="pf-v6-c-table__tr"
+                        role="row"
+                        @click=${() => this.navigateToCluster(cluster.id)}
+                      >
+                        <td class="pf-v6-c-table__td" role="cell">
+                          <div class="cluster-name">
+                            <a href="/kafka/${cluster.id}/overview" @click=${(e: Event) => e.stopPropagation()}>
+                              ${cluster.attributes.name}
+                            </a>
+                          </div>
+                        </td>
+                        <td class="pf-v6-c-table__td" role="cell">
+                          ${cluster.attributes.kafkaVersion || 'N/A'}
+                        </td>
+                        <td class="pf-v6-c-table__td" role="cell">
+                          ${cluster.attributes.status || 'Unknown'}
+                        </td>
+                        <td class="pf-v6-c-table__td" role="cell">
+                          ${cluster.attributes.namespace || 'N/A'}
+                        </td>
+                      </tr>
+                    `)}
+                  </tbody>
+                </table>
+                <div class="table-footer">
+                  ${data.meta.page.total} cluster${data.meta.page.total !== 1 ? 's' : ''} total
+                </div>
               </div>
-              <p style="margin-top: var(--pf-v5-global--spacer--md); color: var(--pf-v5-global--Color--200);">
-                ${data.meta.page.total} cluster${data.meta.page.total !== 1 ? 's' : ''} total
-              </p>
             `;
           },
           error: (error: unknown) => {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             return html`
-              <div class="empty-state">
-                <h2>Error loading clusters</h2>
+              <pf-empty-state title="Error loading clusters">
                 <p>${errorMessage}</p>
-                <button
-                  class="pf-v5-c-button pf-m-primary"
+                <pf-button
+                  slot="actions"
+                  variant="primary"
                   @click=${() => this.clustersTask.run()}
                 >
                   Retry
-                </button>
-              </div>
+                </pf-button>
+              </pf-empty-state>
             `;
           },
         })}

@@ -23,7 +23,7 @@ This is a proof-of-concept demonstrating the migration from Next.js/React to Lit
 - ✅ **Vaadin Router** for client-side routing
 - ✅ **Lit 3.x** for Web Components
 - ✅ **@lit/task** for async data fetching
-- ✅ **PatternFly CSS** for styling
+- ✅ **PatternFly v6 CSS** for styling
 - ✅ **Vite** for build tooling
 - ✅ **TypeScript** for type safety
 - ✅ **Layout system** with sidebar navigation

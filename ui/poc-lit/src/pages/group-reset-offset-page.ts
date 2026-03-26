@@ -16,12 +16,12 @@ export class GroupResetOffsetPage extends LitElement {
 
       .placeholder {
         text-align: center;
-        padding: var(--pf-v5-global--spacer--2xl);
-        color: var(--pf-v5-global--Color--200);
+        padding: var(--pf-v6-global--spacer--2xl);
+        color: var(--pf-v6-global--Color--200);
       }
 
       .placeholder h2 {
-        margin-bottom: var(--pf-v5-global--spacer--md);
+        margin-bottom: var(--pf-v6-global--spacer--md);
       }
     `
   ];

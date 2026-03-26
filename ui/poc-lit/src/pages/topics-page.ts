@@ -67,15 +67,15 @@ export class TopicsPage extends LitElement {
   render() {
     return html`
       <div class="page-header">
-        <h1 class="pf-v5-c-title pf-m-2xl">Topics</h1>
+        <h1 class="pf-v6-c-title pf-m-2xl">Topics</h1>
       </div>
 
       <div class="page-content">
         <div class="toolbar">
           <div class="search-input">
-            <div class="pf-v5-c-input-group">
+            <div class="pf-v6-c-input-group">
               <input
-                class="pf-v5-c-form-control"
+                class="pf-v6-c-form-control"
                 type="text"
                 placeholder="Search topics..."
                 @input=${this.handleSearch}
@@ -104,14 +104,14 @@ export class TopicsPage extends LitElement {
               </div>
               <div class="pagination-controls">
                 <button
-                  class="pf-v5-c-button pf-m-secondary"
+                  class="pf-v6-c-button pf-m-secondary"
                   ?disabled=${this.page <= 1}
                   @click=${this.handlePreviousPage}
                 >
                   Previous
                 </button>
                 <button
-                  class="pf-v5-c-button pf-m-secondary"
+                  class="pf-v6-c-button pf-m-secondary"
                   ?disabled=${this.page * this.perPage >= data.meta.page.total}
                   @click=${() => this.handleNextPage(this.page * this.perPage < data.meta.page.total)}
                 >
@@ -124,17 +124,17 @@ export class TopicsPage extends LitElement {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             return html`
               <div class="error-state">
-                <div class="pf-v5-c-empty-state">
-                  <div class="pf-v5-c-empty-state__content">
-                    <div class="pf-v5-c-empty-state__icon">
+                <div class="pf-v6-c-empty-state">
+                  <div class="pf-v6-c-empty-state__content">
+                    <div class="pf-v6-c-empty-state__icon">
                       <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
                     </div>
-                    <h2 class="pf-v5-c-title pf-m-lg">Error loading topics</h2>
-                    <div class="pf-v5-c-empty-state__body">
+                    <h2 class="pf-v6-c-title pf-m-lg">Error loading topics</h2>
+                    <div class="pf-v6-c-empty-state__body">
                       ${errorMessage}
                     </div>
                     <button
-                      class="pf-v5-c-button pf-m-primary"
+                      class="pf-v6-c-button pf-m-primary"
                       @click=${() => this.topicsTask.run()}
                     >
                       Retry

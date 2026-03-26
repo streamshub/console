@@ -19,8 +19,8 @@ export class TopicLayout extends LitElement {
       }
 
       .topic-tabs {
-        border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
-        margin-bottom: var(--pf-v5-global--spacer--lg);
+        border-bottom: 1px solid var(--pf-v6-global--BorderColor--100);
+        margin-bottom: var(--pf-v6-global--spacer--lg);
       }
 
       .topic-tabs ul {
@@ -28,7 +28,7 @@ export class TopicLayout extends LitElement {
         list-style: none;
         margin: 0;
         padding: 0;
-        gap: var(--pf-v5-global--spacer--md);
+        gap: var(--pf-v6-global--spacer--md);
       }
 
       .topic-tabs li {
@@ -37,25 +37,25 @@ export class TopicLayout extends LitElement {
 
       .topic-tabs a {
         display: block;
-        padding: var(--pf-v5-global--spacer--md) var(--pf-v5-global--spacer--lg);
-        color: var(--pf-v5-global--Color--200);
+        padding: var(--pf-v6-global--spacer--md) var(--pf-v6-global--spacer--lg);
+        color: var(--pf-v6-global--Color--200);
         text-decoration: none;
         border-bottom: 3px solid transparent;
         transition: all 0.2s;
       }
 
       .topic-tabs a:hover {
-        color: var(--pf-v5-global--Color--100);
-        border-bottom-color: var(--pf-v5-global--BorderColor--100);
+        color: var(--pf-v6-global--Color--100);
+        border-bottom-color: var(--pf-v6-global--BorderColor--100);
       }
 
       .topic-tabs a.active {
-        color: var(--pf-v5-global--primary-color--100);
-        border-bottom-color: var(--pf-v5-global--primary-color--100);
+        color: var(--pf-v6-global--primary-color--100);
+        border-bottom-color: var(--pf-v6-global--primary-color--100);
       }
 
       .topic-content {
-        padding: var(--pf-v5-global--spacer--md);
+        padding: var(--pf-v6-global--spacer--md);
       }
     `
   ];

@@ -17,9 +17,9 @@ export class GroupMembersTable extends LitElement {
       }
 
       .lag-table {
-        margin: var(--pf-v5-global--spacer--md) 0;
-        background: var(--pf-v5-global--BackgroundColor--200);
-        padding: var(--pf-v5-global--spacer--md);
+        margin: var(--pf-v6-global--spacer--md) 0;
+        background: var(--pf-v6-global--BackgroundColor--200);
+        padding: var(--pf-v6-global--spacer--md);
       }
 
       .lag-table table {
@@ -28,13 +28,13 @@ export class GroupMembersTable extends LitElement {
 
       .empty-state {
         text-align: center;
-        padding: var(--pf-v5-global--spacer--xl);
-        color: var(--pf-v5-global--Color--200);
+        padding: var(--pf-v6-global--spacer--xl);
+        color: var(--pf-v6-global--Color--200);
       }
 
       .help-icon {
-        color: var(--pf-v5-global--Color--200);
-        margin-left: var(--pf-v5-global--spacer--xs);
+        color: var(--pf-v6-global--Color--200);
+        margin-left: var(--pf-v6-global--spacer--xs);
         cursor: help;
       }
 
@@ -43,13 +43,13 @@ export class GroupMembersTable extends LitElement {
       }
 
       .expandable-row:hover {
-        background: var(--pf-v5-global--BackgroundColor--200);
+        background: var(--pf-v6-global--BackgroundColor--200);
       }
 
       .expand-icon {
         transition: transform 0.2s;
         display: inline-block;
-        margin-right: var(--pf-v5-global--spacer--sm);
+        margin-right: var(--pf-v6-global--spacer--sm);
       }
 
       .expand-icon.expanded {
@@ -116,7 +116,7 @@ export class GroupMembersTable extends LitElement {
 
     return html`
       <div class="lag-table">
-        <table class="pf-v5-c-table pf-m-compact">
+        <table class="pf-v6-c-table pf-m-compact">
           <thead>
             <tr>
               <th>Topic</th>
@@ -189,7 +189,7 @@ export class GroupMembersTable extends LitElement {
 
     return html`
       <div class="table-container">
-        <table class="pf-v5-c-table pf-m-compact">
+        <table class="pf-v6-c-table pf-m-compact">
           <thead>
             <tr>
               <th width="30%">Member ID</th>

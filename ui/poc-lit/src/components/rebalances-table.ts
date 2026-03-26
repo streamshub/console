@@ -70,14 +70,14 @@ export class RebalancesTable extends LitElement {
   render() {
     if (this.loading) {
       return html`
-        <div class="pf-v5-c-empty-state">
-          <div class="pf-v5-c-empty-state__content">
-            <div class="pf-v5-c-spinner pf-m-xl" role="progressbar">
-              <span class="pf-v5-c-spinner__clipper"></span>
-              <span class="pf-v5-c-spinner__lead-ball"></span>
-              <span class="pf-v5-c-spinner__tail-ball"></span>
+        <div class="pf-v6-c-empty-state">
+          <div class="pf-v6-c-empty-state__content">
+            <div class="pf-v6-c-spinner pf-m-xl" role="progressbar">
+              <span class="pf-v6-c-spinner__clipper"></span>
+              <span class="pf-v6-c-spinner__lead-ball"></span>
+              <span class="pf-v6-c-spinner__tail-ball"></span>
             </div>
-            <div class="pf-v5-c-empty-state__body">Loading rebalances...</div>
+            <div class="pf-v6-c-empty-state__body">Loading rebalances...</div>
           </div>
         </div>
       `;
@@ -85,13 +85,13 @@ export class RebalancesTable extends LitElement {
 
     if (this.rebalances.length === 0) {
       return html`
-        <div class="pf-v5-c-empty-state">
-          <div class="pf-v5-c-empty-state__content">
-            <div class="pf-v5-c-empty-state__icon">
+        <div class="pf-v6-c-empty-state">
+          <div class="pf-v6-c-empty-state__content">
+            <div class="pf-v6-c-empty-state__icon">
               <i class="fas fa-balance-scale" aria-hidden="true"></i>
             </div>
-            <h2 class="pf-v5-c-title pf-m-lg">No rebalances found</h2>
-            <div class="pf-v5-c-empty-state__body">
+            <h2 class="pf-v6-c-title pf-m-lg">No rebalances found</h2>
+            <div class="pf-v6-c-empty-state__body">
               There are no rebalances for this Kafka cluster.
             </div>
           </div>
@@ -100,7 +100,7 @@ export class RebalancesTable extends LitElement {
     }
 
     return html`
-      <table class="pf-v5-c-table pf-m-grid-md" role="grid">
+      <table class="pf-v6-c-table pf-m-grid-md" role="grid">
         <thead>
           <tr role="row">
             <th role="columnheader" @click=${() => this.handleSort('name')}>

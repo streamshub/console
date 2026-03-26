@@ -22,8 +22,8 @@ export class GroupConfigurationPage extends LitElement {
 
       .filters {
         display: flex;
-        gap: var(--pf-v5-global--spacer--md);
-        margin-bottom: var(--pf-v5-global--spacer--md);
+        gap: var(--pf-v6-global--spacer--md);
+        margin-bottom: var(--pf-v6-global--spacer--md);
         align-items: center;
       }
 
@@ -34,27 +34,27 @@ export class GroupConfigurationPage extends LitElement {
 
       .filter-input input {
         width: 100%;
-        padding: var(--pf-v5-global--spacer--sm);
-        border: 1px solid var(--pf-v5-global--BorderColor--100);
-        border-radius: var(--pf-v5-global--BorderRadius--sm);
+        padding: var(--pf-v6-global--spacer--sm);
+        border: 1px solid var(--pf-v6-global--BorderColor--100);
+        border-radius: var(--pf-v6-global--BorderRadius--sm);
       }
 
       .filter-chips {
         display: flex;
-        gap: var(--pf-v5-global--spacer--sm);
+        gap: var(--pf-v6-global--spacer--sm);
         flex-wrap: wrap;
-        margin-bottom: var(--pf-v5-global--spacer--md);
+        margin-bottom: var(--pf-v6-global--spacer--md);
       }
 
       .chip {
         display: inline-flex;
         align-items: center;
-        gap: var(--pf-v5-global--spacer--xs);
-        padding: var(--pf-v5-global--spacer--xs) var(--pf-v5-global--spacer--sm);
-        background: var(--pf-v5-global--BackgroundColor--200);
-        border: 1px solid var(--pf-v5-global--BorderColor--100);
-        border-radius: var(--pf-v5-global--BorderRadius--sm);
-        font-size: var(--pf-v5-global--FontSize--sm);
+        gap: var(--pf-v6-global--spacer--xs);
+        padding: var(--pf-v6-global--spacer--xs) var(--pf-v6-global--spacer--sm);
+        background: var(--pf-v6-global--BackgroundColor--200);
+        border: 1px solid var(--pf-v6-global--BorderColor--100);
+        border-radius: var(--pf-v6-global--BorderRadius--sm);
+        font-size: var(--pf-v6-global--FontSize--sm);
       }
 
       .chip button {
@@ -62,36 +62,36 @@ export class GroupConfigurationPage extends LitElement {
         border: none;
         cursor: pointer;
         padding: 0;
-        color: var(--pf-v5-global--Color--200);
+        color: var(--pf-v6-global--Color--200);
       }
 
       .chip button:hover {
-        color: var(--pf-v5-global--danger-color--100);
+        color: var(--pf-v6-global--danger-color--100);
       }
 
       .data-source-filter {
         display: flex;
-        gap: var(--pf-v5-global--spacer--sm);
+        gap: var(--pf-v6-global--spacer--sm);
         flex-wrap: wrap;
       }
 
       .data-source-filter label {
         display: flex;
         align-items: center;
-        gap: var(--pf-v5-global--spacer--xs);
+        gap: var(--pf-v6-global--spacer--xs);
         cursor: pointer;
       }
 
       .reset-button {
-        padding: var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--md);
-        background: var(--pf-v5-global--BackgroundColor--100);
-        border: 1px solid var(--pf-v5-global--BorderColor--100);
-        border-radius: var(--pf-v5-global--BorderRadius--sm);
+        padding: var(--pf-v6-global--spacer--sm) var(--pf-v6-global--spacer--md);
+        background: var(--pf-v6-global--BackgroundColor--100);
+        border: 1px solid var(--pf-v6-global--BorderColor--100);
+        border-radius: var(--pf-v6-global--BorderRadius--sm);
         cursor: pointer;
       }
 
       .reset-button:hover {
-        background: var(--pf-v5-global--BackgroundColor--200);
+        background: var(--pf-v6-global--BackgroundColor--200);
       }
 
       .config-value {
@@ -99,7 +99,7 @@ export class GroupConfigurationPage extends LitElement {
       }
 
       .sensitive-value {
-        color: var(--pf-v5-global--Color--200);
+        color: var(--pf-v6-global--Color--200);
         font-style: italic;
       }
     `
@@ -204,7 +204,7 @@ export class GroupConfigurationPage extends LitElement {
         </div>
       ` : html`
         <div class="table-container">
-          <table class="pf-v5-c-table">
+          <table class="pf-v6-c-table">
             <thead>
               <tr>
                 <th width="30%">Property</th>

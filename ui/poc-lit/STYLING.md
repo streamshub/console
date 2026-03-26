@@ -1,45 +1,45 @@
 # Styling Guide for StreamsHub Console (Lit + Web Components)
 
-## PatternFly v5 Integration
+## PatternFly v6 Integration
 
-This application uses **PatternFly v5** CSS variables for consistent styling across all components.
+This application uses **PatternFly v6** CSS variables for consistent styling across all components.
 
 ### CSS Variable System
 
-PatternFly v5 uses CSS variables with the prefix `--pf-v5-global--`:
+PatternFly v6 uses CSS variables with the prefix `--pf-v6-global--`:
 
 ```css
 /* Colors */
---pf-v5-global--primary-color--100
---pf-v5-global--success-color--100
---pf-v5-global--danger-color--100
---pf-v5-global--warning-color--100
---pf-v5-global--info-color--100
---pf-v5-global--Color--100
---pf-v5-global--Color--200
+--pf-v6-global--primary-color--100
+--pf-v6-global--success-color--100
+--pf-v6-global--danger-color--100
+--pf-v6-global--warning-color--100
+--pf-v6-global--info-color--100
+--pf-v6-global--Color--100
+--pf-v6-global--Color--200
 
 /* Spacing */
---pf-v5-global--spacer--xs
---pf-v5-global--spacer--sm
---pf-v5-global--spacer--md
---pf-v5-global--spacer--lg
---pf-v5-global--spacer--xl
+--pf-v6-global--spacer--xs
+--pf-v6-global--spacer--sm
+--pf-v6-global--spacer--md
+--pf-v6-global--spacer--lg
+--pf-v6-global--spacer--xl
 
 /* Typography */
---pf-v5-global--FontSize--sm
---pf-v5-global--FontSize--md
---pf-v5-global--FontSize--lg
---pf-v5-global--FontWeight--normal
---pf-v5-global--FontWeight--bold
+--pf-v6-global--FontSize--sm
+--pf-v6-global--FontSize--md
+--pf-v6-global--FontSize--lg
+--pf-v6-global--FontWeight--normal
+--pf-v6-global--FontWeight--bold
 
 /* Borders */
---pf-v5-global--BorderWidth--sm
---pf-v5-global--BorderRadius--sm
---pf-v5-global--BorderColor--100
+--pf-v6-global--BorderWidth--sm
+--pf-v6-global--BorderRadius--sm
+--pf-v6-global--BorderColor--100
 
 /* Backgrounds */
---pf-v5-global--BackgroundColor--100
---pf-v5-global--BackgroundColor--200
+--pf-v6-global--BackgroundColor--100
+--pf-v6-global--BackgroundColor--200
 ```
 
 ## Shared Styles Library
@@ -86,7 +86,7 @@ export class MyComponent extends LitElement {
     css`
       /* Component-specific styles */
       .custom-class {
-        color: var(--pf-v5-global--primary-color--100);
+        color: var(--pf-v6-global--primary-color--100);
       }
     `
   ];
@@ -122,9 +122,9 @@ Always use PatternFly v5 CSS variables instead of hardcoded values:
 ```css
 /* ✅ Good - Uses CSS variables */
 .my-element {
-  padding: var(--pf-v5-global--spacer--md);
-  color: var(--pf-v5-global--primary-color--100);
-  border-radius: var(--pf-v5-global--BorderRadius--sm);
+  padding: var(--pf-v6-global--spacer--md);
+  color: var(--pf-v6-global--primary-color--100);
+  border-radius: var(--pf-v6-global--BorderRadius--sm);
 }
 
 /* ❌ Avoid - Hardcoded values */
@@ -158,28 +158,28 @@ Use semantic color variables for meaning:
 
 ```css
 /* Status colors */
-.success { color: var(--pf-v5-global--success-color--100); }
-.warning { color: var(--pf-v5-global--warning-color--100); }
-.danger { color: var(--pf-v5-global--danger-color--100); }
-.info { color: var(--pf-v5-global--info-color--100); }
+.success { color: var(--pf-v6-global--success-color--100); }
+.warning { color: var(--pf-v6-global--warning-color--100); }
+.danger { color: var(--pf-v6-global--danger-color--100); }
+.info { color: var(--pf-v6-global--info-color--100); }
 
 /* Primary colors */
-.primary { color: var(--pf-v5-global--primary-color--100); }
-.link { color: var(--pf-v5-global--link--Color); }
+.primary { color: var(--pf-v6-global--primary-color--100); }
+.link { color: var(--pf-v6-global--link--Color); }
 ```
 
 ## Loading PatternFly CSS
 
-The PatternFly v5 CSS is loaded in `index.html`:
+The PatternFly v6 CSS is loaded in `index.html`:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@5/patternfly.css">
+<link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@6/patternfly.css">
 ```
 
 Or install via npm:
 
 ```bash
-npm install @patternfly/patternfly@5
+npm install @patternfly/patternfly@6
 ```
 
 Then import in your main entry point:
@@ -199,7 +199,7 @@ static styles = [
     /* Component-specific styles */
     .unique-feature {
       /* Use CSS variables */
-      margin: var(--pf-v5-global--spacer--lg);
+      margin: var(--pf-v6-global--spacer--lg);
     }
   `
 ];
@@ -207,6 +207,7 @@ static styles = [
 
 ## Resources
 
-- [PatternFly v5 Documentation](https://www.patternfly.org/v5/)
-- [PatternFly CSS Variables](https://www.patternfly.org/v5/developer-resources/global-css-variables)
+- [PatternFly v6 Documentation](https://www.patternfly.org/)
+- [PatternFly CSS Variables](https://www.patternfly.org/developer-resources/global-css-variables)
 - [Lit Styling Guide](https://lit.dev/docs/components/styles/)
+- [PatternFly v6 Upgrade Guide](https://www.patternfly.org/get-started/upgrade)

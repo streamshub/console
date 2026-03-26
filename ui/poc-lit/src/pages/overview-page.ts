@@ -7,41 +7,41 @@ export class OverviewPage extends LitElement {
   static styles = css`
     :host {
       display: block;
-      padding: var(--pf-v5-global--spacer--lg);
+      padding: var(--pf-v6-global--spacer--lg);
     }
 
     .page-header {
-      margin-bottom: var(--pf-v5-global--spacer--lg);
+      margin-bottom: var(--pf-v6-global--spacer--lg);
     }
 
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: var(--pf-v5-global--spacer--md);
+      gap: var(--pf-v6-global--spacer--md);
     }
 
     .card {
       background: white;
-      border: 1px solid var(--pf-v5-global--BorderColor--100);
-      border-radius: var(--pf-v5-global--BorderRadius--sm);
-      padding: var(--pf-v5-global--spacer--lg);
+      border: 1px solid var(--pf-v6-global--BorderColor--100);
+      border-radius: var(--pf-v6-global--BorderRadius--sm);
+      padding: var(--pf-v6-global--spacer--lg);
     }
 
     .card h3 {
-      margin: 0 0 var(--pf-v5-global--spacer--md) 0;
-      font-size: var(--pf-v5-global--FontSize--lg);
+      margin: 0 0 var(--pf-v6-global--spacer--md) 0;
+      font-size: var(--pf-v6-global--FontSize--lg);
     }
 
     .stat {
-      font-size: var(--pf-v5-global--FontSize--2xl);
+      font-size: var(--pf-v6-global--FontSize--2xl);
       font-weight: bold;
-      color: var(--pf-v5-global--primary-color--100);
+      color: var(--pf-v6-global--primary-color--100);
     }
 
     .stat-label {
-      font-size: var(--pf-v5-global--FontSize--sm);
-      color: var(--pf-v5-global--Color--200);
-      margin-top: var(--pf-v5-global--spacer--xs);
+      font-size: var(--pf-v6-global--FontSize--sm);
+      color: var(--pf-v6-global--Color--200);
+      margin-top: var(--pf-v6-global--spacer--xs);
     }
   `;
 
@@ -54,8 +54,8 @@ export class OverviewPage extends LitElement {
   render() {
     return html`
       <div class="page-header">
-        <h1 class="pf-v5-c-title pf-m-2xl">Cluster Overview</h1>
-        <p style="color: var(--pf-v5-global--Color--200);">
+        <h1 class="pf-v6-c-title pf-m-2xl">Cluster Overview</h1>
+        <p style="color: var(--pf-v6-global--Color--200);">
           Overview of Kafka cluster ${this.kafkaId}
         </p>
       </div>
@@ -86,7 +86,7 @@ export class OverviewPage extends LitElement {
         </div>
       </div>
 
-      <div style="margin-top: var(--pf-v5-global--spacer--xl); padding: var(--pf-v5-global--spacer--lg); background: var(--pf-v5-global--info-color--100); color: white; border-radius: var(--pf-v5-global--BorderRadius--sm);">
+      <div style="margin-top: var(--pf-v6-global--spacer--xl); padding: var(--pf-v6-global--spacer--lg); background: var(--pf-v6-global--info-color--100); color: white; border-radius: var(--pf-v6-global--BorderRadius--sm);">
         <strong>Note:</strong> This is a placeholder page. The full overview page will include:
         <ul>
           <li>Cluster health and status</li>

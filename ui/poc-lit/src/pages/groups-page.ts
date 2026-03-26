@@ -64,7 +64,7 @@ export class GroupsPage extends LitElement {
   render() {
     return html`
       <div class="page-header">
-        <h1 class="pf-v5-c-title pf-m-2xl">Groups</h1>
+        <h1 class="pf-v6-c-title pf-m-2xl">Groups</h1>
       </div>
 
       <div class="page-content">

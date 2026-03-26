@@ -4,11 +4,64 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StreamsHub Console - PoC</title>
-  <link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@5/patternfly.css">
-  <link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@5/patternfly-addons.css">
+  <link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@6.4.0/patternfly.css">
+  <link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@6.4.0/patternfly-addons.css">
 </head>
 <body>
-  <div id="app"></div>
+  <div class="pf-v6-c-page">
+  <header class="pf-v6-c-masthead">
+    <div class="pf-v6-c-masthead__main">
+      <span class="pf-v6-c-masthead__toggle">
+        <button
+          class="pf-v6-c-button pf-m-hamburger pf-m-plain"
+          type="button"
+          aria-label="Global navigation"
+        >
+          <span class="pf-v6-c-button__icon">
+            <svg
+              viewBox="0 0 10 10"
+              class="pf-v6-c-button--hamburger-icon pf-v6-svg"
+              width="1em"
+              height="1em"
+            >
+              <path class="pf-v6-c-button--hamburger-icon--top" d="M1,1 L9,1" />
+              <path
+                class="pf-v6-c-button--hamburger-icon--middle"
+                d="M1,5 L9,5"
+              />
+              <path
+                class="pf-v6-c-button--hamburger-icon--arrow"
+                d="M1,5 L1,5 L1,5"
+              />
+              <path
+                class="pf-v6-c-button--hamburger-icon--bottom"
+                d="M9,9 L1,9"
+              />
+            </svg>
+          </span>
+        </button>
+      </span>
+      <div class="pf-v6-c-masthead__brand">
+        <a class="pf-v6-c-masthead__logo" href="#">Logo</a>
+      </div>
+    </div>
+    <div class="pf-v6-c-masthead__content">
+      <span>Content</span>
+    </div>
+  </header>
+  <div class="pf-v6-c-page__sidebar">
+    <div class="pf-v6-c-page__sidebar-body">Navigation</div>
+  </div>
+  <div class="pf-v6-c-page__main-container" tabindex="-1">
+    <main class="pf-v6-c-page__main" tabindex="-1">
+      <section class="pf-v6-c-page__main-section">
+        <div class="pf-v6-c-page__main-body">
+          <div id="app"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

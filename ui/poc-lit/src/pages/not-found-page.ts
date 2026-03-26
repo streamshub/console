@@ -19,11 +19,11 @@ export class NotFoundPage extends LitElement {
     h1 {
       font-size: 4rem;
       margin: 0;
-      color: var(--pf-v5-global--danger-color--100);
+      color: var(--pf-v6-global--danger-color--100);
     }
 
     h2 {
-      margin: var(--pf-v5-global--spacer--md) 0;
+      margin: var(--pf-v6-global--spacer--md) 0;
     }
   `;
 
@@ -33,7 +33,7 @@ export class NotFoundPage extends LitElement {
         <h1>404</h1>
         <h2>Page Not Found</h2>
         <p>The page you're looking for doesn't exist.</p>
-        <a href="/" class="pf-v5-c-button pf-m-primary">
+        <a href="/" class="pf-v6-c-button pf-m-primary">
           Go to Home
         </a>
       </div>

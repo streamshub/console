@@ -14,26 +14,26 @@ export class NodesPage extends LitElement {
       .summary {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--pf-v5-global--spacer--md);
-        margin-bottom: var(--pf-v5-global--spacer--md);
+        gap: var(--pf-v6-global--spacer--md);
+        margin-bottom: var(--pf-v6-global--spacer--md);
       }
 
       .summary-card {
-        padding: var(--pf-v5-global--spacer--md);
-        border: var(--pf-v5-global--BorderWidth--sm) solid var(--pf-v5-global--BorderColor--100);
-        border-radius: var(--pf-v5-global--BorderRadius--sm);
-        background: var(--pf-v5-global--BackgroundColor--100);
+        padding: var(--pf-v6-global--spacer--md);
+        border: var(--pf-v6-global--BorderWidth--sm) solid var(--pf-v6-global--BorderColor--100);
+        border-radius: var(--pf-v6-global--BorderRadius--sm);
+        background: var(--pf-v6-global--BackgroundColor--100);
       }
 
       .summary-card h3 {
-        margin: 0 0 var(--pf-v5-global--spacer--sm) 0;
-        font-size: var(--pf-v5-global--FontSize--lg);
-        color: var(--pf-v5-global--Color--200);
+        margin: 0 0 var(--pf-v6-global--spacer--sm) 0;
+        font-size: var(--pf-v6-global--FontSize--lg);
+        color: var(--pf-v6-global--Color--200);
       }
 
       .summary-card .value {
-        font-size: var(--pf-v5-global--FontSize--2xl);
-        font-weight: var(--pf-v5-global--FontWeight--bold);
+        font-size: var(--pf-v6-global--FontSize--2xl);
+        font-weight: var(--pf-v6-global--FontWeight--bold);
       }
     `
   ];
@@ -78,7 +78,7 @@ export class NodesPage extends LitElement {
   render() {
     return html`
       <div class="page-header">
-        <h1 class="pf-v5-c-title pf-m-2xl">Kafka Nodes</h1>
+        <h1 class="pf-v6-c-title pf-m-2xl">Kafka Nodes</h1>
       </div>
 
       <div class="page-content">

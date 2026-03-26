@@ -26,32 +26,32 @@ export class RebalancesPage extends LitElement {
     css`
       .filters {
         display: flex;
-        gap: var(--pf-v5-global--spacer--md);
-        margin-bottom: var(--pf-v5-global--spacer--md);
+        gap: var(--pf-v6-global--spacer--md);
+        margin-bottom: var(--pf-v6-global--spacer--md);
         flex-wrap: wrap;
       }
 
       .filter-group {
         display: flex;
         flex-direction: column;
-        gap: var(--pf-v5-global--spacer--xs);
+        gap: var(--pf-v6-global--spacer--xs);
       }
 
       .filter-group label {
-        font-size: var(--pf-v5-global--FontSize--sm);
-        font-weight: var(--pf-v5-global--FontWeight--bold);
+        font-size: var(--pf-v6-global--FontSize--sm);
+        font-weight: var(--pf-v6-global--FontWeight--bold);
       }
 
       .checkbox-group {
         display: flex;
         flex-direction: column;
-        gap: var(--pf-v5-global--spacer--xs);
+        gap: var(--pf-v6-global--spacer--xs);
       }
 
       .checkbox-label {
         display: flex;
         align-items: center;
-        gap: var(--pf-v5-global--spacer--sm);
+        gap: var(--pf-v6-global--spacer--sm);
       }
     `
   ];
@@ -126,7 +126,7 @@ export class RebalancesPage extends LitElement {
   render() {
     return html`
       <div class="page-header">
-        <h1 class="pf-v5-c-title pf-m-2xl">Rebalance</h1>
+        <h1 class="pf-v6-c-title pf-m-2xl">Rebalance</h1>
       </div>
 
       <div class="page-content">

@@ -20,8 +20,8 @@ export class NodesLayout extends LitElement {
     }
 
     .tabs {
-      border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
-      background-color: var(--pf-v5-global--BackgroundColor--100);
+      border-bottom: 1px solid var(--pf-v6-global--BorderColor--100);
+      background-color: var(--pf-v6-global--BackgroundColor--100);
     }
 
     .tabs-list {
@@ -37,21 +37,21 @@ export class NodesLayout extends LitElement {
 
     .tab-link {
       display: block;
-      padding: var(--pf-v5-global--spacer--md) var(--pf-v5-global--spacer--lg);
+      padding: var(--pf-v6-global--spacer--md) var(--pf-v6-global--spacer--lg);
       text-decoration: none;
-      color: var(--pf-v5-global--Color--100);
+      color: var(--pf-v6-global--Color--100);
       border-bottom: 3px solid transparent;
       transition: border-color 0.2s;
     }
 
     .tab-link:hover {
-      border-bottom-color: var(--pf-v5-global--BorderColor--200);
+      border-bottom-color: var(--pf-v6-global--BorderColor--200);
     }
 
     .tab-link.active {
-      border-bottom-color: var(--pf-v5-global--primary-color--100);
-      color: var(--pf-v5-global--primary-color--100);
-      font-weight: var(--pf-v5-global--FontWeight--bold);
+      border-bottom-color: var(--pf-v6-global--primary-color--100);
+      color: var(--pf-v6-global--primary-color--100);
+      font-weight: var(--pf-v6-global--FontWeight--bold);
     }
 
     .tab-content {

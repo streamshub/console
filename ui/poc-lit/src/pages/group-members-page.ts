@@ -19,9 +19,9 @@ export class GroupMembersPage extends LitElement {
       }
 
       .refresh-info {
-        color: var(--pf-v5-global--Color--200);
-        font-size: var(--pf-v5-global--FontSize--sm);
-        margin-bottom: var(--pf-v5-global--spacer--md);
+        color: var(--pf-v6-global--Color--200);
+        font-size: var(--pf-v6-global--FontSize--sm);
+        margin-bottom: var(--pf-v6-global--spacer--md);
       }
     `
   ];

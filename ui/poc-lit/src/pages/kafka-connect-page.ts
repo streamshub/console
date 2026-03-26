@@ -92,8 +92,8 @@ export class KafkaConnectPage extends LitElement {
     pageStyles,
     css`
       .tabs {
-        border-bottom: 1px solid var(--pf-v5-global--BorderColor--100);
-        margin-bottom: var(--pf-v5-global--spacer--lg);
+        border-bottom: 1px solid var(--pf-v6-global--BorderColor--100);
+        margin-bottom: var(--pf-v6-global--spacer--lg);
       }
 
       .tabs-list {
@@ -101,29 +101,29 @@ export class KafkaConnectPage extends LitElement {
         list-style: none;
         padding: 0;
         margin: 0;
-        gap: var(--pf-v5-global--spacer--md);
+        gap: var(--pf-v6-global--spacer--md);
       }
 
       .tab-button {
         background: none;
         border: none;
-        padding: var(--pf-v5-global--spacer--md) var(--pf-v5-global--spacer--lg);
+        padding: var(--pf-v6-global--spacer--md) var(--pf-v6-global--spacer--lg);
         cursor: pointer;
-        color: var(--pf-v5-global--Color--200);
-        font-size: var(--pf-v5-global--FontSize--md);
+        color: var(--pf-v6-global--Color--200);
+        font-size: var(--pf-v6-global--FontSize--md);
         border-bottom: 3px solid transparent;
         transition: all 0.2s;
       }
 
       .tab-button:hover {
-        color: var(--pf-v5-global--Color--100);
-        border-bottom-color: var(--pf-v5-global--BorderColor--100);
+        color: var(--pf-v6-global--Color--100);
+        border-bottom-color: var(--pf-v6-global--BorderColor--100);
       }
 
       .tab-button.active {
-        color: var(--pf-v5-global--primary-color--100);
-        border-bottom-color: var(--pf-v5-global--primary-color--100);
-        font-weight: var(--pf-v5-global--FontWeight--bold);
+        color: var(--pf-v6-global--primary-color--100);
+        border-bottom-color: var(--pf-v6-global--primary-color--100);
+        font-weight: var(--pf-v6-global--FontWeight--bold);
       }
     `
   ];
@@ -182,9 +182,9 @@ export class KafkaConnectPage extends LitElement {
     return html`
       <div class="toolbar">
         <div class="search-input">
-          <div class="pf-v5-c-input-group">
+          <div class="pf-v6-c-input-group">
             <input
-              class="pf-v5-c-form-control"
+              class="pf-v6-c-form-control"
               type="text"
               placeholder="Search connectors..."
               @input=${this.handleConnectorsSearch}
@@ -215,14 +215,14 @@ export class KafkaConnectPage extends LitElement {
               </div>
               <div class="pagination-controls">
                 <button
-                  class="pf-v5-c-button pf-m-secondary"
+                  class="pf-v6-c-button pf-m-secondary"
                   ?disabled=${this.connectorsPage <= 1}
                   @click=${this.handleConnectorsPreviousPage}
                 >
                   Previous
                 </button>
                 <button
-                  class="pf-v5-c-button pf-m-secondary"
+                  class="pf-v6-c-button pf-m-secondary"
                   ?disabled=${this.connectorsPage * this.connectorsPerPage >= (data.meta.page.total || 0)}
                   @click=${() => this.handleConnectorsNextPage(this.connectorsPage * this.connectorsPerPage < (data.meta.page.total || 0))}
                 >
@@ -236,17 +236,17 @@ export class KafkaConnectPage extends LitElement {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           return html`
             <div class="error-state">
-              <div class="pf-v5-c-empty-state">
-                <div class="pf-v5-c-empty-state__content">
-                  <div class="pf-v5-c-empty-state__icon">
+              <div class="pf-v6-c-empty-state">
+                <div class="pf-v6-c-empty-state__content">
+                  <div class="pf-v6-c-empty-state__icon">
                     <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
                   </div>
-                  <h2 class="pf-v5-c-title pf-m-lg">Error loading connectors</h2>
-                  <div class="pf-v5-c-empty-state__body">
+                  <h2 class="pf-v6-c-title pf-m-lg">Error loading connectors</h2>
+                  <div class="pf-v6-c-empty-state__body">
                     ${errorMessage}
                   </div>
                   <button
-                    class="pf-v5-c-button pf-m-primary"
+                    class="pf-v6-c-button pf-m-primary"
                     @click=${() => this.connectorsTask.run()}
                   >
                     Retry
@@ -264,9 +264,9 @@ export class KafkaConnectPage extends LitElement {
     return html`
       <div class="toolbar">
         <div class="search-input">
-          <div class="pf-v5-c-input-group">
+          <div class="pf-v6-c-input-group">
             <input
-              class="pf-v5-c-form-control"
+              class="pf-v6-c-form-control"
               type="text"
               placeholder="Search connect clusters..."
               @input=${this.handleClustersSearch}
@@ -295,14 +295,14 @@ export class KafkaConnectPage extends LitElement {
             </div>
             <div class="pagination-controls">
               <button
-                class="pf-v5-c-button pf-m-secondary"
+                class="pf-v6-c-button pf-m-secondary"
                 ?disabled=${this.clustersPage <= 1}
                 @click=${this.handleClustersPreviousPage}
               >
                 Previous
               </button>
               <button
-                class="pf-v5-c-button pf-m-secondary"
+                class="pf-v6-c-button pf-m-secondary"
                 ?disabled=${this.clustersPage * this.clustersPerPage >= (data.meta.page.total || 0)}
                 @click=${() => this.handleClustersNextPage(this.clustersPage * this.clustersPerPage < (data.meta.page.total || 0))}
               >
@@ -315,17 +315,17 @@ export class KafkaConnectPage extends LitElement {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           return html`
             <div class="error-state">
-              <div class="pf-v5-c-empty-state">
-                <div class="pf-v5-c-empty-state__content">
-                  <div class="pf-v5-c-empty-state__icon">
+              <div class="pf-v6-c-empty-state">
+                <div class="pf-v6-c-empty-state__content">
+                  <div class="pf-v6-c-empty-state__icon">
                     <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
                   </div>
-                  <h2 class="pf-v5-c-title pf-m-lg">Error loading connect clusters</h2>
-                  <div class="pf-v5-c-empty-state__body">
+                  <h2 class="pf-v6-c-title pf-m-lg">Error loading connect clusters</h2>
+                  <div class="pf-v6-c-empty-state__body">
                     ${errorMessage}
                   </div>
                   <button
-                    class="pf-v5-c-button pf-m-primary"
+                    class="pf-v6-c-button pf-m-primary"
                     @click=${() => this.clustersTask.run()}
                   >
                     Retry
@@ -342,7 +342,7 @@ export class KafkaConnectPage extends LitElement {
   render() {
     return html`
       <div class="page-header">
-        <h1 class="pf-v5-c-title pf-m-2xl">Kafka Connect</h1>
+        <h1 class="pf-v6-c-title pf-m-2xl">Kafka Connect</h1>
       </div>
 
       <div class="page-content">

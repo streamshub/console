@@ -17,18 +17,18 @@ export class ConnectorsTable extends LitElement {
     css`
       .managed-label {
         display: inline-block;
-        margin-left: var(--pf-v5-global--spacer--sm);
-        padding: var(--pf-v5-global--spacer--xs) var(--pf-v5-global--spacer--sm);
-        background-color: var(--pf-v5-global--BackgroundColor--200);
-        border-radius: var(--pf-v5-global--BorderRadius--sm);
-        font-size: var(--pf-v5-global--FontSize--xs);
-        color: var(--pf-v5-global--Color--200);
+        margin-left: var(--pf-v6-global--spacer--sm);
+        padding: var(--pf-v6-global--spacer--xs) var(--pf-v6-global--spacer--sm);
+        background-color: var(--pf-v6-global--BackgroundColor--200);
+        border-radius: var(--pf-v6-global--BorderRadius--sm);
+        font-size: var(--pf-v6-global--FontSize--xs);
+        color: var(--pf-v6-global--Color--200);
       }
 
       .state-icon {
         display: inline-flex;
         align-items: center;
-        gap: var(--pf-v5-global--spacer--xs);
+        gap: var(--pf-v6-global--spacer--xs);
       }
     `
   ];
@@ -92,14 +92,14 @@ export class ConnectorsTable extends LitElement {
   render() {
     if (this.loading) {
       return html`
-        <div class="pf-v5-c-empty-state">
-          <div class="pf-v5-c-empty-state__content">
-            <div class="pf-v5-c-spinner pf-m-xl" role="progressbar">
-              <span class="pf-v5-c-spinner__clipper"></span>
-              <span class="pf-v5-c-spinner__lead-ball"></span>
-              <span class="pf-v5-c-spinner__tail-ball"></span>
+        <div class="pf-v6-c-empty-state">
+          <div class="pf-v6-c-empty-state__content">
+            <div class="pf-v6-c-spinner pf-m-xl" role="progressbar">
+              <span class="pf-v6-c-spinner__clipper"></span>
+              <span class="pf-v6-c-spinner__lead-ball"></span>
+              <span class="pf-v6-c-spinner__tail-ball"></span>
             </div>
-            <div class="pf-v5-c-empty-state__body">Loading connectors...</div>
+            <div class="pf-v6-c-empty-state__body">Loading connectors...</div>
           </div>
         </div>
       `;
@@ -107,13 +107,13 @@ export class ConnectorsTable extends LitElement {
 
     if (this.connectors.length === 0) {
       return html`
-        <div class="pf-v5-c-empty-state">
-          <div class="pf-v5-c-empty-state__content">
-            <div class="pf-v5-c-empty-state__icon">
+        <div class="pf-v6-c-empty-state">
+          <div class="pf-v6-c-empty-state__content">
+            <div class="pf-v6-c-empty-state__icon">
               <i class="fas fa-plug" aria-hidden="true"></i>
             </div>
-            <h2 class="pf-v5-c-title pf-m-lg">No connectors found</h2>
-            <div class="pf-v5-c-empty-state__body">
+            <h2 class="pf-v6-c-title pf-m-lg">No connectors found</h2>
+            <div class="pf-v6-c-empty-state__body">
               There are no connectors in this Kafka cluster yet.
             </div>
           </div>
@@ -122,7 +122,7 @@ export class ConnectorsTable extends LitElement {
     }
 
     return html`
-      <table class="pf-v5-c-table pf-m-grid-md" role="grid">
+      <table class="pf-v6-c-table pf-m-grid-md" role="grid">
         <thead>
           <tr role="row">
             <th role="columnheader" @click=${() => this.handleSort('name')}>

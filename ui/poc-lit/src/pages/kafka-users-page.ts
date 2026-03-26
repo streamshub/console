@@ -57,7 +57,7 @@ export class KafkaUsersPage extends LitElement {
   render() {
     return html`
       <div class="page-header">
-        <h1 class="pf-v5-c-title pf-m-2xl">Kafka Users</h1>
+        <h1 class="pf-v6-c-title pf-m-2xl">Kafka Users</h1>
       </div>
 
       <div class="page-content">
