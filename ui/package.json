@@ -14,15 +14,15 @@
     "test": "npx playwright test --config ./tests/playwright/playwright.config.ts"
   },
   "dependencies": {
-    "@patternfly/patternfly": "^6.4.0",
-    "@patternfly/quickstarts": "^6.3.1",
-    "@patternfly/react-charts": "^8.3.1",
-    "@patternfly/react-core": "^6.4.0",
-    "@patternfly/react-drag-drop": "^6.4.0",
-    "@patternfly/react-icons": "^6.4.0",
-    "@patternfly/react-styles": "^6.4.0",
-    "@patternfly/react-table": "^6.4.0",
-    "@patternfly/react-tokens": "^6.4.0",
+    "@patternfly/patternfly": "6.5.0-prerelease.59",
+    "@patternfly/quickstarts": "6.5.0-prerelease.4",
+    "@patternfly/react-charts": "8.5.0-prerelease.16",
+    "@patternfly/react-core": "6.5.0-prerelease.41",
+    "@patternfly/react-drag-drop": "6.5.0-prerelease.41",
+    "@patternfly/react-icons": "6.5.0-prerelease.17",
+    "@patternfly/react-styles": "6.5.0-prerelease.14",
+    "@patternfly/react-table": "6.5.0-prerelease.41",
+    "@patternfly/react-tokens": "6.5.0-prerelease.13 ",
     "@patternfly/react-user-feedback": "^6.2.0",
     "@stdlib/string-truncate": "^0.2.3",
     "@stdlib/string-truncate-middle": "^0.2.3",
@@ -73,6 +73,9 @@
     "tsconfig-paths-webpack-plugin": "^4.2.0"
   },
   "overrides": {
+    "@patternfly/quickstarts": {
+      "@patternfly/react-core": "6.5.0-prerelease.41"
+    },
     "@storybook/test-runner": {
       "nyc": "18.0.0",
       "rimraf": "4.4.1"
