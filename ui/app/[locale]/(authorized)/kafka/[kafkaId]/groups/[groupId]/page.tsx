@@ -1,10 +1,11 @@
 import { GroupParams } from "./Group.params";
 import { redirect } from "@/i18n/routing";
 
-export default function GroupPage({
-  params: { kafkaId, groupId },
+export default async function GroupPage({
+  params: paramsPromise,
 }: {
-  params: GroupParams;
+  params: Promise<GroupParams>;
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
   redirect(`/kafka/${kafkaId}/groups/${groupId}/members`);
 }

@@ -26,12 +26,12 @@ const sortMap: Record<(typeof SortableColumns)[number], string> = {
   storage: "totalLeaderLogBytes",
 };
 
-export default function TopicsPage({
-  params,
-  searchParams,
+export default async function TopicsPage({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaParams;
-  searchParams: {
+  params: Promise<KafkaParams>;
+  searchParams: Promise<{
     id: string | undefined;
     name: string | undefined;
     perPage: string | undefined;
@@ -40,8 +40,11 @@ export default function TopicsPage({
     page: string | undefined;
     includeHidden: string | undefined;
     status: string | undefined;
-  };
+  }>;
 }) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
+
   const id = searchParams["id"];
   const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;

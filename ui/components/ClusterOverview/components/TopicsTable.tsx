@@ -3,7 +3,7 @@ import { ViewedTopic } from "@/api/topics/actions";
 import { ResponsiveTable } from "@/components/Table";
 import { Link } from "@/i18n/routing";
 import { Truncate } from "@patternfly/react-core";
-import { TableVariant } from "@patternfly/react-table";
+import { TableVariant, Th } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
 
 export const TopicsTableColumns = ["name"] as const;
@@ -20,7 +20,7 @@ export function TopicsTable({ topics }: TopicsTableProps) {
       data={topics}
       ariaLabel={"Topics"}
       columns={TopicsTableColumns}
-      renderHeader={({ Th, column, key }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "name":
             return (
