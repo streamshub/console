@@ -196,13 +196,13 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
             }
         }
 
+        var idHandler = baseSerde.getIdHandler();
         ByteBuffer buffer;
         SchemaLookupResult<Object> schema;
         int length;
 
-        if (data.length > 0 && data[0] == BaseSerde.MAGIC_BYTE) {
+        if (data.length > 0 && data[0] == BaseSerde.MAGIC_BYTE && idHandler != null) {
             buffer = BaseSerde.getByteBuffer(data);
-            var idHandler = baseSerde.getIdHandler();
             artifactReference = idHandler.readId(buffer);
             schema = resolve(artifactReference);
             length = buffer.limit() - idHandler.idSize() - 1;
