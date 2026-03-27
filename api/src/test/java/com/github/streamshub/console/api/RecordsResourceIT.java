@@ -91,6 +91,7 @@ class RecordsResourceIT {
     RecordHelper recordUtils;
     String clusterId1;
     String clusterId3;
+    String clusterIdY = "test-kafkaY";
 
     @BeforeEach
     void setup() {
@@ -471,6 +472,24 @@ class RecordsResourceIT {
             .body("data", hasSize(1))
             .body("data[0].attributes.offset", is(equalTo(3)))
             .body("data[0].attributes.value", is(equalTo("fourth")));
+    }
+
+    @Test
+    void testConsumeRecordMagicByteWithoutRegistry() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
+        recordUtils.produceRecord(topicName, null, null, null, "\u0000rest of value");
+
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) == 1);
+
+        whenRequesting(req -> req
+                .get("", clusterIdY, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data", hasSize(1))
+            .body("data[0].attributes.offset", is(equalTo(0)))
+            .body("data[0].attributes.value", is(equalTo("\u0000rest of value")));
     }
 
     @Test
