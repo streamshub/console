@@ -94,11 +94,12 @@ export interface Partition {
 }
 
 export interface ConfigValue {
-  value: string;
+  value?: string;
   source: string;
   sensitive: boolean;
   readOnly: boolean;
   type: string;
+  documentation?: string;
 }
 
 export interface Topic {
@@ -142,8 +143,8 @@ export interface TopicsResponse {
   };
 }
 
-// Consumer Group types
-export type ConsumerGroupState =
+// Group types
+export type GroupState =
   | 'UNKNOWN'
   | 'PREPARING_REBALANCE'
   | 'COMPLETING_REBALANCE'
@@ -180,7 +181,7 @@ export interface MemberDescription {
   assignments?: PartitionKey[];
 }
 
-export interface ConsumerGroup {
+export interface Group {
   id: string;
   type: 'groups';
   meta?: {
@@ -192,7 +193,7 @@ export interface ConsumerGroup {
     type?: GroupType | null;
     protocol?: string | null;
     simpleConsumerGroup?: boolean;
-    state: ConsumerGroupState;
+    state: GroupState;
     members?: MemberDescription[] | null;
     partitionAssignor?: string | null;
     coordinator?: {
@@ -207,11 +208,12 @@ export interface ConsumerGroup {
     } | null;
     authorizedOperations?: string[] | null;
     offsets?: OffsetAndMetadata[] | null;
+    configs?: Record<string, ConfigValue>;
   };
 }
 
-export interface ConsumerGroupsResponse {
-  data: ConsumerGroup[];
+export interface GroupsResponse {
+  data: Group[];
   meta: {
     page: {
       total?: number;
@@ -227,19 +229,92 @@ export interface ConsumerGroupsResponse {
 }
 
 // Node types
+// Node types
+export type NodeRoles = 'broker' | 'controller';
+
+export type BrokerStatus =
+  | 'NotRunning'
+  | 'Starting'
+  | 'Recovery'
+  | 'Running'
+  | 'PendingControlledShutdown'
+  | 'ShuttingDown'
+  | 'Unknown';
+
+export type ControllerStatus =
+  | 'QuorumLeader'
+  | 'QuorumFollower'
+  | 'QuorumFollowerLagged'
+  | 'Unknown';
+
+export interface NodePoolMeta {
+  roles: string[];
+  count: number;
+}
+
+export type NodePools = Record<string, NodePoolMeta>;
+
+export type Statuses = Record<
+  'brokers' | 'controllers' | 'combined',
+  Record<string, number>
+>;
+
 export interface Node {
   id: string;
   type: 'nodes';
   attributes: {
-    nodeId: number;
-    host?: string;
-    port?: number;
-    rack?: string;
+    host?: string | null;
+    port?: number | null;
+    rack?: string | null;
+    nodePool?: string | null;
+    kafkaVersion?: string | null;
+    roles?: NodeRoles[] | null;
+    metadataState?: {
+      status: 'leader' | 'follower' | 'observer';
+      logEndOffset: number;
+      lag: number;
+    } | null;
+    broker?: {
+      status: BrokerStatus;
+      replicaCount: number;
+      leaderCount: number;
+    } | null;
+    controller?: {
+      status: ControllerStatus;
+    } | null;
+    storageUsed?: number | null;
+    storageCapacity?: number | null;
   };
 }
 
 export interface NodesResponse {
   data: Node[];
+  meta: {
+    summary: {
+      nodePools: NodePools;
+      statuses: Statuses;
+      leaderId?: string;
+    };
+    page: {
+      total: number;
+      pageNumber?: number;
+    };
+  };
+  links: {
+    first: string | null;
+    prev: string | null;
+    next: string | null;
+    last: string | null;
+  };
+}
+
+export interface NodeConfigResponse {
+  data: {
+    id?: string;
+    type: string;
+    meta?: Record<string, unknown>;
+    attributes: Record<string, ConfigValue>;
+  };
 }
 
 // Metadata types
@@ -309,3 +384,87 @@ export type SearchParams = {
     | { type: 'offset'; value: number }
     | { type: 'latest' };
 };
+
+// Rebalance types
+export type RebalanceStatus =
+  | 'New'
+  | 'PendingProposal'
+  | 'ProposalReady'
+  | 'Rebalancing'
+  | 'Stopped'
+  | 'NotReady'
+  | 'Ready'
+  | 'ReconciliationPaused';
+
+export type RebalanceMode = 'full' | 'add-brokers' | 'remove-brokers';
+
+export interface OptimizationResult {
+  numIntraBrokerReplicaMovements?: number;
+  numReplicaMovements?: number;
+  onDemandBalancednessScoreAfter?: number;
+  afterBeforeLoadConfigMap?: string;
+  intraBrokerDataToMoveMB?: number;
+  monitoredPartitionsPercentage?: number;
+  provisionRecommendation?: string;
+  excludedBrokersForReplicaMove?: string[] | null;
+  excludedBrokersForLeadership?: string[] | null;
+  provisionStatus?: string;
+  onDemandBalancednessScoreBefore?: number;
+  recentWindows?: number;
+  dataToMoveMB?: number;
+  excludedTopics?: string[] | null;
+  numLeaderMovements?: number;
+}
+
+export interface RebalanceCondition {
+  type?: string;
+  status?: string;
+  reason?: string;
+  message?: string;
+  lastTransitionTime?: string;
+}
+
+export interface Rebalance {
+  id: string;
+  type: 'kafkaRebalances';
+  meta?: {
+    autoApproval?: boolean;
+    allowedActions: string[];
+    privileges?: string[];
+    page?: {
+      cursor: string;
+    };
+    managed?: boolean;
+  };
+  attributes: {
+    name: string;
+    namespace?: string;
+    creationTimestamp: string;
+    status: RebalanceStatus | null;
+    mode: RebalanceMode;
+    brokers: number[] | null;
+    sessionId?: string | null;
+    optimizationResult?: OptimizationResult;
+    conditions?: RebalanceCondition[] | null;
+  };
+}
+
+export interface RebalancesResponse {
+  data: Rebalance[];
+  meta: {
+    page: {
+      total: number;
+      pageNumber?: number;
+    };
+  };
+  links: {
+    first: string | null;
+    prev: string | null;
+    next: string | null;
+    last: string | null;
+  };
+}
+
+export interface RebalanceResponse {
+  data: Rebalance;
+}

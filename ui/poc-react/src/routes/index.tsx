@@ -13,6 +13,13 @@ import { TopicMessagesTab } from '../pages/TopicMessagesTab';
 import { TopicPartitionsTab } from '../pages/TopicPartitionsTab';
 import { TopicGroupsTab } from '../pages/TopicGroupsTab';
 import { TopicConfigurationTab } from '../pages/TopicConfigurationTab';
+import { NodesPage } from '../pages/NodesPage';
+import { NodesOverviewTab } from '../pages/NodesOverviewTab';
+import { NodesRebalancesTab } from '../pages/NodesRebalancesTab';
+import { GroupsPage } from '../pages/GroupsPage';
+import { GroupDetailPage } from '../pages/GroupDetailPage';
+import { GroupMembersTab } from '../pages/GroupMembersTab';
+import { GroupConfigurationTab } from '../pages/GroupConfigurationTab';
 import { ErrorPage } from '../pages/ErrorPage';
 
 export const router = createBrowserRouter([
@@ -64,6 +71,46 @@ export const router = createBrowserRouter([
               {
                 path: 'configuration',
                 element: <TopicConfigurationTab />,
+              },
+            ],
+          },
+          {
+            path: 'nodes',
+            element: <NodesPage />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="overview" replace />,
+              },
+              {
+                path: 'overview',
+                element: <NodesOverviewTab />,
+              },
+              {
+                path: 'rebalances',
+                element: <NodesRebalancesTab />,
+              },
+            ],
+          },
+          {
+            path: 'groups',
+            element: <GroupsPage />,
+          },
+          {
+            path: 'groups/:groupId',
+            element: <GroupDetailPage />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="members" replace />,
+              },
+              {
+                path: 'members',
+                element: <GroupMembersTab />,
+              },
+              {
+                path: 'configuration',
+                element: <GroupConfigurationTab />,
               },
             ],
           },

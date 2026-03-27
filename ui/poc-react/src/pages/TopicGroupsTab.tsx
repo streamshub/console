@@ -1,5 +1,5 @@
 /**
- * Topic Groups Tab - Shows consumer groups for a topic
+ * Topic Groups Tab - Shows groups for a topic
  */
 
 import { useParams, Link } from 'react-router-dom';
@@ -39,10 +39,10 @@ import {
   SyncAltIcon,
   InProgressIcon,
 } from '@patternfly/react-icons';
-import { useTopicConsumerGroups } from '../api/hooks/useConsumerGroups';
-import { ConsumerGroupState } from '../api/types';
+import { useTopicGroups } from '../api/hooks/useGroups';
+import { GroupState } from '../api/types';
 
-const StateLabel: Record<ConsumerGroupState, { label: React.ReactNode }> = {
+const StateLabel: Record<GroupState, { label: React.ReactNode }> = {
   STABLE: {
     label: (
       <>
@@ -140,7 +140,7 @@ export function TopicGroupsTab() {
   const { t } = useTranslation();
   const { kafkaId, topicId } = useParams<{ kafkaId: string; topicId: string }>();
 
-  const { data, isLoading, error } = useTopicConsumerGroups(kafkaId, topicId, {
+  const { data, isLoading, error } = useTopicGroups(kafkaId, topicId, {
     pageSize: 100,
   });
 
@@ -191,7 +191,7 @@ export function TopicGroupsTab() {
             {t('groups.noGroups')}
           </Title>
           <EmptyStateBody>
-            No consumer groups are currently consuming from this topic.
+            No groups are currently consuming from this topic.
           </EmptyStateBody>
         </EmptyState>
       </PageSection>
@@ -214,7 +214,7 @@ export function TopicGroupsTab() {
         </ToolbarContent>
       </Toolbar>
 
-      <Table aria-label="Consumer groups table" variant="compact">
+      <Table aria-label="Groups table" variant="compact">
         <Thead>
           <Tr>
             <Th width={20}>{t('groups.groupId')}</Th>

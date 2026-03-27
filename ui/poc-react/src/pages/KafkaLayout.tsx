@@ -22,7 +22,7 @@ import { AppMasthead } from '../components/AppMasthead';
 
 export function KafkaLayout() {
   const { t } = useTranslation();
-  const { kafkaId, topicId } = useParams<{ kafkaId: string; topicId?: string }>();
+  const { kafkaId, topicId, groupId } = useParams<{ kafkaId: string; topicId?: string; groupId?: string }>();
   const location = useLocation();
   const { data, isLoading, error } = useKafkaCluster(kafkaId);
   
@@ -77,6 +77,14 @@ export function KafkaLayout() {
   const isTopicDetailPage = !!topicId;
   const topicName = topicData?.data?.attributes?.name || topicId || '';
   
+  // Check if we're on a nodes page (overview or rebalances tab)
+  const isNodesPage = pathSegments.includes('nodes');
+  const nodesTab = isNodesPage ? currentPage : null;
+  
+  // Check if we're on a group detail page
+  const isGroupDetailPage = !!groupId;
+  const groupTab = isGroupDetailPage ? currentPage : null;
+  
   // Map path segments to readable names
   const getPageTitle = (segment: string): string => {
     const pageMap: Record<string, string> = {
@@ -88,6 +96,24 @@ export function KafkaLayout() {
       groups: t('groups.title'),
     };
     return pageMap[segment] || segment;
+  };
+  
+  // Get nodes tab title
+  const getNodesTabTitle = (tab: string): string => {
+    const tabMap: Record<string, string> = {
+      overview: t('nodes.tabs.overview'),
+      rebalances: t('nodes.tabs.rebalances'),
+    };
+    return tabMap[tab] || tab;
+  };
+  
+  // Get group tab title
+  const getGroupTabTitle = (tab: string): string => {
+    const tabMap: Record<string, string> = {
+      members: t('groups.members'),
+      configuration: t('topics.tabs.configuration'),
+    };
+    return tabMap[tab] || tab;
   };
 
   const breadcrumb = (
@@ -114,7 +140,31 @@ export function KafkaLayout() {
           {topicName}
         </BreadcrumbItem>
       )}
-      {!isTopicDetailPage && currentPage !== kafkaId && (
+      {isNodesPage && (
+        <BreadcrumbItem>
+          <Link to={`/kafka/${kafkaId}/nodes`}>
+            {t('kafka.nodes')}
+          </Link>
+        </BreadcrumbItem>
+      )}
+      {isNodesPage && nodesTab && nodesTab !== 'nodes' && (
+        <BreadcrumbItem isActive>
+          {getNodesTabTitle(nodesTab)}
+        </BreadcrumbItem>
+      )}
+      {isGroupDetailPage && (
+        <BreadcrumbItem>
+          <Link to={`/kafka/${kafkaId}/groups`}>
+            {t('groups.title')}
+          </Link>
+        </BreadcrumbItem>
+      )}
+      {isGroupDetailPage && groupTab && groupTab !== groupId && (
+        <BreadcrumbItem isActive>
+          {getGroupTabTitle(groupTab)}
+        </BreadcrumbItem>
+      )}
+      {!isTopicDetailPage && !isNodesPage && !isGroupDetailPage && currentPage !== kafkaId && (
         <BreadcrumbItem isActive>
           {getPageTitle(currentPage)}
         </BreadcrumbItem>
