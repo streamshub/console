@@ -3,6 +3,10 @@
 # Maven build targets
 target/
 
+# NPM dependencies and build output
+node_modules/
+dist/
+
 # Maven release files
 *.releaseBackup
 release.properties
