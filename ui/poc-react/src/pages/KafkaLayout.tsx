@@ -15,7 +15,7 @@ import {
   BreadcrumbItem,
 } from '@patternfly/react-core';
 import { HomeIcon } from '@patternfly/react-icons';
-import { useKafkaCluster } from '../api/hooks/useKafkaClusters';
+import { useKafkaCluster, useKafkaClusters } from '../api/hooks/useKafkaClusters';
 import { useTopic } from '../api/hooks/useTopics';
 import { KafkaClusterSidebar } from '../components/KafkaClusterSidebar';
 import { AppMasthead } from '../components/AppMasthead';
@@ -25,6 +25,9 @@ export function KafkaLayout() {
   const { kafkaId, topicId } = useParams<{ kafkaId: string; topicId?: string }>();
   const location = useLocation();
   const { data, isLoading, error } = useKafkaCluster(kafkaId);
+  
+  // Fetch all clusters for the cluster switcher
+  const { data: clustersData } = useKafkaClusters({ pageSize: 1000 });
   
   // Fetch topic data if we're on a topic detail page
   const { data: topicData } = useTopic(
@@ -119,9 +122,17 @@ export function KafkaLayout() {
     </Breadcrumb>
   );
 
+  const clusters = clustersData?.data || [];
+
   return (
     <Page
-      masthead={<AppMasthead showSidebarToggle={true} />}
+      masthead={
+        <AppMasthead
+          showSidebarToggle={true}
+          clusters={clusters}
+          currentClusterId={kafkaId}
+        />
+      }
       sidebar={<KafkaClusterSidebar />}
       breadcrumb={breadcrumb}
       isBreadcrumbWidthLimited

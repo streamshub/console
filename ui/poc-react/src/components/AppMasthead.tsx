@@ -17,12 +17,20 @@ import { useTranslation } from 'react-i18next';
 import { useAppLayout } from './AppLayoutProvider';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from './ThemeProvider';
+import { ClusterSwitcher } from './ClusterSwitcher';
+import { KafkaCluster } from '../api/types';
+
+export interface AppMastheadProps {
+  readonly showSidebarToggle?: boolean;
+  readonly clusters?: KafkaCluster[];
+  readonly currentClusterId?: string;
+}
 
 export function AppMasthead({
   showSidebarToggle = false,
-}: {
-  readonly showSidebarToggle?: boolean;
-}) {
+  clusters,
+  currentClusterId,
+}: AppMastheadProps) {
   const { t } = useTranslation();
   const { toggleSidebar } = useAppLayout();
   const { isDarkMode } = useTheme();
@@ -59,6 +67,14 @@ export function AppMasthead({
           isStatic
         >
           <ToolbarContent id="masthead-toolbar">
+            {showSidebarToggle && clusters && currentClusterId && (
+              <ToolbarItem>
+                <ClusterSwitcher
+                  clusters={clusters}
+                  currentClusterId={currentClusterId}
+                />
+              </ToolbarItem>
+            )}
             <ToolbarGroup
               variant="action-group"
               align={{ default: 'alignEnd' }}

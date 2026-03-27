@@ -120,7 +120,9 @@ export interface Topic {
   };
   relationships?: {
     groups?: {
-      meta?: Record<string, unknown>;
+      meta?: {
+        count?: number;
+      };
       data?: unknown[];
     } | null;
   };

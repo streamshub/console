@@ -47,6 +47,8 @@ import {
 } from '@patternfly/react-icons';
 import { useTopic } from '../api/hooks/useTopics';
 import { ConfigValue } from '../api/types';
+import { apiClient } from '../api/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 type SortableColumn = 'property' | 'value';
 
@@ -101,6 +103,7 @@ function NoResultsEmptyState({ onReset }: { onReset: () => void }) {
 export function TopicConfigurationTab() {
   const { t } = useTranslation();
   const { kafkaId, topicId } = useParams<{ kafkaId: string; topicId: string }>();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useTopic(kafkaId, topicId, {
     fields: ['name', 'configs'],
@@ -117,6 +120,9 @@ export function TopicConfigurationTab() {
 
   const topic = data?.data;
   const allData = Object.entries(topic?.attributes.configs || {});
+  
+  // Check if user has UPDATE privilege
+  const hasUpdatePrivilege = topic?.meta?.privileges?.includes('UPDATE') ?? false;
 
   // Derive available data sources from config values
   const dataSources = useMemo(() => {
@@ -181,22 +187,47 @@ export function TopicConfigurationTab() {
     );
   };
 
-  const handleSaveProperty = async (name: string, _value: string) => {
+  const handleSaveProperty = async (name: string, value: string) => {
+    if (!kafkaId || !topicId) return;
+    
     setIsEditing((prev) => ({ ...prev, [name]: 'saving' }));
     
-    // Simulate API call - in real implementation, call the update API
-    // For now, just simulate success after a delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    
-    // TODO: Implement actual API call to update topic configuration
-    // const result = await updateTopicConfig(kafkaId, topicId, name, value);
-    
-    setIsEditing((prev) => ({ ...prev, [name]: undefined }));
-    setFieldErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[name];
-      return newErrors;
-    });
+    try {
+      // Call the API to update the topic configuration
+      await apiClient.patch(`/api/kafkas/${kafkaId}/topics/${topicId}`, {
+        data: {
+          type: 'topics',
+          id: topicId,
+          attributes: {
+            configs: {
+              [name]: {
+                value,
+              },
+            },
+          },
+        },
+      });
+      
+      // Invalidate and refetch the topic data
+      await queryClient.invalidateQueries({ queryKey: ['topic', kafkaId, topicId] });
+      
+      setIsEditing((prev) => ({ ...prev, [name]: undefined }));
+      setEditValues((prev) => {
+        const newValues = { ...prev };
+        delete newValues[name];
+        return newValues;
+      });
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    } catch (err: any) {
+      // Handle API errors
+      const errorMessage = err.errors?.[0]?.detail || err.message || t('common.error');
+      setFieldErrors((prev) => ({ ...prev, [name]: errorMessage }));
+      setIsEditing((prev) => ({ ...prev, [name]: 'editing' }));
+    }
   };
 
   const handleCancelEdit = (name: string) => {
@@ -375,7 +406,7 @@ export function TopicConfigurationTab() {
                     )}
                   </Td>
                   <Td isActionCell style={{ verticalAlign: 'middle' }}>
-                    {!property.readOnly &&
+                    {!property.readOnly && hasUpdatePrivilege &&
                       (isEditingRow ? (
                         <div className="pf-v6-c-inline-edit pf-m-inline-editable">
                           <div className="pf-v6-c-inline-edit__group pf-m-action-group pf-m-icon-group">

@@ -22,7 +22,8 @@
     "notAvailable": "N/A",
     "view": "View",
     "actions": "Actions",
-    "platform": "Platform"
+    "platform": "Platform",
+    "managed": "Managed"
   },
   "theme": {
     "switchTheme": "Theme selection",
@@ -47,6 +48,9 @@
     "namespace": "Namespace",
     "connectedClusters": "Connected Kafka clusters",
     "filterByName": "Filter by name",
+    "switchToCluster": "Switch to this cluster",
+    "viewAllClusters": "View all Kafka clusters",
+    "noResultsFound": "No results found",
     "overview": "Overview",
     "clusterOverview": "Cluster overview",
     "topics": "Topics",
@@ -74,6 +78,7 @@
     "columnName": "Name",
     "columnStatus": "Status",
     "columnPartitions": "Partitions",
+    "columnGroups": "Groups",
     "columnStorage": "Storage",
     "hideInternalTopics": "Hide internal topics",
     "hideInternalTopicsTooltip": "Internal topics are used by Kafka for internal operations and are typically hidden from users",
@@ -226,7 +231,8 @@
         "title": "The screen displays only the most recent 100 messages, with older messages rotating out.",
         "pause": "Pause"
       }
-    }
+    },
+    "managedTooltip": "Managed topics are created using the KafkaTopic custom resource and are created and updated in the Kafka cluster by the Strimzi Topic Operator."
   },
   "groups": {
     "title": "Consumer Groups",

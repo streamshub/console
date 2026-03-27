@@ -15,6 +15,7 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { useTopic } from '../api/hooks/useTopics';
+import { ManagedTopicLabel } from '../components/ManagedTopicLabel';
 
 export function TopicDetailPage() {
   const { t } = useTranslation();
@@ -68,6 +69,7 @@ export function TopicDetailPage() {
       <PageSection>
         <Title headingLevel="h1" size="2xl">
           {topicName}
+          {topic?.meta?.managed === true && <ManagedTopicLabel />}
         </Title>
       </PageSection>
       <PageSection>

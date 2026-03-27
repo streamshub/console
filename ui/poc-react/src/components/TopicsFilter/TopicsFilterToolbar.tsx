@@ -14,8 +14,14 @@ import {
   TextInput,
   InputGroup,
   MenuToggleStatus,
+  Icon,
 } from '@patternfly/react-core';
-import { FilterIcon } from '@patternfly/react-icons';
+import {
+  FilterIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ExclamationCircleIcon,
+} from '@patternfly/react-icons';
 import { TopicsFilterType, TopicStatus } from './topicsFilterTypes';
 
 interface TopicsFilterToolbarProps {
@@ -74,8 +80,56 @@ export function TopicsFilterToolbar({
     return option?.label || '';
   };
 
-  const getStatusLabel = (status: TopicStatus): string => {
-    return t(`topics.status.${status}`);
+  const getStatusLabel = (status: TopicStatus) => {
+    switch (status) {
+      case 'FullyReplicated':
+        return (
+          <>
+            <Icon status="success">
+              <CheckCircleIcon />
+            </Icon>
+            &nbsp; {t('topics.status.FullyReplicated')}
+          </>
+        );
+      case 'UnderReplicated':
+        return (
+          <>
+            <Icon status="warning">
+              <ExclamationTriangleIcon />
+            </Icon>
+            &nbsp;{t('topics.status.UnderReplicated')}
+          </>
+        );
+      case 'PartiallyOffline':
+        return (
+          <>
+            <Icon status="warning">
+              <ExclamationTriangleIcon />
+            </Icon>
+            &nbsp;{t('topics.status.PartiallyOffline')}
+          </>
+        );
+      case 'Unknown':
+        return (
+          <>
+            <Icon status="warning">
+              <ExclamationTriangleIcon />
+            </Icon>
+            &nbsp;{t('topics.status.Unknown')}
+          </>
+        );
+      case 'Offline':
+        return (
+          <>
+            <Icon status="danger">
+              <ExclamationCircleIcon />
+            </Icon>
+            &nbsp;{t('topics.status.Offline')}
+          </>
+        );
+      default:
+        return status;
+    }
   };
 
   const renderFilterInput = () => {

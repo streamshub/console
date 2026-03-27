@@ -18,6 +18,7 @@ import {
   PaginationVariant,
   Switch,
   Tooltip,
+  Icon,
 } from '@patternfly/react-core';
 import { HelpIcon } from '@patternfly/react-icons';
 import {
@@ -32,7 +33,7 @@ import {
 import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  TimesCircleIcon,
+  ExclamationCircleIcon,
   CubesIcon,
 } from '@patternfly/react-icons';
 import { useTopics } from '../api/hooks/useTopics';
@@ -45,6 +46,7 @@ import {
   TopicsFilterType,
   TopicStatus,
 } from '../components/TopicsFilter';
+import { ManagedTopicLabel } from '../components/ManagedTopicLabel';
 
 type SortableColumn = 'name' | 'totalLeaderLogBytes';
 
@@ -72,7 +74,7 @@ export function TopicsPage() {
     id: filters.id,
     status: filters.status,
     includeHidden,
-    fields: ['name', 'status', 'numPartitions', 'totalLeaderLogBytes'],
+    fields: ['name', 'status', 'numPartitions', 'totalLeaderLogBytes', 'groups'],
   });
 
   const topics = data?.data || [];
@@ -100,16 +102,53 @@ export function TopicsPage() {
     columnIndex: column === 'name' ? 0 : 3,
   });
 
-  const getStatusIcon = (status: Topic['attributes']['status']) => {
+  const getStatusLabel = (status: Topic['attributes']['status']) => {
     switch (status) {
       case 'FullyReplicated':
-        return <CheckCircleIcon color="var(--pf-v5-global--success-color--100)" />;
+        return (
+          <>
+            <Icon status="success">
+              <CheckCircleIcon />
+            </Icon>
+            &nbsp; {t('topics.status.FullyReplicated')}
+          </>
+        );
       case 'UnderReplicated':
+        return (
+          <>
+            <Icon status="warning">
+              <ExclamationTriangleIcon />
+            </Icon>
+            &nbsp;{t('topics.status.UnderReplicated')}
+          </>
+        );
       case 'PartiallyOffline':
+        return (
+          <>
+            <Icon status="warning">
+              <ExclamationTriangleIcon />
+            </Icon>
+            &nbsp;{t('topics.status.PartiallyOffline')}
+          </>
+        );
       case 'Unknown':
-        return <ExclamationTriangleIcon color="var(--pf-v5-global--warning-color--100)" />;
+        return (
+          <>
+            <Icon status="warning">
+              <ExclamationTriangleIcon />
+            </Icon>
+            &nbsp;{t('topics.status.Unknown')}
+          </>
+        );
       case 'Offline':
-        return <TimesCircleIcon color="var(--pf-v5-global--danger-color--100)" />;
+        return (
+          <>
+            <Icon status="danger">
+              <ExclamationCircleIcon />
+            </Icon>
+            &nbsp;{t('topics.status.Offline')}
+          </>
+        );
       default:
         return null;
     }
@@ -316,8 +355,9 @@ export function TopicsPage() {
                 <Tr>
                   <Th sort={getSortParams('name')}>{t('topics.columnName')}</Th>
                   <Th>{t('topics.columnStatus')}</Th>
-                  <Th>{t('topics.columnPartitions')}</Th>
-                  <Th sort={getSortParams('totalLeaderLogBytes')}>{t('topics.columnStorage')}</Th>
+                  <Th modifier="fitContent" style={{ textAlign: 'right' }}>{t('topics.columnPartitions')}</Th>
+                  <Th modifier="fitContent" style={{ textAlign: 'right' }}>{t('topics.columnGroups')}</Th>
+                  <Th sort={getSortParams('totalLeaderLogBytes')} modifier="fitContent" style={{ textAlign: 'right' }}>{t('topics.columnStorage')}</Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -327,15 +367,30 @@ export function TopicsPage() {
                       <Link to={`/kafka/${kafkaId}/topics/${topic.id}`}>
                         {topic.attributes.name}
                       </Link>
+                      {topic.meta?.managed === true && <ManagedTopicLabel />}
                     </Td>
                     <Td dataLabel={t('topics.columnStatus')}>
-                      {getStatusIcon(topic.attributes.status)}{' '}
-                      {topic.attributes.status || '-'}
+                      {getStatusLabel(topic.attributes.status)}
                     </Td>
-                    <Td dataLabel={t('topics.columnPartitions')}>
-                      {topic.attributes.numPartitions ?? '-'}
+                    <Td dataLabel={t('topics.columnPartitions')} modifier="fitContent" style={{ textAlign: 'right' }}>
+                      {topic.attributes.numPartitions !== null && topic.attributes.numPartitions !== undefined ? (
+                        <Link to={`/kafka/${kafkaId}/topics/${topic.id}/partitions`}>
+                          {topic.attributes.numPartitions}
+                        </Link>
+                      ) : (
+                        '-'
+                      )}
                     </Td>
-                    <Td dataLabel={t('topics.columnStorage')}>
+                    <Td dataLabel={t('topics.columnGroups')} modifier="fitContent" style={{ textAlign: 'right' }}>
+                      {topic.relationships?.groups?.meta?.count !== undefined ? (
+                        <Link to={`/kafka/${kafkaId}/topics/${topic.id}/groups`}>
+                          {topic.relationships.groups.meta.count}
+                        </Link>
+                      ) : (
+                        topic.relationships?.groups?.meta?.count ?? '-'
+                      )}
+                    </Td>
+                    <Td dataLabel={t('topics.columnStorage')} modifier="fitContent" style={{ textAlign: 'right' }}>
                       {formatBytes(topic.attributes.totalLeaderLogBytes)}
                     </Td>
                   </Tr>
