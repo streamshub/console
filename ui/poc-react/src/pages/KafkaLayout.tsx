@@ -81,6 +81,10 @@ export function KafkaLayout() {
   const isNodesPage = pathSegments.includes('nodes');
   const nodesTab = isNodesPage ? currentPage : null;
   
+  // Check if we're on a connect page (connectors or clusters tab)
+  const isConnectPage = pathSegments.includes('connect');
+  const connectTab = isConnectPage ? currentPage : null;
+  
   // Check if we're on a group detail page
   const isGroupDetailPage = !!groupId;
   const groupTab = isGroupDetailPage ? currentPage : null;
@@ -91,7 +95,7 @@ export function KafkaLayout() {
       overview: t('kafka.overview'),
       topics: t('kafka.topics'),
       nodes: t('kafka.nodes'),
-      connect: t('kafka.connect'),
+      connect: t('kafka.connect.title'),
       users: t('kafka.users'),
       groups: t('groups.title'),
     };
@@ -103,6 +107,15 @@ export function KafkaLayout() {
     const tabMap: Record<string, string> = {
       overview: t('nodes.tabs.overview'),
       rebalances: t('nodes.tabs.rebalances'),
+    };
+    return tabMap[tab] || tab;
+  };
+  
+  // Get connect tab title
+  const getConnectTabTitle = (tab: string): string => {
+    const tabMap: Record<string, string> = {
+      connectors: t('kafka.connect.connectors'),
+      clusters: t('kafka.connect.connectClusters'),
     };
     return tabMap[tab] || tab;
   };
@@ -152,6 +165,16 @@ export function KafkaLayout() {
           {getNodesTabTitle(nodesTab)}
         </BreadcrumbItem>
       )}
+      {isConnectPage && (
+        <BreadcrumbItem>
+          {t('kafka.connect.title')}
+        </BreadcrumbItem>
+      )}
+      {isConnectPage && connectTab && connectTab !== 'connect' && (
+        <BreadcrumbItem isActive>
+          {getConnectTabTitle(connectTab)}
+        </BreadcrumbItem>
+      )}
       {isGroupDetailPage && (
         <BreadcrumbItem>
           <Link to={`/kafka/${kafkaId}/groups`}>
@@ -164,7 +187,7 @@ export function KafkaLayout() {
           {getGroupTabTitle(groupTab)}
         </BreadcrumbItem>
       )}
-      {!isTopicDetailPage && !isNodesPage && !isGroupDetailPage && currentPage !== kafkaId && (
+      {!isTopicDetailPage && !isNodesPage && !isConnectPage && !isGroupDetailPage && currentPage !== kafkaId && (
         <BreadcrumbItem isActive>
           {getPageTitle(currentPage)}
         </BreadcrumbItem>

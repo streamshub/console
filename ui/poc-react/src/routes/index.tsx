@@ -20,6 +20,11 @@ import { GroupsPage } from '../pages/GroupsPage';
 import { GroupDetailPage } from '../pages/GroupDetailPage';
 import { GroupMembersTab } from '../pages/GroupMembersTab';
 import { GroupConfigurationTab } from '../pages/GroupConfigurationTab';
+import { ConnectPage } from '../pages/ConnectPage';
+import { ConnectConnectorsTab } from '../pages/ConnectConnectorsTab';
+import { ConnectClustersTab } from '../pages/ConnectClustersTab';
+import { ConnectorDetailPage } from '../pages/ConnectorDetailPage';
+import { ConnectClusterDetailPage } from '../pages/ConnectClusterDetailPage';
 import { ErrorPage } from '../pages/ErrorPage';
 
 export const router = createBrowserRouter([
@@ -38,7 +43,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <KafkaOverview />,
+            element: <Navigate to="overview" replace />,
           },
           {
             path: 'overview',
@@ -113,6 +118,32 @@ export const router = createBrowserRouter([
                 element: <GroupConfigurationTab />,
               },
             ],
+          },
+          {
+            path: 'connect',
+            element: <ConnectPage />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="connectors" replace />,
+              },
+              {
+                path: 'connectors',
+                element: <ConnectConnectorsTab />,
+              },
+              {
+                path: 'clusters',
+                element: <ConnectClustersTab />,
+              },
+            ],
+          },
+          {
+            path: 'connect/connectors/:connectorId',
+            element: <ConnectorDetailPage />,
+          },
+          {
+            path: 'connect/clusters/:clusterId',
+            element: <ConnectClusterDetailPage />,
           },
           // More routes will be added as pages are migrated
           // ... etc

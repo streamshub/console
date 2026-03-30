@@ -468,3 +468,179 @@ export interface RebalancesResponse {
 export interface RebalanceResponse {
   data: Rebalance;
 }
+
+// Kafka Connect types
+export type ConnectorState =
+  | 'UNASSIGNED'
+  | 'RUNNING'
+  | 'PAUSED'
+  | 'STOPPED'
+  | 'FAILED'
+  | 'RESTARTING';
+
+export type ConnectorType =
+  | 'source'
+  | 'sink'
+  | 'source:mm'
+  | 'source:mm-checkpoint'
+  | 'source:mm-heartbeat';
+
+export interface ConnectorConfig {
+  [key: string]: string | null | undefined;
+}
+
+export interface Plugin {
+  class: string;
+  type: ConnectorType;
+  version: string;
+}
+
+export interface Connector {
+  id: string;
+  type: 'connectors';
+  attributes: {
+    name: string;
+    namespace?: string | null;
+    creationTimestamp?: string | null;
+    type: ConnectorType;
+    state: ConnectorState;
+    trace?: string | null;
+    workerId?: string;
+    topics?: string[];
+    config?: ConnectorConfig;
+  };
+  relationships?: {
+    connectCluster?: {
+      data: {
+        type: 'connects';
+        id: string;
+      } | null;
+    };
+  };
+  meta?: {
+    page?: {
+      cursor: string;
+    };
+    managed?: boolean;
+  };
+}
+
+export interface EnrichedConnector extends Connector {
+  connectClusterId: string | null;
+  connectClusterName: string | null;
+  replicas: number | null;
+}
+
+export interface ConnectCluster {
+  id: string;
+  type: 'connects';
+  attributes: {
+    name: string;
+    namespace?: string | null;
+    creationTimestamp?: string | null;
+    commit?: string;
+    kafkaClusterId?: string;
+    version?: string;
+    replicas?: number | null;
+    plugins?: Plugin[];
+  };
+  meta?: {
+    managed: boolean;
+    page?: {
+      cursor: string;
+    };
+  };
+  relationships?: {
+    kafkaClusters?: {
+      data: Array<{
+        type: 'kafkas';
+        id: string;
+      }>;
+    };
+    connectors?: {
+      data: Array<{
+        type: 'connectors';
+        id: string;
+      }>;
+    };
+  };
+}
+
+export interface ConnectorsResponse {
+  data: Connector[];
+  meta: {
+    page: {
+      total?: number;
+      pageNumber?: number;
+    };
+  };
+  links: {
+    first: string | null;
+    prev: string | null;
+    next: string | null;
+    last: string | null;
+  };
+  included?: ConnectCluster[];
+}
+
+export interface ConnectClustersResponse {
+  data: ConnectCluster[];
+  meta: {
+    page: {
+      total?: number;
+      pageNumber?: number;
+    };
+  };
+  links: {
+    first: string | null;
+    prev: string | null;
+    next: string | null;
+    last: string | null;
+  };
+  included?: Connector[];
+}
+
+export interface ConnectorTask {
+  id: string;
+  type: 'connectorTasks';
+  attributes: {
+    taskId: number;
+    config?: ConnectorConfig;
+    state: ConnectorState;
+    workerId: string;
+  };
+}
+
+export interface ConnectorDetailResponse {
+  data: Connector & {
+    relationships: {
+      connectCluster: {
+        data: {
+          type: 'connects';
+          id: string;
+        };
+      };
+      tasks: {
+        data: Array<{
+          type: 'connectorTasks';
+          id: string;
+        }>;
+      };
+    };
+  };
+  included: Array<ConnectCluster | ConnectorTask>;
+}
+
+export interface ConnectClusterDetailResponse {
+  data: ConnectCluster & {
+    relationships: {
+      connectors: {
+        data: Array<{
+          type: 'connectors';
+          id: string;
+        }>;
+      };
+    };
+  };
+  included?: Connector[];
+}

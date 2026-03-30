@@ -38,8 +38,8 @@ export function KafkaClusterSidebar() {
     },
     {
       id: 'connect',
-      label: t('kafka.connect'),
-      path: `/kafka/${kafkaId}/connect`,
+      label: t('kafka.connect.title'),
+      path: `/kafka/${kafkaId}/connect/connectors`,
     },
     {
       id: 'users',
