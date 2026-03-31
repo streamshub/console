@@ -22,11 +22,10 @@ import {
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
 } from "@/libs/patternfly/react-icons";
-import { Th } from "@/libs/patternfly/react-table";
-import { ReactNode, useEffect, useState } from "react";
+import { Th, ThSortType } from "@/libs/patternfly/react-table";
+import { ReactNode, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePagination } from "@/utils/usePagination";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 const Columns = [
   "id",

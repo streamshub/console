@@ -24,7 +24,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { clientConfig as config } from "@/utils/config";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
+import { ThSortType } from "@/libs/patternfly/react-table";
 
 export type ConnectedConsumerGroupTableProps = {
   kafkaId: string;

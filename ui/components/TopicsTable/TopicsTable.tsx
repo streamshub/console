@@ -11,13 +11,12 @@ import {
   ExclamationTriangleIcon,
   HelpIcon,
 } from "@/libs/patternfly/react-icons";
-import { TableVariant, Th } from "@/libs/patternfly/react-table";
+import { TableVariant, Th, ThSortType } from "@/libs/patternfly/react-table";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 import { EmptyStateNoTopics } from "./components/EmptyStateNoTopics";
 import { hasPrivilege } from "@/utils/privileges";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export const TopicsTableColumns = [
   "name",

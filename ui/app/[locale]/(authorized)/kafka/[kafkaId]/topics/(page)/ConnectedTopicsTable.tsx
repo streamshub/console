@@ -10,7 +10,7 @@ import { useRouter } from "@/i18n/routing";
 import { clientConfig as config } from "@/utils/config";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useEffect, useState, useOptimistic, useTransition } from "react";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
+import { ThSortType } from "@/libs/patternfly/react-table";
 
 export type ConnectedTopicsTableProps = {
   topics: TopicsResponse | undefined;
