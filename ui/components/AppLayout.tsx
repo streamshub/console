@@ -62,7 +62,7 @@ export function AppLayout({
             {isValidKafkaId && (
               <ReconciliationPausedBanner kafkaDetail={kafkaDetail} />
             )}
-            <ClusterDrawer>{children}</ClusterDrawer>
+            <ClusterDrawer kafkaDetail={kafkaDetail}>{children}</ClusterDrawer>
           </ReconciliationProvider>
         </AlertProvider>
       </ClusterDrawerProvider>

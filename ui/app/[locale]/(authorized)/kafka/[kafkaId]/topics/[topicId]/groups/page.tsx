@@ -35,7 +35,6 @@ export default async function ConsumerGroupsPage({
           <ConsumerGroupsTable
             kafkaId={kafkaId}
             page={1}
-            total={0}
           />
         }
       >
@@ -60,12 +59,6 @@ async function ConnectedConsumerGroupsPage({
     page: string | undefined;
   };
 }) {
-  async function refresh() {
-    "use server";
-    const res = await getTopicConsumerGroups(kafkaId, topicId, searchParams);
-    return res.payload?.data ?? null;
-  }
-
   const response = await getTopicConsumerGroups(
     kafkaId,
     topicId,
@@ -82,9 +75,7 @@ async function ConnectedConsumerGroupsPage({
     <ConsumerGroupsTable
       kafkaId={kafkaId}
       page={groups.meta.page.pageNumber || 1}
-      total={groups.meta.page.total || 0}
       groups={groups.data}
-      refresh={refresh}
     />
   );
 }

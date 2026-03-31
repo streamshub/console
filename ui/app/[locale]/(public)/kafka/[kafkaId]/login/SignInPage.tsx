@@ -68,7 +68,7 @@ export function SignInPage({
   const t = useTranslations();
   const productName = t("common.product");
 
-  const { isDarkMode } = useColorTheme();
+  const { brandLogo } = useColorTheme();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -192,11 +192,7 @@ export function SignInPage({
         loginTitle={t("homepage.page_header", { product: productName })}
         loginSubtitle={loginSubtitle}
         textContent={t("login-in-page.text_content", { product: productName })}
-        brandImgSrc={
-          isDarkMode
-            ? "/full_logo_hori_reverse.svg"
-            : "/full_logo_hori_default.svg"
-        }
+        brandImgSrc={brandLogo}
         footerListItems={learnMoreResource}
         footerListVariants={ListVariant.inline}
         signUpForAccountMessage={

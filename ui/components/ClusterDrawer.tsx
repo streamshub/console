@@ -13,12 +13,18 @@ import {
 } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, Suspense } from "react";
-import { ClusterConnectionDetails } from "./ClusterConnectionDetails";
+import { ClusterConnectionDetailsClient } from "./ClusterConnectionDetailsClient";
 import { useClusterDrawerContext } from "./ClusterDrawerContext";
+import { ClusterDetail } from "@/api/kafka/schema";
 
-export function ClusterDrawer({ children }: PropsWithChildren) {
+export function ClusterDrawer({
+  kafkaDetail,
+  children
+}: PropsWithChildren<{
+  kafkaDetail?: ClusterDetail;
+}>) {
   const t = useTranslations();
-  const { expanded, clusterId, close } = useClusterDrawerContext();
+  const { expanded, close } = useClusterDrawerContext();
   return (
     <Drawer isExpanded={expanded}>
       <DrawerContent
@@ -48,7 +54,7 @@ export function ClusterDrawer({ children }: PropsWithChildren) {
                 </div>
               }
             >
-              {clusterId && <ClusterConnectionDetails clusterId={clusterId} />}
+              {kafkaDetail && <ClusterConnectionDetailsClient data={kafkaDetail} />}
             </Suspense>
           </DrawerPanelContent>
         }

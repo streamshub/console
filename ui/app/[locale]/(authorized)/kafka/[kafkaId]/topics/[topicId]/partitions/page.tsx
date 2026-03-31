@@ -21,7 +21,7 @@ export default async function PartitionsPage({
   const { kafkaId, topicId } = await paramsPromise;
   return (
     <Suspense
-      fallback={<PartitionsTable kafkaId={kafkaId} topic={undefined} />}
+      fallback={<PartitionsTable topic={undefined} />}
     >
       <ConnectedPartitions kafkaId={kafkaId} topicId={topicId} />
     </Suspense>
@@ -36,5 +36,5 @@ async function ConnectedPartitions({ kafkaId, topicId }: KafkaTopicParams) {
   }
 
   const topic = response.payload!;
-  return <PartitionsTable kafkaId={kafkaId} topic={topic} />;
+  return <PartitionsTable topic={topic} />;
 }

@@ -10,32 +10,16 @@ import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { TableVariant, Th } from "@/libs/patternfly/react-table";
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 export function MembersTable({
   kafkaId,
-  consumerGroup: initialData,
-  refresh,
+  consumerGroup,
 }: {
   kafkaId: string;
   consumerGroup?: ConsumerGroup;
-  refresh?: () => Promise<ConsumerGroup | null>;
 }) {
   const t = useTranslations("MemberTable");
-  const [consumerGroup, setConsumerGroup] = useState(initialData);
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (refresh) {
-      interval = setInterval(async () => {
-        const cg = await refresh();
-        if (cg != null) {
-          setConsumerGroup(cg);
-        }
-      }, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [refresh]);
   let members: MemberDescription[] | undefined = undefined;
 
   if (consumerGroup) {

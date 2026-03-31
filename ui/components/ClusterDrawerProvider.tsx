@@ -12,7 +12,7 @@ export function ClusterDrawerProvider({ children }: PropsWithChildren) {
   const close = () => setExpanded(false);
 
   return (
-    <ClusterDrawerContext.Provider value={{ open, close, expanded, clusterId }}>
+    <ClusterDrawerContext.Provider value={{ open, close, expanded }}>
       {children}
     </ClusterDrawerContext.Provider>
   );

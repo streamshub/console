@@ -77,42 +77,19 @@ const StatusLabel: Record<PartitionStatus, { label: ReactNode }> = {
 };
 
 export function PartitionsTable({
-  topic: initialData,
-  kafkaId,
+  topic,
 }: {
-  kafkaId: string;
   topic: Topic | undefined;
 }) {
   const t = useTranslations("topics");
 
   const { page, perPage, setPagination } = usePagination();
-
-  const [topic, setTopic] = useState(initialData);
   const [filter, setFilter] = useState<"all" | PartitionStatus>("all");
   const [sort, setSort] = useState<{
     sort: (typeof SortColumns)[number];
     dir: "asc" | "desc";
   }>({ sort: "id", dir: "asc" });
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-
-    if (initialData) {
-      interval = setInterval(async () => {
-        const response = await getTopic(kafkaId, initialData.id);
-
-        if (response.errors) {
-          console.warn("Failed to reload topic", {
-            kafkaId,
-            topicId: initialData.id,
-          });
-        } else {
-          setTopic(response.payload!);
-        }
-      }, 30000);
-    }
-    return () => clearInterval(interval);
-  }, [kafkaId, initialData]);
   const filteredData = topic?.attributes.partitions
     ?.filter((p) => (filter !== "all" ? p.status === filter : true))
     .sort((a, b) => {

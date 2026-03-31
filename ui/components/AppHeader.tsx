@@ -1,3 +1,5 @@
+"use client";
+
 import { DateTime } from "@/components/Format/DateTime";
 import { RefreshButton } from "@/components/RefreshButton";
 import {
@@ -7,7 +9,7 @@ import {
   PageSection,
   Title,
 } from "@/libs/patternfly/react-core";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useNow } from "next-intl";
 
 export function AppHeader({
@@ -25,8 +27,14 @@ export function AppHeader({
   showRefresh?: boolean;
   staticRefresh?: Date; // allows fixed value to be provided for storybook testing
 }) {
+
+  const [lastRefresh, setLastRefresh] = useState(staticRefresh);
   const now = useNow();
-  const lastRefresh = staticRefresh ?? now;
+
+  useEffect(() => {
+    setLastRefresh(staticRefresh ?? now);
+  }, [ staticRefresh, now ]);
+
   return (
     <>
       <PageSection
@@ -48,7 +56,7 @@ export function AppHeader({
               >
                 Last updated{" "}
                 <DateTime value={lastRefresh} />
-                <RefreshButton />
+                <RefreshButton setLastRefresh={ d => setLastRefresh(staticRefresh ?? d)}  />
               </FlexItem>
             )}
           </Flex>
