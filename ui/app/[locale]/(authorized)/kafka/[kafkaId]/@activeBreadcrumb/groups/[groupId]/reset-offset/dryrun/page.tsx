@@ -43,13 +43,13 @@ export default async function DryrunActiveBreadcrumb({
       </BreadcrumbItem>
 
       <BreadcrumbLink
-        key={"cg"}
+        key={"groups-link-crumb"}
         href={`/kafka/${kafkaId}/groups`}
         showDivider={true}
       >
         {t("breadcrumbs.consumer_groups")}
       </BreadcrumbLink>
-      <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
+      <BreadcrumbItem key={"group-crumb"} showDivider={true} isActive={true}>
         {groupIdDisplay === "" ? (
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
@@ -58,13 +58,13 @@ export default async function DryrunActiveBreadcrumb({
       </BreadcrumbItem>
 
       <BreadcrumbLink
-        key={"cg"}
+        key={"group-reset-link-crumb"}
         href={`/kafka/${kafkaId}/groups/${groupId}/reset-offset`}
         showDivider={true}
       >
         {t("GroupsTable.reset_consumer_offset")}
       </BreadcrumbLink>
-      <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
+      <BreadcrumbItem key={"group-reset-dryrun"} showDivider={true} isActive={true}>
         {t("GroupsTable.dry_run_results_breadcrumb")}
       </BreadcrumbItem>
     </Breadcrumb>

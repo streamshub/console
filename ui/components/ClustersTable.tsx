@@ -50,7 +50,7 @@ export function ClustersTable({
   const t = useTranslations();
 
   const columns: readonly ClusterTableColumn[] = authenticated
-    ? ClusterColumns.slice(0, 3)
+    ? ClusterColumns.slice(0, 4)
     : ClusterColumns;
 
   return (

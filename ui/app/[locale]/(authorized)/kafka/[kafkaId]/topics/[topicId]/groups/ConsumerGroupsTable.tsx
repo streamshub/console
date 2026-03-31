@@ -19,7 +19,7 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import RichText from "@/components/RichText";
 import { describeEnabled } from "@/utils/groups";
 
@@ -109,30 +109,14 @@ const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
 export function ConsumerGroupsTable({
   kafkaId,
   page,
-  total,
-  groups: initialData,
-  refresh,
+  groups,
 }: {
   kafkaId: string;
   page: number;
-  total: number;
   groups?: ConsumerGroup[];
-  refresh?: () => Promise<ConsumerGroup[] | null>;
 }) {
   const t = useTranslations();
-  const [groups, setGroups] = useState(initialData);
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (refresh) {
-      interval = setInterval(async () => {
-        const groups = await refresh();
-        if (groups != null) {
-          setGroups(groups);
-        }
-      }, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [refresh]);
+
   return (
     <TableView
       variant={TableVariant.compact}

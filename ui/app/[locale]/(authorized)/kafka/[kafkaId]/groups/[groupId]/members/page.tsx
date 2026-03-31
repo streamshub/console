@@ -54,12 +54,6 @@ async function ConnectedMembersTable({
     return <NoDataErrorState errors={response.errors} />;
   }
 
-  async function refresh() {
-    "use server";
-    const res = await getConsumerGroup(kafkaId, groupId);
-    return res?.payload ?? null;
-  }
-
   const consumerGroup = response.payload!;
-  return <MembersTable kafkaId={kafkaId} consumerGroup={consumerGroup} refresh={refresh}/>;
+  return <MembersTable kafkaId={kafkaId} consumerGroup={consumerGroup} />;
 }

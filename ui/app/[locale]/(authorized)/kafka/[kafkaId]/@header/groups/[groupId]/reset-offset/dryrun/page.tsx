@@ -11,12 +11,13 @@ import RichText from "@/components/RichText";
 
 export default async function Page({
   params: paramsPromise,
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
   params: Promise<GroupParams>;
-  searchParams: { data?: string };
+  searchParams: Promise<{ data?: string; }>;
 }) {
   const { kafkaId, groupId } = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   return (
     <Suspense fallback={<Header groupIdDisplay={""} offsets={[]} />}>
       <ConnectedAppHeader

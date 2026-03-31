@@ -27,11 +27,18 @@ export const useColorTheme = () => {
   const isDarkMode =
     mode === COLOR_MODES.DARK || (mode === COLOR_MODES.SYSTEM && isSystemDark);
 
+  const [brandLogo, setBrandLogo] = useState<string>("/full_logo_hori_default.svg");
+
   useEffect(() => {
     if (typeof document === "undefined") return;
 
     document.documentElement.classList.toggle("pf-v6-theme-dark", isDarkMode);
     localStorage.setItem("theme-mode", mode);
+    setBrandLogo(
+      isDarkMode
+        ? "/full_logo_hori_reverse.svg"
+        : "/full_logo_hori_default.svg"
+    );
   }, [mode, isDarkMode]);
 
   useEffect(() => {
@@ -67,5 +74,6 @@ export const useColorTheme = () => {
     toggleDarkMode,
     setSystemMode,
     cycleTheme,
+    brandLogo,
   };
 };

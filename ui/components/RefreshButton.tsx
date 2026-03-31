@@ -10,12 +10,14 @@ export type RefreshButtonProps = {
   tooltip?: string;
   ariaLabel?: string;
   onClick?: () => void;
+  setLastRefresh?: (date: Date) => void;
 };
 
 export function RefreshButton({
   ariaLabel,
   onClick,
   tooltip,
+  setLastRefresh,
 }: RefreshButtonProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -27,6 +29,7 @@ export function RefreshButton({
       e.preventDefault();
       startTransition(() => {
         router.refresh();
+        setLastRefresh?.(new Date());
       });
     });
 
