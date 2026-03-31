@@ -27,6 +27,7 @@ import {
   InnerScrollContainer,
   OuterScrollContainer,
   SortByDirection,
+  ThSortType,
 } from "@/libs/patternfly/react-table";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -36,7 +37,6 @@ import type { ResponsiveTableProps } from "./ResponsiveTable";
 import { ResponsiveTable } from "./ResponsiveTable";
 import type { ChipFilterProps } from "./Toolbar";
 import { ChipFilter } from "./Toolbar";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export type ToolbarAction = {
   label: string;

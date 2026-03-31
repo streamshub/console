@@ -26,8 +26,7 @@ import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFoun
 import RichText from "@/components/RichText";
 import { describeEnabled, resetMenuDisabled } from "@/utils/groups";
 import { hasPrivilege } from "@/utils/privileges";
-import { TableVariant, Th } from "@/libs/patternfly/react-table";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
+import { TableVariant, Th, ThSortType } from "@/libs/patternfly/react-table";
 
 export const ConsumerGroupColumns = [
   "groupId",

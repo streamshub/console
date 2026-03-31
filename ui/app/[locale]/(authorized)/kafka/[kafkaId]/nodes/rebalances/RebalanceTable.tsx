@@ -27,7 +27,7 @@ import {
   OutlinedClockIcon,
   HelpIcon,
 } from "@/libs/patternfly/react-icons";
-import { Th } from "@/libs/patternfly/react-table";
+import { Th, ThSortType } from "@/libs/patternfly/react-table";
 import Link from "next/link";
 import React, { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
@@ -36,7 +36,6 @@ import Image from "next/image";
 import { DateTime } from "@/components/Format/DateTime";
 import RichText from "@/components/RichText";
 import { hasPrivilege } from "@/utils/privileges";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export const RebalanceTableColumns = ["name", "status", "lastUpdated"] as const;
 

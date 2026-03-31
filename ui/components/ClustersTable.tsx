@@ -1,4 +1,4 @@
-import { TableVariant, Th } from "@patternfly/react-table";
+import { TableVariant, Th, ThSortType } from "@/libs/patternfly/react-table";
 import { TableView, TableViewProps } from "./Table";
 import { ClusterList } from "@/api/kafka/schema";
 import { useTranslations } from "next-intl";
@@ -8,7 +8,6 @@ import { Tooltip, Truncate } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { EmptyStateNoMatchFound } from "./Table/EmptyStateNoMatchFound";
 import { KroxyliciousClusterLabel } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/KroxyliciousClusterLabel";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export const ClusterColumns = [
   "name",

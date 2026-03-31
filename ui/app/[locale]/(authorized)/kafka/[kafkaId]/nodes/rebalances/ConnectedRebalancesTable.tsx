@@ -24,7 +24,7 @@ import { ValidationModal } from "./ValidationModal";
 import { patchRebalance } from "@/api/rebalance/actions";
 import { useAlert } from "@/components/AlertContext";
 import { clientConfig as config } from "@/utils/config";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
+import { ThSortType } from "@/libs/patternfly/react-table";
 
 export type ConnectedReabalancesTableProps = {
   rebalances: RebalanceList[] | undefined;
