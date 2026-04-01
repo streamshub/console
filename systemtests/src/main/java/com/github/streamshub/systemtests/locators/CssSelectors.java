@@ -14,8 +14,7 @@ public class CssSelectors {
     private CssSelectors() {}
 
     public static final String PAGE_DIV = new CssBuilder()
-        .withElementBody().withChild()
-        .withElementDiv().nth(1)
+        .withElementDiv().withId("root")
         .build();
 
     // ----------------------------
@@ -100,7 +99,7 @@ public class CssSelectors {
         .withElementDiv().withChild()
         .withElementButton().withComponentButton()
         .build();
-    
+
     public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT = new CssBuilder(PAGES_HEADER_CONTENT)
         .withElementDiv().withChild()
         .withElementH1().withComponentTitle()
