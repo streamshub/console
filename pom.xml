@@ -25,7 +25,7 @@
 
         <!-- Test Dependencies -->
         <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
-        <kroxy-api.version>0.19.0</kroxy-api.version>
+        <kroxy-api.version>0.20.0</kroxy-api.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.15.0</maven.compiler.version>
