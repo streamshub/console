@@ -1,6 +1,6 @@
 # OLM channel
-oldOlmChannel: 0.12.x
-newOlmChannel: alpha
+oldOlmChannel: 0.11.x
+newOlmChannel: 0.12.x
 # Operator version
-oldOperatorVersion: 0.12.0
+oldOperatorVersion: 0.11.0
 newOperatorVersion: 0.12.1-snapshot
