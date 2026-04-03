@@ -15,8 +15,6 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
-import com.github.streamshub.systemtests.enums.ConditionStatus;
-import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
@@ -36,7 +34,6 @@ import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.assertions.PlaywrightAssertions;
 
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import io.skodjob.kubetest4j.wait.Wait;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.common.Condition;
 import io.strimzi.api.kafka.model.kafka.JbodStorageBuilder;
@@ -271,12 +268,8 @@ public class KafkaST extends AbstractST {
     void testDisplayKafkaWarnings() {
         final TestCaseConfig tcc = getTestCaseConfig();
 
-        List<String> initialWarningMessages = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName())
-                .getStatus()
-                .getConditions()
+        List<String> initialWarningMessages = KafkaUtils.warningConditions(tcc.namespace(), tcc.kafkaName())
                 .stream()
-                .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()))
-                .filter(condition -> condition.getStatus().equals(ConditionStatus.TRUE.toString()))
                 .map(Condition::getMessage)
                 .toList();
 
@@ -338,15 +331,14 @@ public class KafkaST extends AbstractST {
                     .build());
             });
 
-        WaitUtils.waitForKafkaHasWarningStatus(tcc.namespace(), tcc.kafkaName());
+        WaitUtils.waitForKafkaCondition(tcc.namespace(), tcc.kafkaName(), k -> {
+            var warningCount = KafkaUtils.warningConditions(k).size();
+            return warningCount == initialWarningMessages.size() + 1;
+        });
 
         // Expect a warning message
-        List<String> warningMessages = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName())
-                .getStatus()
-                .getConditions()
+        List<String> warningMessages = KafkaUtils.warningConditions(tcc.namespace(), tcc.kafkaName())
                 .stream()
-                .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()))
-                .filter(condition -> condition.getStatus().equals(ConditionStatus.TRUE.toString()))
                 .map(Condition::getMessage)
                 .toList();
         LOGGER.debug("Kafka currently contains warning messages: {}", warningMessages);
@@ -376,25 +368,10 @@ public class KafkaST extends AbstractST {
             }
         );
 
-        Wait.until("Kafka has initial warnings",
-            TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TimeConstants.GLOBAL_STATUS_TIMEOUT,
-            () -> {
-                Kafka kafka = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName());
-                if (kafka == null) {
-                    return false;
-                }
-
-                List<String> latestMessages = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName())
-                        .getStatus()
-                        .getConditions()
-                        .stream()
-                        .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()))
-                        .filter(condition -> condition.getStatus().equals(ConditionStatus.TRUE.toString()))
-                        .map(Condition::getMessage)
-                        .toList();
-
-                return initialWarningMessages.equals(latestMessages);
-            });
+        WaitUtils.waitForKafkaCondition(tcc.namespace(), tcc.kafkaName(), k -> {
+            var warningCount = KafkaUtils.warningConditions(k).size();
+            return warningCount == initialWarningMessages.size();
+        });
 
         LOGGER.debug("Reload page and verify the initial assertions are again true");
         tcc.page().reload(PwUtils.getDefaultReloadOpts());
