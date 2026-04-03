@@ -11,10 +11,8 @@ import com.github.streamshub.console.api.v1alpha1.spec.security.RoleBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.security.Rule;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakInstanceSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
-import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
@@ -39,8 +37,6 @@ public class ConsoleInstanceSetup {
             return;
         }
         KubeResourceManager.get().createResourceWithWait(console);
-        WaitUtils.waitForPodsReadyAndStable(console.getMetadata().getNamespace(),
-            Labels.getConsolePodSelector(console.getMetadata().getName()), 1, true);
         LOGGER.info("Console deployed and available at {}", ConsoleUtils.getConsoleUiUrl(console.getMetadata().getName(), true));
     }
 
