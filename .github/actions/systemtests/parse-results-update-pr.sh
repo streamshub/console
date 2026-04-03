@@ -107,11 +107,11 @@ if [[ $TOTAL -eq 0 ]]; then
 elif [[ $((FAILED + ERRORS)) -eq 0 ]]; then
   STATE="success"
   STATUS_SYMBOL="✅"
-  DESCRIPTION="Systemtests succeeded"
+  DESCRIPTION="System tests succeeded"
 else
   STATE="failure"
   STATUS_SYMBOL="❌"
-  DESCRIPTION="Systemtests failed"
+  DESCRIPTION="System tests failed"
 fi
 
 # Prepare list of failed testCase names for markdown
@@ -147,7 +147,11 @@ RESULTS
 echo "Results file $(cat $RESULT_MD)"
 
 # Set status check of the PR
-gh api repos/$REPO/statuses/$COMMIT_SHA -f state="$STATE" -f context="System Tests" -f description="$DESCRIPTION"
+gh api repos/$REPO/statuses/$COMMIT_SHA \
+  -f state="$STATE" \
+  -f context="System Tests" \
+  -f description="$DESCRIPTION" \
+  -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
 # Comment PR with results markdown
 deleteLastStatusComment

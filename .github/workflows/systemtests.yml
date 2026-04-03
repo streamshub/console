@@ -79,6 +79,9 @@ jobs:
       OLM_VERSION: "v0.28.0"
       YQ_VERSION: "v4.44.1"
     steps:
+      - name: Comment start of the build
+        run: ./.github/actions/systemtests/update-pr-systemtests-started.sh
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
