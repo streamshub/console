@@ -37,9 +37,6 @@ jobs:
         id: parse_env
         run: ./.github/actions/systemtests/parse-pr-comment-params.sh
 
-      - name: Comment start of the build
-        run: ./.github/actions/systemtests/update-pr-systemtests-started.sh
-
       - name: Invoke workflow with inputs
         uses: benc-uk/workflow-dispatch@7a027648b88c2413826b6ddd6c76114894dc5ec4
         with:

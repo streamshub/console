@@ -13,7 +13,7 @@ echo "Update PR status. Systemtests started"
 
 # Write params.md
 cat > $PARAMS_MD <<- PARAMS
-## 🏃 Systemtests run started️ 🏃
+## 🏃 System tests run started️ 🏃
 Build phase succeeded. Triggering systemtests.
 #### Used parameters
 * TEST_CASE: ${TEST_CASE:-}
@@ -25,8 +25,12 @@ PARAMS
 
 # Set status check
 gh api repos/$REPO/statuses/$COMMIT_SHA \
-  -f state="pending" -f context="System Tests" -f description="System tests are running..."
+  -f state="pending" \
+  -f context="System Tests" \
+  -f description="System tests are running..." \
+  -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
 
 # Update PR comment
+PR_NUMBER=$(gh pr list --repo $REPO --state open --search $COMMIT_SHA --json number,createdAt -q "sort_by(.createdAt) | .[-1] | .number")
 deleteLastStatusComment
 gh pr comment $PR_NUMBER --repo $REPO --body-file $PARAMS_MD
