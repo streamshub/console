@@ -1,14 +1,26 @@
 package com.github.streamshub.systemtests.utils.resourceutils.kafka;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.enums.ConditionStatus;
+import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.strimzi.api.kafka.model.common.Condition;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
@@ -16,13 +28,6 @@ import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurati
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
-import org.apache.logging.log4j.Logger;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
 
 public class KafkaUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaUtils.class);
@@ -241,5 +246,22 @@ public class KafkaUtils {
         scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
         WaitUtils.waitForKafkaBrokerNodePoolReplicasInSpec(namespace, kafkaName, scaledBrokersCount);
         WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), scaledBrokersCount, true);
+    }
+
+    public static List<Condition> warningConditions(String namespace, String kafkaName) {
+        var kafka = ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName);
+        if (kafka != null) {
+            return warningConditions(kafka);
+        }
+        return Collections.emptyList();
+    }
+
+    public static List<Condition> warningConditions(Kafka kafka) {
+        return kafka.getStatus()
+                .getConditions()
+                .stream()
+                .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()))
+                .filter(condition -> condition.getStatus().equals(ConditionStatus.TRUE.toString()))
+                .toList();
     }
 }
