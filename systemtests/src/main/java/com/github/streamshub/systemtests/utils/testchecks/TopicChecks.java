@@ -12,11 +12,11 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
+import com.microsoft.playwright.assertions.PlaywrightAssertions;
+
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TopicChecks {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicChecks.class);
@@ -40,12 +40,22 @@ public class TopicChecks {
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName));
 
         // Status
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_TOPICS, total + " topics", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_PARTITIONS, partitions + " partitions", true);
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_TOPICS))
+            .containsText(total + " topics");
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_PARTITIONS))
+            .containsText(partitions + " partitions");
 
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_FULLY_REPLICATED, fullyReplicated + " Fully replicated", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_UNDER_REPLICATED, underReplicated + " Under replicated", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_UNAVAILABLE, unavailable + " Unavailable", true);
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_TOPICS_CARD_FULLY_REPLICATED))
+            .containsText(fullyReplicated + " Fully replicated");
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_TOPICS_CARD_UNDER_REPLICATED))
+            .containsText(underReplicated + " Under replicated");
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_TOPICS_CARD_UNAVAILABLE))
+            .containsText(unavailable + " Unavailable");
     }
 
     /**
@@ -64,11 +74,20 @@ public class TopicChecks {
         LOGGER.info("Verify Overview Page topic status [{} total topics] [FullyReplicated: {}] [UnderReplicated: {}] [Unavailabe: {}]", total, fullyReplicated, underReplicated, unavailable);
         // Total topic count
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, kafkaName));
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_TOTAL_TOPICS_BADGE, total + " total", true);
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(TopicsPageSelectors.TPS_HEADER_TOTAL_TOPICS_BADGE))
+            .containsText(total + " total");
+
         // Status
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_SUCCESS, Integer.toString(fullyReplicated), true);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_WARNING, Integer.toString(underReplicated), true);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_ERROR, Integer.toString(unavailable), true);
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_SUCCESS))
+            .containsText(Integer.toString(fullyReplicated));
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_WARNING))
+            .containsText(Integer.toString(underReplicated));
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_ERROR))
+            .containsText(Integer.toString(unavailable));
     }
 
     /**
@@ -147,8 +166,12 @@ public class TopicChecks {
     private static void checkPaginationContent(TestCaseConfig tcc, int pageNum, int numOfFinalPage, int topicsOnPage, int lowBoundary, int highBoundary, int topicsCount, String paginationTextSelector, String moveButtonSelector) {
         LOGGER.debug("Checking page {}/{}", pageNum, numOfFinalPage);
         // Check that correct number of topics is displayed
-        PwUtils.waitForLocatorVisible(tcc, new CssBuilder(TopicsPageSelectors.TPS_TABLE_ROWS).nth(1).build());
-        assertEquals(topicsOnPage, tcc.page().locator(TopicsPageSelectors.TPS_TABLE_ROWS).all().size());
+        PlaywrightAssertions
+            .assertThat(tcc.page().locator(new CssBuilder(TopicsPageSelectors.TPS_TABLE_ROWS)
+                    .withDesc()
+                    .withElementTr()
+                    .build()))
+            .hasCount(topicsOnPage);
 
         // Check pagination details
         String paginationOf = String.format("%s - %s of %s", lowBoundary, highBoundary, topicsCount);

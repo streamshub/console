@@ -15,7 +15,6 @@ import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
-import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
@@ -36,7 +35,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -70,7 +68,6 @@ public class MessagesST extends AbstractST {
     private static final String VALUE_FILTER = "package=sent";
     private static final String TIMESTAMP_FILTER = "messages=timestamp:";
     private static final String EPOCH_FILTER = "messages=epoch:";
-    private static final int MAX_MESSAGES_PER_PAGE = 50;
 
     /**
      * Provides parameterized scenarios for verifying message search functionality
@@ -194,40 +191,35 @@ public class MessagesST extends AbstractST {
         final String newMessageText = "testTimestampText";
         final String oldMessageText = "earlierMessages";
         final String topicPrefix = "timestamp-filter-topic";
-        final int offsetMinutes = 5;
 
         // Formatters
         final DateTimeFormatter timestampFormatterQuery = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         final DateTimeFormatter dateFormatterForm = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         final DateTimeFormatter timeFormatterForm = DateTimeFormatter.ofPattern("HH:mm");
 
-        String kafkaTopicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, TOPIC_COUNT, 1, 1, 1)
-            .getFirst().getMetadata().getName();
+        String testTopic = KafkaTopicUtils
+                .setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, TOPIC_COUNT, 1, 1, 1)
+                .getFirst()
+                .getMetadata()
+                .getName();
 
         // Set timestamps
-        final OffsetDateTime earlierUtcTime = Instant.now().atOffset(ZoneOffset.UTC).minusMinutes(offsetMinutes);
-        final OffsetDateTime currentUtcTime = earlierUtcTime.plusMinutes(offsetMinutes + 2);
-        final OffsetDateTime currentLocalTime = currentUtcTime.atZoneSameInstant(ZoneId.systemDefault()).toOffsetDateTime();
-
-        final String currentDateTimeQuery = currentUtcTime.format(timestampFormatterQuery);
+        final OffsetDateTime earlierUtcTime = Instant.now().atOffset(ZoneOffset.UTC);
         final String earlierTimeQuery = earlierUtcTime.format(timestampFormatterQuery);
-        final String currentDateTimeUnix = String.valueOf(currentUtcTime.toEpochSecond());
         final String earlierDateTimeUnix = String.valueOf(earlierUtcTime.toEpochSecond());
-        final String currentDateForm = currentUtcTime.format(dateFormatterForm);
-        final String currentTimeForm = currentLocalTime.format(timeFormatterForm);
-        final String earlierTimeForm = earlierUtcTime.format(timeFormatterForm);
+        final String earlierDateForm = earlierUtcTime.format(dateFormatterForm);
+        final String earlierTimeForm = earlierUtcTime.atZoneSameInstant(ZoneId.systemDefault()).format(timeFormatterForm);
 
-        LOGGER.info("Current ISO: {}, Earlier ISO: {}, Current Unix: {}, Earlier Unix: {}",
-            currentDateTimeQuery, earlierTimeQuery, currentDateTimeUnix, earlierDateTimeUnix);
+        LOGGER.info("Earlier ISO: {}, Earlier Unix: {}", earlierTimeQuery, earlierDateTimeUnix);
 
         KafkaClients clients = new KafkaClientsBuilder()
             .withNamespaceName(tcc.namespace())
-            .withTopicName(kafkaTopicName)
+            .withTopicName(testTopic)
             .withMessageCount(oldMessageCount)
             .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
-            .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName))
+            .withProducerName(KafkaNamingUtils.producerName(testTopic))
+            .withConsumerName(KafkaNamingUtils.consumerName(testTopic))
+            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(testTopic))
             .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
             .withUsername(tcc.kafkaUserName())
             .withMessage(oldMessageText)
@@ -237,22 +229,25 @@ public class MessagesST extends AbstractST {
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
 
-        final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
-        LOGGER.info("Using topic '{}' with id '{}'", kafkaTopicName, topicId);
+        final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), testTopic);
+        LOGGER.info("Using topic '{}' with id '{}'", testTopic, topicId);
 
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, testTopic, true);
 
         LOGGER.info("Filtering messages using ISO query timestamp (current) - expect 0 new messages");
-        MessagesChecks.checkQueryBarFilter(tcc, TIMESTAMP_FILTER, currentDateTimeQuery, 1, null);
+        MessagesChecks.checkQueryBarFilter(tcc, TIMESTAMP_FILTER, Instant.now().atOffset(ZoneOffset.UTC).format(timestampFormatterQuery), 1, null);
 
         LOGGER.info("Filtering messages using ISO query timestamp (earlier) - expect full page");
         MessagesChecks.checkQueryBarFilter(tcc, TIMESTAMP_FILTER, earlierTimeQuery, oldMessageCount, oldMessageText);
 
-        // Wait for a while to produce the new messages with
-        LOGGER.warn("Sleeping to delay messages timestamp");
-        Utils.sleepWait(Duration.ofMinutes(3).toMillis());
+        final OffsetDateTime currentUtcTime = Instant.now().atOffset(ZoneOffset.UTC);
+        final String currentDateTimeQuery = currentUtcTime.format(timestampFormatterQuery);
+        final String currentDateTimeUnix = String.valueOf(currentUtcTime.toEpochSecond());
+        final String currentDateForm = currentUtcTime.format(dateFormatterForm);
+        final String currentTimeForm = currentUtcTime.atZoneSameInstant(ZoneId.systemDefault()).format(timeFormatterForm);
 
+        LOGGER.info("Current ISO: {}, Current Unix: {}", currentDateTimeQuery, currentDateTimeUnix);
         LOGGER.info("Producing {} new messages with text '{}'", newMessageCount, newMessageText);
         clients = new KafkaClientsBuilder(clients)
             .withMessageCount(newMessageCount)
@@ -278,12 +273,14 @@ public class MessagesST extends AbstractST {
 
         // Verify via UI popover (ISO mode)
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, testTopic, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
         LOGGER.info("Verifying timestamp filtering using UI popover (ISO mode) (current)");
         MessagesChecks.checkPopoverIsoFilter(tcc, currentDateForm, currentTimeForm, newMessageCount, newMessageText);
-        MessagesChecks.checkPopoverIsoFilter(tcc, currentDateForm, earlierTimeForm, oldMessageCount, oldMessageText);
+
+        LOGGER.info("Verifying timestamp filtering using UI popover (ISO mode) (earlier)");
+        MessagesChecks.checkPopoverIsoFilter(tcc, earlierDateForm, earlierTimeForm, oldMessageCount, oldMessageText);
 
         // Verify via UI popover (Unix mode)
         LOGGER.info("Verifying timestamp filtering using UI popover (Unix mode) (current)");

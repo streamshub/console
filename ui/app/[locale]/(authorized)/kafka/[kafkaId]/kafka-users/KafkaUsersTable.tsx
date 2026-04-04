@@ -3,6 +3,7 @@ import { DateTime } from "@/components/Format/DateTime";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import { TableView, TableViewProps } from "@/components/Table/TableView";
 import { Truncate } from "@/libs/patternfly/react-core";
+import { Th } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
@@ -26,7 +27,7 @@ export type KafkaUsersTableProps = {
   onFilterUsernameChange: (username: string | undefined) => void;
 } & Pick<
   TableViewProps<KafkaUser, KafkaUserColumn>,
-  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
+  "onPageChange" | "onClearAllFilters"
 >;
 
 export function KafkaUsersTable({
@@ -38,7 +39,6 @@ export function KafkaUsersTable({
   page,
   perPage,
   onPageChange,
-  isColumnSortable,
   onClearAllFilters,
 }: KafkaUsersTableProps) {
   const t = useTranslations("kafkausers");
@@ -58,8 +58,7 @@ export function KafkaUsersTable({
       ariaLabel={"kafka user table"}
       isFiltered={filterUsername !== undefined && filterUsername !== ""}
       columns={KafkaUserColumns}
-      isColumnSortable={isColumnSortable}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "name":
             return <Th key={key}>{t("name")}</Th>;

@@ -14,8 +14,7 @@ public class CssSelectors {
     private CssSelectors() {}
 
     public static final String PAGE_DIV = new CssBuilder()
-        .withElementBody().withChild()
-        .withElementDiv().nth(1)
+        .withElementDiv().withId("root")
         .build();
 
     // ----------------------------
@@ -31,22 +30,25 @@ public class CssSelectors {
         .build();
 
     // Keycloak
-    public static final String LOGIN_KEYCLOAK_PAGE_TITLE = new CssBuilder(PAGE_DIV)
-        .withDesc()
+    public static final String LOGIN_KEYCLOAK_PAGE_TITLE = new CssBuilder()
         .withElementHeader().withId("kc-header")
         .build();
 
-    public static final String LOGIN_KEYCLOAK_USERNAME_INPUT = new CssBuilder(PAGE_DIV)
+    public static final String LOGIN_KEYCLOAK_FORM = new CssBuilder()
+        .withElementForm().withId("kc-form-login")
+        .build();
+
+    public static final String LOGIN_KEYCLOAK_USERNAME_INPUT = new CssBuilder(LOGIN_KEYCLOAK_FORM)
         .withDesc()
         .withElementInput().withId("username")
         .build();
 
-    public static final String LOGIN_KEYCLOAK_PASSWORD_INPUT = new CssBuilder(PAGE_DIV)
+    public static final String LOGIN_KEYCLOAK_PASSWORD_INPUT = new CssBuilder(LOGIN_KEYCLOAK_FORM)
         .withDesc()
         .withElementInput().withId("password")
         .build();
 
-    public static final String LOGIN_KEYCLOAK_SIGN_IN_BUTTON = new CssBuilder(PAGE_DIV)
+    public static final String LOGIN_KEYCLOAK_SIGN_IN_BUTTON = new CssBuilder(LOGIN_KEYCLOAK_FORM)
         .withDesc()
         .withElementButton().withId("kc-login")
         .build();
@@ -100,7 +102,7 @@ public class CssSelectors {
         .withElementDiv().withChild()
         .withElementButton().withComponentButton()
         .build();
-    
+
     public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT = new CssBuilder(PAGES_HEADER_CONTENT)
         .withElementDiv().withChild()
         .withElementH1().withComponentTitle()

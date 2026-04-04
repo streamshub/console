@@ -37,6 +37,7 @@ import {
   RoleLabel,
 } from "./NodesLabel";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { Th } from "@/libs/patternfly/react-table";
 import RichText from "@/components/RichText";
 
 export const NodeListColumns = [
@@ -69,11 +70,10 @@ export type NodesTableProps = {
   statuses: Statuses | undefined;
 } & Pick<
   TableViewProps<NodeList, (typeof NodeListColumns)[number]>,
-  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
+  "onPageChange" | "onClearAllFilters"
 >;
 
 export function NodesTable({
-  isColumnSortable,
   nodeList,
   filterNodePool,
   filterBrokerStatus,
@@ -141,7 +141,6 @@ export function NodesTable({
           perPage={perPage}
           onPageChange={onPageChange}
           itemCount={nodesCount}
-          isColumnSortable={isColumnSortable}
           isRowExpandable={() => true}
           isFiltered={
             filterNodePool?.length !== 0 ||
@@ -157,7 +156,7 @@ export function NodesTable({
           }
           ariaLabel={"Kafka nodes"}
           columns={NodeListColumns}
-          renderHeader={({ column, key, Th }) => {
+          renderHeader={({ column, key }) => {
             switch (column) {
               case "id":
                 return <Th key={key}>{t("nodes.broker_id")}</Th>;

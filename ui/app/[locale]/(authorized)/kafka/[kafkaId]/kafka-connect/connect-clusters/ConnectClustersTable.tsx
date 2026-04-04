@@ -5,6 +5,7 @@ import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFoun
 import Link from "next/link";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { Th } from "@/libs/patternfly/react-table";
 
 export const ConnectClustersTableColumns = [
   "name",
@@ -24,7 +25,6 @@ export function ConnectClustersTable({
   filterName,
   onFilterNameChange,
   onPageChange,
-  isColumnSortable,
   onClearAllFilters,
 }: {
   kafkaId: string | undefined;
@@ -36,7 +36,7 @@ export function ConnectClustersTable({
   onFilterNameChange: (name: string | undefined) => void;
 } & Pick<
   TableViewProps<ConnectClusters, ConnectClustersTableColumn>,
-  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
+  "onPageChange" | "onClearAllFilters"
 >) {
   const t = useTranslations("KafkaConnect");
 
@@ -47,7 +47,6 @@ export function ConnectClustersTable({
       perPage={perPage}
       itemCount={total}
       onPageChange={onPageChange}
-      isColumnSortable={isColumnSortable}
       isFiltered={filterName?.length !== 0}
       emptyStateNoData={<></>}
       emptyStateNoResults={
@@ -56,7 +55,7 @@ export function ConnectClustersTable({
       ariaLabel={t("connect_clusters_title")}
       columns={ConnectClustersTableColumns}
       onClearAllFilters={onClearAllFilters}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "name":
             return <Th key={key}>{t("connect_clusters.name")}</Th>;

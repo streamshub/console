@@ -1,5 +1,14 @@
 package com.github.streamshub.systemtests.utils;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.constants.ResourceConditions;
 import com.github.streamshub.systemtests.constants.TimeConstants;
@@ -11,6 +20,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakApiUtils;
+
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -28,12 +38,6 @@ import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceState;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils.listKubeResourcesByPrefix;
 
@@ -331,6 +335,15 @@ public class WaitUtils {
                 }
                 return false;
             });
+    }
+
+    public static void waitForKafkaCondition(String namespace, String kafkaName, Predicate<Kafka> condition) {
+        KubeResourceManager.get().kubeClient()
+            .getClient()
+            .resources(Kafka.class)
+            .inNamespace(namespace)
+            .withName(kafkaName)
+            .waitUntilCondition(condition, TimeConstants.GLOBAL_STATUS_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
     public static void waitForClientsSuccess(KafkaClients clients) {

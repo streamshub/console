@@ -7,19 +7,31 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export async function generateMetadata(props: { params: { kafkaId: string, groupId: string} }) {
+export async function generateMetadata({
+  params: paramsPromise,
+} : {
+  params: Promise<GroupParams>;
+}) {
+  const { kafkaId, groupId } = await paramsPromise;
   const t = await getTranslations();
+  const group = (await getConsumerGroup(kafkaId, groupId)).payload;
+  let groupIdDisplay = "";
+
+  if (group) {
+    groupIdDisplay = group.attributes.groupId;
+  }
 
   return {
-    title: `${t("Group.title")} ${props.params.groupId} | ${t("common.title")}`,
+    title: `${t("Group.title")} ${groupIdDisplay} | ${t("common.title")}`,
   };
 }
 
-export default function ConsumerGroupMembersPage({
-  params: { kafkaId, groupId },
+export default async function ConsumerGroupMembersPage({
+  params: paramsPromise,
 }: {
-  params: GroupParams;
+  params: Promise<GroupParams>;
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
   return (
     <PageSection>
       <Suspense
@@ -42,12 +54,6 @@ async function ConnectedMembersTable({
     return <NoDataErrorState errors={response.errors} />;
   }
 
-  async function refresh() {
-    "use server";
-    const res = await getConsumerGroup(kafkaId, groupId);
-    return res?.payload ?? null;
-  }
-
   const consumerGroup = response.payload!;
-  return <MembersTable kafkaId={kafkaId} consumerGroup={consumerGroup} refresh={refresh}/>;
+  return <MembersTable kafkaId={kafkaId} consumerGroup={consumerGroup} />;
 }

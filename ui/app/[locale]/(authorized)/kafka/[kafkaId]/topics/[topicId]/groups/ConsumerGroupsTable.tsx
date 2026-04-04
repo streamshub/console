@@ -5,6 +5,7 @@ import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView } from "@/components/Table";
 import { Icon, LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -18,9 +19,8 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import RichText from "@/components/RichText";
-import { TableVariant } from "@patternfly/react-table";
 import { describeEnabled } from "@/utils/groups";
 
 const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
@@ -109,30 +109,14 @@ const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
 export function ConsumerGroupsTable({
   kafkaId,
   page,
-  total,
-  groups: initialData,
-  refresh,
+  groups,
 }: {
   kafkaId: string;
   page: number;
-  total: number;
   groups?: ConsumerGroup[];
-  refresh?: () => Promise<ConsumerGroup[] | null>;
 }) {
   const t = useTranslations();
-  const [groups, setGroups] = useState(initialData);
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (refresh) {
-      interval = setInterval(async () => {
-        const groups = await refresh();
-        if (groups != null) {
-          setGroups(groups);
-        }
-      }, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [refresh]);
+
   return (
     <TableView
       variant={TableVariant.compact}
@@ -148,7 +132,7 @@ export function ConsumerGroupsTable({
       }
       ariaLabel={t("GroupsTable.title")}
       columns={["groupId", "type", "protocol", "state", "lag", "members", "topics"] as const}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "groupId":
             return (

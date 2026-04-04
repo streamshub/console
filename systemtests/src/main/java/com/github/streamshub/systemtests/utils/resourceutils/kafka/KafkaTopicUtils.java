@@ -21,7 +21,7 @@ import java.util.stream.IntStream;
 
 public class KafkaTopicUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaTopicUtils.class);
-    
+
     private KafkaTopicUtils() {}
 
     /**
@@ -57,7 +57,7 @@ public class KafkaTopicUtils {
             KubeResourceManager.get().deleteResourceWithWait(existingTopics.toArray(new KafkaTopic[0]));
         }
 
-        KubeResourceManager.get().createResourceWithWait(topics.toArray(new KafkaTopic[0]));
+        KubeResourceManager.get().createResourceAsyncWait(topics.toArray(new KafkaTopic[0]));
 
         return topics;
     }

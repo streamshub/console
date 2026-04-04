@@ -48,7 +48,7 @@ public class MessagesPageSelectors {
 
     public static final String MPS_TOOLBAR_POPOVER_FORM = new CssBuilder()
         .withElementBody().withChild()
-        .withElementDiv().nth(3).withChild()
+        .withElementDiv().nth(4).withChild()
         .withElementDiv().withComponentPanel().withChild()
         .withElementDiv().withComponentPanel().withSubComponentMain().withChild()
         .withElementDiv().withComponentPanel().withSubComponentMainBody().withChild()
@@ -306,8 +306,8 @@ public class MessagesPageSelectors {
         .withElementSpan().withComponentFormControl().withChild()
         .withElementInput()
         .build();
-        
-    
+
+
     public static final String MPS_MESSAGE_SIDEBAR = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
