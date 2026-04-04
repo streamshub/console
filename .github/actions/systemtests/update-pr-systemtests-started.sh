@@ -28,7 +28,7 @@ gh api repos/$REPO/statuses/$COMMIT_SHA \
   -f state="pending" \
   -f context="System Tests" \
   -f description="System tests are running..." \
-  -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+  -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
 # Update PR comment
 PR_NUMBER=$(gh pr list --repo $REPO --state open --search $COMMIT_SHA --json number,createdAt -q "sort_by(.createdAt) | .[-1] | .number")
