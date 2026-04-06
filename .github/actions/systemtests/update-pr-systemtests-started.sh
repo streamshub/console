@@ -16,7 +16,7 @@ cat > $PARAMS_MD <<- PARAMS
 ## 🏃 System tests run started️ 🏃
 Build phase succeeded. Triggering systemtests.
 #### Used parameters
-* TEST_CASE: ${TEST_CASE:-}
+* TESTCASE: ${TESTCASE:-}
 * PROFILE: ${PROFILE:-}
 * INSTALL_TYPE: ${INSTALL_TYPE:-}
 * RETRY_COUNT: ${RETRY_COUNT:-}
