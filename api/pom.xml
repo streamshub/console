@@ -20,7 +20,7 @@
         <docker.push>false</docker.push>
 
         <!-- UI Libs -->
-        <quarkus-web-bundler.version>2.2.1</quarkus-web-bundler.version>
+        <quarkus-quinoa.version>2.8.0</quarkus-quinoa.version>
     </properties>
 
     <dependencies>
@@ -103,6 +103,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image</artifactId>
         </dependency>
+        <!-- Quarkus Quinoa -->
+        <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa</artifactId>
+            <version>${quarkus-quinoa.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -177,37 +183,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-
-    <!-- Web Bundler -->
-    <dependency>
-      <groupId>io.quarkiverse.web-bundler</groupId>
-      <artifactId>quarkus-web-bundler</artifactId>
-      <version>${quarkus-web-bundler.version}</version>
-    </dependency>
-    <!-- UI (from mvnpm) -->
-    <dependency>
-        <groupId>org.mvnpm</groupId>
-        <artifactId>lit</artifactId>
-        <scope>provided</scope>
-    </dependency>
-    <!-- Vaadin Web components -->
-    <dependency>
-      <groupId>org.mvnpm.at.mvnpm</groupId>
-      <artifactId>vaadin-webcomponents</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <!-- Router -->
-    <dependency>
-      <groupId>org.mvnpm.at.vaadin</groupId>
-      <artifactId>router</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mvnpm.at.patternfly</groupId>
-      <artifactId>patternfly</artifactId>
-      <version>6.4.0</version>
-      <scope>provided</scope>
-    </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
