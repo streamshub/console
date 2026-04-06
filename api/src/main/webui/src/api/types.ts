@@ -644,3 +644,52 @@ export interface ConnectClusterDetailResponse {
   };
   included?: Connector[];
 }
+
+// Kafka User types
+export interface Authorization {
+  type: string;
+  resourceName?: string | null;
+  patternType?: string | null;
+  host?: string | null;
+  operations: string[];
+  permissionType: string;
+}
+
+export interface KafkaUser {
+  id: string;
+  type: 'kafkaUsers';
+  meta?: {
+    privileges?: string[];
+  };
+  attributes: {
+    name: string;
+    namespace?: string | null;
+    creationTimestamp?: string | null;
+    username: string;
+    authenticationType: string;
+    authorization?: {
+      accessControls: Authorization[];
+    } | null;
+  };
+  relationships?: Record<string, unknown>;
+}
+
+export interface UsersResponse {
+  data: KafkaUser[];
+  meta: {
+    page: {
+      total?: number;
+      pageNumber?: number;
+    };
+  };
+  links: {
+    first: string | null;
+    prev: string | null;
+    next: string | null;
+    last: string | null;
+  };
+}
+
+export interface UserResponse {
+  data: KafkaUser;
+}

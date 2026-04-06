@@ -17,12 +17,13 @@ import {
 import { HomeIcon } from '@patternfly/react-icons';
 import { useKafkaCluster, useKafkaClusters } from '../api/hooks/useKafkaClusters';
 import { useTopic } from '../api/hooks/useTopics';
+import { useUser } from '../api/hooks/useUsers';
 import { KafkaClusterSidebar } from '../components/KafkaClusterSidebar';
 import { AppMasthead } from '../components/AppMasthead';
 
 export function KafkaLayout() {
   const { t } = useTranslation();
-  const { kafkaId, topicId, groupId } = useParams<{ kafkaId: string; topicId?: string; groupId?: string }>();
+  const { kafkaId, topicId, groupId, userId } = useParams<{ kafkaId: string; topicId?: string; groupId?: string; userId?: string }>();
   const location = useLocation();
   const { data, isLoading, error } = useKafkaCluster(kafkaId);
   
@@ -34,6 +35,13 @@ export function KafkaLayout() {
     kafkaId,
     topicId,
     { fields: ['name'] }
+  );
+  
+  // Fetch user data if we're on a user detail page
+  const { data: userData } = useUser(
+    kafkaId,
+    userId,
+    { fields: ['username'] }
   );
 
   if (isLoading) {
@@ -88,6 +96,10 @@ export function KafkaLayout() {
   // Check if we're on a group detail page
   const isGroupDetailPage = !!groupId;
   const groupTab = isGroupDetailPage ? currentPage : null;
+  
+  // Check if we're on a user detail page
+  const isUserDetailPage = !!userId;
+  const username = userData?.data?.attributes?.username || userId || '';
   
   // Map path segments to readable names
   const getPageTitle = (segment: string): string => {
@@ -187,7 +199,19 @@ export function KafkaLayout() {
           {getGroupTabTitle(groupTab)}
         </BreadcrumbItem>
       )}
-      {!isTopicDetailPage && !isNodesPage && !isConnectPage && !isGroupDetailPage && currentPage !== kafkaId && (
+      {isUserDetailPage && (
+        <BreadcrumbItem>
+          <Link to={`/kafka/${kafkaId}/users`}>
+            {t('kafka.users')}
+          </Link>
+        </BreadcrumbItem>
+      )}
+      {isUserDetailPage && (
+        <BreadcrumbItem isActive>
+          {username}
+        </BreadcrumbItem>
+      )}
+      {!isTopicDetailPage && !isNodesPage && !isConnectPage && !isGroupDetailPage && !isUserDetailPage && currentPage !== kafkaId && (
         <BreadcrumbItem isActive>
           {getPageTitle(currentPage)}
         </BreadcrumbItem>

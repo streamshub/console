@@ -482,6 +482,42 @@
       "sessionIdTooltip": "Unique identifier for the optimization."
     }
   },
+  "users": {
+    "title": "Kafka Users",
+    "tableLabel": "Kafka users table",
+    "noUsers": "No Kafka users",
+    "noUsersDescription": "No Kafka users are currently available in this cluster.",
+    "loading": "Loading users...",
+    "errorLoading": "Failed to load users",
+    "columnName": "Name",
+    "columnNamespace": "Namespace",
+    "columnCreationTime": "Creation Time",
+    "columnUsername": "Username",
+    "columnAuthentication": "Authentication",
+    "filter": {
+      "username": "Username",
+      "usernamePlaceholder": "Filter by username...",
+      "usernameLabel": "Username filter"
+    },
+    "details": {
+      "title": "User Details",
+      "name": "Name",
+      "username": "Username",
+      "authentication": "Authentication",
+      "namespace": "Namespace",
+      "creationTime": "Creation Time",
+      "authorization": "Authorization",
+      "noAuthorization": "No authorization rules",
+      "authColumns": {
+        "type": "Type",
+        "resourceName": "Resource Name",
+        "patternType": "Pattern Type",
+        "host": "Host",
+        "operations": "Operations",
+        "permissionType": "Permission"
+      }
+    }
+  },
   "errors": {
     "generic": "An error occurred",
     "network": "Network error. Please check your connection.",

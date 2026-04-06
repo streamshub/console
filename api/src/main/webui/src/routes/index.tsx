@@ -25,6 +25,8 @@ import { ConnectConnectorsTab } from '../pages/ConnectConnectorsTab';
 import { ConnectClustersTab } from '../pages/ConnectClustersTab';
 import { ConnectorDetailPage } from '../pages/ConnectorDetailPage';
 import { ConnectClusterDetailPage } from '../pages/ConnectClusterDetailPage';
+import { UsersPage } from '../pages/UsersPage';
+import { UserDetailPage } from '../pages/UserDetailPage';
 import { ErrorPage } from '../pages/ErrorPage';
 
 export const router = createBrowserRouter([
@@ -144,6 +146,14 @@ export const router = createBrowserRouter([
           {
             path: 'connect/clusters/:clusterId',
             element: <ConnectClusterDetailPage />,
+          },
+          {
+            path: 'users',
+            element: <UsersPage />,
+          },
+          {
+            path: 'users/:userId',
+            element: <UserDetailPage />,
           },
           // More routes will be added as pages are migrated
           // ... etc

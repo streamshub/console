@@ -14,6 +14,7 @@ import {
   Tbody,
   Td,
   ExpandableRowContent,
+  ThProps,
 } from '@patternfly/react-table';
 import {
   Toolbar,
@@ -141,9 +142,13 @@ export function NodesTable({
   };
 
   // Get sort params for column
-  const getSortParams = (columnKey: string) => ({
-    sortBy: sortBy === columnKey ? { index: 0, direction: sortDir } : undefined,
+  const getSortParams = (columnKey: string): ThProps['sort'] => ({
+    sortBy: {
+      index: sortBy === columnKey ? 0 : undefined,
+      direction: sortDir,
+    },
     onSort: () => handleSort(columnKey),
+    columnIndex: 0,
   });
 
   // Format bytes
@@ -517,22 +522,22 @@ export function NodesTable({
         <Thead>
           <Tr>
             <Th modifier="fitContent" />
-            <Th {...getSortParams('id')}>{t('nodes.nodeId')}</Th>
+            <Th sort={getSortParams('id')}>{t('nodes.nodeId')}</Th>
             <Th>{t('nodes.roles')}</Th>
             <Th>{t('nodes.status')}</Th>
-            <Th {...getSortParams('replicas')} modifier="fitContent" style={{ textAlign: 'right' }}>
+            <Th sort={getSortParams('replicas')} modifier="fitContent" style={{ textAlign: 'right' }}>
               {t('nodes.replicas')}{' '}
               <Tooltip content={t('nodes.replicasTooltip')}>
                 <HelpIcon />
               </Tooltip>
             </Th>
-            <Th {...getSortParams('rack')}>
+            <Th sort={getSortParams('rack')}>
               {t('nodes.rack')}{' '}
               <Tooltip content={t('nodes.rackTooltip')}>
                 <HelpIcon />
               </Tooltip>
             </Th>
-            <Th {...getSortParams('nodePool')}>{t('nodes.nodePool')}</Th>
+            <Th sort={getSortParams('nodePool')}>{t('nodes.nodePool')}</Th>
           </Tr>
         </Thead>
         <Tbody>

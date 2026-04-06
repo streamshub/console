@@ -15,13 +15,22 @@ mvn clean verify -Ddebug=5005
 ```
 Attach debugger to port 5005 after test breakpoint is hit.
 
+**UI development (with hot-reload):**
+```bash
+cd api && mvn quarkus:dev
+```
+This starts both the Quarkus API and the React UI with hot-reload enabled. Quinoa runs a Node server in the background and proxies UI resource requests.
+
 **UI tests:**
 ```bash
-cd ui && npm run build && npm run test
+cd api/src/main/webui && npm test
 ```
 
-**Local development with compose:**
-Requires `console-config.yaml` in project root (see examples/console-config.yaml).
+**UI standalone development (optional):**
+```bash
+cd api/src/main/webui && npm run dev
+```
+Note: API must be running separately on `http://localhost:8080` for this to work.
 
 ## Code Style (Non-Obvious)
 
@@ -33,11 +42,8 @@ Requires `console-config.yaml` in project root (see examples/console-config.yaml
 **Java - No @author tags:**
 Project policy disallows `@author` in Javadoc (hard to maintain).
 
-**UI - PatternFly packages must be transpiled:**
-`next.config.js` explicitly transpiles all `@patternfly/*` packages - required for proper bundling.
-
-**UI - Middleware authentication bypass:**
-`/api/schema` endpoint bypasses OIDC when `content` and `schemaname` query params present (see middleware.ts:60-71).
+**UI - PatternFly packages optimization:**
+`vite.config.ts` includes PatternFly packages in `optimizeDeps` for proper bundling and performance.
 
 ## Testing Patterns
 
@@ -56,13 +62,27 @@ Project policy disallows `@author` in Javadoc (hard to maintain).
 
 **Multi-module Maven project:**
 - `common/` - Shared config models
-- `api/` - Quarkus REST API (Java 21)
+- `api/` - Quarkus REST API (Java 21) with integrated React UI via Quinoa
+- `api/src/main/webui/` - React 18 + Vite frontend (PatternFly React components)
 - `operator/` - Kubernetes operator (Quarkus Operator SDK)
-- `ui/` - Next.js 14 frontend (standalone output)
 - `systemtests/` - Integration tests
+
+**UI Architecture:**
+- Built with React 18, TypeScript, and Vite
+- Integrated into Quarkus via Quinoa extension
+- Uses PatternFly React components for UI
+- TanStack Query for API state management
+- React Router v6 for client-side routing
+- i18next for internationalization
 
 **Operator uses dependent resource workflow:**
 Reconciler declares dependencies via `@Workflow` with `@Dependent` annotations defining resource creation order and preconditions.
 
 **Container image versioning:**
 Makefile converts Maven SNAPSHOT versions to lowercase for container tags (e.g., `0.12.1-SNAPSHOT` → `0.12.1-snapshot`).
+
+**Quinoa Integration:**
+- UI build is automatically triggered during Maven build (`mvn clean install`)
+- During development (`mvn quarkus:dev`), Quinoa runs a Node server for hot-reload
+- UI resources are served by the Quarkus API at runtime
+- No separate UI container needed for deployment

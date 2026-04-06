@@ -16,6 +16,7 @@ import {
   Td,
   ActionsColumn,
   ExpandableRowContent,
+  ThProps,
 } from '@patternfly/react-table';
 import {
   Toolbar,
@@ -223,12 +224,13 @@ export function RebalancesTable({
     });
   };
 
-  const getSortParams = (columnName: string) => ({
+  const getSortParams = (columnName: string): ThProps['sort'] => ({
     sortBy: {
       index: sortBy === columnName ? 0 : undefined,
       direction: sortDirection,
     },
     onSort: () => onSort(columnName),
+    columnIndex: 0,
   });
 
   // Get last updated timestamp
@@ -408,11 +410,11 @@ export function RebalancesTable({
         <Thead>
           <Tr>
             <Th />
-            <Th width={30} {...getSortParams('name')}>
+            <Th width={30} sort={getSortParams('name')}>
               {t('rebalancing.rebalanceName')}
             </Th>
-            <Th {...getSortParams('status')}>{t('rebalancing.status')}</Th>
-            <Th {...getSortParams('lastUpdated')}>{t('rebalancing.lastUpdated')}</Th>
+            <Th sort={getSortParams('status')}>{t('rebalancing.status')}</Th>
+            <Th sort={getSortParams('lastUpdated')}>{t('rebalancing.lastUpdated')}</Th>
             <Th />
           </Tr>
         </Thead>

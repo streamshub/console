@@ -163,8 +163,8 @@ export function ConnectorsTable({ kafkaId }: ConnectorsTableProps) {
         <Table aria-label="Connectors table" variant="compact">
           <Thead>
             <Tr>
-              <Th {...getSortParams('name')}>{t('kafka.connect.name', 'Name')}</Th>
-              <Th {...getSortParams('connect-cluster')}>
+              <Th sort={getSortParams('name')}>{t('kafka.connect.name', 'Name')}</Th>
+              <Th sort={getSortParams('connect-cluster')}>
                 {t('kafka.connect.connectCluster', 'Connect cluster')}
               </Th>
               <Th>{t('kafka.connect.type', 'Type')}</Th>
