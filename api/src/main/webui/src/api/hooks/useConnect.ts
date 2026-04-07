@@ -202,11 +202,11 @@ export function useConnector(connectorId: string | undefined) {
 /**
  * Fetch a single connect cluster by ID
  */
-export function useConnectCluster(clusterId: string | undefined) {
+export function useConnectCluster(connectClusterId: string | undefined) {
   return useQuery({
-    queryKey: ['connectCluster', clusterId],
+    queryKey: ['connectCluster', connectClusterId],
     queryFn: async () => {
-      if (!clusterId) {
+      if (!connectClusterId) {
         throw new Error('Connect Cluster ID is required');
       }
 
@@ -214,10 +214,10 @@ export function useConnectCluster(clusterId: string | undefined) {
       searchParams.set('include', 'connectors');
       searchParams.set('fields[connects]', 'name,version,replicas,connectors,plugins');
 
-      const path = `/api/connects/${clusterId}?${searchParams}`;
+      const path = `/api/connects/${connectClusterId}?${searchParams}`;
 
       return apiClient.get<ConnectClusterDetailResponse>(path);
     },
-    enabled: !!clusterId,
+    enabled: !!connectClusterId,
   });
 }

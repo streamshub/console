@@ -29,6 +29,7 @@ export function KafkaLayout() {
     topicId,
     groupId,
     connectorId,
+    connectClusterId,
     userId,
     nodeId
   } = useParams<{
@@ -36,6 +37,7 @@ export function KafkaLayout() {
     topicId?: string;
     groupId?: string;
     connectorId?: string;
+    connectClusterId?: string;
     userId?: string;
     nodeId?: string;
   }>();
@@ -53,6 +55,14 @@ export function KafkaLayout() {
     { fields: ['name'] }
   );
   
+  const { data: connectorData } = useConnector(
+    connectorId,
+  );
+
+  const { data: connectClusterData } = useConnectCluster(
+    connectClusterId,
+  );
+
   // Fetch user data if we're on a user detail page
   const { data: userData } = useUser(
     kafkaId,
@@ -110,7 +120,11 @@ export function KafkaLayout() {
   const nodeTab = isNodeDetailPage ? currentPage : null;
   
   // Check if we're on a connect page (connectors or clusters tab)
-  const isConnectPage = pathSegments.includes('connect');
+  const isConnectorDetailPage = !!connectorId;
+  const connectorName = connectorData?.data?.attributes?.name || connectorId || '';
+  const isConnectClusterDetailPage = !!connectClusterId;
+  const connectClusterName = connectClusterData?.data?.attributes?.name || connectClusterId || '';
+  const isConnectPage = pathSegments.includes('connect') && !isConnectorDetailPage && !isConnectClusterDetailPage;
   const connectTab = isConnectPage ? currentPage : null;
   
   // Check if we're on a group detail page
@@ -222,14 +236,40 @@ export function KafkaLayout() {
           {getNodeTabTitle(nodeTab)}
         </BreadcrumbItem>
       )}
-      {isConnectPage && (
+      {(isConnectPage || isConnectorDetailPage || isConnectClusterDetailPage) && (
         <BreadcrumbItem>
-          {t('kafka.connect.title')}
+          <Link to={`/kafka/${kafkaId}/connect`}>
+            {t('kafka.connect.title')}
+          </Link>
         </BreadcrumbItem>
       )}
       {isConnectPage && connectTab && connectTab !== 'connect' && (
         <BreadcrumbItem isActive>
           {getConnectTabTitle(connectTab)}
+        </BreadcrumbItem>
+      )}
+      {isConnectorDetailPage && (
+        <BreadcrumbItem>
+          <Link to={`/kafka/${kafkaId}/connect/connectors`}>
+            {t('kafka.connect.connectors')}
+          </Link>
+        </BreadcrumbItem>
+      )}
+      {isConnectorDetailPage && (
+        <BreadcrumbItem isActive>
+          {connectorName}
+        </BreadcrumbItem>
+      )}
+      {isConnectClusterDetailPage && (
+        <BreadcrumbItem>
+          <Link to={`/kafka/${kafkaId}/connect/clusters`}>
+            {t('kafka.connect.connectClusters')}
+          </Link>
+        </BreadcrumbItem>
+      )}
+      {isConnectClusterDetailPage && (
+        <BreadcrumbItem isActive>
+          {connectClusterName}
         </BreadcrumbItem>
       )}
       {isGroupDetailPage && (
@@ -256,7 +296,7 @@ export function KafkaLayout() {
           {username}
         </BreadcrumbItem>
       )}
-      {!isTopicDetailPage && !isNodesPage && !isNodeDetailPage && !isConnectPage && !isGroupDetailPage && !isUserDetailPage && currentPage !== kafkaId && (
+      {!isTopicDetailPage && !isNodesPage && !isNodeDetailPage && !isConnectPage && !isConnectorDetailPage && !isConnectClusterDetailPage && !isGroupDetailPage && !isUserDetailPage && currentPage !== kafkaId && (
         <BreadcrumbItem isActive>
           {getPageTitle(currentPage)}
         </BreadcrumbItem>

@@ -70,10 +70,10 @@ const TypeLabel: Record<ConnectorType, string> = {
 
 export function ConnectClusterDetailPage() {
   const { t } = useTranslation();
-  const { kafkaId, clusterId } = useParams<{ kafkaId: string; clusterId: string }>();
+  const { kafkaId, connectClusterId } = useParams<{ kafkaId: string; connectClusterId: string }>();
   const [activeTabKey, setActiveTabKey] = useState<string | number>(0);
 
-  const { data, isLoading, error } = useConnectCluster(clusterId);
+  const { data, isLoading, error } = useConnectCluster(connectClusterId);
 
   const handleTabClick = (
     _event: React.MouseEvent<HTMLElement, MouseEvent>,

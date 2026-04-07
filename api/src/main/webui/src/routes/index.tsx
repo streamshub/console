@@ -160,7 +160,7 @@ export const router = createBrowserRouter([
             element: <ConnectorDetailPage />,
           },
           {
-            path: 'connect/clusters/:clusterId',
+            path: 'connect/clusters/:connectClusterId',
             element: <ConnectClusterDetailPage />,
           },
           {
