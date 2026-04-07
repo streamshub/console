@@ -56,6 +56,7 @@
     "viewAllClusters": "View all Kafka clusters",
     "noResultsFound": "No results found",
     "overview": "Overview",
+    "overviewTitle": "Overview",
     "clusterOverview": "Cluster overview",
     "topics": "Topics",
     "consumerGroups": "Consumer Groups",
@@ -518,6 +519,78 @@
         "permissionType": "Permission"
       }
     }
+  },
+  "overview": {
+    "title": "Overview"
+  },
+  "ClusterCard": {
+    "Kafka_cluster_details": "Kafka cluster details",
+    "online_brokers": "Online brokers",
+    "consumer_groups": "Consumer groups",
+    "kafka_version": "Kafka version",
+    "cluster_errors_and_warnings": "Cluster errors and warnings",
+    "no_messages": "No errors or warnings"
+  },
+  "ClusterChartsCard": {
+    "cluster_metrics": "Cluster metrics",
+    "used_disk_space": "Used disk space",
+    "used_disk_space_tooltip": "Used and available disk capacity for all brokers over a specified period. Make sure there's enough space for everyday operations.",
+    "cpu_usage": "CPU usage",
+    "cpu_usage_tooltip": "CPU utilization for all brokers over a specified period. Sustained high usage may indicate the need for resource optimization. Sustained high usage may indicate the need to review cluster capacity, producer send, or consumer fetch configurations.",
+    "memory_usage": "Memory usage",
+    "memory_usage_tooltip": "Memory utilization for all brokers over a specified period. Efficient memory allocation is essential for optimal performance of Kafka.",
+    "data_unavailable": "Metrics data unavailable",
+    "virtual_cluster_metrics_unavailable": "Metrics are not available for virtual clusters",
+    "charts_coming_soon": "Charts coming soon",
+    "charts_implementation_pending": "Chart visualization will be implemented in a future update",
+    "error_loading_metrics": "Error loading metrics",
+    "error_loading_metrics_description": "Unable to load cluster metrics. Please try again later."
+  },
+  "ClusterOverview": {
+    "topic_header": "Topics",
+    "total_topics": "Total topics",
+    "total_partitions": "Total partitions",
+    "fully_replicated_partition": "Fully replicated",
+    "fully_replicated_partition_tooltip": "Partitions that have all replicas in sync with the leader",
+    "under_replicated_partition": "Under-replicated",
+    "under_replicated_partition_tooltip": "Partitions with one or more replicas that are not in sync with the leader",
+    "unavailable_partition": "Offline",
+    "unavailable_partition_tooltip": "Partitions that have no available replicas",
+    "view_all_topics": "View all topics"
+  },
+  "topicMetricsCard": {
+    "topic_metric": "Topic metrics",
+    "topics_bytes_incoming_and_outgoing": "Topics bytes incoming and outgoing",
+    "topics_bytes_incoming_and_outgoing_tooltip": "Rate of data being produced to and consumed from topics",
+    "charts_coming_soon": "Charts coming soon",
+    "charts_implementation_pending": "Chart visualization will be implemented in a future update",
+    "no_topics": "No topics available",
+    "no_topics_description": "Create topics to view metrics data."
+  },
+  "RecentTopicsCard": {
+    "recent_topics": "Recent topics",
+    "no_recent_topics": "No recent topics",
+    "no_recent_topics_description": "Topics you view will appear here for quick access"
+  },
+  "ClustersTable": {
+    "version_derived": "Version derived from broker metadata",
+    "not_available": "N/A"
+  },
+  "metrics": {
+    "all_topics": "All topics",
+    "all_brokers": "All brokers"
+  },
+  "ChartDiskUsage": {
+    "data_unavailable": "Disk usage data unavailable"
+  },
+  "ChartCpuUsage": {
+    "data_unavailable": "CPU usage data unavailable"
+  },
+  "ChartMemoryUsage": {
+    "data_unavailable": "Memory usage data unavailable"
+  },
+  "ChartIncomingOutgoing": {
+    "data_unavailable": "Topic metrics data unavailable"
   },
   "errors": {
     "generic": "An error occurred",

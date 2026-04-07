@@ -398,6 +398,43 @@ export type RebalanceStatus =
 
 export type RebalanceMode = 'full' | 'add-brokers' | 'remove-brokers';
 
+// Metrics types
+export interface MetricValue {
+  value: string;
+  nodeId?: string;
+}
+
+export interface MetricRange {
+  range: Array<[string, string]>; // [timestamp, value] tuples
+  nodeId?: string;
+}
+
+export interface Metrics {
+  values: Record<string, MetricValue[]>;
+  ranges: Record<string, MetricRange[]>;
+}
+
+export interface NodeMetricsResponse {
+  data: {
+    attributes: {
+      metrics?: Metrics | null;
+    };
+  };
+}
+
+export interface TopicMetricsResponse {
+  data: {
+    id: string;
+    type: 'topicMetrics';
+    attributes: {
+      metrics?: Metrics | null;
+    };
+  };
+}
+
+// Time duration options for metrics (in seconds)
+export type MetricsDuration = 300 | 900 | 3600 | 21600 | 43200 | 86400; // 5min, 15min, 1hr, 6hr, 12hr, 1d
+
 export interface OptimizationResult {
   numIntraBrokerReplicaMovements?: number;
   numReplicaMovements?: number;
