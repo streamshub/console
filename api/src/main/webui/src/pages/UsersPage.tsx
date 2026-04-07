@@ -136,31 +136,15 @@ export function UsersPage() {
         </Title>
       </PageSection>
       <PageSection>
-        <Toolbar>
-          <ToolbarContent>
-            <ToolbarItem variant="pagination" align={{ default: 'alignEnd' }}>
-              <Pagination
-                itemCount={totalItems}
-                perPage={pageSize}
-                page={currentPage}
-                onSetPage={() => {}}
-                onPerPageSelect={handlePerPageChange}
-                onNextClick={handleNextPage}
-                onPreviousClick={handlePrevPage}
-                isDisabled={false}
-                variant={PaginationVariant.top}
-                isCompact
-                titles={{
-                  paginationAriaLabel: t('users.tableLabel'),
-                }}
-              />
-            </ToolbarItem>
-          </ToolbarContent>
-        </Toolbar>
-
         <UsersTable
           kafkaId={kafkaId!}
           users={users}
+          totalItems={totalItems}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          onPerPageSelect={handlePerPageChange}
+          onNextClick={handleNextPage}
+          onPreviousClick={handlePrevPage}
           sortBy={sortBy}
           sortDirection={sortDirection}
           onSort={handleSort}

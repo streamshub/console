@@ -244,101 +244,101 @@ export function GroupsPage() {
       </PageSection>
       <PageSection>
         <Toolbar>
-        <ToolbarContent>
-          <ToolbarItem>
-            <SearchInput
-              placeholder={t('common.filterByName')}
-              value={searchValue}
-              onChange={handleSearchChange}
-              onClear={() => {
-                setSearchValue('');
-                setPage(1);
-                setPageCursor(undefined);
-              }}
-            />
-          </ToolbarItem>
+          <ToolbarContent>
+            <ToolbarItem>
+              <SearchInput
+                placeholder={t('common.filterByName')}
+                value={searchValue}
+                onChange={handleSearchChange}
+                onClear={() => {
+                  setSearchValue('');
+                  setPage(1);
+                  setPageCursor(undefined);
+                }}
+              />
+            </ToolbarItem>
 
-          <ToolbarItem>
-            <Select
-              id="type-select"
-              isOpen={isTypeSelectOpen}
-              selected={selectedTypes}
-              onSelect={(_event, value) => handleTypeToggle(value as GroupType)}
-              onOpenChange={(isOpen) => setIsTypeSelectOpen(isOpen)}
-              toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
-                <MenuToggle
-                  ref={toggleRef}
-                  onClick={() => setIsTypeSelectOpen(!isTypeSelectOpen)}
-                  isExpanded={isTypeSelectOpen}
-                >
-                  {selectedTypes.length > 0
-                    ? `${t('groups.type')} (${selectedTypes.length})`
-                    : t('groups.type')}
-                </MenuToggle>
-              )}
-            >
-              <SelectList>
-                {GROUP_TYPES.map((type) => (
-                  <SelectOption
-                    key={type}
-                    value={type}
-                    hasCheckbox
-                    isSelected={selectedTypes.includes(type)}
+            <ToolbarItem>
+              <Select
+                id="type-select"
+                isOpen={isTypeSelectOpen}
+                selected={selectedTypes}
+                onSelect={(_event, value) => handleTypeToggle(value as GroupType)}
+                onOpenChange={(isOpen) => setIsTypeSelectOpen(isOpen)}
+                toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    onClick={() => setIsTypeSelectOpen(!isTypeSelectOpen)}
+                    isExpanded={isTypeSelectOpen}
                   >
-                    {type}
-                  </SelectOption>
-                ))}
-              </SelectList>
-            </Select>
-          </ToolbarItem>
+                    {selectedTypes.length > 0
+                      ? `${t('groups.type')} (${selectedTypes.length})`
+                      : t('groups.type')}
+                  </MenuToggle>
+                )}
+              >
+                <SelectList>
+                  {GROUP_TYPES.map((type) => (
+                    <SelectOption
+                      key={type}
+                      value={type}
+                      hasCheckbox
+                      isSelected={selectedTypes.includes(type)}
+                    >
+                      {type}
+                    </SelectOption>
+                  ))}
+                </SelectList>
+              </Select>
+            </ToolbarItem>
 
-          <ToolbarItem>
-            <Select
-              id="state-select"
-              isOpen={isStateSelectOpen}
-              selected={selectedStates}
-              onSelect={(_event, value) => handleStateToggle(value as GroupState)}
-              onOpenChange={(isOpen) => setIsStateSelectOpen(isOpen)}
-              toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
-                <MenuToggle
-                  ref={toggleRef}
-                  onClick={() => setIsStateSelectOpen(!isStateSelectOpen)}
-                  isExpanded={isStateSelectOpen}
-                >
-                  {selectedStates.length > 0
-                    ? `${t('groups.state')} (${selectedStates.length})`
-                    : t('groups.state')}
-                </MenuToggle>
-              )}
-            >
-              <SelectList>
-                {GROUP_STATES.map((state) => (
-                  <SelectOption
-                    key={state}
-                    value={state}
-                    hasCheckbox
-                    isSelected={selectedStates.includes(state)}
+            <ToolbarItem>
+              <Select
+                id="state-select"
+                isOpen={isStateSelectOpen}
+                selected={selectedStates}
+                onSelect={(_event, value) => handleStateToggle(value as GroupState)}
+                onOpenChange={(isOpen) => setIsStateSelectOpen(isOpen)}
+                toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    onClick={() => setIsStateSelectOpen(!isStateSelectOpen)}
+                    isExpanded={isStateSelectOpen}
                   >
-                    {STATE_LABELS[state].label}
-                  </SelectOption>
-                ))}
-              </SelectList>
-            </Select>
-          </ToolbarItem>
+                    {selectedStates.length > 0
+                      ? `${t('groups.state')} (${selectedStates.length})`
+                      : t('groups.state')}
+                  </MenuToggle>
+                )}
+              >
+                <SelectList>
+                  {GROUP_STATES.map((state) => (
+                    <SelectOption
+                      key={state}
+                      value={state}
+                      hasCheckbox
+                      isSelected={selectedStates.includes(state)}
+                    >
+                      {STATE_LABELS[state].label}
+                    </SelectOption>
+                  ))}
+                </SelectList>
+              </Select>
+            </ToolbarItem>
 
-          <ToolbarItem variant="pagination" align={{ default: 'alignEnd' }}>
-            <Pagination
-              itemCount={totalItems}
-              perPage={perPage}
-              page={page}
-              onSetPage={handlePageChange}
-              onPerPageSelect={handlePerPageChange}
-              variant={PaginationVariant.top}
-              isCompact
-            />
-          </ToolbarItem>
-        </ToolbarContent>
-      </Toolbar>
+            <ToolbarItem variant="pagination" align={{ default: 'alignEnd' }}>
+              <Pagination
+                itemCount={totalItems}
+                perPage={perPage}
+                page={page}
+                onSetPage={handlePageChange}
+                onPerPageSelect={handlePerPageChange}
+                variant={PaginationVariant.top}
+                isCompact
+              />
+            </ToolbarItem>
+          </ToolbarContent>
+        </Toolbar>
 
       {isLoading ? (
         <EmptyState>

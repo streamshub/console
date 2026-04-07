@@ -23,6 +23,8 @@ import {
   EmptyState,
   Title,
   EmptyStateBody,
+  Pagination,
+  PaginationVariant,
 } from '@patternfly/react-core';
 import { CubesIcon, SearchIcon } from '@patternfly/react-icons';
 import { KafkaUser } from '../api/types';
@@ -33,6 +35,15 @@ type SortableColumn = 'name' | 'namespace' | 'creationTimestamp' | 'username' | 
 interface UsersTableProps {
   kafkaId: string;
   users: KafkaUser[];
+  totalItems: number;
+  currentPage: number;
+  pageSize: number;
+  onPerPageSelect: (
+    event: React.MouseEvent | React.KeyboardEvent | MouseEvent,
+    newPerPage: number
+  ) => void;
+  onNextClick: () => void;
+  onPreviousClick: () => void;
   sortBy: SortableColumn;
   sortDirection: 'asc' | 'desc';
   onSort: (column: SortableColumn) => void;
@@ -43,6 +54,12 @@ interface UsersTableProps {
 export function UsersTable({
   kafkaId,
   users,
+  totalItems,
+  currentPage,
+  pageSize,
+  onPerPageSelect,
+  onNextClick,
+  onPreviousClick,
   sortBy,
   sortDirection,
   onSort,
@@ -103,6 +120,23 @@ export function UsersTable({
                 aria-label={t('users.filter.usernameLabel')}
               />
             </InputGroup>
+          </ToolbarItem>
+          <ToolbarItem variant="pagination" align={{ default: 'alignEnd' }}>
+            <Pagination
+              itemCount={totalItems}
+              perPage={pageSize}
+              page={currentPage}
+              onSetPage={() => {}}
+              onPerPageSelect={onPerPageSelect}
+              onNextClick={onNextClick}
+              onPreviousClick={onPreviousClick}
+              isDisabled={false}
+              variant={PaginationVariant.top}
+              isCompact
+              titles={{
+                paginationAriaLabel: t('users.tableLabel'),
+              }}
+            />
           </ToolbarItem>
         </ToolbarContent>
       </Toolbar>
