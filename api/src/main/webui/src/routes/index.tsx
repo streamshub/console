@@ -16,6 +16,8 @@ import { TopicConfigurationTab } from '../pages/TopicConfigurationTab';
 import { NodesPage } from '../pages/NodesPage';
 import { NodesOverviewTab } from '../pages/NodesOverviewTab';
 import { NodesRebalancesTab } from '../pages/NodesRebalancesTab';
+import { NodeDetailPage } from '../pages/NodeDetailPage';
+import { NodeConfigurationTab } from '../pages/NodeConfigurationTab';
 import { GroupsPage } from '../pages/GroupsPage';
 import { GroupDetailPage } from '../pages/GroupDetailPage';
 import { GroupMembersTab } from '../pages/GroupMembersTab';
@@ -96,6 +98,20 @@ export const router = createBrowserRouter([
               {
                 path: 'rebalances',
                 element: <NodesRebalancesTab />,
+              },
+            ],
+          },
+          {
+            path: 'nodes/:nodeId',
+            element: <NodeDetailPage />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="configuration" replace />,
+              },
+              {
+                path: 'configuration',
+                element: <NodeConfigurationTab />,
               },
             ],
           },

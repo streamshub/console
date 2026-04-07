@@ -564,7 +564,7 @@ export function NodesTable({
                   />
                   <Td dataLabel={t('nodes.nodeId')} modifier="truncate">
                     {node.attributes.broker ? (
-                      <Link to={`nodes/${node.id}`}>{node.id}</Link>
+                      <Link to={`../${node.id}`}>{node.id}</Link>
                     ) : (
                       <>{node.id}</>
                     )}

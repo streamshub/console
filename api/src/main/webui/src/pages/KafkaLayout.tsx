@@ -16,6 +16,7 @@ import {
 } from '@patternfly/react-core';
 import { HomeIcon } from '@patternfly/react-icons';
 import { useKafkaCluster, useKafkaClusters } from '../api/hooks/useKafkaClusters';
+import { useConnector, useConnectCluster } from '../api/hooks/useConnect';
 import { useTopic } from '../api/hooks/useTopics';
 import { useUser } from '../api/hooks/useUsers';
 import { KafkaClusterSidebar } from '../components/KafkaClusterSidebar';
@@ -23,7 +24,22 @@ import { AppMasthead } from '../components/AppMasthead';
 
 export function KafkaLayout() {
   const { t } = useTranslation();
-  const { kafkaId, topicId, groupId, userId } = useParams<{ kafkaId: string; topicId?: string; groupId?: string; userId?: string }>();
+  const {
+    kafkaId,
+    topicId,
+    groupId,
+    connectorId,
+    userId,
+    nodeId
+  } = useParams<{
+    kafkaId: string;
+    topicId?: string;
+    groupId?: string;
+    connectorId?: string;
+    userId?: string;
+    nodeId?: string;
+  }>();
+
   const location = useLocation();
   const { data, isLoading, error } = useKafkaCluster(kafkaId);
   
@@ -86,8 +102,12 @@ export function KafkaLayout() {
   const topicName = topicData?.data?.attributes?.name || topicId || '';
   
   // Check if we're on a nodes page (overview or rebalances tab)
-  const isNodesPage = pathSegments.includes('nodes');
+  const isNodesPage = pathSegments.includes('nodes') && !nodeId;
   const nodesTab = isNodesPage ? currentPage : null;
+  
+  // Check if we're on a node detail page
+  const isNodeDetailPage = !!nodeId;
+  const nodeTab = isNodeDetailPage ? currentPage : null;
   
   // Check if we're on a connect page (connectors or clusters tab)
   const isConnectPage = pathSegments.includes('connect');
@@ -119,6 +139,14 @@ export function KafkaLayout() {
     const tabMap: Record<string, string> = {
       overview: t('nodes.tabs.overview'),
       rebalances: t('nodes.tabs.rebalances'),
+    };
+    return tabMap[tab] || tab;
+  };
+  
+  // Get node detail tab title
+  const getNodeTabTitle = (tab: string): string => {
+    const tabMap: Record<string, string> = {
+      configuration: t('topics.tabs.configuration'),
     };
     return tabMap[tab] || tab;
   };
@@ -177,6 +205,23 @@ export function KafkaLayout() {
           {getNodesTabTitle(nodesTab)}
         </BreadcrumbItem>
       )}
+      {isNodeDetailPage && (
+        <BreadcrumbItem>
+          <Link to={`/kafka/${kafkaId}/nodes`}>
+            {t('kafka.nodes')}
+          </Link>
+        </BreadcrumbItem>
+      )}
+      {isNodeDetailPage && (
+        <BreadcrumbItem>
+          {t('nodes.brokerTitle', { nodeId })}
+        </BreadcrumbItem>
+      )}
+      {isNodeDetailPage && nodeTab && nodeTab !== nodeId && (
+        <BreadcrumbItem isActive>
+          {getNodeTabTitle(nodeTab)}
+        </BreadcrumbItem>
+      )}
       {isConnectPage && (
         <BreadcrumbItem>
           {t('kafka.connect.title')}
@@ -211,7 +256,7 @@ export function KafkaLayout() {
           {username}
         </BreadcrumbItem>
       )}
-      {!isTopicDetailPage && !isNodesPage && !isConnectPage && !isGroupDetailPage && !isUserDetailPage && currentPage !== kafkaId && (
+      {!isTopicDetailPage && !isNodesPage && !isNodeDetailPage && !isConnectPage && !isGroupDetailPage && !isUserDetailPage && currentPage !== kafkaId && (
         <BreadcrumbItem isActive>
           {getPageTitle(currentPage)}
         </BreadcrumbItem>

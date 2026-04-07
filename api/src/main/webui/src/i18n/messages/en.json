@@ -291,6 +291,7 @@
   },
   "nodes": {
     "title": "Nodes",
+    "brokerTitle": "Broker {{nodeId}}",
     "nodeId": "Node ID",
     "brokerId": "Broker ID",
     "host": "Host",
