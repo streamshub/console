@@ -19,6 +19,9 @@ import {
   Switch,
   Tooltip,
   Icon,
+  Label,
+  Split,
+  SplitItem,
 } from '@patternfly/react-core';
 import { HelpIcon } from '@patternfly/react-icons';
 import {
@@ -80,6 +83,7 @@ export function TopicsPage() {
   const topics = data?.data || [];
   const totalItems = data?.meta.page.total || 0;
   const currentPage = data?.meta.page.pageNumber || 1;
+  const statusSummary = data?.meta.summary?.statuses;
 
   const handleSort = (column: SortableColumn) => {
     if (sortBy === column) {
@@ -281,7 +285,44 @@ export function TopicsPage() {
     <>
       <PageSection>
         <Title headingLevel="h1" size="2xl">
-          {t('topics.title')}
+          <Split hasGutter style={{ alignItems: 'center', display: 'flex' }}>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>{t('topics.title')}</SplitItem>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
+              <Label icon={isLoading ? <Spinner size="sm" /> : undefined}>
+                {totalItems}&nbsp;total
+              </Label>
+            </SplitItem>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
+              <Tooltip content={t('topics.statusLabels.fullyReplicatedTooltip', 'Number of topics in sync')}>
+                <Label
+                  icon={isLoading ? <Spinner size="sm" /> : <CheckCircleIcon />}
+                  color="green"
+                >
+                  {statusSummary?.FullyReplicated ?? 0}
+                </Label>
+              </Tooltip>
+            </SplitItem>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
+              <Tooltip content={t('topics.statusLabels.underReplicatedTooltip', 'Number of topics under replicated')}>
+                <Label
+                  icon={isLoading ? <Spinner size="sm" /> : <ExclamationTriangleIcon />}
+                  color="orange"
+                >
+                  {(statusSummary?.UnderReplicated ?? 0) + (statusSummary?.PartiallyOffline ?? 0) + (statusSummary?.Unknown ?? 0)}
+                </Label>
+              </Tooltip>
+            </SplitItem>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
+              <Tooltip content={t('topics.statusLabels.offlineTooltip', 'Number of topics not available')}>
+                <Label
+                  icon={isLoading ? <Spinner size="sm" /> : <ExclamationCircleIcon />}
+                  color="red"
+                >
+                  {statusSummary?.Offline ?? 0}
+                </Label>
+              </Tooltip>
+            </SplitItem>
+          </Split>
         </Title>
       </PageSection>
       <PageSection>

@@ -136,6 +136,16 @@ export interface TopicsResponse {
       total: number;
       pageNumber: number;
     };
+    summary: {
+      statuses: {
+        FullyReplicated?: number;
+        UnderReplicated?: number;
+        PartiallyOffline?: number;
+        Offline?: number;
+        Unknown?: number;
+      };
+      totalPartitions: number;
+    };
   };
   links: {
     next?: string;

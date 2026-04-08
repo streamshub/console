@@ -141,6 +141,11 @@
       "Offline": "Offline",
       "Unknown": "Unknown"
     },
+    "statusLabels": {
+      "fullyReplicatedTooltip": "Number of topics in sync",
+      "underReplicatedTooltip": "Number of topics under replicated",
+      "offlineTooltip": "Number of topics not available"
+    },
     "tabs": {
       "messages": "Messages",
       "partitions": "Partitions",
@@ -383,6 +388,10 @@
       "brokerNodeCount": "Broker {{node}}: {{count}} ({{percentage}}%)",
       "brokerNodeCountMissing": "Broker {{node}}: N/A",
       "metricsUnavailable": "Metrics are not available for this cluster"
+    },
+    "statusLabels": {
+      "healthyTooltip": "Number of healthy nodes",
+      "unhealthyTooltip": "Number of unhealthy nodes"
     }
   },
   "rebalancing": {
