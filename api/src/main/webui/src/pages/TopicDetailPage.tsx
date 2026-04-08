@@ -4,6 +4,7 @@
 
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
 import {
   PageSection,
   Tabs,
@@ -15,6 +16,7 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { useTopic } from '../api/hooks/useTopics';
+import { useViewedTopics } from '../api/hooks/useViewedTopics';
 import { ManagedTopicLabel } from '../components/ManagedTopicLabel';
 
 export function TopicDetailPage() {
@@ -23,6 +25,17 @@ export function TopicDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data, isLoading, error } = useTopic(kafkaId, topicId);
+  const { addViewedTopic } = useViewedTopics(kafkaId);
+
+  // Track this topic as viewed when data is loaded
+  useEffect(() => {
+    if (data?.data && kafkaId && topicId) {
+      const topicName = data.data.attributes.name;
+      if (topicName) {
+        addViewedTopic(topicId, topicName);
+      }
+    }
+  }, [data, kafkaId, topicId, addViewedTopic]);
 
   // Determine active tab from URL
   const pathSegments = location.pathname.split('/').filter(Boolean);

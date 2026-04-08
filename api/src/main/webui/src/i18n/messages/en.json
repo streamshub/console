@@ -569,6 +569,8 @@
   },
   "RecentTopicsCard": {
     "recent_topics": "Recent topics",
+    "recent_topics_subtitle": "The last 5 topics this account has accessed from the StreamsHub console.",
+    "recent_topics_tooltip": "When you start looking at specific topics through the StreamsHub console, they'll start showing here.",
     "no_recent_topics": "No recent topics",
     "no_recent_topics_description": "Topics you view will appear here for quick access"
   },
