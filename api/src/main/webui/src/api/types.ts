@@ -740,3 +740,48 @@ export interface UsersResponse {
 export interface UserResponse {
   data: KafkaUser;
 }
+
+// Reset Offset types
+export type OffsetValue = 'custom' | 'latest' | 'earliest' | 'specificDateTime' | 'delete';
+export type DateTimeFormat = 'ISO' | 'Epoch';
+export type TopicSelection = 'allTopics' | 'selectedTopic';
+export type PartitionSelection = 'allPartitions' | 'selectedPartition';
+
+export interface OffsetResetRequest {
+  topicId: string;
+  partition?: number;
+  offset: string | number | null;
+  metadata?: string;
+}
+
+export interface OffsetResetResult {
+  topicId?: string;
+  topicName: string;
+  partition: number;
+  offset: number | null;
+  metadata?: string;
+}
+
+export interface ResetOffsetFormState {
+  topicSelection: TopicSelection;
+  selectedTopicId?: string;
+  selectedTopicName?: string;
+  partitionSelection: PartitionSelection;
+  selectedPartition?: number;
+  offsetValue: OffsetValue;
+  customOffset?: number;
+  dateTime?: string;
+  dateTimeFormat: DateTimeFormat;
+}
+
+export type ResetOffsetErrorType =
+  | 'CustomOffsetError'
+  | 'PartitionError'
+  | 'KafkaError'
+  | 'SpecificDateTimeNotValidError'
+  | 'GeneralError';
+
+export interface ResetOffsetError {
+  type: ResetOffsetErrorType;
+  message: string;
+}

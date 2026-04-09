@@ -45,6 +45,12 @@ Project policy disallows `@author` in Javadoc (hard to maintain).
 **UI - PatternFly packages optimization:**
 `vite.config.ts` includes PatternFly packages in `optimizeDeps` for proper bundling and performance.
 
+**UI - PatternFly version:**
+- Project uses PatternFly v6 (check `api/src/main/webui/package.json` for exact version)
+- Always verify PatternFly component APIs match v6 documentation
+- Avoid version-specific class names or props when possible
+- Reference existing components in codebase for correct usage patterns
+
 ## Testing Patterns
 
 **System tests use @TestBucket annotation:**

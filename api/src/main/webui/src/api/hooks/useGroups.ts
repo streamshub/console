@@ -2,9 +2,16 @@
  * TanStack Query hooks for Groups
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import { GroupsResponse, Group, GroupState, GroupType } from '../types';
+import {
+  GroupsResponse,
+  Group,
+  GroupState,
+  GroupType,
+  OffsetResetRequest,
+  ApiResponse,
+} from '../types';
 
 /**
  * Fetch groups for a Kafka cluster
@@ -180,5 +187,42 @@ export function useGroup(
     },
     enabled: !!kafkaId && !!groupId,
     refetchInterval: 5000, // Auto-refresh every 5 seconds
+  });
+}
+
+/**
+ * Hook for resetting consumer group offsets
+ */
+export function useResetGroupOffsets(kafkaId: string, groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      offsets,
+      dryRun = false,
+    }: {
+      offsets: OffsetResetRequest[];
+      dryRun?: boolean;
+    }) => {
+      const response = await apiClient.patch<ApiResponse<Group>>(
+        `/api/kafkas/${kafkaId}/groups/${encodeURIComponent(groupId)}`,
+        {
+          meta: { dryRun },
+          data: {
+            type: 'groups',
+            id: groupId,
+            attributes: { offsets },
+          },
+        }
+      );
+      return response;
+    },
+    onSuccess: (data, variables) => {
+      if (!variables.dryRun) {
+        // Invalidate group queries to refresh data after successful reset
+        queryClient.invalidateQueries({ queryKey: ['group', kafkaId, groupId] });
+        queryClient.invalidateQueries({ queryKey: ['groups', kafkaId] });
+      }
+    },
   });
 }

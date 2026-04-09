@@ -2,6 +2,7 @@
  * Group Detail Page - Shows details of a specific consumer group with tabs
  */
 
+import { useState } from 'react';
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,8 +14,12 @@ import {
   EmptyState,
   EmptyStateBody,
   Spinner,
+  Button,
+  Flex,
+  FlexItem,
 } from '@patternfly/react-core';
 import { useGroup } from '../api/hooks/useGroups';
+import { ResetOffsetModal } from '../components/ResetOffset';
 
 export function GroupDetailPage() {
   const { t } = useTranslation();
@@ -22,6 +27,9 @@ export function GroupDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: group, isLoading, error } = useGroup(kafkaId, groupId);
+
+  // Reset offset modal state
+  const [isResetOffsetModalOpen, setIsResetOffsetModalOpen] = useState(false);
 
   // Determine active tab from URL
   const pathSegments = location.pathname.split('/').filter(Boolean);
@@ -61,13 +69,37 @@ export function GroupDetailPage() {
   }
 
   const groupName = group?.attributes.groupId || groupId || '';
+  const canResetOffset = group?.attributes.state === 'EMPTY' && group?.attributes.protocol === 'consumer';
+
+  const handleResetOffset = () => {
+    setIsResetOffsetModalOpen(true);
+  };
+
+  const handleCloseResetOffsetModal = () => {
+    setIsResetOffsetModalOpen(false);
+  };
 
   return (
     <>
       <PageSection>
-        <Title headingLevel="h1" size="2xl">
-          {groupName}
-        </Title>
+        <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
+          <FlexItem>
+            <Title headingLevel="h1" size="2xl">
+              {groupName}
+            </Title>
+          </FlexItem>
+          {group && (
+            <FlexItem>
+              <Button
+                variant="secondary"
+                onClick={handleResetOffset}
+                isDisabled={!canResetOffset}
+              >
+                {t('groups.resetOffsetAction')}
+              </Button>
+            </FlexItem>
+          )}
+        </Flex>
       </PageSection>
       <PageSection>
         <Tabs
@@ -89,6 +121,15 @@ export function GroupDetailPage() {
         </Tabs>
       </PageSection>
       <Outlet context={{ group }} />
+
+      {group && (
+        <ResetOffsetModal
+          isOpen={isResetOffsetModalOpen}
+          onClose={handleCloseResetOffsetModal}
+          kafkaId={kafkaId!}
+          group={group}
+        />
+      )}
     </>
   );
 }

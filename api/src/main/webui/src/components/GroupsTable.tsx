@@ -10,6 +10,11 @@ import {
   LabelGroup,
   Icon,
   Tooltip,
+  Dropdown,
+  DropdownList,
+  DropdownItem,
+  MenuToggle,
+  MenuToggleElement,
 } from '@patternfly/react-core';
 import {
   Table,
@@ -19,6 +24,7 @@ import {
   Tbody,
   Td,
   ThProps,
+  ActionsColumn,
 } from '@patternfly/react-table';
 import {
   CheckCircleIcon,
@@ -32,6 +38,7 @@ import {
   HelpIcon,
 } from '@patternfly/react-icons';
 import { Group, GroupState } from '../api/types';
+import { useState } from 'react';
 
 type SortableColumn = 'groupId' | 'type' | 'protocol' | 'state';
 
@@ -41,6 +48,7 @@ interface GroupsTableProps {
   sortBy?: SortableColumn;
   sortDirection?: 'asc' | 'desc';
   onSort?: (column: SortableColumn) => void;
+  onResetOffset?: (group: Group) => void;
 }
 
 const StateLabel: Record<GroupState, { label: React.ReactNode }> = {
@@ -126,7 +134,7 @@ const StateLabel: Record<GroupState, { label: React.ReactNode }> = {
   },
 };
 
-export function GroupsTable({ groups, kafkaId, sortBy, sortDirection, onSort }: GroupsTableProps) {
+export function GroupsTable({ groups, kafkaId, sortBy, sortDirection, onSort, onResetOffset }: GroupsTableProps) {
   const { t } = useTranslation();
 
   const getSortParams = (columnName: SortableColumn): ThProps['sort'] | undefined => {
@@ -214,6 +222,7 @@ export function GroupsTable({ groups, kafkaId, sortBy, sortDirection, onSort }: 
             </Tooltip>
           </Th>
           <Th width={25}>{t('groups.topics')}</Th>
+          {onResetOffset && <Th />}
         </Tr>
       </Thead>
       <Tbody>
@@ -221,6 +230,7 @@ export function GroupsTable({ groups, kafkaId, sortBy, sortDirection, onSort }: 
           const state = group.attributes.state;
           const topics = getTopics(group);
           const lag = calculateLag(group);
+          const canResetOffset = state === 'EMPTY' && group.attributes.protocol === 'consumer';
 
           return (
             <Tr key={group.id}>
@@ -267,6 +277,27 @@ export function GroupsTable({ groups, kafkaId, sortBy, sortDirection, onSort }: 
                   ))}
                 </LabelGroup>
               </Td>
+              {onResetOffset && (
+                <Td isActionCell>
+                  <ActionsColumn
+                    items={[
+                      {
+                        title: t('groups.resetOffsetAction'),
+                        description:
+                          group.attributes.protocol !== 'consumer'
+                            ? t('groups.resetOffsetDisabledDescriptionNonConsumer', {
+                                protocol: group.attributes.protocol,
+                              })
+                            : state === 'EMPTY'
+                              ? undefined
+                              : t('groups.resetOffsetDisabledDescription'),
+                        onClick: () => onResetOffset(group),
+                        isDisabled: !canResetOffset,
+                      },
+                    ]}
+                  />
+                </Td>
+              )}
             </Tr>
           );
         })}

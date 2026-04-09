@@ -37,7 +37,8 @@ import {
 } from '@patternfly/react-icons';
 import { useGroups } from '../api/hooks/useGroups';
 import { GroupsTable } from '../components/GroupsTable';
-import { GroupState, GroupType } from '../api/types';
+import { ResetOffsetModal } from '../components/ResetOffset';
+import { GroupState, GroupType, Group } from '../api/types';
 
 const GROUP_TYPES: GroupType[] = ['Classic', 'Consumer', 'Share', 'Streams'];
 
@@ -154,6 +155,10 @@ export function GroupsPage() {
   const [sortBy, setSortBy] = useState<'groupId' | 'type' | 'protocol' | 'state'>('groupId');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // Reset offset modal state
+  const [isResetOffsetModalOpen, setIsResetOffsetModalOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+
   // Fetch groups
   const { data, isLoading, error } = useGroups(kafkaId, {
     id: searchValue || undefined,
@@ -219,6 +224,16 @@ export function GroupsPage() {
     }
     setPage(1);
     setPageCursor(undefined);
+  };
+
+  const handleResetOffset = (group: Group) => {
+    setSelectedGroup(group);
+    setIsResetOffsetModalOpen(true);
+  };
+
+  const handleCloseResetOffsetModal = () => {
+    setIsResetOffsetModalOpen(false);
+    setSelectedGroup(null);
   };
 
   if (error) {
@@ -367,6 +382,7 @@ export function GroupsPage() {
             sortBy={sortBy}
             sortDirection={sortDirection}
             onSort={handleSort}
+            onResetOffset={handleResetOffset}
           />
           <Toolbar>
             <ToolbarContent>
@@ -385,6 +401,15 @@ export function GroupsPage() {
         </>
       )}
       </PageSection>
+
+      {selectedGroup && (
+        <ResetOffsetModal
+          isOpen={isResetOffsetModalOpen}
+          onClose={handleCloseResetOffsetModal}
+          kafkaId={kafkaId!}
+          group={selectedGroup}
+        />
+      )}
     </>
   );
 }
