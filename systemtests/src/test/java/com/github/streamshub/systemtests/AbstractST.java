@@ -30,8 +30,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 public abstract class AbstractST {
     private static boolean initialized = false;
     // Operators
-    protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
-    protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
+    protected StrimziOperatorSetup strimziOperatorSetup;
+    protected ConsoleOperatorSetup consoleOperatorSetup;
 
     @BeforeAll
     void setupTestSuite(ExtensionContext extensionContext) {
@@ -41,7 +41,12 @@ public abstract class AbstractST {
         }
 
         KubeResourceManager.get().setTestContext(extensionContext);
+        // Now ENV are set, install operators
+
         NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
+        strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
+        consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
+
         strimziOperatorSetup.install();
         consoleOperatorSetup.install();
     }
