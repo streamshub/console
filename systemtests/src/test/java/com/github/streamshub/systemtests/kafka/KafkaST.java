@@ -1,5 +1,13 @@
 package com.github.streamshub.systemtests.kafka;
 
+import java.util.List;
+
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
@@ -7,8 +15,6 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
-import com.github.streamshub.systemtests.enums.ConditionStatus;
-import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
@@ -23,22 +29,21 @@ import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
+import com.microsoft.playwright.Locator.ClickOptions;
+import com.microsoft.playwright.assertions.LocatorAssertions;
+import com.microsoft.playwright.assertions.PlaywrightAssertions;
+
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
+import io.strimzi.api.kafka.model.common.Condition;
 import io.strimzi.api.kafka.model.kafka.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
 public class KafkaST extends AbstractST {
@@ -263,16 +268,58 @@ public class KafkaST extends AbstractST {
     void testDisplayKafkaWarnings() {
         final TestCaseConfig tcc = getTestCaseConfig();
 
-        LOGGER.info("Verify default Kafka state - expecting no warnings or errors");
+        List<String> initialWarningMessages = KafkaUtils.warningConditions(tcc.namespace(), tcc.kafkaName())
+                .stream()
+                .map(Condition::getMessage)
+                .toList();
+
+        LOGGER.info("Verify default Kafka state - expecting {} warnings/errors", initialWarningMessages.size());
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+
         // Open warnings
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+        var warningsToggle = tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+        PlaywrightAssertions.assertThat(warningsToggle).isVisible();
 
         // Check warnings list
-        LOGGER.debug("Verify warnings list contains only one row with `No messages` text");
-        PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
-        PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), MessageStore.clusterCardNoMessages(), true);
+        var messageItems = tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
+        Runnable initialStateAssertions;
+
+        /*
+         * Two possible initial states:
+         * - the list has warnings and is expanded by default
+         * - the list is empty and is collapsed by default
+         */
+        if (!initialWarningMessages.isEmpty()) {
+            initialStateAssertions = () -> {
+                messageItems.all()
+                    .stream()
+                    .map(PlaywrightAssertions::assertThat)
+                    .forEach(LocatorAssertions::isVisible);
+                PlaywrightAssertions
+                    .assertThat(messageItems)
+                    .hasCount(initialWarningMessages.size());
+                PlaywrightAssertions
+                    .assertThat(messageItems)
+                    .not()
+                    .containsText(MessageStore.clusterCardNoMessages());
+            };
+        } else {
+            initialStateAssertions = () -> {
+                LOGGER.debug("Verify warnings list contains only one row with `No messages` text");
+                warningsToggle.click(new ClickOptions().setForce(true));
+                PlaywrightAssertions
+                    .assertThat(messageItems)
+                    .isVisible();
+                PlaywrightAssertions
+                    .assertThat(messageItems)
+                    .hasCount(1);
+                PlaywrightAssertions
+                    .assertThat(messageItems)
+                    .containsText(MessageStore.clusterCardNoMessages());
+            };
+        }
+
+        initialStateAssertions.run();
 
         // Make kafka fail
         LOGGER.info("Cause Kafka status to display Warning state by setting DeprecatedFields");
@@ -284,26 +331,34 @@ public class KafkaST extends AbstractST {
                     .build());
             });
 
-        WaitUtils.waitForKafkaHasWarningStatus(tcc.namespace(), tcc.kafkaName());
+        WaitUtils.waitForKafkaCondition(tcc.namespace(), tcc.kafkaName(), k -> {
+            var warningCount = KafkaUtils.warningConditions(k).size();
+            return warningCount == initialWarningMessages.size() + 1;
+        });
 
         // Expect a warning message
-        String warningMessage = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()).getStatus().getConditions().stream()
-            .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()) && condition.getStatus().equals(ConditionStatus.TRUE.toString()))
-            .toList().getFirst().getMessage();
-        LOGGER.debug("Kafka currently contains warning message: [{}]", warningMessage);
+        List<String> warningMessages = KafkaUtils.warningConditions(tcc.namespace(), tcc.kafkaName())
+                .stream()
+                .map(Condition::getMessage)
+                .toList();
+        LOGGER.debug("Kafka currently contains warning messages: {}", warningMessages);
 
         // Reload using on page button
         PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_HEADER_RELOAD_BUTTON);
 
         // Check warnings list
-        LOGGER.debug("Verify warnings list now contains one row with warning message");
-        PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
-        PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
+        LOGGER.debug("Verify warnings list now contains {} row(s) with warning messages", warningMessages.size());
 
-        assertTrue(PwUtils.locatorContainsText(
-            tcc.page().locator(new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build()),
-            warningMessage,
-            true));
+        PlaywrightAssertions
+            .assertThat(messageItems)
+            .hasCount(warningMessages.size());
+        messageItems.all()
+            .stream()
+            .map(PlaywrightAssertions::assertThat)
+            .forEach(LocatorAssertions::isVisible);
+        PlaywrightAssertions
+            .assertThat(messageItems)
+            .containsText(warningMessages.toArray(String[]::new));
 
         // Remove wrong config
         LOGGER.info("Remove incorrect Kafka config to get rid off the warning from UI status");
@@ -313,16 +368,14 @@ public class KafkaST extends AbstractST {
             }
         );
 
-        WaitUtils.waitForKafkaHasNoWarningStatus(tcc.namespace(), tcc.kafkaName());
+        WaitUtils.waitForKafkaCondition(tcc.namespace(), tcc.kafkaName(), k -> {
+            var warningCount = KafkaUtils.warningConditions(k).size();
+            return warningCount == initialWarningMessages.size();
+        });
 
-        LOGGER.debug("Reload page and verify that there is `No messages` in the warnings list again");
+        LOGGER.debug("Reload page and verify the initial assertions are again true");
         tcc.page().reload(PwUtils.getDefaultReloadOpts());
-
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
-
-        PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
-        PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), MessageStore.clusterCardNoMessages(), true);
+        initialStateAssertions.run();
     }
 
     @AfterEach

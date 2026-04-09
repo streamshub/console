@@ -11,7 +11,7 @@ import {
   ExclamationTriangleIcon,
   HelpIcon,
 } from "@/libs/patternfly/react-icons";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Th, ThSortType } from "@/libs/patternfly/react-table";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
@@ -102,9 +102,10 @@ export type TopicsTableProps = {
   onFilterIdChange: (id: string | undefined) => void;
   onFilterNameChange: (name: string | undefined) => void;
   onFilterStatusChange: (status: TopicStatus[] | undefined) => void;
+  sortProvider: (col: TopicsTableColumn) => ThSortType | undefined;
 } & Pick<
   TableViewProps<TopicListItem, (typeof TopicsTableColumns)[number]>,
-  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
+  "onPageChange" | "onClearAllFilters"
 >;
 
 export function TopicsTable({
@@ -114,7 +115,6 @@ export function TopicsTable({
   page,
   perPage,
   includeHidden,
-  isColumnSortable,
   isReadOnly,
   filterId,
   filterName,
@@ -128,6 +128,7 @@ export function TopicsTable({
   onFilterIdChange,
   onFilterNameChange,
   onFilterStatusChange,
+  sortProvider,
 }: TopicsTableProps) {
   const t = useTranslations("topics");
   return (
@@ -154,18 +155,20 @@ export function TopicsTable({
       }
       ariaLabel={"Topics"}
       columns={TopicsTableColumns}
-      isColumnSortable={isColumnSortable}
-      renderHeader={({ Th, column, key }) => {
+      sortProvider={sortProvider}
+      renderHeader={({ column, key }) => {
+        const sortAction = sortProvider(column);
+
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={30} dataLabel={"Topic"}>
+              <Th key={key} width={30} dataLabel={"Topic"} sort={sortAction}>
                 {t("topic_name")}
               </Th>
             );
           case "status":
             return (
-              <Th key={key} dataLabel={"Status"}>
+              <Th key={key} dataLabel={"Status"} sort={sortAction}>
                 {t("status")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
@@ -177,19 +180,19 @@ export function TopicsTable({
             );
           case "groups":
             return (
-              <Th key={key} dataLabel={"Groups"}>
+              <Th key={key} dataLabel={"Groups"} sort={sortAction}>
                 {t("consumer_groups")}
               </Th>
             );
           case "partitions":
             return (
-              <Th key={key} dataLabel={"Partitions"}>
+              <Th key={key} dataLabel={"Partitions"} sort={sortAction}>
                 {t("fields.partitions")}
               </Th>
             );
           case "storage":
             return (
-              <Th key={key} dataLabel={"Storage"}>
+              <Th key={key} dataLabel={"Storage"} sort={sortAction}>
                 {t("storage")}
               </Th>
             );

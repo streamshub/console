@@ -7,6 +7,7 @@ const withNextIntl = require("next-intl/plugin")(
 
 const nextConfig = {
   output: "standalone",
+  outputFileTracingRoot: __dirname,
   experimental: {
     // typedRoutes: true, // disabled until next-intl is compatible with this
   },
@@ -14,6 +15,7 @@ const nextConfig = {
     //ignoreBuildErrors: true,
   },
   transpilePackages: [
+    "@patternfly/patternfly",
     "@patternfly/quickstarts",
     "@patternfly/react-core",
     "@patternfly/react-styles",

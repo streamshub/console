@@ -6,5 +6,5 @@ import {
 export default function TopicHeaderNoRefresh(
   props: Omit<TopicHeaderProps, "showRefresh">,
 ) {
-  return <TopicHeader {...props} showRefresh={false} />;
+  return <TopicHeader {...props} showRefresh={true} />;
 }

@@ -4,19 +4,20 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { KafkaParams } from "../../kafka.params";
 
-export default function NodesActiveBreadcrumbPage({
-  params: { kafkaId },
+export default async function NodesActiveBreadcrumbPage({
+  params: paramsPromise,
 }: {
-  params: KafkaParams;
+  params: Promise<KafkaParams>;
 }) {
+  const { kafkaId } = await paramsPromise;
   return <NodesActiveBreadcrumb kafkaId={kafkaId} />;
 }
 
-function NodesActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
-  const t = useTranslations();
+async function NodesActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
+  const t = await getTranslations();
 
   return (
     <Breadcrumb>

@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 
 type Props = {
   children: ReactNode;
@@ -13,7 +13,9 @@ export default function RootLayout({ children }: Props) {
   return (
     <html lang="en">
       <body>
-        <div id="root">{children}</div>
+        <Suspense fallback={<div>Loading...</div>}>
+          <div id="root">{children}</div>
+        </Suspense>
       </body>
     </html>
   );

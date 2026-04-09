@@ -7,19 +7,31 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { ConfigTable } from "./ConfigTable";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export async function generateMetadata(props: { params: { kafkaId: string, groupId: string} }) {
+export async function generateMetadata({
+  params: paramsPromise,
+} : {
+  params: Promise<GroupParams>;
+}) {
+  const { kafkaId, groupId } = await paramsPromise;
   const t = await getTranslations();
+  const group = (await getConsumerGroup(kafkaId, groupId)).payload;
+  let groupIdDisplay = "";
+
+  if (group) {
+    groupIdDisplay = group.attributes.groupId;
+  }
 
   return {
-    title: `${t("Group.title")} ${props.params.groupId} | ${t("common.title")}`,
+    title: `${t("Group.title")} ${groupIdDisplay} | ${t("common.title")}`,
   };
 }
 
 export default async function NodeDetails({
-  params: { kafkaId, groupId },
+  params: paramsPromise,
 }: {
-  params: GroupParams;
+  params: Promise<GroupParams>;
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
   const response = await getConsumerGroup(kafkaId, groupId, { fields: "groupId,type,protocol,state,configs" });
 
   if (response.errors) {

@@ -1,4 +1,6 @@
-import { getKafkaCluster } from "@/api/kafka/actions";
+"use client";
+
+import { ClusterDetail } from "@/api/kafka/schema";
 import { ExpandableSection } from "@/components/ExpandableSection";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import {
@@ -15,10 +17,10 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { clientConfig as config } from "@/utils/config";
 
-export async function ClusterConnectionDetails({
-  clusterId,
+export function ClusterConnectionDetailsClient({
+  data,
 }: {
-  clusterId: string;
+  data: ClusterDetail;
 }) {
   const [showLearning, setShowLearning] = useState(false);
 
@@ -29,13 +31,10 @@ export async function ClusterConnectionDetails({
   }, []);
 
   const t = useTranslations();
-  const data = (await getKafkaCluster(clusterId))?.payload;
-  if (!data) {
-    return null;
-  }
   const listeners = data.attributes.listeners || [];
   const external = listeners.filter((l) => l.type !== "internal");
   const internal = listeners.filter((l) => l.type === "internal");
+
   return (
     <Stack>
       <StackItem isFilled={true}>

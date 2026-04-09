@@ -49,7 +49,7 @@ export function AppMasthead({
 }) {
   const t = useTranslations();
   const { toggleSidebar } = useAppLayout();
-  const { isDarkMode } = useColorTheme();
+  const { brandLogo } = useColorTheme();
 
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
@@ -84,11 +84,7 @@ export function AppMasthead({
           <MastheadBrand>
             <MastheadLogo href="/" target="_blank">
               <Brand
-                src={
-                  isDarkMode
-                    ? "/full_logo_hori_reverse.svg"
-                    : "/full_logo_hori_default.svg"
-                }
+                src={brandLogo}
                 alt={t("common.title")}
                 heights={{ default: "56px" }}
               />
@@ -168,11 +164,7 @@ export function AppMasthead({
         onClose={(
           e: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent,
         ) => toggleAboutModal(e)}
-        brandImageSrc={
-          isDarkMode
-            ? "/full_logo_hori_reverse.svg"
-            : "/full_logo_hori_default.svg"
-        }
+        brandImageSrc={brandLogo}
         brandImageAlt="Brand Logo"
         productName={t("common.title")}
       >

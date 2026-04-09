@@ -4,7 +4,6 @@ export const ClusterDrawerContext = createContext<{
   open: (clusterId: string) => void;
   close: () => void;
   expanded: boolean;
-  clusterId: string | undefined;
 }>(null!);
 
 export function useOpenClusterConnectionPanel() {

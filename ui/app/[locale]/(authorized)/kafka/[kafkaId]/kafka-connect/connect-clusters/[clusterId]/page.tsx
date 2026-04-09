@@ -7,20 +7,23 @@ import { ConnectClusterDetails } from "./ConnectClusterDetails";
 import { ConnectorState } from "@/api/kafkaConnect/schema";
 
 export async function generateMetadata(props: {
-  params: { kafkaId: string; clusterId: string };
+  params: Promise<{ kafkaId: string; clusterId: string }>;
 }) {
+  const params = await props.params;
   const t = await getTranslations();
 
   return {
-    title: `${t("KafkaConnect.connect_clusters_title")} ${props.params.clusterId} | ${t("common.title")}`,
+    title: `${t("KafkaConnect.connect_clusters_title")} ${params.clusterId} | ${t("common.title")}`,
   };
 }
 
-export default function ConnectClusterPage({
-  params,
+export default async function ConnectClusterPage({
+  params: paramsPromise,
 }: {
-  params: { kafkaId: string; clusterId: string };
+  params: Promise<{ kafkaId: string; clusterId: string }>;
 }) {
+  const params = await paramsPromise;
+
   return (
     <PageSection>
       <Suspense
