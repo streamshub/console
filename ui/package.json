@@ -28,7 +28,7 @@
     "@stdlib/string-truncate-middle": "^0.2.3",
     "@tanstack/react-virtual": "^3.13.23",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "25.5.2",
+    "@types/node": "25.6.0",
     "@types/react-highlight-words": "^0.20.1",
     "classnames": "^2.5.1",
     "convert": "^7.0.0",
