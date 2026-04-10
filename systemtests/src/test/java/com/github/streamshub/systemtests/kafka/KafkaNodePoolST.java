@@ -17,7 +17,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.github.streamshub.systemtests.utils.testchecks.KafkaNodePoolChecks;
+import com.github.streamshub.systemtests.utils.testchecks.KafkaNodesChecks;
 import com.github.streamshub.systemtests.utils.testutils.KafkaTestUtils;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -85,23 +85,23 @@ public class KafkaNodePoolST extends AbstractST {
         List<Integer> brokerIds = Stream.of(defaultBrokerIds, addedBrokerIds).flatMap(List::stream).toList();
         int totalNodeCount = brokerIds.size() + defaultControllerIds.size();
 
-        KafkaNodePoolChecks.checkDefaultNodeState(tcc, brokerIds, defaultControllerIds);
+        KafkaNodesChecks.checkDefaultNodeState(tcc, brokerIds, defaultControllerIds);
 
         // Filter brokers
         LOGGER.info("Filtering default broker node pool: {}", KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         KafkaTestUtils.filterKnpByName(tcc, KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
-        KafkaNodePoolChecks.checkFilterTypeResults(tcc, defaultBrokerIds, ProcessRoles.BROKER.toValue(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
+        KafkaNodesChecks.checkFilterTypeResults(tcc, defaultBrokerIds, ProcessRoles.BROKER.toValue(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         KafkaTestUtils.resetKnpFilters(tcc, totalNodeCount);
 
         LOGGER.info("Filtering additional broker node pool: {}", ADDITIONAL_BRK_KNP_NAME);
         KafkaTestUtils.filterKnpByName(tcc, ADDITIONAL_BRK_KNP_NAME);
-        KafkaNodePoolChecks.checkFilterTypeResults(tcc, addedBrokerIds, ProcessRoles.BROKER.toValue(), ADDITIONAL_BRK_KNP_NAME);
+        KafkaNodesChecks.checkFilterTypeResults(tcc, addedBrokerIds, ProcessRoles.BROKER.toValue(), ADDITIONAL_BRK_KNP_NAME);
         KafkaTestUtils.resetKnpFilters(tcc, totalNodeCount);
 
         // Filter controllers
         LOGGER.info("Filtering default controller node pool: {}", KafkaNamingUtils.controllerPoolName(tcc.kafkaName()));
         KafkaTestUtils.filterKnpByName(tcc, KafkaNamingUtils.controllerPoolName(tcc.kafkaName()));
-        KafkaNodePoolChecks.checkFilterTypeResults(tcc, defaultControllerIds, ProcessRoles.CONTROLLER.toValue(), KafkaNamingUtils.controllerPoolName(tcc.kafkaName()));
+        KafkaNodesChecks.checkFilterTypeResults(tcc, defaultControllerIds, ProcessRoles.CONTROLLER.toValue(), KafkaNamingUtils.controllerPoolName(tcc.kafkaName()));
         KafkaTestUtils.resetKnpFilters(tcc, totalNodeCount);
     }
 
@@ -148,14 +148,14 @@ public class KafkaNodePoolST extends AbstractST {
         List<Integer> brokerIds = Stream.of(defaultBrokerIds, addedBrokerIds).flatMap(List::stream).toList();
         int totalNodeCount = brokerIds.size() + defaultControllerIds.size();
 
-        KafkaNodePoolChecks.checkDefaultNodeState(tcc, brokerIds, defaultControllerIds);
+        KafkaNodesChecks.checkDefaultNodeState(tcc, brokerIds, defaultControllerIds);
 
         // Brokers
         LOGGER.info("Filtering Kafka nodes by role: {}", ProcessRoles.BROKER.toValue());
         KafkaTestUtils.filterKnpByRole(tcc, ProcessRoles.BROKER.toValue());
 
         LOGGER.debug("Validating that only broker nodes are displayed");
-        KafkaNodePoolChecks.checkFilterTypeResults(tcc, brokerIds, ProcessRoles.BROKER.toValue(), null);
+        KafkaNodesChecks.checkFilterTypeResults(tcc, brokerIds, ProcessRoles.BROKER.toValue(), null);
         KafkaTestUtils.resetKnpFilters(tcc, totalNodeCount);
 
         // Controllers
@@ -163,7 +163,7 @@ public class KafkaNodePoolST extends AbstractST {
         KafkaTestUtils.filterKnpByRole(tcc, ProcessRoles.CONTROLLER.toValue());
 
         LOGGER.debug("Validating that only controller nodes are displayed");
-        KafkaNodePoolChecks.checkFilterTypeResults(tcc, defaultControllerIds, ProcessRoles.CONTROLLER.toValue(), null);
+        KafkaNodesChecks.checkFilterTypeResults(tcc, defaultControllerIds, ProcessRoles.CONTROLLER.toValue(), null);
         KafkaTestUtils.resetKnpFilters(tcc, totalNodeCount);
     }
 

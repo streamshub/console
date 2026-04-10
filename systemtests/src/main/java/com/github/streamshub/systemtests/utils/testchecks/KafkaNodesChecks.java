@@ -3,20 +3,24 @@ package com.github.streamshub.systemtests.utils.testchecks;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
+import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.NodesPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.testutils.KafkaTestUtils;
+import com.microsoft.playwright.Page;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
-public class KafkaNodePoolChecks {
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
+public class KafkaNodesChecks {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaTestUtils.class);
 
-    private KafkaNodePoolChecks() {}
+    private KafkaNodesChecks() {}
 
     /**
      * Verifies the default Kafka node state in the UI.
@@ -38,11 +42,11 @@ public class KafkaNodePoolChecks {
         checkNodesPageKafkaNodes(tcc, brokerIds.size() + controllerIds.size());
 
         for (int brokerId : brokerIds) {
-            KafkaNodePoolChecks.checkKnpTableRow(tcc, brokerId + 1, brokerId, ProcessRoles.BROKER.toValue());
+            KafkaNodesChecks.checkKnpTableRow(tcc, brokerId + 1, brokerId, ProcessRoles.BROKER.toValue());
         }
 
         for (int controllerId : controllerIds) {
-            KafkaNodePoolChecks.checkKnpTableRow(tcc, controllerId + 1, controllerId, ProcessRoles.CONTROLLER.toValue());
+            KafkaNodesChecks.checkKnpTableRow(tcc, controllerId + 1, controllerId, ProcessRoles.CONTROLLER.toValue());
         }
     }
 
@@ -50,7 +54,8 @@ public class KafkaNodePoolChecks {
         LOGGER.info("Verify kafka nodes on overview page");
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            brokerCount + "/" + brokerCount, TimeConstants.ACTION_WAIT_LONG);
+            brokerCount + "/" + brokerCount,
+            TimeConstants.ACTION_WAIT_LONG);
     }
 
     public static void checkNodesPageKafkaNodes(TestCaseConfig tcc, int totalNodeCount) {
@@ -93,5 +98,32 @@ public class KafkaNodePoolChecks {
         LOGGER.info("Verify kafka node table contains row:{}, nodeID: {}, role: {}", nthRow, expectedNodeId, expectedRole);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.getNodeTableRowItem(nthRow, 2), String.valueOf(expectedNodeId), false, false);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.getNodeTableRowItem(nthRow, 3), expectedRole, false, false);
+    }
+
+    public static void checkNodesPage(Page page, int brokers, int controllers, int warningsCount) {
+        final int totalNodes = brokers + controllers;
+        // Header
+        assertThat(page.locator(NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT))
+            .containsText(Integer.toString(totalNodes));
+        assertThat(page.locator(NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT))
+            .containsText(Integer.toString(totalNodes));
+        assertThat(page.locator(NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT))
+            .hasText(Integer.toString(warningsCount));
+
+        // Page infobox
+
+        // total nodes
+        assertThat(page.locator(new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(1).build()))
+            .containsText(Integer.toString(totalNodes));
+        // with controller role
+        assertThat(page.locator(new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(2).build()))
+            .containsText(Integer.toString(controllers));
+        // with broker role
+        assertThat(page.locator(new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build()))
+            .containsText(Integer.toString(brokers));
+
+        // Node table
+        assertThat(page.locator(NodesPageSelectors.NPS_TABLE_BODY))
+            .hasCount(totalNodes);
     }
 }

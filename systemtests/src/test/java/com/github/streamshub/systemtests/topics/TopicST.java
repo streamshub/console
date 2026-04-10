@@ -144,7 +144,7 @@ public class TopicST extends AbstractST {
             PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), true, true);
             PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT);
             PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, MessageStore.noDataTitle(), true);
-            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+            Utils.sleepWait(TimeConstants.COMPONENT_REACTION_TIME_SHORT);
         }
 
         LOGGER.info("Go to homepage and check the recently viewed card is not empty");

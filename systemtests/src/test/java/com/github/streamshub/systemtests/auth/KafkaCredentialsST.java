@@ -100,7 +100,8 @@ public class KafkaCredentialsST extends AbstractST {
         LOGGER.info("Check default kafka broker replicas count");
         PwUtils.waitForContainsText(tcc,
             ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, TimeConstants.ACTION_WAIT_LONG);
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS,
+            TimeConstants.ACTION_WAIT_LONG);
 
         LOGGER.debug("Verify default Kafka node count on Nodes page");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));

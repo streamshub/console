@@ -134,7 +134,7 @@ public class TopicsTestUtils {
             // Try selecting it
             tcc.page().focus(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
-            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+            Utils.sleepWait(TimeConstants.COMPONENT_REACTION_TIME_SHORT);
 
             String dropdownItemInput = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN_ITEMS)
                 .nth(topicStatus.getPosition())
@@ -143,7 +143,7 @@ public class TopicsTestUtils {
                 .build();
 
             PwUtils.waitForLocatorAndClick(tcc, dropdownItemInput);
-            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+            Utils.sleepWait(TimeConstants.COMPONENT_REACTION_TIME_SHORT);
 
             LOGGER.warn("Topic status [" + topicStatus.getName() + "] not yet selected");
             return false;

@@ -16,9 +16,7 @@ import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
@@ -29,6 +27,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
+import com.github.streamshub.systemtests.utils.testchecks.KafkaNodesChecks;
 import com.microsoft.playwright.Locator.ClickOptions;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.assertions.PlaywrightAssertions;
@@ -43,6 +42,9 @@ import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
+import static com.github.streamshub.systemtests.utils.playwright.PwUtils.getContainsOpts;
+import static com.github.streamshub.systemtests.utils.playwright.PwUtils.getDefaultVisibleOpts;
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TestTags.REGRESSION)
@@ -75,23 +77,25 @@ public class KafkaST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Open pop-up modal for pause reconciliation");
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, MessageStore.pauseReconciliationButton(), false);
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON);
+
+        assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON))
+            .containsText(MessageStore.pauseReconciliationButton());
+
+        tcc.page().locator(ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON).click();
 
         LOGGER.debug("Check pop-up modal for pause reconciliation");
-        PwUtils.waitForLocatorVisible(tcc, CssSelectors.PAGES_POPUP_MODAL);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_HEADER, MessageStore.pauseReconciliation(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_BODY, MessageStore.pauseReconciliationText(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, MessageStore.reconciliationCancel(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, MessageStore.reconciliationConfirm(), false);
+        assertThat(tcc.page().locator(CssSelectors.PAGES_POPUP_MODAL)).isVisible(getDefaultVisibleOpts());
+        assertThat(tcc.page().locator(CssSelectors.PAGES_POPUP_MODAL_HEADER)).containsText(MessageStore.pauseReconciliation());
+        assertThat(tcc.page().locator(CssSelectors.PAGES_POPUP_MODAL_BODY)).containsText(MessageStore.pauseReconciliationText());
+        assertThat(tcc.page().locator(CssSelectors.PAGES_MODAL_CANCEL_BUTTON)).containsText(MessageStore.reconciliationCancel());
+        assertThat(tcc.page().locator(CssSelectors.PAGES_MODAL_CONFIRM_BUTTON)).containsText(MessageStore.reconciliationConfirm());
 
         LOGGER.debug("Confirm pause reconciliation");
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
+        tcc.page().locator(CssSelectors.PAGES_MODAL_CONFIRM_BUTTON).click();
 
         // Check aftermath
         LOGGER.info("Verify UI state after pausing Kafka reconciliation");
-        PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION, MessageStore.reconciliationPausedWarning(), false);
+        assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION)).containsText(MessageStore.reconciliationPausedWarning());
 
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
@@ -113,17 +117,24 @@ public class KafkaST extends AbstractST {
         WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
 
         LOGGER.info("Resume Kafka reconciliation using UI");
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, MessageStore.resumeReconciliation(), true);
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON);
 
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, MessageStore.reconciliationCancel(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, MessageStore.reconciliationConfirm(), false);
+        assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON))
+            .containsText(MessageStore.resumeReconciliation());
+
+        tcc.page().locator(ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON).click();
+
+        assertThat(tcc.page().locator(CssSelectors.PAGES_MODAL_CANCEL_BUTTON))
+            .containsText(MessageStore.reconciliationCancel());
+
+        assertThat(tcc.page().locator(CssSelectors.PAGES_MODAL_CONFIRM_BUTTON))
+            .containsText(MessageStore.reconciliationConfirm());
 
         LOGGER.debug("Confirm resume reconciliation");
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
+        tcc.page().locator(CssSelectors.PAGES_MODAL_CONFIRM_BUTTON).click();
 
         // Reconciliation is resumed and button should display Pause
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, MessageStore.pauseReconciliationButton(), true);
+        assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON))
+            .containsText(MessageStore.pauseReconciliationButton());
 
         // Check annotation
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set back to false");
@@ -134,27 +145,32 @@ public class KafkaST extends AbstractST {
 
         // Check UI displays the broker count change
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            scaledBrokersCount + "/" + scaledBrokersCount, TimeConstants.ACTION_WAIT_LONG);
+            scaledBrokersCount + "/" + scaledBrokersCount,
+            TimeConstants.ACTION_WAIT_LONG);
 
         // Now verify resume from top notification and just check the annotation on Kafka cluster
         LOGGER.info("Pause Kafka reconciliation using UI");
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_HEADER, MessageStore.pauseReconciliation(), false);
+        tcc.page().locator(ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON).click();
+        assertThat(tcc.page().locator(CssSelectors.PAGES_POPUP_MODAL_HEADER))
+            .containsText(MessageStore.pauseReconciliation());
 
         LOGGER.debug("Confirm pause reconciliation");
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
+        tcc.page().locator(CssSelectors.PAGES_MODAL_CONFIRM_BUTTON).click();
 
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
 
         LOGGER.info("Resume Kafka reconciliation using button from top notification");
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON);
+        tcc.page().locator(ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON).click();
 
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, MessageStore.reconciliationCancel(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, MessageStore.reconciliationConfirm(), false);
+        assertThat(tcc.page().locator(CssSelectors.PAGES_MODAL_CANCEL_BUTTON))
+            .containsText(MessageStore.reconciliationCancel());
+
+        assertThat(tcc.page().locator(CssSelectors.PAGES_MODAL_CONFIRM_BUTTON))
+            .containsText(MessageStore.reconciliationConfirm());
 
         LOGGER.debug("Confirm resume reconciliation");
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
+        tcc.page().locator(CssSelectors.PAGES_MODAL_CONFIRM_BUTTON).click();
 
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set back to false");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
@@ -174,29 +190,23 @@ public class KafkaST extends AbstractST {
         final TestCaseConfig tcc = getTestCaseConfig();
         final int scaledBrokersCount = 7;
 
+        final int warningsCount = KafkaUtils.warningConditions(tcc.namespace(), tcc.kafkaName())
+                .stream()
+                .map(Condition::getMessage)
+                .toList().size();
+
         LOGGER.info("Verify that default Kafka broker count is {} and controller count is {}", Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS);
 
         LOGGER.debug("Verify default Kafka broker count on OverviewPage");
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, true);
+
+        assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT))
+                .containsText(Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS);
 
         LOGGER.debug("Verify default Kafka node count on Nodes page");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
 
-        // Header
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
-        // Page infobox
-        // total nodes
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(1).build(), Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        // with controller role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(2).build(), Integer.toString(Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        // with broker role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(Constants.REGULAR_BROKER_REPLICAS), true);
-        // Node table
-        assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
+        KafkaNodesChecks.checkNodesPage(tcc.page(), Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS, warningsCount);
 
         // Scale brokers
         LOGGER.debug("Scale Kafka brokers to {}", scaledBrokersCount);
@@ -209,25 +219,15 @@ public class KafkaST extends AbstractST {
 
         LOGGER.debug("Verify new Kafka broker count on OverviewPage is {}", scaledBrokersCount);
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            scaledBrokersCount + "/" + scaledBrokersCount, TimeConstants.ACTION_WAIT_LONG);
+
+        assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT))
+                .containsText(scaledBrokersCount + "/" + scaledBrokersCount,
+                    getContainsOpts(true, TimeConstants.ELEMENT_VISIBILITY_TIMEOUT_MEDIUM));
 
         LOGGER.debug("Verify new Kafka node count on Nodes page");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
 
-        // Header
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
-        // Page infobox
-        // total nodes
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(1).build(), Integer.toString(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        // with controller role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(2).build(), Integer.toString(Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        // with broker role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(scaledBrokersCount), true);
-        // Node table
-        assertEquals(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
+        KafkaNodesChecks.checkNodesPage(tcc.page(), scaledBrokersCount, Constants.REGULAR_CONTROLLER_REPLICAS, warningsCount);
 
         // Scale brokers down
         // Note: It is not possible to scale controllers down due to inability to change dynamically quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
@@ -235,25 +235,16 @@ public class KafkaST extends AbstractST {
 
         LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-        // broker scaling needs longer to be displayed
+
+        // Note: At this time the metrics do not update fast enough and need longer to be displayed correctly, remove once better solution is present
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, TimeConstants.ACTION_WAIT_LONG);
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS,
+            TimeConstants.ACTION_WAIT_LONG);
 
         LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
-        // Header
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
-        // Page infobox
-        // total nodes
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(1).build(), Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        // with controller role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(2).build(), Integer.toString(Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        // with broker role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(Constants.REGULAR_BROKER_REPLICAS), true);
-        // Node table
-        assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
+
+        KafkaNodesChecks.checkNodesPage(tcc.page(), Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS, warningsCount);
     }
 
     /**
@@ -278,7 +269,7 @@ public class KafkaST extends AbstractST {
 
         // Open warnings
         var warningsToggle = tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
-        PlaywrightAssertions.assertThat(warningsToggle).isVisible();
+        assertThat(warningsToggle).isVisible();
 
         // Check warnings list
         var messageItems = tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
@@ -295,11 +286,9 @@ public class KafkaST extends AbstractST {
                     .stream()
                     .map(PlaywrightAssertions::assertThat)
                     .forEach(LocatorAssertions::isVisible);
-                PlaywrightAssertions
-                    .assertThat(messageItems)
+                assertThat(messageItems)
                     .hasCount(initialWarningMessages.size());
-                PlaywrightAssertions
-                    .assertThat(messageItems)
+                assertThat(messageItems)
                     .not()
                     .containsText(MessageStore.clusterCardNoMessages());
             };
@@ -307,14 +296,11 @@ public class KafkaST extends AbstractST {
             initialStateAssertions = () -> {
                 LOGGER.debug("Verify warnings list contains only one row with `No messages` text");
                 warningsToggle.click(new ClickOptions().setForce(true));
-                PlaywrightAssertions
-                    .assertThat(messageItems)
+                assertThat(messageItems)
                     .isVisible();
-                PlaywrightAssertions
-                    .assertThat(messageItems)
+                assertThat(messageItems)
                     .hasCount(1);
-                PlaywrightAssertions
-                    .assertThat(messageItems)
+                assertThat(messageItems)
                     .containsText(MessageStore.clusterCardNoMessages());
             };
         }
@@ -349,15 +335,13 @@ public class KafkaST extends AbstractST {
         // Check warnings list
         LOGGER.debug("Verify warnings list now contains {} row(s) with warning messages", warningMessages.size());
 
-        PlaywrightAssertions
-            .assertThat(messageItems)
+        assertThat(messageItems)
             .hasCount(warningMessages.size());
         messageItems.all()
             .stream()
             .map(PlaywrightAssertions::assertThat)
             .forEach(LocatorAssertions::isVisible);
-        PlaywrightAssertions
-            .assertThat(messageItems)
+        assertThat(messageItems)
             .containsText(warningMessages.toArray(String[]::new));
 
         // Remove wrong config

@@ -113,7 +113,7 @@ public class AuthST extends AbstractST {
         // Logout and check user is no longer logged in
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
         PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        Utils.sleepWait(TimeConstants.COMPONENT_REACTION_TIME_SHORT);
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
 
@@ -198,11 +198,11 @@ public class AuthST extends AbstractST {
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
         // Dev
         PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        Utils.sleepWait(TimeConstants.COMPONENT_REACTION_TIME_SHORT);
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
         // Admin
         PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
-        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        Utils.sleepWait(TimeConstants.COMPONENT_REACTION_TIME_SHORT);
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
 
