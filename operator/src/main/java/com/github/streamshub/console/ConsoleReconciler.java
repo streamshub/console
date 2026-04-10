@@ -1,17 +1,5 @@
 package com.github.streamshub.console;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
@@ -22,6 +10,7 @@ import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
 import com.github.streamshub.console.dependents.ConsoleMonitoringClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleResource;
+import com.github.streamshub.console.dependents.ConsoleRoute;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.ConsoleServiceAccount;
@@ -32,10 +21,9 @@ import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
-import com.github.streamshub.console.dependents.conditions.IngressReadyCondition;
+import com.github.streamshub.console.dependents.conditions.IngressOrRouteReadyCondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
 import com.github.streamshub.console.support.RootCause;
-
 import io.javaoperatorsdk.operator.AggregatedOperatorException;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -55,6 +43,18 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Link;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Maintainer;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @ControllerConfiguration(
         maxReconciliationInterval = @MaxReconciliationInterval(
@@ -140,17 +140,26 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
             @Dependent(
                     name = ConsoleIngress.NAME,
                     type = ConsoleIngress.class,
+                    reconcilePrecondition = ConsoleIngress.Precondition.class,
+                    activationCondition = ConsoleIngress.Precondition.class,
                     dependsOn = {
                         ConsoleService.NAME
-                    },
-                    readyPostcondition = IngressReadyCondition.class),
+                    }),
+            @Dependent(
+                    name = ConsoleRoute.NAME,
+                    type = ConsoleRoute.class,
+                    reconcilePrecondition = ConsoleRoute.Precondition.class,
+                    activationCondition = ConsoleRoute.Precondition.class,
+                    dependsOn = {
+                        ConsoleService.NAME
+                    }),
             @Dependent(
                     name = ConsoleDeployment.NAME,
                     type = ConsoleDeployment.class,
+                    reconcilePrecondition = IngressOrRouteReadyCondition.class,
                     dependsOn = {
                         ConsoleClusterRoleBinding.NAME,
-                        ConsoleSecret.NAME,
-                        ConsoleIngress.NAME
+                        ConsoleSecret.NAME
                     },
                     readyPostcondition = DeploymentReadyCondition.class),
         })

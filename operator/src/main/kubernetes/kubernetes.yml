@@ -170,6 +170,28 @@ rules:
     verbs:
       - get
 
+  # Used by operator to manage Route resources for Console instances on OpenShift
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  # Allow operator to create routes with custom hostnames
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes/custom-host
+    verbs:
+      - create
+      - update
+
   # Granted to Prometheus instances (when using embedded instance)
   - apiGroups: [ '' ]
     resources:
