@@ -29,7 +29,7 @@ public class YamlConfig extends InstallConfig {
 
         LOGGER.info("Console Operator will be installed using YAML bundle");
         try {
-            multiYaml = FileUtils.getYamlFileFromURL(operatorBundleUrl);
+            multiYaml = FileUtils.getYamlFileFromURL(FileUtils.resolveLocation(operatorBundleUrl).toString());
         } catch (IOException e) {
             throw new SetupException("Cannot get Console YAML resources: ", e);
         }
