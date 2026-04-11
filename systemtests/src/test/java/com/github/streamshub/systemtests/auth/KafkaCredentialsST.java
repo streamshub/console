@@ -91,7 +91,7 @@ public class KafkaCredentialsST extends AbstractST {
     @Test
     @TestBucket(ALL_TOPIC_TYPES_BUCKET)
     void testUserLoginKafkaCredentials() {
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         // Verify basic UI elements
         LOGGER.info("Check navbar with list of available kafkas");
@@ -104,7 +104,7 @@ public class KafkaCredentialsST extends AbstractST {
             TimeConstants.ACTION_WAIT_LONG);
 
         LOGGER.debug("Verify default Kafka node count on Nodes page");
-        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
 
         // Header
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
@@ -130,7 +130,7 @@ public class KafkaCredentialsST extends AbstractST {
 
         // Test pausing kafka reconciliation to confirm UI communicates with kafka
         LOGGER.info("Pause Kafka reconciliation using UI");
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Open pop-up modal for pause reconciliation");
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, MessageStore.pauseReconciliationButton(), false);

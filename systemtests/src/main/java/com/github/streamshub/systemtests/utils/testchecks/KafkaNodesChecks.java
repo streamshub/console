@@ -52,7 +52,7 @@ public class KafkaNodesChecks {
 
     public static void checkOverviewPageKafkaBrokerNodes(TestCaseConfig tcc, int brokerCount) {
         LOGGER.info("Verify kafka nodes on overview page");
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             brokerCount + "/" + brokerCount,
             TimeConstants.ACTION_WAIT_LONG);
@@ -60,7 +60,7 @@ public class KafkaNodesChecks {
 
     public static void checkNodesPageKafkaNodes(TestCaseConfig tcc, int totalNodeCount) {
         LOGGER.info("Verify kafka nodes on nodes page");
-        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
         PwUtils.waitForLocatorCount(tcc, totalNodeCount, NodesPageSelectors.NPS_TABLE_BODY, true);
     }
 

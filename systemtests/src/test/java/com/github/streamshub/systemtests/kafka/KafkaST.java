@@ -74,7 +74,7 @@ public class KafkaST extends AbstractST {
             .getOrDefault(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false"));
 
         LOGGER.info("Pause Kafka reconciliation using UI");
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Open pop-up modal for pause reconciliation");
 
@@ -198,13 +198,13 @@ public class KafkaST extends AbstractST {
         LOGGER.info("Verify that default Kafka broker count is {} and controller count is {}", Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS);
 
         LOGGER.debug("Verify default Kafka broker count on OverviewPage");
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT))
                 .containsText(Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS);
 
         LOGGER.debug("Verify default Kafka node count on Nodes page");
-        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
 
         KafkaNodesChecks.checkNodesPage(tcc.page(), Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS, warningsCount);
 
@@ -218,14 +218,14 @@ public class KafkaST extends AbstractST {
         LOGGER.info("Verify newly added Kafka brokers are displayed in UI");
 
         LOGGER.debug("Verify new Kafka broker count on OverviewPage is {}", scaledBrokersCount);
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         assertThat(tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT))
                 .containsText(scaledBrokersCount + "/" + scaledBrokersCount,
                     getContainsOpts(true, TimeConstants.ELEMENT_VISIBILITY_TIMEOUT_MEDIUM));
 
         LOGGER.debug("Verify new Kafka node count on Nodes page");
-        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
 
         KafkaNodesChecks.checkNodesPage(tcc.page(), scaledBrokersCount, Constants.REGULAR_CONTROLLER_REPLICAS, warningsCount);
 
@@ -234,7 +234,7 @@ public class KafkaST extends AbstractST {
         KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS);
 
         LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         // Note: At this time the metrics do not update fast enough and need longer to be displayed correctly, remove once better solution is present
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
@@ -242,7 +242,7 @@ public class KafkaST extends AbstractST {
             TimeConstants.ACTION_WAIT_LONG);
 
         LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
-        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
 
         KafkaNodesChecks.checkNodesPage(tcc.page(), Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS, warningsCount);
     }
@@ -265,7 +265,7 @@ public class KafkaST extends AbstractST {
                 .toList();
 
         LOGGER.info("Verify default Kafka state - expecting {} warnings/errors", initialWarningMessages.size());
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         // Open warnings
         var warningsToggle = tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
@@ -330,7 +330,7 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Kafka currently contains warning messages: {}", warningMessages);
 
         // Reload using on page button
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_HEADER_RELOAD_BUTTON);
+        tcc.page().locator(CssSelectors.PAGES_HEADER_RELOAD_BUTTON).click();
 
         // Check warnings list
         LOGGER.debug("Verify warnings list now contains {} row(s) with warning messages", warningMessages.size());
