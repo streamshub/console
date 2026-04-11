@@ -37,12 +37,12 @@ import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.KafkaRecord;
 import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToOne;
+import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.SizeLimitedSortedSet;
 import com.github.streamshub.console.api.support.serdes.RecordData;
@@ -69,7 +69,7 @@ public class RecordService {
     Producer<RecordData, RecordData> producer;
 
     @Inject
-    ThreadContext threadContext;
+    ContextualExecutorProvider threadContext;
 
     @Inject
     TopicDescribeService topicService;

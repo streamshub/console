@@ -29,7 +29,6 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.clients.admin.QuorumInfo;
 import org.apache.kafka.common.config.ConfigResource;
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
@@ -41,6 +40,7 @@ import com.github.streamshub.console.api.model.Node.ControllerStatus;
 import com.github.streamshub.console.api.model.Node.MetadataStatus;
 import com.github.streamshub.console.api.model.NodeSummary;
 import com.github.streamshub.console.api.security.PermissionService;
+import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.MetadataQuorumSupport;
@@ -90,7 +90,7 @@ public class NodeService {
     PermissionService permissionService;
 
     @Inject
-    ThreadContext threadContext;
+    ContextualExecutorProvider threadContext;
 
     @Inject
     @Named("KafkaNodePools")
@@ -523,7 +523,7 @@ public class NodeService {
             }
         });
     }
-    
+
     public CompletionStage<Metrics> getNodeMetrics(String nodeId, int durationMinutes) {
         if (kafkaContext.prometheus() == null) {
             logger.warnf("Metrics requested for node %s, but Prometheus is not configured", nodeId);
@@ -536,10 +536,10 @@ public class NodeService {
 
         String promInterval = "5m";
         if (durationMinutes >= 1440) {
-            promInterval = "30m"; 
+            promInterval = "30m";
         }
         if (durationMinutes >= 10080) {
-            promInterval = "2h"; 
+            promInterval = "2h";
         }
         String rangeQuery;
         String valueQuery;
@@ -550,7 +550,7 @@ public class NodeService {
         ) {
             rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
                 .formatted(namespace, name, promInterval);
-        
+
             valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
                 .formatted(namespace, name);
         } catch (IOException e) {

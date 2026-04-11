@@ -50,7 +50,6 @@ import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.errors.GroupNotEmptyException;
 import org.apache.kafka.common.errors.UnknownMemberIdException;
-import org.eclipse.microprofile.context.ThreadContext;
 
 import com.github.streamshub.console.api.model.Either;
 import com.github.streamshub.console.api.model.Group;
@@ -61,6 +60,7 @@ import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.github.streamshub.console.api.security.PermissionService;
+import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.FetchFilterPredicate;
 import com.github.streamshub.console.api.support.GroupValidation;
 import com.github.streamshub.console.api.support.KafkaContext;
@@ -94,7 +94,7 @@ public class GroupService {
      * {@linkplain Admin Admin client}
      */
     @Inject
-    ThreadContext threadContext;
+    ContextualExecutorProvider threadContext;
 
     @Inject
     KafkaContext kafkaContext;

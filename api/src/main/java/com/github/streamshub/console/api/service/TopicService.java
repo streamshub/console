@@ -33,7 +33,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.UnknownTopicIdException;
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
@@ -42,6 +41,7 @@ import com.github.streamshub.console.api.model.NewTopic;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicPatch;
 import com.github.streamshub.console.api.security.PermissionService;
+import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -78,7 +78,7 @@ public class TopicService {
      * {@linkplain Admin Admin client}
      */
     @Inject
-    ThreadContext threadContext;
+    ContextualExecutorProvider threadContext;
 
     @Inject
     ValidationProxy validationService;
@@ -579,7 +579,7 @@ public class TopicService {
         private final Instant limit = Instant.now().plusSeconds(TOPIC_OPERATION_LIMIT);
         protected final CompletableFuture<T> promise = new CompletableFuture<>();
 
-        TopicCheck(ThreadContext threadContext, ScheduledExecutorService scheduler) {
+        TopicCheck(ContextualExecutorProvider threadContext, ScheduledExecutorService scheduler) {
             this.scheduler = scheduler;
             this.task = threadContext.contextualRunnable(this);
         }

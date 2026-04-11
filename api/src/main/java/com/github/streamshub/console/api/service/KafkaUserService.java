@@ -13,11 +13,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.KafkaUser;
 import com.github.streamshub.console.api.security.PermissionService;
+import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -46,7 +46,7 @@ public class KafkaUserService {
     Logger logger;
 
     @Inject
-    ThreadContext threadContext;
+    ContextualExecutorProvider threadContext;
 
     @Inject
     ConsoleConfig consoleConfig;

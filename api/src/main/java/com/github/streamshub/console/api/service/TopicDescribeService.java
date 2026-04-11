@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -37,7 +37,6 @@ import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.config.ConfigResource;
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.Either;
@@ -48,6 +47,7 @@ import com.github.streamshub.console.api.model.ReplicaLocalStorage;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.security.PermissionService;
+import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -88,7 +88,7 @@ public class TopicDescribeService {
      * {@linkplain Admin Admin client}
      */
     @Inject
-    ThreadContext threadContext;
+    ContextualExecutorProvider threadContext;
 
     @Inject
     KafkaContext kafkaContext;
@@ -336,10 +336,11 @@ public class TopicDescribeService {
             List<String> fields,
             String offsetSpec) {
 
-        Map<Uuid, Either<Topic, Throwable>> result = new LinkedHashMap<>(topicIds.size());
+        Map<Uuid, Either<Topic, Throwable>> result = new ConcurrentHashMap<>(topicIds.size());
         TopicCollection request = TopicCollection.ofTopicIds(topicIds);
         DescribeTopicsOptions options = new DescribeTopicsOptions()
                 .includeAuthorizedOperations(fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS));
+        var contextualExecutor = threadContext.currentContextExecutor();
 
         var pendingDescribes = adminClient.describeTopics(request, options)
                 .topicIdValues()
@@ -358,7 +359,7 @@ public class TopicDescribeService {
                                         UnknownTopicIdPatch.apply(error, Function.identity()),
                                         Topic::fromTopicDescription));
                             return null;
-                        }, threadContext.currentContextExecutor()))
+                        }, contextualExecutor))
                 .map(CompletionStage::toCompletableFuture)
                 .toArray(CompletableFuture[]::new);
 
@@ -371,7 +372,7 @@ public class TopicDescribeService {
     }
 
     private CompletionStage<Void> listOffsets(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics, String offsetSpec) {
-        Map<String, Uuid> topicIds = new HashMap<>(topics.size());
+        Map<String, Uuid> topicIds = HashMap.newHashMap(topics.size());
         var onlineTopics = topics.entrySet()
                 .stream()
                 .filter(topic -> topic.getValue()
@@ -501,7 +502,7 @@ public class TopicDescribeService {
     }
 
     private CompletionStage<Void> describeLogDirs(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics) {
-        Map<String, Uuid> topicIds = new HashMap<>(topics.size());
+        Map<String, Uuid> topicIds = HashMap.newHashMap(topics.size());
 
         var topicPartitionReplicas = topicPartitionLeaders(topics, topicIds);
         var nodeIds = topicPartitionReplicas.values().stream().distinct().toList();
