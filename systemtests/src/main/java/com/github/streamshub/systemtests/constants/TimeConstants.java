@@ -23,12 +23,21 @@ public class TimeConstants {
     public static final long COMPONENT_LOAD_TIMEOUT = secondsInMilis(40);
     public static final long GLOBAL_STATUS_TIMEOUT = minutesInMilis(3);
     public static final int GLOBAL_STABILITY_OFFSET_TIME = 20;
-    // HTML elements
-    public static final long ELEMENT_VISIBILITY_TIMEOUT = minutesInMilis(1);
-    public static final long UI_COMPONENT_REACTION_INTERVAL_SHORT = secondsInMilis(5);
+
+    // Element visibility
+    public static final long ELEMENT_VISIBILITY_TIMEOUT = secondsInMilis(30);
+    public static final long ELEMENT_VISIBILITY_TIMEOUT_MEDIUM = minutesInMilis(1);
+
+    // Page
+    public static final long PAGE_LOAD_TIMEOUT = minutesInMilis(1);
+
+    // Action
     public static final long ACTION_WAIT_LONG = minutesInMilis(1);
-    public static final long ACTION_WAIT_MEDIUM = secondsInMilis(20);
+    public static final long ACTION_WAIT_MEDIUM = secondsInMilis(30);
     public static final long ACTION_WAIT_SHORT = secondsInMilis(10);
+
+    // Reaction time
+    public static final long COMPONENT_REACTION_TIME_SHORT = secondsInMilis(5);
 
     // Time values depending on variable
     public static long timeoutForClientFinishJob(int messagesCount) {

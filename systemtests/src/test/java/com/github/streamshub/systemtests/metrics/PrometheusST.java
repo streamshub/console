@@ -49,7 +49,7 @@ public class PrometheusST extends AbstractST {
         LOGGER.info("Verify that the default prometheus is not deployed");
         assertTrue(ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(tcc.namespace()) + "-prometheus-deployment").isEmpty());
 
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.navigateAndWaitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         LOGGER.info("Verify charts are present and contain data");
         // Disk
         PwUtils.waitForContainsText(tcc,
