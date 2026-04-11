@@ -17,7 +17,6 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.FetchParams;
@@ -25,6 +24,7 @@ import com.github.streamshub.console.api.model.connect.ConnectCluster;
 import com.github.streamshub.console.api.model.connect.Connector;
 import com.github.streamshub.console.api.model.connect.ConnectorPlugin;
 import com.github.streamshub.console.api.model.connect.ConnectorTask;
+import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.KafkaConnectAPI;
 import com.github.streamshub.console.api.support.KafkaConnectAPI.ConnectorOffsets;
@@ -59,7 +59,7 @@ public class KafkaConnectService {
     Logger logger;
 
     @Inject
-    ThreadContext threadContext;
+    ContextualExecutorProvider threadContext;
 
     @Inject
     ConsoleConfig consoleConfig;

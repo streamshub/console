@@ -29,7 +29,6 @@ import org.apache.kafka.clients.admin.FeatureMetadata;
 import org.apache.kafka.clients.admin.FinalizedVersionRange;
 import org.apache.kafka.clients.admin.QuorumInfo;
 import org.apache.kafka.server.common.MetadataVersion;
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
@@ -38,6 +37,7 @@ import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
 import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.security.PermissionService;
+import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -82,7 +82,7 @@ public class KafkaClusterService {
      * tasks to allow access to request-scoped beans.
      */
     @Inject
-    ThreadContext threadContext;
+    ContextualExecutorProvider executorProvider;
 
     @Inject
     Holder<SharedIndexInformer<Kafka>> kafkaInformer;
@@ -170,17 +170,17 @@ public class KafkaClusterService {
                 quorumResult)
             .thenApplyAsync(
                     nothing -> new KafkaCluster(kafkaContext.clusterId(), enumNames(get(clusterResult::authorizedOperations))),
-                    threadContext.currentContextExecutor())
+                    executorProvider.currentContextExecutor())
             .thenComposeAsync(
                     cluster -> addNodes(cluster, clusterResult, quorumResult),
-                    threadContext.currentContextExecutor())
-            .thenApplyAsync(this::addKafkaContextData, threadContext.currentContextExecutor())
+                    executorProvider.currentContextExecutor())
+            .thenApplyAsync(this::addKafkaContextData, executorProvider.currentContextExecutor())
             .thenApply(this::addKafkaResourceData)
             .thenCompose(cluster -> addMetrics(cluster, fields, durationMinutes))
             .thenApply(this::setManaged)
             .thenApplyAsync(
                     permissionService.addPrivileges(ResourceTypes.Global.KAFKAS, KafkaCluster::getId),
-                    threadContext.currentContextExecutor());
+                    executorProvider.currentContextExecutor());
     }
 
     private CompletionStage<KafkaCluster> addNodes(KafkaCluster cluster, DescribeClusterResult clusterResult, CompletableFuture<QuorumInfo> quorumResult) {
@@ -416,11 +416,11 @@ public class KafkaClusterService {
 
         try (var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
-        
-       
+
+
             rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
                     .formatted(namespace, name, promInterval);
-        
+
             valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
                     .formatted(namespace, name);
         } catch (IOException e) {
