@@ -38,7 +38,7 @@
     "js-yaml": "^4.1.1",
     "next": "15.5.15",
     "next-auth": "^4.24.13",
-    "next-intl": "^4.9.0",
+    "next-intl": "^4.9.1",
     "next-logger": "^5.0.2",
     "pino": "^10.3.1",
     "react": "19.2.5",
