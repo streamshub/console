@@ -1,0 +1,182 @@
+/**
+ * Disk Usage Chart Component
+ * 
+ * Displays disk usage over time for Kafka brokers with:
+ * - Stacked area chart showing used disk space per node
+ * - Threshold lines showing available storage capacity
+ * - Interactive tooltips with formatted values
+ * - Responsive width and legend
+ */
+
+import { useTranslation } from 'react-i18next';
+import {
+  Chart,
+  ChartArea,
+  ChartAxis,
+  ChartGroup,
+  ChartLegend,
+  ChartLegendTooltip,
+  ChartThemeColor,
+  ChartThreshold,
+  createContainer,
+} from '@patternfly/react-charts/victory';
+import { Alert } from '@patternfly/react-core';
+import { formatBytes } from '../../../utils/format';
+import { formatDateTime } from '../../../utils/dateTime';
+import { useChartWidth } from '../utils/useChartWidth';
+import { getHeight, getPadding } from '../utils/chartConsts';
+import { DurationOptions, TimeSeriesMetrics, ChartDatum } from '../utils/types';
+
+interface ChartDiskUsageProps {
+  usages: Record<string, TimeSeriesMetrics>;
+  available: Record<string, TimeSeriesMetrics>;
+  duration: DurationOptions;
+}
+
+export function ChartDiskUsage({
+  usages,
+  available,
+  duration,
+}: ChartDiskUsageProps) {
+  const { t } = useTranslation();
+  const [containerRef, width] = useChartWidth();
+
+  const itemsPerRow = width > 650 ? 2 : 1;
+
+  const showDate = duration >= DurationOptions.Last24hours;
+  const axisFormat = showDate ? "HH:mm'\n'MMM dd" : 'HH:mm';
+  const tooltipFormat = showDate ? 'MMM dd, HH:mm' : 'HH:mm';
+
+  const hasMetrics = Object.keys(usages).length > 0;
+  if (!hasMetrics) {
+    return (
+      <Alert
+        variant="warning"
+        isInline
+        isPlain
+        title={t('ChartDiskUsage.data_unavailable')}
+      />
+    );
+  }
+
+  const CursorVoronoiContainer = createContainer('voronoi', 'cursor');
+  const legendData: {
+    name: string;
+    childName: string;
+    symbol?: { type: string };
+  }[] = [];
+
+  // Add usage entries to legend
+  Object.entries(usages).forEach(([nodeId, _]) => {
+    legendData.push({
+      name: `Node ${nodeId}`,
+      childName: `node ${nodeId}`,
+    });
+  });
+
+  // Add threshold entries to legend
+  Object.entries(usages).forEach(([nodeId, _]) => {
+    legendData.push({
+      name: `Available storage threshold (node ${nodeId})`,
+      childName: `threshold ${nodeId}`,
+      symbol: { type: 'threshold' },
+    });
+  });
+
+  const padding = getPadding(legendData.length / itemsPerRow);
+
+  return (
+    <div ref={containerRef}>
+      <Chart
+        ariaTitle="Used disk space"
+        containerComponent={
+          <CursorVoronoiContainer
+            cursorDimension="x"
+            voronoiDimension="x"
+            mouseFollowTooltips
+            labelComponent={
+              <ChartLegendTooltip
+                legendData={legendData}
+                title={(args: any) =>
+                  formatDateTime({
+                    value: args?.x ?? 0,
+                    format: tooltipFormat,
+                  })
+                }
+              />
+            }
+            labels={({ datum }: { datum: ChartDatum }) =>
+              datum.y !== null ? formatBytes(datum.y) : 'no data'
+            }
+            constrainToVisibleArea
+          />
+        }
+        legendPosition="bottom-left"
+        legendComponent={
+          <ChartLegend
+            orientation="horizontal"
+            data={legendData}
+            itemsPerRow={itemsPerRow}
+          />
+        }
+        height={getHeight(legendData.length / itemsPerRow)}
+        padding={padding}
+        themeColor={ChartThemeColor.multiUnordered}
+        width={width}
+        legendAllowWrap={true}
+      >
+        <ChartAxis
+          scale="time"
+          tickFormat={(d: any) =>
+            formatDateTime({ value: d, format: axisFormat })
+          }
+          tickCount={5}
+          style={{
+            tickLabels: {
+              padding: showDate ? 0 : 10,
+            },
+          }}
+        />
+        <ChartAxis
+          dependentAxis
+          showGrid={true}
+          tickFormat={(d: any) => formatBytes(d)}
+        />
+        <ChartGroup>
+          {/* Render usage areas */}
+          {Object.entries(usages).map(([nodeId, series]) => {
+            return (
+              <ChartArea
+                key={`usage-area-${nodeId}`}
+                data={Object.entries(series).map(([k, v]) => ({
+                  name: `Node ${nodeId}`,
+                  x: Date.parse(k),
+                  y: v,
+                }))}
+                name={`node ${nodeId}`}
+              />
+            );
+          })}
+
+          {/* Render threshold lines */}
+          {Object.entries(usages).map(([nodeId, _]) => {
+            const availableSeries = available[nodeId];
+            if (!availableSeries) return null;
+
+            return (
+              <ChartThreshold
+                key={`chart-softlimit-${nodeId}`}
+                data={Object.entries(availableSeries).map(([k, v]) => ({
+                  name: `Available storage threshold (node ${nodeId})`,
+                  x: Date.parse(k),
+                  y: v,
+                }))}
+                name={`threshold ${nodeId}`}
+              />
+            );
+          })}
+        </ChartGroup>
+      </Chart>
+    </div>
+  );
+}
