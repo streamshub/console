@@ -46,7 +46,7 @@
     "react-dom": "19.2.5",
     "react-highlight-words": "^0.21.0",
     "react-json-view-lite": "^2.5.0",
-    "typescript": "5.9.3",
+    "typescript": "6.0.2",
     "use-debounce": "^10.1.1",
     "victory": "^37.3.6",
     "zod": "^4.3.6"
