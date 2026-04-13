@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -880,6 +881,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
     }
 
     @Test
+    @Tag("requires:routes.route.openshift.io")
     void testConsoleReconciliationWithOpenShiftMonitoring() {
         String thanosQueryHost = "thanos.example.com";
 
