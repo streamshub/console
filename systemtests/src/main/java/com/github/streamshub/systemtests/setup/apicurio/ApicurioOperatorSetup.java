@@ -56,6 +56,7 @@ public class ApicurioOperatorSetup {
      /**
      * Prepares Apicurio Operator resources for deployment into the target namespace.
      *
+     * <ul>
      *  <li>Adjusts namespaces, normalizes RBAC bindings, removes security contexts,
      *      and ensures the operator watches only the configured namespace by setting
      *      the appropriate environment variable on its Deployment.</li>
