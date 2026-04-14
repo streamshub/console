@@ -20,7 +20,7 @@
     "@patternfly/react-core": "6.5.0-prerelease.41",
     "@patternfly/react-drag-drop": "6.5.0-prerelease.41",
     "@patternfly/react-icons": "6.5.0-prerelease.17",
-    "@patternfly/react-styles": "6.5.0-prerelease.16",
+    "@patternfly/react-styles": "6.5.0-prerelease.17",
     "@patternfly/react-table": "6.5.0-prerelease.41",
     "@patternfly/react-tokens": "6.5.0-prerelease.13 ",
     "@patternfly/react-user-feedback": "^6.2.0",
