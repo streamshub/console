@@ -30,7 +30,7 @@ public class ContextualExecutorProvider {
     }
 
     /**
-     * @see {@link ThreadContext#contextualRunnable(Runnable)}
+     * @see ThreadContext#contextualRunnable(Runnable)
      */
     public Runnable contextualRunnable(Runnable runnable) {
         return threadContext.contextualRunnable(runnable);
