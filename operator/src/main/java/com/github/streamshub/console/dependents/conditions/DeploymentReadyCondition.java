@@ -23,7 +23,9 @@ public class DeploymentReadyCondition implements Condition<Deployment, Console> 
     /**
      * Check the deployment's status in a similar way to kubectl.
      *
-     * @see https://github.com/kubernetes/kubectl/blob/24d21a0ee42ecb5e5bed731f36b2d2c9c0244c35/pkg/polymorphichelpers/rollout_status.go#L76-L89
+     * @see <a href="https://github.com/kubernetes/kubectl/blob/24d21a0ee42ecb5e5bed731f36b2d2c9c0244c35/pkg/polymorphichelpers/rollout_status.go#L76-L89">
+     *   kubectl polymorphichelpers/rollout_status.go
+     * </a>
      */
     private boolean isReady(Deployment deployment) {
         String deploymentName = deployment.getMetadata().getName();

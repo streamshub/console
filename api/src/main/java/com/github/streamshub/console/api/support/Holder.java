@@ -8,11 +8,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Like {@linkplain java.util.Optional Optional}, but non-final so it may be
+ * Like {@linkplain Optional Optional}, but non-final so it may be
  * used as a CDI type.
  *
  * @param <T> the type of value
- * @see {@link java.util.Optional}
+ * @see Optional
  */
 public class Holder<T> implements Supplier<T> {
 
@@ -74,7 +74,7 @@ public class Holder<T> implements Supplier<T> {
     }
 
     /**
-     * @see {@link java.util.Optional#map(Function)}
+     * @see Optional#map(Function)
      */
     public <U> Optional<U> map(Function<? super T, ? extends U> mapper) {
         Objects.requireNonNull(mapper);
