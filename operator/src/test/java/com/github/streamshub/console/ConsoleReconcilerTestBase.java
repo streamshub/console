@@ -148,36 +148,7 @@ abstract class ConsoleReconcilerTestBase {
         client.resource(Crds.kafkaUser()).serverSideApply();
 
         if (testInfo.getTags().contains("requires:routes.route.openshift.io")) {
-            client.resource(new CustomResourceDefinitionBuilder()
-                    .withNewMetadata()
-                    .withName("routes.route.openshift.io")
-                .endMetadata()
-                .withNewSpec()
-                    .withScope("Namespaced")
-                    .withGroup("route.openshift.io")
-                    .addNewVersion()
-                        .withName("v1")
-                        .withNewSubresources()
-                            .withNewStatus()
-                            .endStatus()
-                        .endSubresources()
-                        .withNewSchema()
-                            .withNewOpenAPIV3Schema()
-                                .withType("object")
-                                .withXKubernetesPreserveUnknownFields(true)
-                            .endOpenAPIV3Schema()
-                        .endSchema()
-                        .withStorage(true)
-                        .withServed(true)
-                    .endVersion()
-                    .withNewNames()
-                        .withSingular("route")
-                        .withPlural("routes")
-                        .withKind("Route")
-                    .endNames()
-                .endSpec()
-                .build())
-                .serverSideApply();
+            createRouteCRD();
         } else {
             try {
                 delete(client.resources(Route.class).inAnyNamespace());
@@ -301,6 +272,39 @@ abstract class ConsoleReconcilerTestBase {
         createNamespace(CONSOLE_NS);
     }
 
+    private void createRouteCRD() {
+        client.resource(new CustomResourceDefinitionBuilder()
+                .withNewMetadata()
+                .withName("routes.route.openshift.io")
+            .endMetadata()
+            .withNewSpec()
+                .withScope("Namespaced")
+                .withGroup("route.openshift.io")
+                .addNewVersion()
+                    .withName("v1")
+                    .withNewSubresources()
+                        .withNewStatus()
+                        .endStatus()
+                    .endSubresources()
+                    .withNewSchema()
+                        .withNewOpenAPIV3Schema()
+                            .withType("object")
+                            .withXKubernetesPreserveUnknownFields(true)
+                        .endOpenAPIV3Schema()
+                    .endSchema()
+                    .withStorage(true)
+                    .withServed(true)
+                .endVersion()
+                .withNewNames()
+                    .withSingular("route")
+                    .withPlural("routes")
+                    .withKind("Route")
+                .endNames()
+            .endSpec()
+            .build())
+            .serverSideApply();
+    }
+
     Console createConsole(ConsoleBuilder builder, String namespace) {
         var meta = new ObjectMetaBuilder(builder.getMetadata())
                 .withNamespace(namespace)
@@ -323,8 +327,9 @@ abstract class ConsoleReconcilerTestBase {
                     .withName(resource.getMetadata().getName())
                     .get();
 
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().iterator().next();
+            var conditions = console.getStatus().getConditions();
+            assertEquals(1, conditions.size(), () -> "Unexpected conditions: " + conditions);
+            var condition = conditions.iterator().next();
 
             assertEquals(Condition.Types.READY, condition.getType(), condition::toString);
             assertEquals("True", condition.getStatus(), condition::toString);
