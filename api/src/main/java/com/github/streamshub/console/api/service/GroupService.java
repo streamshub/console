@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -552,7 +553,7 @@ public class GroupService {
             Collection<Group> groups,
             List<String> fields) {
 
-        Map<String, Either<Group, Throwable>> result = LinkedHashMap.newLinkedHashMap(groups.size());
+        Map<String, Either<Group, Throwable>> result = new ConcurrentHashMap<>(groups.size());
 
         var pendingTopicsIds = fetchTopicIdMap();
         var pendingDescribes = groups.stream()

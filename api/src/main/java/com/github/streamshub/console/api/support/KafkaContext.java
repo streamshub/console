@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -41,6 +43,100 @@ public class KafkaContext implements Closeable {
     private static final Pattern OAUTH_TOKEN_URI_PATTERN = Pattern.compile(
             Pattern.quote(ClientConfig.OAUTH_TOKEN_ENDPOINT_URI) + "=\"([^\"]+)\"");
 
+    /**
+     * Container type to manager Kafka contexts (cluster configurations and
+     * connections) created and used for API requests. This class synchronizes
+     * access to ensure connections are only closed when no longer used to service
+     * requests.
+     */
+    public static class Manager {
+        private static final Logger LOGGER = Logger.getLogger(Manager.class);
+        private final Map<String, KafkaContext> contexts = new ConcurrentHashMap<>();
+
+        public Map<String, KafkaContext> contexts() {
+            return Collections.unmodifiableMap(contexts);
+        }
+
+        /**
+         * Obtains a context by ID and marks it as "in use".
+         */
+        public synchronized KafkaContext acquire(String clusterId) {
+            KafkaContext ctx = contexts.get(clusterId);
+
+            if (ctx != null) {
+                ctx.users.incrementAndGet();
+            }
+
+            return ctx;
+        }
+
+        /**
+         * Removes a context by ID. Underlying connections will be closed if the context
+         * is not in use. Used contexts will be closed later when they are no longer
+         * needed by a request and they are {@link #release(KafkaContext) released}.
+         */
+        public synchronized void remove(String clusterId) {
+            KafkaContext previous = contexts.remove(clusterId);
+
+            if (previous != null && !previous.hasUsers()) {
+                previous.close();
+            }
+        }
+
+        /**
+         * Replaces a context, typically in response to changes in configuration due to
+         * updates in the associated Strimzi Kafka CR. Underlying connections will be
+         * closed if the context is not in use. Used contexts will be closed later when
+         * they are no longer needed by a request and they are
+         * {@link #release(KafkaContext) released}.
+         */
+        public synchronized void replace(String clusterId, String clusterKey, KafkaContext ctx) {
+            KafkaContext previous = contexts.put(clusterId, ctx);
+
+            if (previous == null) {
+                LOGGER.infof("Added KafkaContext for cluster %s, id=%s, global=%s", clusterKey, clusterId, ctx.admin != null);
+            } else {
+                var closed = false;
+                var users = previous.userCount();
+
+                if (!previous.hasUsers()) {
+                    previous.close();
+                    closed = true;
+                }
+
+                LOGGER.infof("Replaced KafkaContext for cluster %s, id=%s, global=%s, users=%d, closed=%s",
+                        clusterKey, clusterId, previous.admin() != null, users, closed);
+            }
+        }
+
+        /**
+         * Release the provided context (decrement its user count) and close it if not
+         * in use by any other requests.
+         */
+        public synchronized void release(KafkaContext ctx) {
+            if (ctx.applicationScoped()) {
+                ctx.users.decrementAndGet();
+            }
+
+            if (!contexts.values().contains(ctx)) {
+                var clusterKey = ctx.clusterConfig().clusterKey();
+
+                if (ctx.hasUsers()) {
+                    LOGGER.infof("Out-of-date KafkaContext still has %d users: %s", ctx.userCount(), clusterKey);
+                } else {
+                    if (ctx.applicationScoped()) {
+                        LOGGER.infof("Closing out-of-date KafkaContext: %s", clusterKey);
+                    } else {
+                        LOGGER.debugf("Closing request-scoped KafkaContext: %s", clusterKey);
+                    }
+
+                    ctx.close();
+                }
+            }
+        }
+    }
+
+    final AtomicInteger users = new AtomicInteger(0);
     final KafkaClusterConfig clusterConfig;
     final Kafka resource;
     final Map<Class<?>, Map<String, Object>> configs;
@@ -68,6 +164,14 @@ public class KafkaContext implements Closeable {
         return Optional.ofNullable(clusterConfig.getId())
                 .or(() -> kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId))
                 .orElseGet(clusterConfig::clusterKeyEncoded);
+    }
+
+    public boolean hasUsers() {
+        return users.get() > 0;
+    }
+
+    public int userCount() {
+        return users.get();
     }
 
     @Override

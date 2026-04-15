@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -151,27 +150,26 @@ public class ClientFactory {
 
     @Produces
     @ApplicationScoped
-    Map<String, KafkaContext> produceKafkaContexts(Function<Map<String, Object>, Admin> adminBuilder) {
-
-        final Map<String, KafkaContext> contexts = new ConcurrentHashMap<>();
+    KafkaContext.Manager produceKafkaContextManager(Function<Map<String, Object>, Admin> adminBuilder) {
+        final KafkaContext.Manager manager = new KafkaContext.Manager();
 
         if (kafkaInformer.isPresent()) {
-            addKafkaEventHandler(contexts, adminBuilder);
+            addKafkaEventHandler(manager, adminBuilder);
         }
 
         // Configure clusters that will not be configured by events
         consoleConfig.getKafka().getClusters()
             .stream()
             .filter(c -> cachedKafkaResource(c).isEmpty())
-            .forEach(clusterConfig -> putKafkaContext(contexts,
+            .forEach(clusterConfig -> putKafkaContext(manager,
                         clusterConfig,
                         Optional.empty(),
                         adminBuilder));
 
-        return Collections.unmodifiableMap(contexts);
+        return manager;
     }
 
-    void addKafkaEventHandler(Map<String, KafkaContext> contexts,
+    void addKafkaEventHandler(KafkaContext.Manager manager,
             Function<Map<String, Object>, Admin> adminBuilder) {
 
         kafkaInformer.get().addEventHandlerWithResyncPeriod(new ResourceEventHandler<Kafka>() {
@@ -185,7 +183,7 @@ public class ClientFactory {
                                 log.debugf("Ignoring added Kafka resource %s, cluster ID not yet available and not provided via configuration",
                                         Cache.metaNamespaceKeyFunc(kafka));
                             } else {
-                                putKafkaContext(contexts,
+                                putKafkaContext(manager,
                                         clusterConfig,
                                         Optional.of(kafka),
                                         adminBuilder);
@@ -199,7 +197,7 @@ public class ClientFactory {
                     log.debugf("Kafka resource %s updated", Cache.metaNamespaceKeyFunc(oldKafka));
                 }
                 findConfig(newKafka).ifPresentOrElse(
-                        clusterConfig -> putKafkaContext(contexts,
+                        clusterConfig -> putKafkaContext(manager,
                             clusterConfig,
                             Optional.of(newKafka),
                             adminBuilder),
@@ -215,9 +213,8 @@ public class ClientFactory {
                             String clusterKey = clusterConfig.clusterKey();
                             String clusterId = KafkaContext.clusterId(clusterConfig, Optional.of(kafka));
                             log.infof("Removing KafkaContext for cluster %s, id=%s", clusterKey, clusterId);
-                            log.debugf("Known KafkaContext identifiers: %s", contexts.keySet());
-                            KafkaContext previous = contexts.remove(clusterId);
-                            Optional.ofNullable(previous).ifPresent(KafkaContext::close);
+                            log.debugf("Known KafkaContext identifiers: %s", manager.contexts().keySet());
+                            manager.remove(clusterId);
                         },
                         () -> log.debugf("Ignoring deleted Kafka resource %s, not found in configuration", Cache.metaNamespaceKeyFunc(kafka)));
             }
@@ -229,7 +226,7 @@ public class ClientFactory {
         }, TimeUnit.MINUTES.toMillis(1));
     }
 
-    void putKafkaContext(Map<String, KafkaContext> contexts,
+    void putKafkaContext(KafkaContext.Manager manager,
             KafkaClusterConfig clusterConfig,
             Optional<Kafka> kafkaResource,
             Function<Map<String, Object>, Admin> adminBuilder) {
@@ -297,14 +294,7 @@ public class ClientFactory {
                 log.infof("Skipping setup of metrics client for cluster %s. Reason: namespace is required for metrics retrieval but none was provided", clusterKey);
             }
 
-            KafkaContext previous = contexts.put(clusterId, ctx);
-
-            if (previous == null) {
-                log.infof("Added KafkaContext for cluster %s, id=%s, global=%s", clusterKey, clusterId, globalConnection);
-            } else {
-                log.infof("Replaced KafkaContext for cluster %s, id=%s, global=%s", clusterKey, clusterId, previous.admin() != null);
-                previous.close();
-            }
+            manager.replace(clusterId, clusterKey, ctx);
         }
     }
 
@@ -445,6 +435,12 @@ public class ClientFactory {
         });
     }
 
+    @Produces
+    @ApplicationScoped
+    Map<String, KafkaContext> produceKafkaContexts(KafkaContext.Manager contextManager) {
+        return contextManager.contexts();
+    }
+
     /**
      * Provides the Strimzi Kafka custom resource addressed by the current request
      * URL as an injectable bean. This allows for the Kafka to be obtained by
@@ -460,7 +456,7 @@ public class ClientFactory {
      */
     @Produces
     @RequestScoped
-    public KafkaContext produceKafkaContext(Map<String, KafkaContext> contexts,
+    public KafkaContext produceKafkaContext(KafkaContext.Manager manager,
             SecurityIdentity identity,
             UnaryOperator<Admin> filter,
             Function<Map<String, Object>, Admin> adminBuilder) {
@@ -471,7 +467,7 @@ public class ClientFactory {
             return KafkaContext.EMPTY;
         }
 
-        KafkaContext ctx = contexts.get(clusterId);
+        KafkaContext ctx = manager.acquire(clusterId);
 
         if (ctx == null) {
             throw NO_SUCH_KAFKA.apply(clusterId);
@@ -496,16 +492,8 @@ public class ClientFactory {
         return ctx;
     }
 
-    public void disposeKafkaContext(@Disposes KafkaContext context, Map<String, KafkaContext> contexts) {
-        if (!contexts.values().contains(context)) {
-            var clusterKey = context.clusterConfig().clusterKey();
-            if (context.applicationScoped()) {
-                log.infof("Closing out-of-date KafkaContext: %s", clusterKey);
-            } else {
-                log.debugf("Closing request-scoped KafkaContext: %s", clusterKey);
-            }
-            context.close();
-        }
+    public void disposeKafkaContext(@Disposes KafkaContext context, KafkaContext.Manager manager) {
+        manager.release(context);
     }
 
     @Produces
