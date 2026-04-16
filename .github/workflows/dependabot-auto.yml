@@ -22,7 +22,7 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Project metadata
-        uses: radcortez/project-metadata-action@874c89bea2ee8282008328c3418eec4d219013f3
+        uses: radcortez/project-metadata-action@c38225619f10c1f9c9116d3ce4c9c41648a59e1c
         id: projmeta
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
