@@ -161,8 +161,13 @@ class KafkaClustersResourceOidcIT {
             .body("data.meta.privileges", everyItem(is(List.of(Privilege.LIST.name()))));
     }
 
-    @Test
-    void testListClustersUnauthenticated() {
+    @ParameterizedTest
+    @CsvSource({
+        "'Authorization:DummyToken'   , 401",
+        "'X-Requested-With:JavaScript', 499",
+        "                             , 302"
+    })
+    void testListClustersUnauthenticated(String header, int expectedStatus) {
         // alice is a developer and developers may list all kafkas
         utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
@@ -174,11 +179,19 @@ class KafkaClustersResourceOidcIT {
                 .endRole()
             .build());
 
-        whenRequesting(req -> req
-                .param("fields[" + KafkaCluster.API_TYPE + "]", "name")
-                .get())
+        whenRequesting(
+                req -> {
+                    req.param("fields[" + KafkaCluster.API_TYPE + "]", "name");
+
+                    if (header != null) {
+                        var elements = header.split(":");
+                        req.header(elements[0], elements[1]);
+                    }
+
+                    return req.redirects().follow(false).get();
+                })
             .assertThat()
-            .statusCode(is(Status.UNAUTHORIZED.getStatusCode()))
+            .statusCode(is(expectedStatus))
             .body("errors.size()", is(1))
             .body("errors.status", contains("401"))
             .body("errors.code", contains("4011"));

@@ -1,6 +1,6 @@
 /**
  * API Client for StreamsHub Console
- * 
+ *
  * Handles all HTTP communication with the Quarkus backend API.
  * No authentication initially - will be added later.
  */
@@ -25,19 +25,36 @@ class ApiClient {
     this.baseUrl = import.meta.env.VITE_API_URL || '';
   }
 
+  // Trigger login (full page redirect)
+  login() {
+    const redirectUri = encodeURIComponent(window.location.href);
+    window.location.href = `/api/session/login?redirect_uri=${redirectUri}`;
+  }
+
   /**
    * Generic fetch method with error handling
    */
   async fetch<T>(path: string, options?: RequestInit): Promise<T> {
     const url = `${this.baseUrl}${path}`;
-    
+
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        /*
+         * Quarkus uses X-Requested-With for JavaScript requests
+         * to use HTTP status 499 when a session is required.
+         */
+        'X-Requested-With': 'JavaScript',
         ...options?.headers,
       },
     });
+
+    if (response.status === 499 && response.headers.get('WWW-Authenticate') === 'OIDC') {
+      // Quarkus uses status 499 with 'WWW-Authenticate: OIDC' to indicate login required.
+      this.login(); // Redirect to login
+      return {} as T;
+    }
 
     // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
