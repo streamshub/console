@@ -352,6 +352,9 @@ export interface Metadata {
   attributes: {
     version: string;
     platform: string;
+    options: {
+      showLearning: boolean;
+    };
   };
 }
 

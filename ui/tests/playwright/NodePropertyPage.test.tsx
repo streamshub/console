@@ -6,7 +6,7 @@ test.beforeEach(async ({ authenticatedPage }) => {
 
 test("Node property page", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to node property page", async () => {
-    await page.click('text="Nodes"');
+    await page.click('text="Kafka Nodes"');
     await expect(page.getByRole('columnheader', { name: 'Node ID' })).toBeVisible();
     await authenticatedPage.clickFirstLinkInTheTable("nodes-listing");
     await expect(page.getByRole('columnheader', { name: 'Property' })).toBeVisible();

@@ -19,6 +19,11 @@ import {
   SelectList,
   MenuToggle,
   MenuToggleElement,
+  Alert,
+  AlertActionLink,
+  AlertActionCloseButton,
+  Grid,
+  GridItem,
 } from '@patternfly/react-core';
 import { useGroups } from '@/api/hooks/useGroups';
 import { GroupsTable } from '@/components/kafka/groups/GroupsTable';
@@ -33,6 +38,7 @@ import {
   NoResultsEmptyState,
 } from '@/components/EmptyStates';
 import { useTableState } from '@/hooks';
+import { useShowLearning } from '@/hooks/useShowLearning';
 
 const GROUP_TYPES: GroupType[] = ['Classic', 'Consumer', 'Share', 'Streams'];
 
@@ -51,6 +57,7 @@ type SortableColumn = 'groupId' | 'type' | 'protocol' | 'state';
 export function GroupsPage() {
   const { t } = useTranslation();
   const { kafkaId } = useParams<{ kafkaId: string }>();
+  const showLearning = useShowLearning();
 
   // Table state (pagination + sorting)
   const table = useTableState<SortableColumn>({
@@ -64,6 +71,9 @@ export function GroupsPage() {
   const [selectedStates, setSelectedStates] = useState<GroupState[]>([]);
   const [isTypeSelectOpen, setIsTypeSelectOpen] = useState(false);
   const [isStateSelectOpen, setIsStateSelectOpen] = useState(false);
+
+  // Alert state
+  const [isAlertVisible, setIsAlertVisible] = useState(true);
 
   // Reset offset modal state
   const [isResetOffsetModalOpen, setIsResetOffsetModalOpen] = useState(false);
@@ -134,7 +144,31 @@ export function GroupsPage() {
         </Title>
       </PageSection>
       <PageSection>
-        <Toolbar>
+        <Grid hasGutter>
+          {showLearning && isAlertVisible && (
+            <GridItem>
+              <Alert
+                variant="info"
+                isInline
+                title={t('groups.alert')}
+                actionClose={
+                  <AlertActionCloseButton onClose={() => setIsAlertVisible(false)} />
+                }
+                actionLinks={
+                  <AlertActionLink
+                    component="a"
+                    href={t('groups.learnMoreLink')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t('groups.learnMore')}
+                  </AlertActionLink>
+                }
+              />
+            </GridItem>
+          )}
+          <GridItem>
+            <Toolbar>
           <ToolbarContent>
             <ToolbarItem>
               <SearchInput
@@ -230,48 +264,50 @@ export function GroupsPage() {
               />
             </ToolbarItem>
           </ToolbarContent>
-        </Toolbar>
+            </Toolbar>
 
-      {isLoading ? (
-        <LoadingEmptyState />
-      ) : groups.length === 0 ? (
-        searchValue || selectedTypes.length > 0 || selectedStates.length > 0 ? (
-          <NoResultsEmptyState />
-        ) : (
-          <NoDataEmptyState
-            entityName="groups"
-            message="No groups are currently available in this Kafka cluster."
-          />
-        )
-      ) : (
-        <>
-          <GroupsTable
-            groups={groups}
-            kafkaId={kafkaId!}
-            sortBy={table.sortBy}
-            sortDirection={table.sortDirection}
-            onSort={table.handleSort}
-            onResetOffset={handleResetOffset}
-          />
-          <Toolbar>
-            <ToolbarContent>
-              <ToolbarItem variant="pagination" align={{ default: 'alignEnd' }}>
-                <Pagination
-                  itemCount={totalItems}
-                  perPage={table.pageSize}
-                  page={currentPage}
-                  onSetPage={() => {}}
-                  onPerPageSelect={table.handlePerPageChange}
-                  onNextClick={table.handleNextPage}
-                  onPreviousClick={table.handlePrevPage}
-                  variant={PaginationVariant.bottom}
-                  isCompact
+            {isLoading ? (
+              <LoadingEmptyState />
+            ) : groups.length === 0 ? (
+              searchValue || selectedTypes.length > 0 || selectedStates.length > 0 ? (
+                <NoResultsEmptyState />
+              ) : (
+                <NoDataEmptyState
+                  entityName="groups"
+                  message="No groups are currently available in this Kafka cluster."
                 />
-              </ToolbarItem>
-            </ToolbarContent>
-          </Toolbar>
-        </>
-      )}
+              )
+              ) : (
+                <>
+                  <GroupsTable
+                    groups={groups}
+                    kafkaId={kafkaId!}
+                    sortBy={table.sortBy}
+                    sortDirection={table.sortDirection}
+                    onSort={table.handleSort}
+                    onResetOffset={handleResetOffset}
+                  />
+                  <Toolbar>
+                    <ToolbarContent>
+                      <ToolbarItem variant="pagination" align={{ default: 'alignEnd' }}>
+                        <Pagination
+                          itemCount={totalItems}
+                          perPage={table.pageSize}
+                          page={currentPage}
+                          onSetPage={() => {}}
+                          onPerPageSelect={table.handlePerPageChange}
+                          onNextClick={table.handleNextPage}
+                          onPreviousClick={table.handlePrevPage}
+                          variant={PaginationVariant.bottom}
+                          isCompact
+                        />
+                      </ToolbarItem>
+                    </ToolbarContent>
+                  </Toolbar>
+                </>
+              )}
+          </GridItem>
+        </Grid>
       </PageSection>
 
       {selectedGroup && (

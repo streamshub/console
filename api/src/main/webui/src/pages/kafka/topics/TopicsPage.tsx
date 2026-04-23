@@ -53,12 +53,14 @@ import {
   NoResultsEmptyState,
 } from '@/components/EmptyStates';
 import { useTableState } from '@/hooks';
+import { useShowLearning } from '@/hooks/useShowLearning';
 
 type SortableColumn = 'name' | 'totalLeaderLogBytes';
 
 export function TopicsPage() {
   const { t } = useTranslation();
   const { kafkaId } = useParams<{ kafkaId: string }>();
+  const showLearning = useShowLearning();
   
   const [includeHidden, setIncludeHidden] = useState(false);
 
@@ -276,6 +278,14 @@ export function TopicsPage() {
             <NoDataEmptyState
               entityName="topics"
               message={t('topics.noTopicsDescription')}
+              learningLink={
+                showLearning && t('learning.links.topicOperatorUse')
+                  ? {
+                      href: t('learning.links.topicOperatorUse'),
+                      label: t('learning.labels.topicOperatorUse'),
+                    }
+                  : undefined
+              }
             />
           )
         ) : (
@@ -284,7 +294,12 @@ export function TopicsPage() {
               <Thead>
                 <Tr>
                   <Th sort={table.getSortParams('name')}>{t('topics.columnName')}</Th>
-                  <Th>{t('topics.columnStatus')}</Th>
+                  <Th>
+                    {t('topics.columnStatus')}{' '}
+                    <Tooltip content={t('topics.columnStatusTooltip')}>
+                      <HelpIcon />
+                    </Tooltip>
+                  </Th>
                   <Th modifier="fitContent" style={{ textAlign: 'right' }}>{t('topics.columnPartitions')}</Th>
                   <Th modifier="fitContent" style={{ textAlign: 'right' }}>{t('topics.columnGroups')}</Th>
                   <Th sort={table.getSortParams('totalLeaderLogBytes')} modifier="fitContent" style={{ textAlign: 'right' }}>{t('topics.columnStorage')}</Th>

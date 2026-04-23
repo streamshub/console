@@ -19,7 +19,9 @@ import {
   ToolbarContent,
   ToolbarItem,
   SearchInput,
+  Tooltip,
 } from '@patternfly/react-core';
+import { HelpIcon } from '@patternfly/react-icons';
 import { KafkaCluster } from '@/api/types';
 import { NoDataEmptyState, NoResultsEmptyState } from '@/components/EmptyStates';
 
@@ -141,11 +143,16 @@ export function ClustersTable({
       <Table aria-label={t('kafka.clusterList', 'Kafka clusters')} variant="compact">
         <Thead>
           <Tr>
-            <Th width={25} sort={getSortParams('name')}>{t('kafka.name', 'Name')}</Th>
-            <Th>{t('kafka.namespace', 'Namespace')}</Th>
-            <Th>{t('kafka.version', 'Kafka Version')}</Th>
-            <Th>{t('kafka.status', 'Status')}</Th>
-            <Th modifier="fitContent">{t('common.actions', 'Actions')}</Th>
+            <Th width={25} sort={getSortParams('name')}>{t('kafka.name')}</Th>
+            <Th>{t('kafka.namespace')}</Th>
+            <Th>{t('kafka.version')}</Th>
+            <Th>
+              {t('kafka.status')}{' '}
+              <Tooltip content={t('kafka.statusTooltip')}>
+                <HelpIcon />
+              </Tooltip>
+            </Th>
+            <Th modifier="fitContent">{t('common.actions')}</Th>
           </Tr>
         </Thead>
         <Tbody>
