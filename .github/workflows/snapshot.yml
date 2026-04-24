@@ -62,26 +62,6 @@ jobs:
           username: "${{ secrets.IMAGE_REPO_USERNAME }}"
           password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
 
-      # ==================== UI ====================
-      - name: Build UI
-        working-directory: ui
-        run: |
-          npm ci --omit=dev
-          npm run build
-
-      - name: Build and Push UI Image
-        uses: docker/build-push-action@v7
-        with:
-          context: ui/
-          platforms: ${{ env.PLATFORMS }}
-          provenance: false
-          push: true
-          tags: |
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{ env.NEXT_VERSION }}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:snapshot-${{github.ref_name}}
-          labels: |
-            ${{ env.QUAY_EXPIRES_AFTER_LABEL }}
-
       # ==================== API & Operator ====================
       - name: Build and Push API and Operator Image
         run: |
@@ -117,7 +97,7 @@ jobs:
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:snapshot-${{github.ref_name}}
           labels: |
             ${{ env.QUAY_EXPIRES_AFTER_LABEL }}
-         
+
       # ==================== Operator-Catalog ====================
       - name: Generate Operator Catalog Config
         run: |

@@ -43,7 +43,7 @@ import com.github.streamshub.console.api.support.KafkaUuid;
 import com.github.streamshub.console.api.support.StringEnumeration;
 import com.github.streamshub.console.config.security.Privilege;
 
-@Path("/api/kafkas/{clusterId}/topics/{topicId}/records")
+@Path("kafkas/{clusterId}/topics/{topicId}/records")
 @Tag(name = "Kafka Cluster Resources")
 public class RecordsResource {
 

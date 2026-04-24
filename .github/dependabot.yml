@@ -33,7 +33,7 @@ updates:
     interval: weekly
 
 - package-ecosystem: "npm"
-  directory: "/ui"
+  directory: "/api/src/main/webui"
   schedule:
     interval: daily
   open-pull-requests-limit: 10

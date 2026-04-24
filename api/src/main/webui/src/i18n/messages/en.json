@@ -1,0 +1,769 @@
+{
+  "common": {
+    "title": "StreamsHub Console",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filterByName": "Filter by name",
+    "filter": "Filter",
+    "clear": "Clear",
+    "apply": "Apply",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "refresh": "Refresh",
+    "navigation": "Navigation",
+    "notAvailable": "N/A",
+    "view": "View",
+    "actions": "Actions",
+    "platform": "Platform",
+    "managed": "Managed",
+    "noData": "No data available",
+    "noDataDescription": "There is currently no data to display.",
+    "noEntityAvailable": "No {{entity}} available",
+    "noEntityDescription": "There are currently no {{entity}} to display.",
+    "noResultsFound": "No results found",
+    "noResultsFoundDescription": "No results match the filter criteria. Clear all filters and try again.",
+    "clearAllFilters": "Clear all filters"
+  },
+  "about": {
+    "buttonLabel": "About",
+    "version": "Version",
+    "platform": "Platform",
+    "userAgent": "User agent"
+  },
+  "feedback": {
+    "buttonLabel": "Help",
+    "links": {
+      "share": "https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=share-feeedback.md&title=",
+      "informDirection": "https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=inform-the-direction-of-products.md&title=",
+      "bugReport": "https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=bug_report.md&title=",
+      "supportCase": "https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=open-support-case.md&title="
+    }
+  },
+  "theme": {
+    "switchTheme": "Theme selection",
+    "current": "current",
+    "system": "System",
+    "systemDescription": "Follow system preference",
+    "light": "Light",
+    "lightDescription": "Always use light mode",
+    "dark": "Dark",
+    "darkDescription": "Always use dark mode"
+  },
+  "kafka": {
+    "clusters": "Kafka Clusters",
+    "selectCluster": "Kafka Clusters",
+    "noCluster": "No clusters available",
+    "noClusterDescription": "No Kafka clusters are currently available.",
+    "clusterList": "Kafka clusters",
+    "availableClusters": "Available Kafka Clusters",
+    "name": "Name",
+    "version": "Kafka Version",
+    "status": "Status",
+    "namespace": "Namespace",
+    "connectedClusters": "Connected Kafka clusters",
+    "filterByName": "Filter by name",
+    "switchToCluster": "Switch to this cluster",
+    "viewAllClusters": "View all Kafka clusters",
+    "noResultsFound": "No results found",
+    "overview": "Overview",
+    "overviewTitle": "Overview",
+    "clusterOverview": "Cluster overview",
+    "topics": "Topics",
+    "consumerGroups": "Consumer Groups",
+    "groups": "Groups",
+    "nodes": "Nodes",
+    "users": "Kafka Users",
+    "schemaRegistry": "Schema Registry",
+    "connect": {
+      "title": "Kafka Connect",
+      "connectors": "Connectors",
+      "connectClusters": "Clusters",
+      "searchConnectors": "Search connectors",
+      "searchClusters": "Search connect clusters",
+      "noConnectors": "No connectors found",
+      "noConnectorsMatch": "No connectors match your search criteria",
+      "noConnectorsAvailable": "No connectors are available",
+      "noClusters": "No connect clusters found",
+      "noClustersMatch": "No connect clusters match your search criteria",
+      "noClustersAvailable": "No connect clusters are available",
+      "name": "Name",
+      "connectCluster": "Connect cluster",
+      "type": "Type",
+      "state": "State",
+      "tasks": "Tasks",
+      "version": "Version",
+      "workers": "Workers",
+      "workersTooltip": "Number of worker nodes",
+      "managed": "Managed",
+      "managedTooltip": "This connector is managed by the Strimzi Connector Operator through a KafkaConnector custom resource",
+      "connectorWorkerId": "Connector worker ID",
+      "class": "Class",
+      "topics": "Topics",
+      "maxTasks": "Max tasks",
+      "taskId": "Task ID",
+      "workerId": "Worker ID",
+      "configuration": "Configuration",
+      "property": "Property",
+      "value": "Value",
+      "noTasks": "No tasks found",
+      "noConfig": "No configuration found",
+      "plugins": "Plugins",
+      "noPlugins": "No plugins found"
+    }
+  },
+  "topics": {
+    "title": "Topics",
+    "createTopic": "Create Topic",
+    "deleteTopic": "Delete Topic",
+    "noTopics": "No topics found",
+    "noTopicsDescription": "There are no topics in this Kafka cluster yet.",
+    "loading": "Loading topics...",
+    "errorLoading": "Failed to load topics",
+    "searchPlaceholder": "Search topics...",
+    "tableLabel": "Topics table",
+    "columnName": "Name",
+    "columnStatus": "Status",
+    "columnPartitions": "Partitions",
+    "columnGroups": "Groups",
+    "columnStorage": "Storage",
+    "hideInternalTopics": "Hide internal topics",
+    "hideInternalTopicsTooltip": "Internal topics are used by Kafka for internal operations and are typically hidden from users",
+    "filter": {
+      "name": "Name",
+      "topicId": "Topic ID",
+      "status": "Status",
+      "nameLabel": "Filter by topic name",
+      "idLabel": "Filter by topic ID",
+      "namePlaceholder": "Filter by name",
+      "idPlaceholder": "Filter by ID",
+      "selectStatus": "Select status",
+      "statusSelected": "{{count}} selected",
+      "clearAllFilters": "Clear all filters"
+    },
+    "status": {
+      "FullyReplicated": "Fully replicated",
+      "UnderReplicated": "Under replicated",
+      "PartiallyOffline": "Partially offline",
+      "Offline": "Offline",
+      "Unknown": "Unknown"
+    },
+    "statusLabels": {
+      "fullyReplicatedTooltip": "Number of topics in sync",
+      "underReplicatedTooltip": "Number of topics under replicated",
+      "offlineTooltip": "Number of topics not available"
+    },
+    "tabs": {
+      "messages": "Messages",
+      "partitions": "Partitions",
+      "groups": "Groups",
+      "configuration": "Configuration"
+    },
+    "details": {
+      "title": "Topic details",
+      "loadingTopic": "Loading topic...",
+      "errorLoadingTopic": "Failed to load topic"
+    },
+    "partitions": {
+      "title": "Partitions",
+      "partitionId": "Partition ID",
+      "status": "Status",
+      "preferredLeader": "Preferred leader",
+      "leader": "Leader",
+      "replicas": "Replicas",
+      "size": "Size",
+      "brokerId": "Broker ID",
+      "replica": "Replica",
+      "noPartitions": "No partition information available",
+      "noPartitionsDescription": "This topic does not have any partition information.",
+      "emptyStateTitle": "No partitions match the filter",
+      "emptyStateBody": "No partitions match the current filter criteria.",
+      "resetFilter": "Clear filter",
+      "allPartitions": "All partitions",
+      "inSync": "In-sync",
+      "underReplicated": "Under replicated",
+      "offline": "Offline",
+      "leaderTooltip": "The broker that is currently the leader for this partition",
+      "preferredLeaderTooltip": "Whether the current leader is the preferred leader",
+      "replicasTooltip": "The brokers that have replicas of this partition",
+      "statusInSync": "In-sync",
+      "statusUnderReplicated": "Under replicated",
+      "statusOffline": "Offline"
+    },
+    "configuration": {
+      "title": "Configuration",
+      "property": "Property",
+      "value": "Value",
+      "readOnly": "Read-only",
+      "dataSource": "Data source",
+      "all": "All",
+      "searchPlaceholder": "Search properties...",
+      "clearFilters": "Clear all filters",
+      "noConfiguration": "No configuration available",
+      "noConfigurationDescription": "This topic does not have any configuration properties.",
+      "noResultsTitle": "No results found",
+      "noResultsBody": "No properties match the current filter criteria.",
+      "noResultsReset": "Clear all filters"
+    },
+    "messages": {
+      "title": "Messages",
+      "description": "View the data being produced to a topic. Browse messages, seek to a specific offset or timestamp by partition.",
+      "searchButtonLabel": "Search",
+      "noData": "No data",
+      "message": "Message",
+      "noDataBody": "Data will appear shortly after we receive produced messages.",
+      "noDataRefresh": "Check for new data",
+      "noDataTitle": "No messages data",
+      "noResultsBody": "Adjust your selection criteria and try again.",
+      "noResultsReset": "Show latest messages",
+      "noResultsTitle": "No messages data",
+      "tableAriaLabel": "Messages table",
+      "schema": "Schema",
+      "field": {
+        "epoch": "Unix timestamp",
+        "headers": "Headers",
+        "key": "Key",
+        "offset": "Offset",
+        "partition": "Partition",
+        "size": "Size",
+        "timestamp": "Timestamp (local)",
+        "timestampUTC": "Timestamp (UTC)",
+        "value": "Value",
+        "keyFormat": "Key format",
+        "valueFormat": "Value format"
+      },
+      "filter": {
+        "epoch": "From Unix timestamp",
+        "epochAriaLabel": "Specify Unix timestamp",
+        "epochPlaceholder": "Specify Unix timestamp",
+        "latest": "Latest messages",
+        "offset": "From offset",
+        "offsetAriaLabel": "Specify offset",
+        "offsetPlaceholder": "Specify offset",
+        "timestamp": "From timestamp",
+        "timestampAriaLabel": "Specify timestamp"
+      },
+      "tooltip": {
+        "size": "The serialized size of the key and value. Calculated from the key/value/headers and does not include any overhead associated with the record in the physical log segment within Kafka."
+      },
+      "limitLabel": "Limit",
+      "partitionPlaceholder": "All partitions",
+      "partitionOption": "Partition {{value}}",
+      "selectPartitionAriaLabel": "Specify partition",
+      "advancedSearch": {
+        "dialogLabel": "Search messages",
+        "hasTheWords": "Has the words",
+        "queryHelper": "Enter your search terms to find matches within the selected field. Wildcards and regular expressions are not required or supported.",
+        "inPartition": "In partition",
+        "search": "Search",
+        "reset": "Reset",
+        "where": "Where",
+        "whereKey": "Key",
+        "whereValue": "Value",
+        "whereHeaders": "Headers",
+        "whereEverywhere": "Everywhere",
+        "messages": "Messages",
+        "retrieve": "Retrieve",
+        "continuously": "Continuously"
+      },
+      "columns": {
+        "key": "Key",
+        "headers": "Headers",
+        "offsetPartition": "Offset",
+        "value": "Value",
+        "size": "Size",
+        "timestamp": "Timestamp (local)",
+        "timestampUTC": "Timestamp (UTC)"
+      },
+      "manage_columns": "Manage columns",
+      "manage_columns_description": "Select and reorder columns to display in the messages table. Drag to reorder.",
+      "columns_list": "Columns list",
+      "continuousMode": {
+        "continue": "Continue",
+        "title": "The screen displays only the most recent 100 messages, with older messages rotating out.",
+        "pause": "Pause"
+      }
+    },
+    "managedTooltip": "Managed topics are created using the KafkaTopic custom resource and are created and updated in the Kafka cluster by the Strimzi Topic Operator."
+  },
+  "groups": {
+    "title": "Groups",
+    "groupId": "Group ID",
+    "state": "State",
+    "members": "Members",
+    "noGroups": "No groups found",
+    "type": "Type",
+    "typeTooltip": "The Kafka group type, such as Classic, Consumer, Streams, or Share.",
+    "protocol": "Protocol",
+    "protocolTooltip": "The protocol used by group members to coordinate partition assignments and rebalancing.",
+    "stateTooltip": "Reflects the current operational state of the group.\n\nPossible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning, 'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.\n\nIf in the 'Empty' state, consider adding members to the group.",
+    "overallLag": "Overall lag",
+    "overallLagTooltip": "The cumulative lag across all partitions assigned to the group.\n\nLag is the difference in the rate of production and consumption of messages.\n\nSpecifically, lag for a given member in a group indicates the delay between the last message in the partition and the message being currently picked up by the member.",
+    "membersTooltip": "Represents an individual member within the group. Monitor the lag of each member for insights into the health of the group.",
+    "topics": "Topics",
+    "resetOffsetAction": "Reset offsets",
+    "resetOffsetDisabledDescription": "Group must be empty to reset offsets.",
+    "resetOffsetDisabledDescriptionNonConsumer": "Only consumer group offsets may be reset. This group uses the {{protocol}} protocol.",
+    "resetOffset": {
+      "title": "Reset consumer group offsets",
+      "description": "Reset the consumer offsets for this group. The group must be in EMPTY state.",
+      "descriptionNonConsumer": "Offset reset is only supported for consumer groups. This is a {{protocol}} group.",
+      "target": "Target",
+      "targetWithGroupId": "Reset {{groupId}} offsets",
+      "applyActionOn": "Apply action on",
+      "allConsumerTopics": "All consumer topics",
+      "selectedTopic": "Selected topic",
+      "selectTopic": "Select topic",
+      "selectTopicPlaceholder": "Select a topic",
+      "partitions": "Partitions",
+      "allPartitions": "All partitions",
+      "selectedPartition": "Selected partition",
+      "selectPartition": "Select partition",
+      "selectPartitionPlaceholder": "Select a partition",
+      "offsetDetails": "Offset details",
+      "newOffset": "New offset",
+      "selectOffset": "Select offset type",
+      "customOffset": "Custom offset",
+      "customOffsetPlaceholder": "Enter offset value",
+      "customOffsetHelper": "Specify the exact offset position",
+      "selectDateTime": "Select date/time format",
+      "isoDateFormat": "ISO date format",
+      "unixDateFormat": "Unix timestamp (epoch)",
+      "dateTimePlaceholder": "Enter date and time",
+      "dateTimeHelper": "Format: yyyy-MM-ddTHH:mm:ss.SSSZ",
+      "epochPlaceholder": "Enter Unix timestamp",
+      "epochHelper": "Unix timestamp in milliseconds",
+      "offset": {
+        "custom": "Custom offset",
+        "earliest": "Earliest",
+        "latest": "Latest",
+        "specificDateTime": "Specific date/time",
+        "delete": "Delete committed offsets"
+      },
+      "reset": "Reset offsets",
+      "dryRun": "Dry run",
+      "dryRunDescription": "Preview the offset changes before applying them",
+      "viewDryRun": "View dry run results",
+      "cliCommand": "CLI command",
+      "cliCommandDescription": "Equivalent kafka-consumer-groups command",
+      "copyCommand": "Copy command",
+      "commandCopied": "Command copied to clipboard",
+      "dryRunResults": {
+        "title": "Dry run results",
+        "description": "Preview of offset changes that will be applied",
+        "topic": "Topic",
+        "partition": "Partition",
+        "currentOffset": "Current offset",
+        "newOffset": "New offset",
+        "offsetDeleted": "Offset will be deleted",
+        "noResults": "No offset changes to preview",
+        "apply": "Apply changes",
+        "cancel": "Cancel",
+        "downloadResults": "Download results"
+      },
+      "confirmation": {
+        "title": "Confirm offset reset",
+        "message": "Are you sure you want to reset offsets for group '{{groupId}}'?",
+        "warningMessage": "This action cannot be undone. The consumer group must be stopped (EMPTY state) before resetting offsets.",
+        "confirm": "Reset offsets",
+        "cancel": "Cancel"
+      },
+      "success": {
+        "title": "Offsets reset successfully",
+        "message": "Consumer group offsets have been reset for group '{{groupId}}'"
+      },
+      "errors": {
+        "groupNotEmpty": "Consumer group must be in EMPTY state to reset offsets",
+        "customOffsetOutOfRange": "Custom offset must be between the earliest and latest offset for the partition",
+        "partitionNotValid": "The specified partition is not valid for this topic",
+        "topicNotFound": "The specified topic does not exist",
+        "invalidDateTime": "Please provide a valid UTC ISO timestamp",
+        "invalidEpoch": "Please provide a valid Unix timestamp",
+        "generalError": "An error occurred while resetting offsets",
+        "selectTopic": "Please select a topic",
+        "selectPartition": "Please select a partition",
+        "enterOffset": "Please enter an offset value",
+        "enterDateTime": "Please enter a date and time"
+      },
+      "validation": {
+        "topicRequired": "Topic selection is required",
+        "partitionRequired": "Partition selection is required for custom offset",
+        "offsetRequired": "Offset value is required",
+        "dateTimeRequired": "Date and time is required",
+        "invalidISOFormat": "Invalid ISO 8601 format. Expected: yyyy-MM-ddTHH:mm:ss.SSSZ",
+        "invalidEpochFormat": "Invalid epoch timestamp. Must be a positive number"
+      }
+    }
+  },
+  "nodes": {
+    "title": "Nodes",
+    "brokerTitle": "Broker {{nodeId}}",
+    "nodeId": "Node ID",
+    "brokerId": "Broker ID",
+    "host": "Host",
+    "hostName": "Host name",
+    "port": "Port",
+    "rack": "Rack",
+    "rackTooltip": "The rack ID for this node, used for rack-aware replica assignment",
+    "nodePool": "Node Pool",
+    "allNodePoolsPlaceholder": "All node pools",
+    "roles": "Roles",
+    "status": "Status",
+    "statusPlaceholder": "All statuses",
+    "replicas": "Total Replicas",
+    "replicasTooltip": "Total number of partition replicas (leaders + followers) on this broker",
+    "diskUsage": "Disk usage",
+    "kafkaVersion": "Kafka version",
+    "leadController": "Lead controller",
+    "noNodes": "No nodes found",
+    "noNodesDescription": "There are no nodes in this Kafka cluster.",
+    "nodeRoles": {
+      "broker": "Broker",
+      "controller": "Controller"
+    },
+    "brokerStatus": {
+      "running": {
+        "label": "Running",
+        "popoverText": "The broker is registered and accepting client requests."
+      },
+      "starting": {
+        "label": "Starting",
+        "popoverText": "The broker is catching up with the cluster metadata."
+      },
+      "shuttingDown": {
+        "label": "Shutting Down",
+        "popoverText": "The broker is shutting down."
+      },
+      "pendingControlledShutdown": {
+        "label": "Pending Controlled Shutdown",
+        "popoverText": "The broker is preparing for a controlled shutdown."
+      },
+      "recovery": {
+        "label": "Recovery",
+        "popoverText": "The broker has synced with the cluster metadata but is not fully active yet."
+      },
+      "notRunning": {
+        "label": "Not Running",
+        "popoverText": "The broker is not active yet."
+      },
+      "unknown": {
+        "label": "Unknown",
+        "popoverText": "The broker's state is unknown."
+      }
+    },
+    "controllerStatus": {
+      "quorumLeader": "QuorumLeader",
+      "quorumLeaderPopoverText": "The leader of the metadata quorum (also known as the Active Controller). It handles all metadata requests from Kafka brokers.",
+      "quorumFollower": "QuorumFollower",
+      "quorumFollowerPopoverText": "Follower controllers replicate metadata written by the quorum leader (Active Controller) and serve as hot standbys in case of leader failure.",
+      "quorumFollowerLagged": "QuorumFollowerLagged",
+      "quorumFollowerLaggedPopoverText": "Follower controllers replicate metadata written by the quorum leader (Active Controller). This follower is lagging behind the leader. Quorum followers must stay up-to-date to prevent data loss if the leader fails.",
+      "unknown": "Unknown",
+      "unknownPopoverText": "The controller's state is unknown"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "rebalances": "Rebalances"
+    },
+    "distribution": {
+      "title": "Partition distribution",
+      "totalNodes": "Total nodes",
+      "totalNodesTooltip": "Total number of nodes in the cluster (brokers + controllers)",
+      "controllerRole": "Controller role",
+      "brokerRole": "Broker role",
+      "leadController": "Lead controller",
+      "leadControllerTooltip": "The node that is currently the active controller",
+      "leadControllerValue": "Node {{leadController}}",
+      "partitionsDistributionOfTotal": "Node Partition Distribution",
+      "partitionsDistributionOfTotalTooltip": "Distribution of partition replicas across broker nodes",
+      "distributionToggles": "Distribution filter toggles",
+      "allLabel": "All ({{count}})",
+      "leadersLabel": "Leaders ({{count}})",
+      "followersLabel": "Followers ({{count}})",
+      "distributionChartDescription": "Bar chart showing partition distribution across brokers",
+      "distributionChartTitle": "Partition distribution",
+      "brokerNodeVoronoiFollowers": "Broker {{name}}: {{value}} followers",
+      "brokerNodeVoronoiLeaders": "Broker {{name}}: {{value}} leaders",
+      "brokerNodeVoronoiAll": "Broker {{name}}: {{value}} replicas",
+      "brokerNodeCount": "Broker {{node}}: {{count}} ({{percentage}}%)",
+      "brokerNodeCountMissing": "Broker {{node}}: N/A",
+      "metricsUnavailable": "Metrics are not available for this cluster"
+    },
+    "statusLabels": {
+      "healthyTooltip": "Number of healthy nodes",
+      "unhealthyTooltip": "Number of unhealthy nodes"
+    }
+  },
+  "rebalancing": {
+    "title": "Rebalances",
+    "rebalanceName": "Rebalance",
+    "status": "Status",
+    "lastUpdated": "Last updated",
+    "cruiseControlEnabled": "Cruise Control is enabled",
+    "learnMoreAboutCruiseControl": "Learn more about Cruise Control enablement",
+    "cruiseControlLink": "https://strimzi.io/docs/operators/latest/deploying#cruise-control-concepts-str",
+    "totalRebalances": "Total Rebalances",
+    "proposalReady": "Proposal Ready",
+    "rebalancing": "Rebalancing",
+    "ready": "Ready",
+    "stopped": "Stopped",
+    "mode": "Mode",
+    "rebalanceMode": "Rebalance mode",
+    "autoApprovalEnabled": "Auto-approval enabled",
+    "approve": "Approve",
+    "refresh": "Refresh",
+    "stop": "Stop",
+    "crBadge": "CR",
+    "broker": "Broker {{b}}",
+    "fullMode": "Full",
+    "fullModeDescription": "Moves replicas across all brokers. This is the default mode",
+    "addBrokersMode": "Add",
+    "addBrokersModeDescription": "Moves replicas to newly added brokers. Brokers must be specified",
+    "removeBrokersMode": "Remove",
+    "removeBrokersModeDescription": "Moves replicas off brokers to be removed. Brokers must be specified",
+    "noRebalances": "No Kafka cluster rebalances found",
+    "noRebalancesDescription": "Configure a KafkaRebalance resource to generate optimization proposals and initiate rebalances for your Kafka cluster.",
+    "noRebalancesAction": "Learn more about Kafka rebalancing",
+    "statuses": {
+      "new": {
+        "label": "New",
+        "tooltip": "New rebalance initiated"
+      },
+      "pendingProposal": {
+        "label": "Pending Proposal",
+        "tooltip": "Optimization proposal not generated"
+      },
+      "proposalReady": {
+        "label": "Proposal Ready",
+        "tooltip": "Optimization proposal is ready for approval"
+      },
+      "stopped": {
+        "label": "Stopped",
+        "tooltip": "Rebalance stopped"
+      },
+      "rebalancing": {
+        "label": "Rebalancing",
+        "tooltip": "Rebalance in progress"
+      },
+      "notReady": {
+        "label": "Not Ready",
+        "tooltip": "Error occurred with the rebalance"
+      },
+      "ready": {
+        "label": "Ready",
+        "tooltip": "Rebalance complete"
+      },
+      "reconciliationPaused": {
+        "label": "Reconciliation Paused",
+        "tooltip": "Rebalance is paused"
+      },
+      "unknown": {
+        "label": "Unknown",
+        "tooltip": "Rebalance status is missing"
+      }
+    },
+    "optimizationProposal": {
+      "title": "Optimization proposal for KafkaRebalance",
+      "description": "A summary of proposed changes based on defined optimization goals, assessed in a specific order of priority.",
+      "dataToMove": "Data To Move MB",
+      "dataToMoveTooltip": "Total amount of data (in MB) moved across brokers as part of the optimization.",
+      "excludedBrokersForLeadership": "Excluded Brokers For Leadership",
+      "excludedBrokersForLeadershipTooltip": "Brokers excluded from becoming leaders for any partition.",
+      "excludedBrokersForReplicaMove": "Excluded Brokers For Replica Move",
+      "excludedBrokersForReplicaMoveTooltip": "Brokers excluded from losing existing replicas or receiving new replicas",
+      "excludedTopics": "Excluded Topics",
+      "excludedTopicsTooltip": "Topics excluded from partition movements.",
+      "intraBrokerDataToMove": "Intra Broker Data to Move MB",
+      "intraBrokerDataToMoveTooltip": "Total amount of data (in MB) moved within individual brokers. For example, log directory changes.",
+      "monitoredPartitionsPercentage": "Monitored Partitions Percentage",
+      "monitoredPartitionsPercentageTooltip": "Percentage of partitions being monitored for optimization. If this percentage is low, it may be necessary to investigate why certain partitions are not being monitored.",
+      "numIntraBrokerReplicaMovements": "Num Intra Broker Replica Movements",
+      "numIntraBrokerReplicaMovementsTooltip": "Number of replica movements within the same broker.",
+      "numLeaderMovements": "Num Leader Movements",
+      "numLeaderMovementsTooltip": "Number of leadership changes for partitions.",
+      "numReplicaMovements": "Number Replica Movements",
+      "numReplicaMovementsTooltip": "Total number of replica movements across brokers.",
+      "onDemandBalancednessScoreAfter": "On Demand Balancedness Score After",
+      "onDemandBalancednessScoreAfterTooltip": "Balancedness score of the Kafka cluster after optimization. If all goals are satisfied, the score is 100.",
+      "onDemandBalancednessScoreBefore": "On Demand Balancedness Score Before",
+      "onDemandBalancednessScoreBeforeTooltip": "Balancedness score of the Kafka cluster before optimization. Scores range from 0 to 100, where lower values indicate greater imbalance.",
+      "recentWindows": "Recent Windows",
+      "recentWindowsTooltip": "Number of recent monitoring windows used to assess the Kafka cluster's performance for this optimization.",
+      "sessionId": "Session Id",
+      "sessionIdTooltip": "Unique identifier for the optimization."
+    }
+  },
+  "users": {
+    "title": "Kafka Users",
+    "tableLabel": "Kafka users table",
+    "noUsers": "No Kafka users",
+    "noUsersDescription": "No Kafka users are currently available in this cluster.",
+    "loading": "Loading users...",
+    "errorLoading": "Failed to load users",
+    "columnName": "Name",
+    "columnNamespace": "Namespace",
+    "columnCreationTime": "Creation Time",
+    "columnUsername": "Username",
+    "columnAuthentication": "Authentication",
+    "filter": {
+      "username": "Username",
+      "usernamePlaceholder": "Filter by username...",
+      "usernameLabel": "Username filter"
+    },
+    "details": {
+      "title": "User Details",
+      "name": "Name",
+      "username": "Username",
+      "authentication": "Authentication",
+      "namespace": "Namespace",
+      "creationTime": "Creation Time",
+      "authorization": "Authorization",
+      "noAuthorization": "No authorization rules",
+      "authColumns": {
+        "type": "Type",
+        "resourceName": "Resource Name",
+        "patternType": "Pattern Type",
+        "host": "Host",
+        "operations": "Operations",
+        "permissionType": "Permission"
+      }
+    }
+  },
+  "overview": {
+    "title": "Overview"
+  },
+  "reconciliation": {
+    "pause_reconciliation_button": "Pause Reconciliation",
+    "pause_reconciliation": "Pause cluster reconciliation?",
+    "pause_reconciliation_description": "Pausing reconciliation stops the operator from making changes to the Kafka cluster temporarily. Use this for safe configuration changes, maintenance, or debugging.",
+    "pause_reconciliation_text": "While paused, updates to the cluster are ignored until reconciliation is resumed.",
+    "resume_cluster_reconciliation": "Resume cluster reconciliation?",
+    "resume_cluster_reconciliation_description": "Resuming reconciliation re-enables operator management of the Kafka cluster. The operator reverts any changes made to the cluster while reconciliation was paused.",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "reconciliation_paused_warning": "Cluster reconciliation paused. Changes to the Kafka resource will not be applied.",
+    "resume": "Resume",
+    "reconciliation_paused": "Reconciliation paused",
+    "resume_reconciliation": "Resume Reconciliation"
+  },
+  "ClusterCard": {
+    "Kafka_cluster_details": "Kafka cluster details",
+    "online_brokers": "Online brokers",
+    "consumer_groups": "Consumer groups",
+    "kafka_version": "Kafka version",
+    "cluster_errors_and_warnings": "Cluster errors and warnings",
+    "no_messages": "No errors or warnings"
+  },
+  "ClusterChartsCard": {
+    "cluster_metrics": "Cluster metrics",
+    "used_disk_space": "Used disk space",
+    "used_disk_space_tooltip": "Used and available disk capacity for all brokers over a specified period. Make sure there's enough space for everyday operations.",
+    "cpu_usage": "CPU usage",
+    "cpu_usage_tooltip": "CPU utilization for all brokers over a specified period. Sustained high usage may indicate the need for resource optimization. Sustained high usage may indicate the need to review cluster capacity, producer send, or consumer fetch configurations.",
+    "memory_usage": "Memory usage",
+    "memory_usage_tooltip": "Memory utilization for all brokers over a specified period. Efficient memory allocation is essential for optimal performance of Kafka.",
+    "data_unavailable": "Metrics data unavailable",
+    "virtual_cluster_metrics_unavailable": "Metrics are not available for virtual clusters",
+    "charts_coming_soon": "Charts coming soon",
+    "charts_implementation_pending": "Chart visualization will be implemented in a future update",
+    "error_loading_metrics": "Error loading metrics",
+    "error_loading_metrics_description": "Unable to load cluster metrics. Please try again later."
+  },
+  "ClusterOverview": {
+    "header": "Cluster overview",
+    "description": "Key performance indicators and important information regarding the Kafka cluster.",
+    "topic_header": "Topics",
+    "total_topics": "Total topics",
+    "total_partitions": "Total partitions",
+    "fully_replicated_partition": "Fully replicated",
+    "fully_replicated_partition_tooltip": "Partitions that have all replicas in sync with the leader",
+    "under_replicated_partition": "Under-replicated",
+    "under_replicated_partition_tooltip": "Partitions with one or more replicas that are not in sync with the leader",
+    "unavailable_partition": "Offline",
+    "unavailable_partition_tooltip": "Partitions that have no available replicas",
+    "view_all_topics": "View all topics",
+    "ErrorsAndWarnings": {
+      "tooltip": "Issues encountered in the Kafka cluster. Investigate and address these issues to ensure continued operation of the cluster."
+    }
+  },
+  "ClusterConnectionDetails": {
+    "title": "Cluster connection details",
+    "description": "To connect to a Kafka cluster, add a bootstrap address and the properties to establish a secure connection to the configuration of your client application.",
+    "externalServersBootstraps": "External servers bootstraps",
+    "externalServersBootstrapsDescription": "External listeners provide client access to a Kafka cluster from outside the OpenShift cluster.",
+    "authenticationType": "Authentication type:",
+    "internalServersBootstraps": "Internal servers bootstraps",
+    "internalServersBootstrapsDescription": "Internal listeners provide client access to a Kafka cluster only from within the OpenShift cluster.",
+    "whenYouHaveEstablishedConnection": "When you have established a connection, you can begin consuming messages from Kafka topics or producing messages to them.",
+    "developingKafkaClientApplications": "Developing Kafka client applications",
+    "connectionDetails": "Connection details"
+  },
+  "ConnectButton": {
+    "cluster_connection_details": "Cluster connection details"
+  },
+  "learning": {
+    "labels": {
+      "overview": "Strimzi Overview",
+      "connecting": "Connect to a Kafka cluster from an application"
+    },
+    "links": {
+      "overview": "https://strimzi.io/docs/operators/latest/overview",
+      "connecting": ""
+    }
+  },
+  "topicMetricsCard": {
+    "topic_metric": "Topic metrics",
+    "topics_bytes_incoming_and_outgoing": "Topics bytes incoming and outgoing",
+    "topics_bytes_incoming_and_outgoing_tooltip": "Rate of data being produced to and consumed from topics",
+    "charts_coming_soon": "Charts coming soon",
+    "charts_implementation_pending": "Chart visualization will be implemented in a future update",
+    "no_topics": "No topics available",
+    "no_topics_description": "Create topics to view metrics data."
+  },
+  "RecentTopicsCard": {
+    "recent_topics": "Recent topics",
+    "recent_topics_subtitle": "The last 5 topics this account has accessed from the StreamsHub console.",
+    "recent_topics_tooltip": "When you start looking at specific topics through the StreamsHub console, they'll start showing here.",
+    "no_recent_topics": "No recent topics",
+    "no_recent_topics_description": "Topics you view will appear here for quick access"
+  },
+  "ClustersTable": {
+    "version_derived": "Version derived from broker metadata",
+    "not_available": "N/A"
+  },
+  "metrics": {
+    "all_topics": "All topics",
+    "all_brokers": "All brokers"
+  },
+  "ChartDiskUsage": {
+    "data_unavailable": "Disk usage data unavailable"
+  },
+  "ChartCpuUsage": {
+    "data_unavailable": "CPU usage data unavailable"
+  },
+  "ChartMemoryUsage": {
+    "data_unavailable": "Memory usage data unavailable"
+  },
+  "ChartIncomingOutgoing": {
+    "data_unavailable": "Topic metrics data unavailable"
+  },
+  "errors": {
+    "generic": "An error occurred",
+    "network": "Network error. Please check your connection.",
+    "notFound": "Resource not found",
+    "unauthorized": "Unauthorized access",
+    "forbidden": "Access forbidden"
+  },
+  "user": {
+    "logout": "Logout",
+    "anonymous": "Anonymous"
+  }
+}

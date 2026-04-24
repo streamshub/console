@@ -6,15 +6,15 @@ test.beforeEach(async ({ authenticatedPage }) => {
 
 test("Nodes page", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to nodes page", async () => {
-    await authenticatedPage.clickLink('Kafka nodes', "sidebar");
+    await authenticatedPage.clickLink('Nodes', "sidebar");
     await expect(page.getByRole('columnheader', { name: 'Rack' })).toBeVisible();
   });
   await test.step("Nodes page should display table", async () => {
     await expect(page.locator('h1').getByText('Nodes')).toBeVisible();
-    await expect(page.getByText('Partitions distribution (% of total)')).toBeVisible();
+    await expect(page.getByText('Node Partition Distribution')).toBeVisible();
 
     const headerRows = await page
-      .locator('table[aria-label="Kafka nodes"] thead tr')
+      .locator('table[data-ouia-component-id="nodes-listing"] thead tr')
       .all();
     const headerRow = headerRows[0];
     expect(await headerRow.locator("th").nth(1).innerText()).toBe("Node ID");
@@ -27,11 +27,11 @@ test("Nodes page", async ({ page, authenticatedPage }) => {
     expect(await headerRow.locator("th").nth(6).innerText()).toBe("Node Pool");
 
     const dataRows = await page
-      .locator('table[aria-label="Kafka nodes"] tbody tr')
+      .locator('table[data-ouia-component-id="nodes-listing"] tbody tr')
       .count();
     expect(dataRows).toBeGreaterThan(0);
     const dataCells = await page
-      .locator('table[aria-label="Kafka nodes"] tbody tr td')
+      .locator('table[data-ouia-component-id="nodes-listing"] tbody tr td')
       .evaluateAll((tds) => tds.map((td) => td.innerHTML?.trim() ?? ""));
 
     expect(dataCells.length).toBeGreaterThan(0);

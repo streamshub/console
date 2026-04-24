@@ -50,18 +50,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Cache Next.js UI Build
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.npm
-            ${{ github.workspace }}/.next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-
       - name: Set Up QEMU
         uses: docker/setup-qemu-action@v4
 
@@ -69,23 +57,6 @@ jobs:
         uses: docker/setup-buildx-action@v4
         with:
           driver-opts: network=host
-
-      # ==================== UI ====================
-      - name: Build UI Project
-        working-directory: ui
-        run: |
-          npm ci --omit=dev
-          npm run build
-
-      - name: Build UI Image
-        uses: docker/build-push-action@v7
-        with:
-          context: ui/
-          platforms: ${{ env.PLATFORMS }}
-          provenance: false
-          push: true
-          tags: |
-            localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
 
       # ==================== API & Operator ====================
       - name: Build API and Operator Images
@@ -145,7 +116,7 @@ jobs:
         run: |
           mkdir streamshub-images
 
-          for img in console-ui console-api console-operator console-operator-bundle console-operator-catalog ; do
+          for img in console-api console-operator console-operator-bundle console-operator-catalog ; do
               skopeo sync --all --scoped --src docker --src-tls-verify=false --dest dir \
                 localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }} \
                 $(pwd)/streamshub-images
@@ -153,7 +124,7 @@ jobs:
 
           tar -czf streamshub-images.tgz -C streamshub-images .
 
-      - name: Archive [UI, API, Operator-Bundle, Operator, Operator-Catalog] Image Files
+      - name: Archive [API, Operator-Bundle, Operator, Operator-Catalog] Image Files
         uses: actions/upload-artifact@v7
         with:
           name: streamshub-images
@@ -218,25 +189,25 @@ jobs:
             !**/target/failsafe-reports/**/*
             !**/target/surefire-reports/**/*
 
-  test-storybook:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Build Storybook
-        working-directory: ./ui
-        run: |
-          npm ci
-          npx playwright install
-          npm run build-storybook
-
-      - name: Test Storybook
-        working-directory: ./ui
-        run: |
-          npx --yes concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
-            "npx http-server storybook-static --port 6006 --silent" \
-            "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook"
+#  test-storybook:
+#    runs-on: ubuntu-24.04
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Build Storybook
+#        working-directory: ./ui
+#        run: |
+#          npm ci
+#          npx playwright install
+#          npm run build-storybook
+#
+#      - name: Test Storybook
+#        working-directory: ./ui
+#        run: |
+#          npx --yes concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
+#            "npx http-server storybook-static --port 6006 --silent" \
+#            "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook"
 
   Playwright:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}

@@ -18,6 +18,9 @@
         <docker.group>streamshub</docker.group>
         <docker.tag>${project.version}</docker.tag>
         <docker.push>false</docker.push>
+
+        <!-- UI Libs -->
+        <quarkus-quinoa.version>2.8.0</quarkus-quinoa.version>
     </properties>
 
     <dependencies>
@@ -99,6 +102,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image</artifactId>
+        </dependency>
+        <!-- Quarkus Quinoa -->
+        <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa</artifactId>
+            <version>${quarkus-quinoa.version}</version>
         </dependency>
 
         <dependency>

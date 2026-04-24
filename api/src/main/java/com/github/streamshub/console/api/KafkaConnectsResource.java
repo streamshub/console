@@ -37,7 +37,7 @@ import com.github.streamshub.console.api.support.StringEnumeration;
 
 import io.xlate.validation.constraints.Expression;
 
-@Path("/api/connects")
+@Path("connects")
 @Tag(name = "Kafka Connect Resources")
 public class KafkaConnectsResource {
 

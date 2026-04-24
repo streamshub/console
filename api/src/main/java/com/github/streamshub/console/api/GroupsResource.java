@@ -47,7 +47,7 @@ import com.github.streamshub.console.config.security.Privilege;
 
 import io.xlate.validation.constraints.Expression;
 
-@Path("/api/kafkas/{clusterId}/groups")
+@Path("kafkas/{clusterId}/groups")
 @Tag(name = "Kafka Cluster Resources")
 public class GroupsResource {
 

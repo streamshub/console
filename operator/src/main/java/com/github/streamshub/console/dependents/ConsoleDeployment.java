@@ -18,7 +18,6 @@ import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerTempl
 import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
-import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -42,10 +41,6 @@ public class ConsoleDeployment extends BaseDeployment {
     @ConfigProperty(name = "console.deployment.default-api-image")
     String defaultAPIImage;
 
-    @Inject
-    @ConfigProperty(name = "console.deployment.default-ui-image")
-    String defaultUIImage;
-
     public ConsoleDeployment() {
         super(NAME);
     }
@@ -58,23 +53,16 @@ public class ConsoleDeployment extends BaseDeployment {
 
         var containers = Optional.ofNullable(primary.getSpec().getContainers());
         var templateAPI = containers.map(Containers::getApi).map(ContainerTemplateSpec::getSpec);
-        var templateUI = containers.map(Containers::getUi).map(ContainerTemplateSpec::getSpec);
         // deprecated
         var images = Optional.ofNullable(primary.getSpec().getImages());
 
         String imageAPI = templateAPI.map(ContainerSpec::getImage)
                 .or(() -> images.map(Images::getApi))
                 .orElse(defaultAPIImage);
-        String imageUI = templateUI.map(ContainerSpec::getImage)
-                .or(() -> images.map(Images::getUi))
-                .orElse(defaultUIImage);
 
         List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(coalesce(primary.getSpec().getEnv(), Collections::emptyList));
         envVars.addAll(templateAPI.map(ContainerSpec::getEnv).orElseGet(Collections::emptyList));
-
-        List<EnvVar> envVarsUI = new ArrayList<>();
-        envVarsUI.addAll(templateUI.map(ContainerSpec::getEnv).orElseGet(Collections::emptyList));
 
         return desired.edit()
             .editMetadata()
@@ -107,39 +95,10 @@ public class ConsoleDeployment extends BaseDeployment {
                             .withResources(templateAPI.map(ContainerSpec::getResources).orElse(null))
                             .addAllToEnv(envVars)
                         .endContainer()
-                        // Set UI container image options
-                        .editMatchingContainer(c -> "console-ui".equals(c.getName()))
-                            .withImage(imageUI)
-                            .withImagePullPolicy(pullPolicy(imageUI))
-                            .withResources(templateUI.map(ContainerSpec::getResources).orElse(null))
-                            .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
-                                .withValue(getAttribute(context, INGRESS_URL_KEY, String.class))
-                            .endEnv()
-                            .editMatchingEnv(env -> "NEXTAUTH_SECRET".equals(env.getName()))
-                                .editValueFrom()
-                                    .editSecretKeyRef()
-                                        .withName(configSecretName)
-                                    .endSecretKeyRef()
-                                .endValueFrom()
-                            .endEnv()
-                            .addAllToEnv(envVarsUI)
-                        .endContainer()
                     .endSpec()
                 .endTemplate()
             .endSpec()
             .build();
-    }
-
-    @SuppressWarnings("unchecked")
-    <R extends KubernetesResource> Map<Class<R>, List<R>> getTrustResources(String key, Context<Console> context) {
-        return context.managedWorkflowAndDependentResourceContext().getMandatory(key, Map.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    <R extends KubernetesResource> List<R> getResourcesByType(
-            Map<Class<KubernetesResource>, List<KubernetesResource>> resources,
-            Class<R> key) {
-        return (List<R>) resources.getOrDefault(key, Collections.emptyList());
     }
 
     private String pullPolicy(String image) {

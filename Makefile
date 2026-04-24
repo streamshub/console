@@ -1,5 +1,5 @@
 
-.PHONY: container-image-api container-image-ui container-images
+.PHONY: container-image-api container-images
 
 include *compose.env
 
@@ -9,7 +9,6 @@ VERSION ?= $(shell mvn help:evaluate -Dexpression=project.version -q -DforceStdo
 CSV_VERSION ?= $(VERSION)
 
 CONSOLE_API_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-api:$(VERSION)
-CONSOLE_UI_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-ui:$(VERSION)
 
 CONSOLE_OPERATOR_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operator:$(VERSION)
 CONSOLE_OPERATOR_BUNDLE_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operator-bundle:$(VERSION)
@@ -20,10 +19,8 @@ SKOPEO_TRANSPORT ?= $(shell which podman >/dev/null && echo "containers-storage:
 PLATFORMS ?= $(shell docker system info --format '{{.OSType}}/{{.Architecture}}' 2>/dev/null || podman info --format={{".Version.OsArch"}})
 SKIP_RANGE ?= ""
 
-CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
-
 # This helps to build CSV using Quarkus with correct image tags in lowercase "-snapshot" instead of "-SNAPSHOT" (default project pom value)
-# Without this export, UI and API images could not be pulled from registry during the deployment of Console instance
+# Without this export the  API image could not be pulled from registry during the deployment of Console instance
 export QUARKUS_CONTAINER_IMAGE_TAG=${VERSION}
 export QUARKUS_KUBERNETES_VERSION=${VERSION}
 export QUARKUS_DOCKER_ADDITIONAL_ARGS ?= --platform=${PLATFORMS}
@@ -46,27 +43,15 @@ container-image-operator-push: container-image-operator
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_BUNDLE_IMAGE) docker://$(CONSOLE_OPERATOR_BUNDLE_IMAGE)
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_CATALOG_IMAGE) docker://$(CONSOLE_OPERATOR_CATALOG_IMAGE)
 
-container-image-ui:
-	cd ui && \
-	npm ci --omit=dev && \
-	npm run build && \
-	cd $(CURDIR) && \
-	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
+container-images: container-image-api container-image-operator
 
-container-image-ui-push: container-image-ui
-	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_UI_IMAGE) docker://$(CONSOLE_UI_IMAGE)
-
-container-images: container-image-api container-image-ui container-image-operator
-
-container-images-push: container-image-api-push container-image-ui-push container-image-operator-push
+container-images-push: container-image-api-push container-image-operator-push
 
 compose-up:
 	> compose-runtime.env
 	echo "CONSOLE_API_IMAGE=$(CONSOLE_API_IMAGE)" >> compose-runtime.env
 	echo "CONSOLE_API_SERVICE_ACCOUNT_TOKEN=$(CONSOLE_API_SERVICE_ACCOUNT_TOKEN)" >> compose-runtime.env
 	echo "CONSOLE_API_KUBERNETES_API_SERVER_URL=$(CONSOLE_API_KUBERNETES_API_SERVER_URL)" >> compose-runtime.env 
-	echo "CONSOLE_UI_IMAGE=$(CONSOLE_UI_IMAGE)" >> compose-runtime.env
-	echo "CONSOLE_UI_NEXTAUTH_SECRET=$(CONSOLE_UI_NEXTAUTH_SECRET)" >> compose-runtime.env
 	$(CONTAINER_RUNTIME) compose --env-file compose-runtime.env up -d
 
 compose-down:
