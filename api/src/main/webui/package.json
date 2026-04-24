@@ -27,7 +27,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-i18next": "^17.0.3",
-    "react-router-dom": "^7.14.1",
+    "react-router-dom": "^7.14.2",
     "victory": "^37.3.6",
     "zustand": "^5.0.12"
   },
