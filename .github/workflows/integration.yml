@@ -11,6 +11,10 @@ on:
       - 'systemtests'
     types: [ opened, reopened, synchronize ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-images:
     runs-on: ubuntu-24.04
@@ -188,6 +192,18 @@ jobs:
             !**/target/**/*.jar
             !**/target/failsafe-reports/**/*
             !**/target/surefire-reports/**/*
+
+  lint-ui:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Lint UI Project
+        working-directory: api/src/main/webui
+        run: |
+          npm ci --ignore-scripts
+          npm run lint
 
 #  test-storybook:
 #    runs-on: ubuntu-24.04
