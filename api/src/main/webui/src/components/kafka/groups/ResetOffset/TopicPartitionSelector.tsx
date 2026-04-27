@@ -50,10 +50,10 @@ export function TopicPartitionSelector({
   const [isPartitionSelectOpen, setIsPartitionSelectOpen] = useState(false);
   const [topicFilter, setTopicFilter] = useState('');
 
-  const topicToggleRef = useRef<any>(null);
-  const topicMenuRef = useRef<any>(null);
-  const partitionToggleRef = useRef<any>(null);
-  const partitionMenuRef = useRef<any>(null);
+  const topicToggleRef = useRef<HTMLButtonElement | null>(null);
+  const topicMenuRef = useRef<HTMLDivElement | null>(null);
+  const partitionToggleRef = useRef<HTMLButtonElement | null>(null);
+  const partitionMenuRef = useRef<HTMLDivElement | null>(null);
 
   const selectedTopic = topics.find((t) => t.id === selectedTopicId);
 

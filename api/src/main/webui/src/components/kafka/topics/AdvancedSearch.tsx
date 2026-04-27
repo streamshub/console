@@ -76,7 +76,7 @@ export function AdvancedSearch({
   const [fromTimestamp, setFromTimestamp] = useState<string | undefined>(filterTimestamp);
   const [fromEpoch, setFromEpoch] = useState<number | undefined>(filterEpoch);
   const [isFromOpen, setIsFromOpen] = useState(false);
-  const [_, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   
   // Retrieve group state
   const [retrieveCategory, setRetrieveCategory] = useState<RetrieveCategory>(
@@ -118,7 +118,7 @@ export function AdvancedSearch({
     const parameters = getParameters();
     const { query, from, limit, partition } = parameters;
     return (() => {
-      let composed: string[] = [];
+      const composed: string[] = [];
       if (from !== undefined) {
         if ("value" in from) {
           composed.push(`messages=${from.type}:${from.value}`);

@@ -133,11 +133,12 @@ export function TopicPartitionsTab() {
         case 'status':
           comparison = a.status.localeCompare(b.status);
           break;
-        case 'preferredLeader':
+        case 'preferredLeader': {
           const apl = a.leaderId === a.replicas[0]?.nodeId;
           const bpl = b.leaderId === b.replicas[0]?.nodeId;
           comparison = Number(apl) - Number(bpl);
           break;
+        }
         case 'storage':
           comparison = (a.leaderLocalStorage ?? 0) - (b.leaderLocalStorage ?? 0);
           break;

@@ -26,6 +26,10 @@ import { useChartWidth } from '@/components/kafka/overview/utils/useChartWidth';
 import { getHeight, getPadding } from '@/components/kafka/overview/utils/chartConsts';
 import { DurationOptions, TimeSeriesMetrics, ChartDatum } from '@/components/kafka/overview/utils/types';
 
+interface ChartLegendTitleDatum {
+  x?: number;
+}
+
 interface ChartIncomingOutgoingProps {
   incoming: TimeSeriesMetrics;
   outgoing: TimeSeriesMetrics;
@@ -102,7 +106,7 @@ export function ChartIncomingOutgoing({
             labelComponent={
               <ChartLegendTooltip
                 legendData={legendData}
-                title={(args: any) =>
+                title={(args?: ChartLegendTitleDatum) =>
                   formatDateTime({ value: args?.x ?? 0, format: tooltipFormat })
                 }
               />
@@ -131,7 +135,7 @@ export function ChartIncomingOutgoing({
       >
         <ChartAxis
           scale="time"
-          tickFormat={(d: any) => formatDateTime({ value: d, format: axisFormat })}
+          tickFormat={(d: number) => formatDateTime({ value: d, format: axisFormat })}
           tickCount={4}
           orientation="bottom"
           offsetY={padding.bottom}
@@ -143,7 +147,7 @@ export function ChartIncomingOutgoing({
         />
         <ChartAxis
           dependentAxis
-          tickFormat={(d: any) => formatBytes(Math.abs(d))}
+          tickFormat={(d: number) => formatBytes(Math.abs(d))}
         />
         <ChartGroup>
           <ChartArea

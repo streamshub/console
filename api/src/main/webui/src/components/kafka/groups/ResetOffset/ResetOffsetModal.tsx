@@ -21,6 +21,7 @@ import {
   OffsetValue,
   DateTimeFormat,
   Group,
+  OffsetResetResult,
 } from '@/api/types';
 import { TopicPartitionSelector } from './TopicPartitionSelector';
 import { OffsetValueSelector } from './OffsetValueSelector';
@@ -62,7 +63,7 @@ export function ResetOffsetModal({
 
   // Dry run state
   const [showDryRun, setShowDryRun] = useState(false);
-  const [dryRunResults, setDryRunResults] = useState<any[]>([]);
+  const [dryRunResults, setDryRunResults] = useState<OffsetResetResult[]>([]);
 
   // Derive topics from group offsets
   const topics = useMemo(() => {

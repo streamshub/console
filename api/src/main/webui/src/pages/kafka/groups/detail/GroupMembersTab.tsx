@@ -42,23 +42,21 @@ export function GroupMembersTab() {
   };
 
   // Handle empty group - show offsets with unknown member
-  let members: MemberDescription[] = [];
-  if (group.attributes.members?.length === 0 && group.attributes.offsets) {
-    members = [
-      {
-        memberId: 'unknown',
-        host: 'N/A',
-        clientId: 'unknown',
-        assignments: group.attributes.offsets.map((o) => ({
-          topicId: o.topicId,
-          topicName: o.topicName,
-          partition: o.partition,
-        })),
-      },
-    ];
-  } else {
-    members = group.attributes.members ?? [];
-  }
+  const members: MemberDescription[] =
+    group.attributes.members?.length === 0 && group.attributes.offsets
+      ? [
+          {
+            memberId: 'unknown',
+            host: 'N/A',
+            clientId: 'unknown',
+            assignments: group.attributes.offsets.map((o) => ({
+              topicId: o.topicId,
+              topicName: o.topicName,
+              partition: o.partition,
+            })),
+          },
+        ]
+      : (group.attributes.members ?? []);
 
   const toggleRow = (memberId: string) => {
     setExpandedRows((prev) => {

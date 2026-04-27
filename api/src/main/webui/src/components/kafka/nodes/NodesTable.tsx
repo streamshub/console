@@ -30,6 +30,7 @@ import {
 import { HelpIcon } from '@patternfly/react-icons';
 import { ChartDonutUtilization } from '@patternfly/react-charts/victory';
 import type { Node } from '@/api/types';
+import type { ChartDatum } from '@/components/kafka/overview/utils/types';
 import {
   useRoleLabels,
   useBrokerStatusLabels,
@@ -237,8 +238,8 @@ export function NodesTable({
                                     x: 'Used capacity',
                                     y: usedCapacity * 100,
                                   }}
-                                  labels={({ datum }: any) =>
-                                    datum.x ? `${datum.x}: ${(datum.y).toFixed(1)}%` : null
+                                  labels={({ datum }: { datum: ChartDatum }) =>
+                                    datum.x ? `${datum.x}: ${datum.y.toFixed(1)}%` : null
                                   }
                                   legendData={[
                                     {

@@ -54,8 +54,8 @@ export function OffsetValueSelector({
 }: OffsetValueSelectorProps) {
   const { t } = useTranslation();
   const [isOffsetSelectOpen, setIsOffsetSelectOpen] = useState(false);
-  const offsetToggleRef = useRef<any>(null);
-  const offsetMenuRef = useRef<any>(null);
+  const offsetToggleRef = useRef<HTMLButtonElement | null>(null);
+  const offsetMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Determine available offset options based on topic/partition selection
   const offsetOptions: Array<{ value: OffsetValue; label: string }> = [];

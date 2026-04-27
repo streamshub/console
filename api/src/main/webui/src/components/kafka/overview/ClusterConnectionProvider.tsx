@@ -15,7 +15,7 @@ export interface ClusterConnectionProviderProps {
 export function ClusterConnectionProvider({ children }: ClusterConnectionProviderProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const open = (_clusterId: string) => {
+  const open = () => {
     setExpanded(true);
   };
 
