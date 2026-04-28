@@ -45,13 +45,17 @@ updates:
       patterns:
       - "@patternfly/patternfly"
       - "@patternfly/react-*"
+    playwright:
+      patterns:
+      - "playwright"
+      - "@playwright/*"
     storybook:
       patterns:
       - "storybook"
       - "@storybook/*"
       exclude-patterns:
       - "@storybook/testing-library"
-    playwright:
+    typescript-eslint:
       patterns:
-      - "playwright"
-      - "@playwright/*"
+      - "typescript-eslint"
+      - "@typescript-eslint/*"
