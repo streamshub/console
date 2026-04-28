@@ -36,7 +36,7 @@ export function CliCommandDisplay({
   return (
     <ExpandableSection
       toggleText={t('groups.resetOffset.cliCommand')}
-      onToggle={(_event, expanded) => setIsOpen(expanded)}
+      onToggle={(_, expanded) => setIsOpen(expanded)}
       isExpanded={isOpen}
     >
       <CodeBlock
@@ -46,7 +46,7 @@ export function CliCommandDisplay({
               <ClipboardCopyButton
                 id="basic-copy-button"
                 aria-label="Copy to clipboard basic example code block"
-                onClick={_ => onClick(command)}
+                onClick={() => onClick(command)}
                 exitDelay={copied ? 1500 : 600}
                 maxWidth="110px"
                 variant="plain"

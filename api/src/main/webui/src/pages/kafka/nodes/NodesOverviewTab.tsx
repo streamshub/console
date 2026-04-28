@@ -101,9 +101,9 @@ export function NodesOverviewTab() {
     sort: table.sortBy,
     sortDir: table.sortDirection,
     nodePool: filterNodePools.length > 0 ? filterNodePools : undefined,
-    roles: filterRoles.length > 0 ? filterRoles as any : undefined,
-    brokerStatus: filterBrokerStatuses.length > 0 ? filterBrokerStatuses as any : undefined,
-    controllerStatus: filterControllerStatuses.length > 0 ? filterControllerStatuses as any : undefined,
+    roles: filterRoles.length > 0 ? filterRoles : undefined,
+    brokerStatus: filterBrokerStatuses.length > 0 ? filterBrokerStatuses : undefined,
+    controllerStatus: filterControllerStatuses.length > 0 ? filterControllerStatuses : undefined,
   });
 
   // Update table state when data changes
@@ -140,13 +140,13 @@ export function NodesOverviewTab() {
   const currentPage = tableData?.meta?.page?.pageNumber || 1;
 
   // Calculate node counts
-  const totalNodes = Object.values(summary?.statuses?.combined || {}).reduce(
-    (sum, count) => sum + count,
+  const totalNodes = Object.values(summary?.statuses?.combined || {}).reduce<number>(
+    (sum, count) => sum + Number(count),
     0
   );
 
-  const brokersTotal = Object.values(summary?.statuses?.brokers || {}).reduce(
-    (sum, count) => sum + count,
+  const brokersTotal = Object.values(summary?.statuses?.brokers || {}).reduce<number>(
+    (sum, count) => sum + Number(count),
     0
   );
 
@@ -154,8 +154,8 @@ export function NodesOverviewTab() {
     (key) => key !== 'Running'
   );
 
-  const controllersTotal = Object.values(summary?.statuses?.controllers || {}).reduce(
-    (sum, count) => sum + count,
+  const controllersTotal = Object.values(summary?.statuses?.controllers || {}).reduce<number>(
+    (sum, count) => sum + Number(count),
     0
   );
 
@@ -166,8 +166,8 @@ export function NodesOverviewTab() {
   // Build distribution data from broker nodes
   const distributionData: Record<string, { leaders: number; followers: number }> = {};
   nodes
-    .filter((n) => n.attributes.roles?.includes('broker'))
-    .forEach((node) => {
+    .filter((n: typeof nodes[number]) => n.attributes.roles?.includes('broker'))
+    .forEach((node: typeof nodes[number]) => {
       distributionData[node.id] = {
         leaders: node.attributes.broker?.leaderCount || 0,
         followers: node.attributes.broker?.replicaCount || 0,
@@ -206,12 +206,15 @@ export function NodesOverviewTab() {
   // Node pool options for filter
   const nodePoolOptions = useMemo(() => {
     if (!summary?.nodePools) return [];
-    return Object.entries(summary.nodePools).map(([poolName, poolMeta]) => ({
-      value: poolName,
-      label: poolName,
-      count: poolMeta.count,
-      description: `Roles: ${poolMeta.roles.join(', ')}`,
-    }));
+    return Object.entries(summary.nodePools).map(([poolName, poolMeta]) => {
+      const typedPoolMeta = poolMeta as { roles: string[]; count: number };
+      return {
+        value: poolName,
+        label: poolName,
+        count: typedPoolMeta.count,
+        description: `Roles: ${typedPoolMeta.roles.join(', ')}`,
+      };
+    });
   }, [summary?.nodePools]);
 
   // Role options for filter
@@ -220,14 +223,14 @@ export function NodesOverviewTab() {
       value: 'broker',
       label: t('nodes.nodeRoles.broker'),
       count: summary?.statuses?.brokers
-        ? Object.values(summary.statuses.brokers).reduce((sum, count) => sum + count, 0)
+        ? Object.values(summary.statuses.brokers).reduce<number>((sum, count) => sum + Number(count), 0)
         : 0,
     },
     {
       value: 'controller',
       label: t('nodes.nodeRoles.controller'),
       count: summary?.statuses?.controllers
-        ? Object.values(summary.statuses.controllers).reduce((sum, count) => sum + count, 0)
+        ? Object.values(summary.statuses.controllers).reduce<number>((sum, count) => sum + Number(count), 0)
         : 0,
     },
   ];
@@ -404,7 +407,7 @@ export function NodesOverviewTab() {
                     themeColor={ChartThemeColor.multiOrdered}
                     containerComponent={
                       <ChartVoronoiContainer
-                        labels={({ datum }: any) => {
+                        labels={({ datum }: { datum: { name: string; y: number } }) => {
                           switch (filter) {
                             case 'followers':
                               return t('nodes.distribution.brokerNodeVoronoiFollowers', {
@@ -495,7 +498,7 @@ export function NodesOverviewTab() {
                       <Select
                         isOpen={nodePoolFilterOpen}
                         onOpenChange={setNodePoolFilterOpen}
-                        onSelect={(_, value) => {
+                        onSelect={(_event: unknown, value: string | number | undefined) => {
                           const poolName = value as string;
                           const newPools = filterNodePools.includes(poolName)
                             ? filterNodePools.filter((p) => p !== poolName)
@@ -547,7 +550,7 @@ export function NodesOverviewTab() {
                       <Select
                         isOpen={roleFilterOpen}
                         onOpenChange={setRoleFilterOpen}
-                        onSelect={(_, value) => {
+                        onSelect={(_event: unknown, value: string | number | undefined) => {
                           const role = value as NodeRoles;
                           const newRoles = filterRoles.includes(role)
                             ? filterRoles.filter((r) => r !== role)
@@ -594,22 +597,19 @@ export function NodesOverviewTab() {
                       <Select
                         isOpen={statusFilterOpen}
                         onOpenChange={setStatusFilterOpen}
-                        onSelect={(_, value) => {
+                        onSelect={(_event: unknown, value: string | number | undefined) => {
                           const status = value as BrokerStatus | ControllerStatus;
-                          let newBrokerStatuses = filterBrokerStatuses;
-                          let newControllerStatuses = filterControllerStatuses;
-                          
-                          // Check if it's a broker status
+
                           if (brokerStatusOptions.some((opt) => opt.value === status)) {
-                            newBrokerStatuses = filterBrokerStatuses.includes(status as BrokerStatus)
+                            const nextBrokerStatuses = filterBrokerStatuses.includes(status as BrokerStatus)
                               ? filterBrokerStatuses.filter((s) => s !== status)
                               : [...filterBrokerStatuses, status as BrokerStatus];
-                            setFilterBrokerStatuses(newBrokerStatuses);
+                            setFilterBrokerStatuses(nextBrokerStatuses);
                           } else {
-                            newControllerStatuses = filterControllerStatuses.includes(status as ControllerStatus)
+                            const nextControllerStatuses = filterControllerStatuses.includes(status as ControllerStatus)
                               ? filterControllerStatuses.filter((s) => s !== status)
                               : [...filterControllerStatuses, status as ControllerStatus];
-                            setFilterControllerStatuses(newControllerStatuses);
+                            setFilterControllerStatuses(nextControllerStatuses);
                           }
                           
                           table.resetPagination();

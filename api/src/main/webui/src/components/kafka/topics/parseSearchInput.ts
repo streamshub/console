@@ -1,7 +1,7 @@
 import { SearchParams } from '@/api/types';
 
 export function parseSearchInput({ value }: { value: string }): SearchParams {
-  let sp: SearchParams = {
+  const sp: SearchParams = {
     from: {
       type: "latest",
     },
@@ -13,13 +13,13 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
     },
   };
   const parts = value.split(" ");
-  let queryParts: string[] = [];
+  const queryParts: string[] = [];
   parts.forEach((p) => {
     if (p.indexOf(`where=`) === 0) {
-      const [_, where] = p.split("=");
+      const [, where] = p.split("=");
       sp.query!.where = parseWhere(where);
     } else if (p.indexOf(`messages=`) === 0) {
-      const [_, from] = p.split("=");
+      const [, from] = p.split("=");
       if (from === "latest") {
         sp.from = {
           type: "latest",
@@ -58,7 +58,7 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
         }
       }
     } else if (p.indexOf("retrieve=") === 0) {
-      const [_, limit] = p.split("=");
+      const [, limit] = p.split("=");
       if (limit === "continuously") {
         sp.limit = "continuously";
       } else {
@@ -68,7 +68,7 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
         }
       }
     } else if (p.indexOf("partition=") === 0) {
-      const [_, partition] = p.split("=");
+      const [, partition] = p.split("=");
       const number = parseInt(partition, 10);
       if (Number.isSafeInteger(number)) {
         sp.partition = number;

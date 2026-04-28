@@ -24,6 +24,7 @@ import {
   Select,
   SelectList,
   SelectOption,
+  MenuToggleElement,
 } from '@patternfly/react-core';
 import {
   Table,
@@ -102,11 +103,12 @@ export function NodeConfigurationTab() {
 
   const nodeConfig = data?.data;
   const allData = Object.entries(nodeConfig?.attributes || {});
+  const typedAllData = allData as Array<[string, ConfigValue]>;
 
   // Derive available data sources from config values
   const dataSources = useMemo(() => {
-    return Array.from(new Set(allData.map(([_, property]) => property.source)));
-  }, [allData]);
+    return Array.from(new Set(typedAllData.map(([, property]) => property.source)));
+  }, [typedAllData]);
 
   // Initialize selected data sources to all sources
   useMemo(() => {
@@ -117,25 +119,22 @@ export function NodeConfigurationTab() {
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
-    let filtered = allData
+    let filtered = typedAllData
       .filter(([name]) => (propertyFilter ? name.includes(propertyFilter) : true))
-      .filter(([_, property]) =>
+      .filter(([, property]) =>
         selectedDataSources.length > 0 ? selectedDataSources.includes(property.source) : true
       );
 
-    // Sort
     filtered = [...filtered].sort((a, b) => {
-      let comparison = 0;
-      if (sortColumn === 'property') {
-        comparison = a[0].localeCompare(b[0]);
-      } else {
-        comparison = (a[1].value || '').localeCompare(b[1].value || '');
-      }
+      const comparison =
+        sortColumn === 'property'
+          ? a[0].localeCompare(b[0])
+          : (a[1].value || '').localeCompare(b[1].value || '');
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [allData, propertyFilter, selectedDataSources, sortColumn, sortDirection]);
+  }, [typedAllData, propertyFilter, selectedDataSources, sortColumn, sortDirection]);
 
   const handleSort = (column: SortableColumn) => {
     if (sortColumn === column) {
@@ -218,7 +217,7 @@ export function NodeConfigurationTab() {
             <SearchInput
               placeholder={t('topics.configuration.searchPlaceholder')}
               value={propertyFilter}
-              onChange={(_, value) => setPropertyFilter(value)}
+              onChange={(_, value: string) => setPropertyFilter(value)}
               onClear={() => setPropertyFilter('')}
               aria-label={t('topics.configuration.searchPlaceholder')}
             />
@@ -228,9 +227,10 @@ export function NodeConfigurationTab() {
               id="data-source-select"
               isOpen={isDataSourceSelectOpen}
               selected={selectedDataSources}
-              onSelect={(_, selection) => handleDataSourceToggle(selection as string)}
-              onOpenChange={(isOpen) => setIsDataSourceSelectOpen(isOpen)}
-              toggle={(toggleRef) => (
+              onSelect={(_, selection: string | number | undefined) =>
+                handleDataSourceToggle(selection as string)}
+              onOpenChange={(isOpen: boolean) => setIsDataSourceSelectOpen(isOpen)}
+              toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
                 <MenuToggle
                   ref={toggleRef}
                   onClick={() => setIsDataSourceSelectOpen(!isDataSourceSelectOpen)}

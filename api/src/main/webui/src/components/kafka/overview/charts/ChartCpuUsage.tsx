@@ -24,6 +24,10 @@ import { useChartWidth } from '@/components/kafka/overview/utils/useChartWidth';
 import { getHeight, getPadding } from '@/components/kafka/overview/utils/chartConsts';
 import { DurationOptions, TimeSeriesMetrics, ChartDatum } from '@/components/kafka/overview/utils/types';
 
+interface ChartLegendTitleDatum {
+  x?: number;
+}
+
 interface ChartCpuUsageProps {
   usages: Record<string, TimeSeriesMetrics>;
   duration: DurationOptions;
@@ -78,7 +82,7 @@ export function ChartCpuUsage({ usages, duration }: ChartCpuUsageProps) {
               <ChartLegendTooltip
                 legendData={legendData}
                 flyoutWidth={250}
-                title={(args: any) =>
+                title={(args?: ChartLegendTitleDatum) =>
                   formatDateTime({
                     value: args?.x ?? 0,
                     format: tooltipFormat,
@@ -110,7 +114,7 @@ export function ChartCpuUsage({ usages, duration }: ChartCpuUsageProps) {
       >
         <ChartAxis
           scale="time"
-          tickFormat={(d: any) =>
+          tickFormat={(d: number) =>
             formatDateTime({
               value: d,
               format: axisFormat,
@@ -126,7 +130,7 @@ export function ChartCpuUsage({ usages, duration }: ChartCpuUsageProps) {
         <ChartAxis
           dependentAxis
           showGrid={true}
-          tickFormat={(d: any) => `${(d * 1000).toFixed(0)}m`}
+          tickFormat={(d: number) => `${(d * 1000).toFixed(0)}m`}
         />
         <ChartStack>
           {Object.entries(usages).map(([nodeId, series]) => {

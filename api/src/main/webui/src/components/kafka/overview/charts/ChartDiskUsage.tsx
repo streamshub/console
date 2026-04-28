@@ -27,6 +27,10 @@ import { useChartWidth } from '@/components/kafka/overview/utils/useChartWidth';
 import { getHeight, getPadding } from '@/components/kafka/overview/utils/chartConsts';
 import { DurationOptions, TimeSeriesMetrics, ChartDatum } from '@/components/kafka/overview/utils/types';
 
+interface ChartLegendTitleDatum {
+  x?: number;
+}
+
 interface ChartDiskUsageProps {
   usages: Record<string, TimeSeriesMetrics>;
   available: Record<string, TimeSeriesMetrics>;
@@ -67,7 +71,7 @@ export function ChartDiskUsage({
   }[] = [];
 
   // Add usage entries to legend
-  Object.entries(usages).forEach(([nodeId, _]) => {
+  Object.entries(usages).forEach(([nodeId]) => {
     legendData.push({
       name: `Node ${nodeId}`,
       childName: `node ${nodeId}`,
@@ -75,7 +79,7 @@ export function ChartDiskUsage({
   });
 
   // Add threshold entries to legend
-  Object.entries(usages).forEach(([nodeId, _]) => {
+  Object.entries(usages).forEach(([nodeId]) => {
     legendData.push({
       name: `Available storage threshold (node ${nodeId})`,
       childName: `threshold ${nodeId}`,
@@ -97,7 +101,7 @@ export function ChartDiskUsage({
             labelComponent={
               <ChartLegendTooltip
                 legendData={legendData}
-                title={(args: any) =>
+                title={(args?: ChartLegendTitleDatum) =>
                   formatDateTime({
                     value: args?.x ?? 0,
                     format: tooltipFormat,
@@ -127,7 +131,7 @@ export function ChartDiskUsage({
       >
         <ChartAxis
           scale="time"
-          tickFormat={(d: any) =>
+          tickFormat={(d: number) =>
             formatDateTime({ value: d, format: axisFormat })
           }
           tickCount={5}
@@ -140,7 +144,7 @@ export function ChartDiskUsage({
         <ChartAxis
           dependentAxis
           showGrid={true}
-          tickFormat={(d: any) => formatBytes(d)}
+          tickFormat={(d: number) => formatBytes(d)}
         />
         <ChartGroup>
           {/* Render usage areas */}
@@ -159,7 +163,7 @@ export function ChartDiskUsage({
           })}
 
           {/* Render threshold lines */}
-          {Object.entries(usages).map(([nodeId, _]) => {
+          {Object.entries(usages).map(([nodeId]) => {
             const availableSeries = available[nodeId];
             if (!availableSeries) return null;
 

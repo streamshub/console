@@ -38,8 +38,8 @@ export function FilterByTopic({
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('');
 
-  const toggleRef = useRef<any>(null);
-  const menuRef = useRef<any>(null);
+  const toggleRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const allTopicsLabel = t('metrics.all_topics') || 'All topics';
 
@@ -58,7 +58,7 @@ export function FilterByTopic({
     return topics.find((t) => t.id === value)?.name;
   }, [topics, value]);
 
-  const onSelect = (_event: any, itemId: string | number | undefined) => {
+  const onSelect = (_event: React.MouseEvent<Element, MouseEvent> | undefined, itemId: string | number | undefined) => {
     if (itemId === 'all-topics') {
       onChange(null);
     } else {

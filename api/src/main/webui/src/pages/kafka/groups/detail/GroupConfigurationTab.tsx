@@ -104,7 +104,7 @@ export function GroupConfigurationTab() {
 
   // Derive available data sources from config values
   const dataSources = useMemo(() => {
-    return Array.from(new Set(allData.map(([_, property]) => property.source)));
+    return Array.from(new Set(allData.map(([, property]) => property.source)));
   }, [allData]);
 
   // Initialize selected data sources to all sources
@@ -118,18 +118,16 @@ export function GroupConfigurationTab() {
   const filteredAndSortedData = useMemo(() => {
     let filtered = allData
       .filter(([name]) => (propertyFilter ? name.includes(propertyFilter) : true))
-      .filter(([_, property]) =>
+      .filter(([, property]) =>
         selectedDataSources.length > 0 ? selectedDataSources.includes(property.source) : true
       );
 
     // Sort
     filtered = [...filtered].sort((a, b) => {
-      let comparison = 0;
-      if (sortColumn === 'property') {
-        comparison = a[0].localeCompare(b[0]);
-      } else {
-        comparison = (a[1].value || '').localeCompare(b[1].value || '');
-      }
+      const comparison =
+        sortColumn === 'property'
+          ? a[0].localeCompare(b[0])
+          : (a[1].value || '').localeCompare(b[1].value || '');
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 

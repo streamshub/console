@@ -33,6 +33,7 @@ import { TopicChartsCard } from '@/components/kafka/overview/TopicChartsCard';
 import { ClusterConnectionProvider } from '@/components/kafka/overview/ClusterConnectionProvider';
 import { ClusterConnectionDrawer } from '@/components/kafka/overview/ClusterConnectionDrawer';
 import { useOpenClusterConnectionPanel } from '@/components/kafka/overview/ClusterConnectionContext';
+import type { Node, Topic, TopicsResponse } from '@/api/types';
 
 function KafkaOverviewContent() {
   const { t } = useTranslation();
@@ -76,12 +77,12 @@ function KafkaOverviewContent() {
 
   // Calculate broker counts
   const brokersTotal = nodesData?.data?.filter(
-    (node) => node.attributes.roles?.includes('broker')
+    (node: Node) => node.attributes.roles?.includes('broker')
   ).length ?? 0;
 
   // Count online brokers (those with Running status)
   const brokersOnline = nodesData?.data?.filter(
-    (node) =>
+    (node: Node) =>
       node.attributes.roles?.includes('broker') &&
       node.attributes.broker?.status === 'Running'
   ).length ?? brokersTotal; // Default to total if status not available
@@ -90,7 +91,7 @@ function KafkaOverviewContent() {
   const groupsCount = groupsData?.meta?.page?.total;
 
   // Get topic statistics from meta.summary (if available)
-  const topicsMeta = topicsSummaryData?.meta as any;
+  const topicsMeta: TopicsResponse['meta'] | undefined = topicsSummaryData?.meta;
   const totalTopics = topicsMeta?.page?.total ?? 0;
   
   // Calculate partition statistics
@@ -108,14 +109,14 @@ function KafkaOverviewContent() {
 
   // Prepare nodes list for charts
   const nodes = nodesData?.data
-    ?.filter((node) => node.attributes.roles?.includes('broker'))
-    .map((node) => ({
+    ?.filter((node: Node) => node.attributes.roles?.includes('broker'))
+    .map((node: Node) => ({
       id: parseInt(node.id, 10),
       name: `Node ${node.id}`,
     })) ?? [];
 
   // Prepare topics list for charts
-  const topics = allTopicsData?.data?.map((topic) => ({
+  const topics = allTopicsData?.data?.map((topic: Topic) => ({
     id: topic.id,
     name: topic.attributes.name,
     isInternal: topic.attributes.visibility === 'internal',

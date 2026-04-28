@@ -124,10 +124,12 @@ export function TopicConfigurationTab() {
   
   const hasUpdatePrivilege = hasPrivilege('UPDATE', topic);
 
+  const typedAllData = allData as Array<[string, ConfigValue]>;
+
   // Derive available data sources from config values
   const dataSources = useMemo(() => {
-    return Array.from(new Set(allData.map(([_, property]) => property.source)));
-  }, [allData]);
+    return Array.from(new Set(typedAllData.map(([, property]) => property.source)));
+  }, [typedAllData]);
 
   // Initialize selected data sources to all sources
   useMemo(() => {
@@ -138,25 +140,22 @@ export function TopicConfigurationTab() {
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
-    let filtered = allData
+    let filtered = typedAllData
       .filter(([name]) => (propertyFilter ? name.includes(propertyFilter) : true))
-      .filter(([_, property]) =>
+      .filter(([, property]) =>
         selectedDataSources.length > 0 ? selectedDataSources.includes(property.source) : true
       );
 
-    // Sort
     filtered = [...filtered].sort((a, b) => {
-      let comparison = 0;
-      if (sortColumn === 'property') {
-        comparison = a[0].localeCompare(b[0]);
-      } else {
-        comparison = (a[1].value || '').localeCompare(b[1].value || '');
-      }
+      const comparison =
+        sortColumn === 'property'
+          ? a[0].localeCompare(b[0])
+          : (a[1].value || '').localeCompare(b[1].value || '');
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [allData, propertyFilter, selectedDataSources, sortColumn, sortDirection]);
+  }, [typedAllData, propertyFilter, selectedDataSources, sortColumn, sortDirection]);
 
   const handleSort = (column: SortableColumn) => {
     if (sortColumn === column) {
@@ -222,9 +221,9 @@ export function TopicConfigurationTab() {
         delete newErrors[name];
         return newErrors;
       });
-    } catch (err: any) {
-      // Handle API errors
-      const errorMessage = err.errors?.[0]?.detail || err.message || t('common.error');
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : t('common.error');
       setFieldErrors((prev) => ({ ...prev, [name]: errorMessage }));
       setIsEditing((prev) => ({ ...prev, [name]: 'editing' }));
     }
@@ -296,7 +295,7 @@ export function TopicConfigurationTab() {
             <SearchInput
               placeholder={t('topics.configuration.searchPlaceholder')}
               value={propertyFilter}
-              onChange={(_, value) => setPropertyFilter(value)}
+              onChange={(_event: React.FormEvent<HTMLInputElement>, value: string) => setPropertyFilter(value)}
               onClear={() => setPropertyFilter('')}
               aria-label={t('topics.configuration.searchPlaceholder')}
             />
@@ -306,9 +305,10 @@ export function TopicConfigurationTab() {
               id="data-source-select"
               isOpen={isDataSourceSelectOpen}
               selected={selectedDataSources}
-              onSelect={(_, selection) => handleDataSourceToggle(selection as string)}
-              onOpenChange={(isOpen) => setIsDataSourceSelectOpen(isOpen)}
-              toggle={(toggleRef) => (
+              onSelect={(_event: React.MouseEvent<Element, MouseEvent> | undefined, selection: string | number | undefined) =>
+                handleDataSourceToggle(selection as string)}
+              onOpenChange={(isOpen: boolean) => setIsDataSourceSelectOpen(isOpen)}
+              toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
                 <MenuToggle
                   ref={toggleRef}
                   onClick={() => setIsDataSourceSelectOpen(!isDataSourceSelectOpen)}
@@ -385,7 +385,7 @@ export function TopicConfigurationTab() {
                           id={`property-${name}`}
                           placeholder={property.value}
                           value={editValues[name] ?? property.value}
-                          onChange={(_, value) => {
+                          onChange={(_event: React.FormEvent<HTMLInputElement>, value: string) => {
                             setEditValues((prev) => ({ ...prev, [name]: value }));
                           }}
                           validated={validated}
