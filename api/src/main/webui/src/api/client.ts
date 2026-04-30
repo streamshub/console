@@ -27,7 +27,10 @@ class ApiClient {
 
   // Trigger login (full page redirect)
   login() {
-    const redirectUri = encodeURIComponent(window.location.href);
+    // Extract only the path, search, and hash (no origin) to comply with security requirements
+    const redirectUri = encodeURIComponent(
+      window.location.pathname + window.location.search + window.location.hash
+    );
     window.location.href = `/api/session/login?redirect_uri=${redirectUri}`;
   }
 

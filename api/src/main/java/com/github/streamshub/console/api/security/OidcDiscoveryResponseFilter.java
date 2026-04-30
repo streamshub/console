@@ -10,7 +10,6 @@ import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.support.Holder;
 
-import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcResponseFilter;
 
@@ -26,7 +25,6 @@ import io.quarkus.oidc.common.OidcResponseFilter;
  *      Provider Discovery Metadata</a>
  */
 @ApplicationScoped
-@Unremovable
 @OidcEndpoint(value = OidcEndpoint.Type.DISCOVERY)
 public class OidcDiscoveryResponseFilter implements OidcResponseFilter {
 
