@@ -33,6 +33,7 @@ export default defineConfig({
       '@patternfly/react-table',
       '@patternfly/react-icons',
       '@patternfly/react-user-feedback',
+      '@patternfly/react-data-view',
     ]
   }
 });
