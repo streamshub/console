@@ -55,9 +55,7 @@ export function UserDropdown({ username, anonymous, picture }: UserDropdownProps
       >
         <DropdownList>
           <DropdownItem key="logout" inert={logoutDisabled} isDisabled={logoutDisabled} onClick={() => {
-              window.location.href = `/api/session/logout?redirect_uri=${encodeURIComponent(
-                window.location.origin + "/",
-              )}`;
+              window.location.href = `/api/session/logout?redirect_uri=${encodeURIComponent('/')}`;
             }}>
             {t('user.logout')}
           </DropdownItem>

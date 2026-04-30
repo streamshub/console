@@ -15,6 +15,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -38,6 +41,9 @@ public class SessionResource {
     @Named("oidcEndSessionEndpoint")
     Holder<String> endSessionEndpoint;
 
+    @Inject
+    RedirectUriValidator redirectValidator;
+
     boolean oidcEnabled() {
         return Objects.nonNull(consoleConfig.getSecurity().getOidc());
     }
@@ -47,32 +53,39 @@ public class SessionResource {
      * via special HTTP status 499.
      *
      * This end point is protected, so accessing it triggers OIDC flow. After
-     * successful authentication, it redirects back to React application.
+     * successful authentication, Quarkus will redirect the client to this endpoint
+     * with the original request (restorePathAfterRedirect=true in the tenant 
+     * configuration) and this operation redirects them back to a path handled by
+     * the React application.
      *
      * Note that the OIDC flow is only triggered when the API is accessed not by a
      * JavaScript fetch. This is configured by the {@link OidcTenantConfigResolver}.
      */
     @GET
     @Path("login")
-    public Response login(@QueryParam("redirect_uri") String redirectUri) {
-        return Response.seeOther(URI.create(redirectUri)).build();
+    public Response login(@QueryParam("redirect_uri") String redirectUri, UriInfo uriInfo) {
+        return Response.seeOther(safeRedirectUri(redirectUri, uriInfo)).build();
     }
 
     @GET
     @Path("user")
     public Response getCurrentUser() {
-        Map<String, Object> properties = LinkedHashMap.newLinkedHashMap(2);
+        Map<String, Object> properties = LinkedHashMap.newLinkedHashMap(3);
+        var principal = identity.getPrincipal();
         Optional<String> fullName;
 
         if (oidcEnabled()) {
-            var token = oidcSession.getIdToken();
-            properties.put("username", token.getName()); // this is not the `name` claim
-            fullName = token.claim("name");
+            fullName = Optional.of(principal)
+                .filter(JsonWebToken.class::isInstance)
+                .map(JsonWebToken.class::cast)
+                .flatMap(this::nameClaim)
+                .or(() -> nameClaim(oidcSession.getIdToken()));
         } else {
-            properties.put("username", identity.getPrincipal().getName());
             fullName = Optional.ofNullable(identity.getAttribute(ConsoleAuthenticationMechanism.FULL_NAME));
         }
 
+        // this is not the `name` claim when the principal is a JWT
+        properties.put("username", principal.getName());
         fullName.ifPresent(fn -> properties.put(ConsoleAuthenticationMechanism.FULL_NAME, String.valueOf(fn)));
         properties.put("anonymous", identity.isAnonymous());
 
@@ -81,7 +94,10 @@ public class SessionResource {
 
     @GET
     @Path("logout")
-    public Response logout(@QueryParam("redirect_uri") String redirectUri) {
+    public Response logout(@QueryParam("redirect_uri") String redirectUri, UriInfo uriInfo) {
+        // Validate and sanitize the redirect URI to prevent open redirect vulnerabilities
+        URI safeRedirectUri = safeRedirectUri(redirectUri, uriInfo);
+
         if (oidcEnabled()) {
             oidcSession.logout().await().indefinitely();
         }
@@ -92,14 +108,37 @@ public class SessionResource {
                  * If the end_session_endpoint is available, redirect to allow the IdP
                  * to terminate the session fully.
                  */
-                String redirectEncoded = URLEncoder.encode(redirectUri, StandardCharsets.UTF_8);
+                String redirectEncoded = URLEncoder.encode(
+                        safeRedirectUri.toString(),
+                        StandardCharsets.UTF_8
+                );
                 var builder = UriBuilder.fromUri(endpoint);
                 builder.queryParam("post_logout_redirect_uri", redirectEncoded);
-                builder.queryParam("id_token_hint", oidcSession.getIdToken().getRawToken());
+                // ID token won't be present for service calls, only web-app interactions
+                // where session is maintained via cookie.
+                Optional.ofNullable(oidcSession.getIdToken().getRawToken())
+                    .ifPresent(t -> builder.queryParam("id_token_hint", t));
                 return builder.build();
             })
-            .orElseGet(() -> URI.create(redirectUri));
+            .orElse(safeRedirectUri);
 
         return Response.seeOther(logoutUri).build();
+    }
+
+    private Optional<String> nameClaim(JsonWebToken token) {
+        return token.claim("name");
+    }
+
+    private URI safeRedirectUri(String redirectUri, UriInfo uriInfo) {
+        // Validate and sanitize the redirect URI to prevent open redirect vulnerabilities
+        String safePath = redirectValidator.validateAndSanitize(redirectUri);
+
+        // Use the sanitized path together with the scheme, host, and port of the
+        // request to this resource.
+        return UriBuilder.fromUri(uriInfo.getRequestUri())
+            .replacePath(safePath)
+            .replaceQuery(null)
+            .fragment(null)
+            .build();
     }
 }
