@@ -2,84 +2,29 @@
  * Home Page - Kafka Cluster Selection
  */
 
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PageSection,
   Title,
   EmptyState,
   EmptyStateBody,
-  Spinner,
+  Skeleton,
 } from '@patternfly/react-core';
-import { useKafkaClusters } from '../api/hooks/useKafkaClusters';
 import { useMetadata } from '../api/hooks/useMetadata';
 import { AppLayout } from '@/components/app/AppLayout';
-import { ClustersTable } from '@/components/home/ClustersTable';
+import { ClustersDataView } from '@/components/home/ClustersDataView';
+import { ResourceListParams } from '@/api/hooks/useResourceList';
+import { useKafkaClusters } from '@/api/hooks/useKafkaClusters';
 
 export function HomePage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(20);
-  const [sortBy, setSortBy] = useState<string>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [filterName, setFilterName] = useState<string>('');
-
-  const { data, isLoading, error } = useKafkaClusters({
-    pageSize: perPage,
-    sort: sortBy,
-    sortDir: sortDirection,
-    name: filterName || undefined,
-  });
-
+  const [dataParams, setDataParams] = useState<ResourceListParams>({});
+  const { data: clusterResponse, isLoading, error } = useKafkaClusters(dataParams);
   const { data: metadata } = useMetadata();
 
-  const clusters = data?.data || [];
-  const totalCount = data?.meta?.page?.total;
+  const totalCount = clusterResponse?.meta?.page?.total;
   const platform = metadata?.data?.attributes?.platform;
-
-  // If only one cluster, redirect to it
-  useEffect(() => {
-    if (clusters.length === 1 && totalCount === 1 && !filterName) {
-      navigate(`/kafka/${clusters[0].id}`);
-    }
-  }, [clusters, totalCount, filterName, navigate]);
-
-  const handleSort = (column: string, direction: 'asc' | 'desc') => {
-    setSortBy(column);
-    setSortDirection(direction);
-    setPage(1); // Reset to first page when sorting changes
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handlePerPageChange = (newPerPage: number) => {
-    setPerPage(newPerPage);
-    setPage(1); // Reset to first page when page size changes
-  };
-
-  const handleFilterNameChange = (name: string) => {
-    setFilterName(name);
-    setPage(1); // Reset to first page when filter changes
-  };
-
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <PageSection>
-          <EmptyState>
-            <Spinner size="xl" />
-            <Title headingLevel="h1" size="lg">
-              {t('common.loading')}
-            </Title>
-          </EmptyState>
-        </PageSection>
-      </AppLayout>
-    );
-  }
 
   if (error) {
     return (
@@ -104,25 +49,18 @@ export function HomePage() {
             <strong>{t('common.platform', 'Platform')}:</strong> {platform}
           </p>
         )}
-        {totalCount !== undefined && (
-          <p>
-            {totalCount} {t('kafka.connectedClusters', 'Connected Kafka clusters')}
-          </p>
-        )}
+        <p>
+          { totalCount 
+            ? totalCount + ' ' + t('kafka.connectedClusters') 
+            : <Skeleton width='5px' style={{display: 'inline'}}/>
+          }
+        </p>
       </PageSection>
       <PageSection>
-        <ClustersTable
-          clusters={clusters}
-          totalCount={totalCount}
-          page={page}
-          perPage={perPage}
-          onPageChange={handlePageChange}
-          onPerPageChange={handlePerPageChange}
-          sortBy={sortBy}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-          filterName={filterName}
-          onFilterNameChange={handleFilterNameChange}
+        <ClustersDataView
+          clusterResponse={clusterResponse}
+          isLoading={isLoading}
+          onDataViewChange={setDataParams}
         />
       </PageSection>
     </AppLayout>

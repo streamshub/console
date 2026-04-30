@@ -48,17 +48,7 @@ class ApiClient {
       return {} as T;
     }
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new ApiError(
-        response.status,
-        response.statusText,
-        data.errors
-      );
-    }
-
-    return data;
+    return await response.json();
   }
 
   /**

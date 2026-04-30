@@ -6,6 +6,24 @@
  */
 
 // Common types
+export interface ListResponse<T extends Resource> {
+  meta?: {
+    page: {
+      total: number;
+      pageNumber: number;
+      rangeTruncated: boolean;
+    } & Record<string, unknown>;
+  };
+  links?: {
+    first?: string;
+    last?: string;
+    prev?: string;
+    next?: string;
+  };
+  data?: T[];
+  errors?: ApiError[];
+}
+
 export interface ApiResponse<T> {
   data?: T;
   errors?: ApiError[];
@@ -33,12 +51,12 @@ export interface MetaWithPrivileges {
   privileges?: string[];
 }
 
-export interface Resource<T = Record<string, unknown>> {
+export interface Resource {
   type: string;
   id: string;
-  attributes?: T;
+  attributes?: Record<string, unknown>;
   relationships?: Record<string, { data: ResourceIdentifier | ResourceIdentifier[] }>;
-  meta?: Record<string, unknown>;
+  meta?: object;
 }
 
 // Kafka Cluster types
@@ -57,7 +75,7 @@ export interface KafkaClusterCondition {
   lastTransitionTime?: string;
 }
 
-export interface KafkaCluster {
+export interface KafkaCluster extends Resource {
   id: string;
   type: 'kafkas';
   attributes: {
