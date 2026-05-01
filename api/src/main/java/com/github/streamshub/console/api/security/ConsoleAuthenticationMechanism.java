@@ -74,17 +74,19 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
     private static final String BEARER = "Bearer ";
     private static final String BASIC = "Basic ";
 
+    static final String FULL_NAME = "fullName";
+
     private static final SecurityIdentity ANONYMOUS = QuarkusSecurityIdentity.builder()
             .setAnonymous(true)
             .setPrincipal(new QuarkusPrincipal("ANONYMOUS"))
+            .addAttribute(FULL_NAME, "Anonymous")
             .build();
 
     private static final Set<String> UNAUTHENTICATED_PATHS = Set.of(
             "/health",
             "/metrics",
             "/openapi",
-            "/swagger-ui",
-            "/api/metadata"
+            "/swagger-ui"
     );
 
     @Inject
@@ -123,9 +125,15 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
                     .onFailure().invoke(this::logAuthenticationFailure);
         }
 
+        if ("/api/metadata".equals(requestPath)) {
+            // Let metadata be public when OIDC is not enabled
+            return Uni.createFrom().nullItem();
+        }
+
         String clusterId = getClusterId(context);
 
         if (clusterId == null) {
+            // Let Kafka cluster listing (home page) be public when OIDC is not enabled
             return Uni.createFrom().item(createAnonymousIdentity(null));
         }
 

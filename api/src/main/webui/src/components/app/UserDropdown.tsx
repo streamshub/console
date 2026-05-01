@@ -10,15 +10,15 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface UserDropdownProps {
-  readonly username?: string;
+  readonly username: string;
+  readonly anonymous: boolean;
   readonly picture?: string;
 }
 
-export function UserDropdown({ username, picture }: UserDropdownProps) {
+export function UserDropdown({ username, anonymous, picture }: UserDropdownProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-
-  const displayName = username ?? t('user.anonymous');
+  const logoutDisabled = anonymous;
 
   const onToggle = () => {
     setIsOpen(!isOpen);
@@ -45,16 +45,18 @@ export function UserDropdown({ username, picture }: UserDropdownProps) {
               <Avatar
                 src={picture ?? '/avatar_img.svg'}
                 size='sm'
-                alt={displayName}
+                alt={username}
               />
             }
           >
-            {displayName}
+            {username}
           </MenuToggle>
         )}
       >
         <DropdownList>
-          <DropdownItem key="logout" isDisabled>
+          <DropdownItem key="logout" inert={logoutDisabled} isDisabled={logoutDisabled} onClick={() => {
+              window.location.href = `/api/session/logout?redirect_uri=${encodeURIComponent('/')}`;
+            }}>
             {t('user.logout')}
           </DropdownItem>
         </DropdownList>

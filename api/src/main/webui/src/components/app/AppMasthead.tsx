@@ -19,13 +19,14 @@ import { BarsIcon, InfoCircleIcon, QuestionCircleIcon } from '@patternfly/react-
 import { FeedbackModal } from '@patternfly/react-user-feedback';
 import '@patternfly/react-user-feedback/dist/esm/Feedback/Feedback.css';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppLayout } from '@/components/app/AppLayoutProvider';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from './ThemeProvider';
 import { ClusterSwitcher } from '@/components/kafka/ClusterSwitcher';
 import { KafkaCluster } from '@/api/types';
 import { useMetadata } from '@/api/hooks/useMetadata';
+import { useSessionUser } from '@/api/hooks/useSession';
 import { UserDropdown } from './UserDropdown';
 
 export interface AppMastheadProps {
@@ -59,6 +60,19 @@ export function AppMasthead({
   const closeFeedbackModal = () => {
     setIsFeedbackModalOpen(false);
   };
+
+  const { data: sessionUser } = useSessionUser();
+
+  const userDisplayName = useMemo(() => {
+    if (!sessionUser) {
+      return t('user.anonymous');
+    }
+    return sessionUser.fullName ?? sessionUser.username ?? t('user.anonymous');
+  }, [sessionUser, t]);
+
+  const isAnonymous = useMemo(() => {
+    return sessionUser?.anonymous ?? true;
+  }, [sessionUser]);
 
   return (
     <>
@@ -127,7 +141,10 @@ export function AppMasthead({
                   </ToolbarItem>
                 )}
               </ToolbarGroup>
-              <UserDropdown username="Anonymous" />
+                <UserDropdown
+                  username={userDisplayName}
+                  anonymous={isAnonymous}
+                />
             </ToolbarContent>
           </Toolbar>
         </MastheadContent>

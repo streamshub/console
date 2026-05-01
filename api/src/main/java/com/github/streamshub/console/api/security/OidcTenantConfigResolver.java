@@ -1,5 +1,9 @@
 package com.github.streamshub.console.api.security;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -12,6 +16,8 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -40,14 +46,34 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
 
         final var builder = OidcTenantConfig.builder()
                 .tenantId(oidc.getTenantId())
+                .clientId(oidc.getClientId())
+                .credentials()
+                    .clientSecret(oidc.getClientSecret())
+                .end()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl(oidc.getAuthServerUrl())
                 .discoveryEnabled(true)
-                .authServerUrl(oidc.getAuthServerUrl());
-
-        if (oidc.getIssuer() != null) {
-            builder.token()
-                .issuer(oidc.getIssuer())
+                .authentication()
+                    .redirectPath("/")
+                    .restorePathAfterRedirect(true)
+                    // Do not redirect to the IdP for JavaScript requests. They are identified by
+                    // requests from the React UI with header `X-Requested-With: JavaScript`.
+                    .javaScriptAutoRedirect(false)
+                    .scopes(Optional
+                            .ofNullable(oidc.getScopes())
+                            .map(scopes -> scopes.split("\\s+"))
+                            .map(Arrays::asList)
+                            .orElseGet(() -> List.of("openid", "email", "profile", "groups")))
+                    .pkceRequired(!Boolean.FALSE.equals(oidc.isPkceRequired())) // true by default
+                    .stateSecret(oidc.getStateSecret())
+                .end()
+                .token()
+                    .refreshExpired(true)
+                    .issuer(oidc.getIssuer())
+                .end()
+                .tokenStateManager()
+                    .strategy(Strategy.ID_REFRESH_TOKENS)
                 .end();
-        }
 
         trustStores.configureTruststoreFile(oidc, null, builder);
         oidcConfig = builder.build();
