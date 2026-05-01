@@ -91,7 +91,7 @@ export function ClusterChartsCard({
     if (metricsData) {
       // Extract disk usage metrics
       const usageSeries = timeSeriesMetrics(metricsData.ranges, 'volume_stats_used_bytes');
-      const availableSeries = timeSeriesMetrics(metricsData.ranges, 'volume_stats_available_bytes');
+      const availableSeries = timeSeriesMetrics(metricsData.ranges, 'volume_stats_capacity_bytes');
       
       Object.assign(usages, usageSeries);
       Object.assign(available, availableSeries);

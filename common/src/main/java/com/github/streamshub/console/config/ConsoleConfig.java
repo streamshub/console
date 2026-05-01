@@ -44,6 +44,8 @@ import io.xlate.validation.constraints.Expression;
 @Buildable(editableEnabled = false)
 public class ConsoleConfig {
 
+    OptionsConfig options = new OptionsConfig();
+
     KubernetesConfig kubernetes = new KubernetesConfig();
 
     @Valid
@@ -104,6 +106,14 @@ public class ConsoleConfig {
     public void clearSecurity() {
         security = new GlobalSecurityConfig();
         kafka.getClusters().forEach(k -> k.setSecurity(new KafkaSecurityConfig()));
+    }
+
+    public OptionsConfig getOptions() {
+        return options;
+    }
+
+    public void setOptions(OptionsConfig options) {
+        this.options = options;
     }
 
     public KubernetesConfig getKubernetes() {

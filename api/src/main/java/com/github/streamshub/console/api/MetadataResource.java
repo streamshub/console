@@ -67,13 +67,16 @@ public class MetadataResource {
     }
 
     private Map<String, Object> initializeMetadata() {
-        Map<String, String>  meta = new LinkedHashMap<>();
+        Map<String, Object> meta = new LinkedHashMap<>();
 
         meta.put(VERSION, config
                 .getValue("console.meta.version", String.class));
         meta.put("platform", config
                 .getOptionalValue("console.meta.platform", String.class)
                 .orElseGet(this::determinePlatform));
+        meta.put("options", Map.of(
+                "showLearning", consoleConfig.getOptions().isShowLearning()
+        ));
 
         var replacementMetadata = Optional.<Map<String, Object>>of(Map.of(
             "data", Map.of(

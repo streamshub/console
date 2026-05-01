@@ -10,6 +10,6 @@ export const getHeight = (legendEntriesCount: number) => {
 export const getPadding = (legendEntriesCount: number) => ({
   bottom: 50 + 32 * legendEntriesCount,
   top: 5,
-  left: 70,
+  left: 90,
   right: 30,
 });

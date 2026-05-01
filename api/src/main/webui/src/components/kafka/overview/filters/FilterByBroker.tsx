@@ -17,7 +17,7 @@ import {
 
 interface FilterByBrokerProps {
   brokerIds: string[];
-  value: string | null; // null means "All Brokers"
+  value: string | null; // null means "All Nodes"
   onChange: (brokerId: string | null) => void;
   isDisabled?: boolean;
 }
@@ -33,7 +33,7 @@ export function FilterByBroker({
 
   const selectedLabel = value
     ? `Node ${value}`
-    : t('metrics.all_brokers') || 'All brokers';
+    : t('metrics.all_nodes');
 
   const onToggleClick = () => {
     setIsOpen(!isOpen);
@@ -69,7 +69,7 @@ export function FilterByBroker({
     >
       <SelectList>
         <SelectOption key="all" value="all">
-          {t('metrics.all_brokers') || 'All brokers'}
+          {t('metrics.all_nodes')}
         </SelectOption>
         {brokerIds.map((brokerId) => (
           <SelectOption key={brokerId} value={brokerId}>

@@ -17,14 +17,17 @@ import {
   Divider,
   EmptyState,
   EmptyStateBody,
+  EmptyStateFooter,
+  EmptyStateActions,
   Title,
   List,
   ListItem,
   Content,
   Tooltip,
 } from '@patternfly/react-core';
-import { CubesIcon, HelpIcon } from '@patternfly/react-icons';
+import { CubesIcon, HelpIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { ViewedTopic } from '@/api/hooks/useViewedTopics';
+import { useShowLearning } from '@/hooks/useShowLearning';
 
 export interface RecentTopicsCardProps {
   viewedTopics: ViewedTopic[];
@@ -37,6 +40,7 @@ export function RecentTopicsCard({
 }: RecentTopicsCardProps) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
+  const showLearning = useShowLearning();
 
   return (
     <Card component="div" isFullHeight isExpanded={isExpanded} isCompact>
@@ -74,6 +78,20 @@ export function RecentTopicsCard({
               <EmptyStateBody>
                 {t('RecentTopicsCard.no_recent_topics_description')}
               </EmptyStateBody>
+              {showLearning && (
+                <EmptyStateFooter>
+                  <EmptyStateActions>
+                    <a
+                      href={t('learning.links.topicOperatorUse')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 'var(--pf-v6-global--FontSize--sm)' }}
+                    >
+                      {t('learning.labels.topicOperatorUse')} <ExternalLinkAltIcon />
+                    </a>
+                  </EmptyStateActions>
+                </EmptyStateFooter>
+              )}
             </EmptyState>
           ) : (
             <>
