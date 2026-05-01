@@ -47,10 +47,13 @@ export function KafkaLayout() {
   const { data, isLoading, error } = useKafkaCluster(kafkaId, {
     fields: 'name,namespace,status,kafkaVersion,creationTimestamp,listeners,conditions',
   });
-  
+
   // Fetch all clusters for the cluster switcher
-  const { data: clustersData } = useKafkaClusters({ pageSize: 1000 });
-  
+  const { data: clustersData } = useKafkaClusters({ 
+    fields: 'name,namespace', 
+    page: { size: 1000 },
+  });
+
   // Fetch topic data if we're on a topic detail page
   const { data: topicData } = useTopic(
     kafkaId,
