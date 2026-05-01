@@ -117,7 +117,7 @@ export function useTableState<T extends string>(
         setPageCursor(`after:${afterCursor}`);
       }
     }
-  }, [data?.links?.next]);
+  }, [data]);
 
   /**
    * Navigate to previous page by extracting cursor from prev link
@@ -137,7 +137,7 @@ export function useTableState<T extends string>(
         setPageCursor(undefined);
       }
     }
-  }, [data?.links?.prev]);
+  }, [data]);
 
   /**
    * Change page size and reset to first page

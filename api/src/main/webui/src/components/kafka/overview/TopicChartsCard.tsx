@@ -66,6 +66,7 @@ export function TopicChartsCard({
   }, [topics, hideInternal]);
 
   // Reset selected topic if it's filtered out
+  // Reset selected topic if it's no longer in filtered list
   useEffect(() => {
     if (!selectedTopic) return;
 
@@ -74,7 +75,8 @@ export function TopicChartsCard({
     );
 
     if (!existsInFiltered) {
-      setSelectedTopic(null);
+      // Use setTimeout to defer state update to avoid cascading renders
+      setTimeout(() => setSelectedTopic(null), 0);
     }
   }, [filteredTopics, selectedTopic]);
 
@@ -113,7 +115,7 @@ export function TopicChartsCard({
       incoming: singleTimeSeriesMetrics(metricsData.ranges, 'incoming_byte_rate'),
       outgoing: singleTimeSeriesMetrics(metricsData.ranges, 'outgoing_byte_rate'),
     };
-  }, [clusterMetrics.data, topicMetrics.data, selectedTopic, selectedDuration]);
+  }, [clusterMetrics.data, topicMetrics.data, selectedTopic]);
 
   const selectedTopicName = useMemo(() => {
     return topics.find((t) => t.id === selectedTopic)?.name;

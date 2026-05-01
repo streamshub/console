@@ -98,7 +98,7 @@ export function ClusterCard({
         message: c.message || '',
         date: c.lastTransitionTime || '',
       }));
-  }, [cluster?.attributes.conditions, cluster?.attributes.name, cluster?.id]);
+  }, [cluster?.attributes, cluster?.id]);
 
   // Calculate warning and danger counts
   const warnings = messages.filter((m) => m.variant === 'warning').length;

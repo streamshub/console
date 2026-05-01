@@ -173,8 +173,10 @@ export function AdvancedSearch({
     setIsExpanded(false);
   };
 
+  // Sync search input value with URL params
   useEffect(() => {
-    setSearchInputValue(getSearchInputValue());
+    // Use setTimeout to defer state update to avoid cascading renders
+    setTimeout(() => setSearchInputValue(getSearchInputValue()), 0);
   }, [getSearchInputValue]);
 
   return (
