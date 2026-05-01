@@ -69,6 +69,8 @@ import com.github.streamshub.console.config.authentication.AuthenticationConfigB
 import com.github.streamshub.console.config.authentication.OIDC;
 import com.github.streamshub.console.config.security.AuditConfigBuilder;
 import com.github.streamshub.console.config.security.Decision;
+import com.github.streamshub.console.config.security.GlobalSecurityConfig;
+import com.github.streamshub.console.config.security.OidcConfig;
 import com.github.streamshub.console.config.security.OidcConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.RoleConfigBuilder;
@@ -121,6 +123,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     private static final Logger LOGGER = Logger.getLogger(ConfigurationProcessor.class);
     private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
     private static final String OIDC_PROVIDER_TRUST_NAME = "oidc-provider";
+    private static final String CONFIG_KEY = "console-config.yaml";
     private static final Random RANDOM = new SecureRandom();
 
     @Inject
@@ -184,15 +187,14 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private boolean buildSecretData(Console primary, Context<Console> context) {
         ConsoleStatus status = primary.getOrCreateStatus();
-        Map<String, String> data = new LinkedHashMap<>();
-
-        var nextAuth = context.getSecondaryResource(Secret.class).map(s -> s.getData().get("NEXTAUTH_SECRET"));
-        var nextAuthSecret = nextAuth.orElseGet(() -> encodeString(generateRandomBase64EncodedSecret(32)));
-        data.put("NEXTAUTH_SECRET", nextAuthSecret);
+        Map<String, String> desiredData = new LinkedHashMap<>();
+        Map<String, String> currentData = context.getSecondaryResource(Secret.class)
+                .map(Secret::getData)
+                .orElseGet(Collections::emptyMap);
 
         try {
-            buildConsoleConfig(primary, context, data);
-            buildClientSecrets(primary, context, data);
+            buildConsoleConfig(primary, context, currentData, desiredData);
+            buildClientSecrets(primary, context, desiredData);
         } catch (Exception e) {
             if (!(e instanceof ReconciliationException)) {
                 LOGGER.warnf(e, "Exception processing console configuration from %s/%s", primary.getMetadata().getNamespace(), primary.getMetadata().getName());
@@ -206,14 +208,31 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .build());
         }
 
-        context.managedWorkflowAndDependentResourceContext().put("ConsoleSecretData", data);
+        context.managedWorkflowAndDependentResourceContext().put("ConsoleSecretData", desiredData);
         return !status.hasActiveCondition(Types.ERROR);
     }
 
     private void buildConsoleConfig(Console primary, Context<Console> context,
-            Map<String, String> data) {
+            Map<String, String> currentData,
+            Map<String, String> desiredData) {
 
-        var consoleConfig = buildConfig(primary, context);
+        final var yaml = objectMapper.copyWith(YAMLFactory.builder().build());
+        final ConsoleConfig currentConfig;
+
+        if (currentData.containsKey(CONFIG_KEY)) {
+            var decoded = decodeString(currentData.get(CONFIG_KEY));
+
+            try {
+                currentConfig = yaml.readValue(decoded, ConsoleConfig.class);
+            } catch (JsonProcessingException e) {
+                throw new UncheckedIOException(e);
+            }
+        } else {
+            currentConfig = new ConsoleConfig();
+        }
+
+
+        final var consoleConfig = buildConfig(primary, context, currentConfig);
         var violations = validator.validate(consoleConfig);
 
         if (!violations.isEmpty()) {
@@ -238,8 +257,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
 
         try {
-            var yaml = objectMapper.copyWith(YAMLFactory.builder().build());
-            data.put("console-config.yaml", encodeString(yaml.writeValueAsString(consoleConfig)));
+            desiredData.put(CONFIG_KEY, encodeString(yaml.writeValueAsString(consoleConfig)));
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -418,10 +436,10 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
     }
 
-    private ConsoleConfig buildConfig(Console primary, Context<Console> context) {
+    private ConsoleConfig buildConfig(Console primary, Context<Console> context, ConsoleConfig currentConfig) {
         ConsoleConfig config = new ConsoleConfig();
 
-        addSecurity(primary, config, context);
+        addSecurity(primary, config, currentConfig, context);
         addMetricsSources(primary, config, context);
         addSchemaRegistries(primary, config);
         addKafkaConnectClusters(primary, config);
@@ -434,7 +452,9 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return config;
     }
 
-    private void addSecurity(Console primary, ConsoleConfig config, Context<Console> context) {
+    private void addSecurity(Console primary, ConsoleConfig config, 
+            ConsoleConfig currentConfig, Context<Console> context) {
+
         var security = primary.getSpec().getSecurity();
 
         if (security == null) {
@@ -457,6 +477,10 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .withClientSecret(clientSecret)
                     .withScopes(oidc.getScopes())
                     .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), OIDC_PROVIDER_TRUST_NAME))
+                    .withPkceRequired(oidc.isPkceRequired())
+                    // The current PKCE state secret is unchanged if it exists and
+                    // PKCE is required. Otherwise, the secret is removed.
+                    .withStateSecret(currentOrNewStateSecret(oidc, currentConfig))
                     .build());
         }
 
@@ -499,6 +523,16 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
 
         return trustStoreConfig;
+    }
+
+    private String currentOrNewStateSecret(Oidc oidc, ConsoleConfig currentConfig) {
+        if (!Boolean.FALSE.equals(oidc.isPkceRequired())) { // true by default
+            return Optional.ofNullable(currentConfig.getSecurity())
+                    .map(GlobalSecurityConfig::getOidc)
+                    .map(OidcConfig::getStateSecret)
+                    .orElseGet(() -> generateRandomBase64EncodedSecret(32));
+        }
+        return null;
     }
 
     private void addSecurity(Security source, SecurityConfig target) {

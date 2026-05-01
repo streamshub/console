@@ -64,8 +64,8 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
                             .map(scopes -> scopes.split("\\s+"))
                             .map(Arrays::asList)
                             .orElseGet(() -> List.of("openid", "email", "profile", "groups")))
-                    .pkceRequired(true) // make configurable (?)
-                    .stateSecret(null) // configurable (?)
+                    .pkceRequired(!Boolean.FALSE.equals(oidc.isPkceRequired())) // true by default
+                    .stateSecret(oidc.getStateSecret())
                 .end()
                 .token()
                     .refreshExpired(true)

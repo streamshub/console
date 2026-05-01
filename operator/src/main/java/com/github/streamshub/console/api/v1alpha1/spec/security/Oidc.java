@@ -17,13 +17,21 @@ public class Oidc {
     private String clientId;
     @Required
     private Value clientSecret;
-    private String scopes; 
+    private String scopes;
 
     @JsonPropertyDescription("""
             Trust store configuration for when the OIDC provider uses \
             TLS certificates signed by an unknown CA.
             """)
     private TrustStore trustStore;
+
+    @JsonPropertyDescription("""
+            Whether Proof Key for Code Exchange (PKCE) is required. PKCE \
+            minimizes the risk of authorization code interception.
+
+            See https://datatracker.ietf.org/doc/html/rfc7636 for more information.
+            """)
+    private Boolean pkceRequired;
 
     public String getAuthServerUrl() {
         return authServerUrl;
@@ -71,5 +79,13 @@ public class Oidc {
 
     public void setTrustStore(TrustStore trustStore) {
         this.trustStore = trustStore;
+    }
+
+    public Boolean isPkceRequired() {
+        return pkceRequired;
+    }
+
+    public void setPkceRequired(Boolean pkceRequired) {
+        this.pkceRequired = pkceRequired;
     }
 }

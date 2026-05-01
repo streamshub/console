@@ -7,6 +7,7 @@ import java.security.cert.CertificateFactory;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,8 @@ import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.quarkus.test.junit.QuarkusTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
@@ -334,6 +337,75 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
             for (Certificate exp : expectedCertificates) {
                 assertTrue(actualCertificates.contains(exp));
             }
+        });
+    }
+
+    @Test
+    void testConsoleReconciliationWithPkceElementMapped() {
+        var console = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .withNewSecurity()
+                        .withNewOidc()
+                            .withAuthServerUrl("https://example.com/.well-known/openid-connect")
+                            .withClientId("client-id")
+                            .withNewClientSecret()
+                                .withValue("client-secret")
+                            .endClientSecret()
+                            // not configured, PKCE enabled by default
+                        .endOidc()
+                    .endSecurity()
+                .endSpec());
+
+        AtomicReference<String> stateSecret = new AtomicReference<>();
+
+        assertConsoleConfig(consoleConfig -> {
+            var securityConfig = consoleConfig.getSecurity();
+            var oidc = securityConfig.getOidc();
+            assertNull(oidc.isPkceRequired()); // null is default (implied true)
+            var secret = oidc.getStateSecret();
+            assertEquals(32, secret.length());
+            stateSecret.set(secret);
+        });
+
+        console = client.resource(console).get();
+        client.resource(console).edit(c -> {
+            return new ConsoleBuilder(c)
+                    .editSpec()
+                        .editSecurity()
+                            .editOidc()
+                                .withPkceRequired()
+                            .endOidc()
+                        .endSecurity()
+                    .endSpec()
+                    .build();
+        });
+
+        assertConsoleConfig(consoleConfig -> {
+            var securityConfig = consoleConfig.getSecurity();
+            var oidc = securityConfig.getOidc();
+            assertTrue(oidc.isPkceRequired()); // changed to explicit value in CR
+            assertEquals(stateSecret.get(), oidc.getStateSecret());
+        });
+
+        console = client.resource(console).get();
+        client.resource(console).edit(c -> {
+            return new ConsoleBuilder(c)
+                    .editSpec()
+                        .editSecurity()
+                            .editOidc()
+                                .withPkceRequired(false)
+                            .endOidc()
+                        .endSecurity()
+                    .endSpec()
+                    .build();
+        });
+
+        assertConsoleConfig(consoleConfig -> {
+            var securityConfig = consoleConfig.getSecurity();
+            var oidc = securityConfig.getOidc();
+            assertFalse(oidc.isPkceRequired()); // changed from explicit value in CR
+            assertNull(oidc.getStateSecret());
         });
     }
 }
