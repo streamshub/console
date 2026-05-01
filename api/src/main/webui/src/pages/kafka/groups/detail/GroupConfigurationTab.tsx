@@ -4,7 +4,7 @@
 
 import { useOutletContext } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   PageSection,
   EmptyState,
@@ -108,9 +108,10 @@ export function GroupConfigurationTab() {
   }, [allData]);
 
   // Initialize selected data sources to all sources
-  useMemo(() => {
+  useEffect(() => {
     if (dataSources.length > 0 && selectedDataSources.length === 0) {
-      setSelectedDataSources(dataSources);
+      // Use setTimeout to defer state update to avoid cascading renders
+      setTimeout(() => setSelectedDataSources(dataSources), 0);
     }
   }, [dataSources, selectedDataSources.length]);
 

@@ -144,7 +144,7 @@ export function TopicGroupsTab() {
     pageSize: 100,
   });
 
-  const groups = data?.data || [];
+  const groups = useMemo(() => data?.data || [], [data?.data]);
   const total = data?.meta?.page?.total || 0;
 
   // Calculate overall lag for each group
