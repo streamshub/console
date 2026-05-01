@@ -22,12 +22,8 @@ import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
-import io.fabric8.kubernetes.model.annotation.Group;
-import io.fabric8.kubernetes.model.annotation.Kind;
-import io.fabric8.kubernetes.model.annotation.Version;
 import io.quarkus.cache.CacheResult;
 import io.strimzi.api.ResourceLabels;
-import io.strimzi.api.kafka.model.common.Constants;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
 import io.strimzi.api.kafka.model.connector.KafkaConnector;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -58,19 +54,19 @@ public class StrimziResourceService {
 
     @SuppressWarnings("unchecked")
     public <R extends KafkaTopic> SharedIndexInformer<R> informKafkaTopics() {
-        return (SharedIndexInformer<R>) k8s.resources(KafkaTopicV1Beta2.class).inAnyNamespace().inform();
+        return (SharedIndexInformer<R>) k8s.resources(KafkaTopic.class).inAnyNamespace().inform();
     }
 
     public KafkaTopic createTopic(KafkaTopic topic) {
-        return k8s.resource(new KafkaTopicV1Beta2(topic)).create();
+        return k8s.resource(topic).create();
     }
 
     public KafkaTopic patchTopic(KafkaTopic topic) {
-        return k8s.resource(new KafkaTopicV1Beta2(topic)).patch();
+        return k8s.resource(topic).patch();
     }
 
     public void deleteTopic(KafkaTopic topic) {
-        k8s.resource(new KafkaTopicV1Beta2(topic)).delete();
+        k8s.resource(topic).delete();
     }
 
     @CacheResult(cacheName = "strimzi-connect-custom-resource")
@@ -90,7 +86,7 @@ public class StrimziResourceService {
 
     @CacheResult(cacheName = "strimzi-user-custom-resources")
     public CompletionStage<List<KafkaUser>> getKafkaUsers(String namespace, String kafkaCluster) {
-        return getResources(KafkaUserV1Beta2.class, namespace, ResourceLabels.STRIMZI_CLUSTER_LABEL, kafkaCluster)
+        return getResources(KafkaUser.class, namespace, ResourceLabels.STRIMZI_CLUSTER_LABEL, kafkaCluster)
                 .thenApply(users -> users.stream()
                         .map(KafkaUser.class::cast)
                         .toList());
@@ -98,7 +94,7 @@ public class StrimziResourceService {
 
     @CacheResult(cacheName = "strimzi-user-custom-resource")
     public CompletionStage<Optional<KafkaUser>> getKafkaUser(String namespace, String name, String kafkaCluster) {
-        return getResource(KafkaUserV1Beta2.class, namespace, name)
+        return getResource(KafkaUser.class, namespace, name)
                 .thenApply(user -> user
                         .filter(byKafkaCluster(kafkaCluster))
                         .map(KafkaUser.class::cast));
@@ -167,34 +163,5 @@ public class StrimziResourceService {
             String ownedByCluster = resource.getMetadata().getLabels().get(ResourceLabels.STRIMZI_CLUSTER_LABEL);
             return Objects.equals(ownedByCluster, kafkaCluster);
         };
-    }
-
-    /**
-     * Extends KafkaTopic but overrides the Kube API version to v1beta2
-     */
-    @Kind("KafkaTopic")
-    @Version(Constants.V1BETA2)
-    @Group(Constants.RESOURCE_GROUP_NAME)
-    static class KafkaTopicV1Beta2 extends KafkaTopic {
-        private static final long serialVersionUID = 1L;
-
-        public KafkaTopicV1Beta2() {
-            super();
-        }
-
-        public KafkaTopicV1Beta2(KafkaTopic topic) {
-            super(topic.getSpec(), topic.getStatus());
-            super.setMetadata(topic.getMetadata());
-        }
-    }
-
-    /**
-     * Extends KafkaUser but overrides the Kube API version to v1beta2
-     */
-    @Kind("KafkaUser")
-    @Version(Constants.V1BETA2)
-    @Group(Constants.RESOURCE_GROUP_NAME)
-    private static class KafkaUserV1Beta2 extends KafkaUser {
-        private static final long serialVersionUID = 1L;
     }
 }
