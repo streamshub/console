@@ -20,7 +20,6 @@ public class OidcConfig implements Trustable {
     private String issuer;
     @NotBlank
     private String clientId;
-    @NotBlank
     private String clientSecret;
     private String scopes;
     @Valid

@@ -15,7 +15,6 @@ public class Oidc {
     private String issuer;
     @Required
     private String clientId;
-    @Required
     private Value clientSecret;
     private String scopes;
 
