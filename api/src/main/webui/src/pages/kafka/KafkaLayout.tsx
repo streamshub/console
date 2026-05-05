@@ -22,6 +22,7 @@ import { useUser } from '@/api/hooks/useUsers';
 import { KafkaClusterSidebar } from '@/components/kafka/KafkaClusterSidebar';
 import { AppMasthead } from '@/components/app/AppMasthead';
 import { ReconciliationControls } from '@/components/kafka/overview/ReconciliationControls';
+import { useGroup } from '@/api/hooks/useGroups';
 
 export function KafkaLayout() {
   const { t } = useTranslation();
@@ -57,7 +58,14 @@ export function KafkaLayout() {
     topicId,
     { fields: ['name'] }
   );
-  
+
+  // Fetch group data if we're on a group detail page
+  const { data: groupData } = useGroup(
+    kafkaId,
+    groupId,
+    { fields: 'groupId' }
+  );
+
   const { data: connectorData } = useConnector(
     connectorId,
   );
@@ -280,6 +288,11 @@ export function KafkaLayout() {
           <Link to={`/kafka/${kafkaId}/groups`}>
             {t('groups.title')}
           </Link>
+        </BreadcrumbItem>
+      )}
+      {isGroupDetailPage && (
+        <BreadcrumbItem>
+          {groupData?.attributes?.groupId}
         </BreadcrumbItem>
       )}
       {isGroupDetailPage && groupTab && groupTab !== groupId && (

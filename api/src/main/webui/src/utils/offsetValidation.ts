@@ -2,11 +2,11 @@
  * Validation utilities for reset offset functionality
  */
 
+import { OffsetResetRequest } from '../api/types';
 import {
-  ResetOffsetFormState,
   ResetOffsetError,
-  OffsetResetRequest,
-} from '../api/types';
+  ResetOffsetFormState,
+} from '../components/kafka/groups/ResetOffset/types';
 
 /**
  * Validate the reset offset form state
@@ -17,30 +17,22 @@ export function validateResetOffsetForm(
 ): ResetOffsetError[] {
   const errors: ResetOffsetError[] = [];
 
-  // Topic validation
-  if (state.topicSelection === 'selectedTopic' && !state.selectedTopicId) {
-    errors.push({
-      type: 'GeneralError',
-      message: 'Please select a topic',
-    });
-  }
+  const hasSelectedTopic = state.selectedTopicId !== undefined;
+  const hasSelectedPartition = state.selectedPartition !== undefined;
 
-  // Partition validation
+  // Validate partition exists for selected topic
   if (
-    state.topicSelection === 'selectedTopic' &&
-    state.partitionSelection === 'selectedPartition' &&
-    state.selectedPartition === undefined
+    hasSelectedPartition &&
+    !hasSelectedTopic
   ) {
     errors.push({
       type: 'PartitionError',
-      message: 'Please select a partition',
+      message: 'Please select a topic before selecting a partition',
     });
   }
 
-  // Validate partition exists
   if (
-    state.topicSelection === 'selectedTopic' &&
-    state.partitionSelection === 'selectedPartition' &&
+    hasSelectedPartition &&
     state.selectedPartition !== undefined &&
     !availablePartitions.includes(state.selectedPartition)
   ) {
@@ -50,12 +42,16 @@ export function validateResetOffsetForm(
     });
   }
 
+  if (!state.offsetValue) {
+    errors.push({
+      type: 'GeneralError',
+      message: 'Please select an offset type',
+    });
+  }
+
   // Custom offset validation
   if (state.offsetValue === 'custom') {
-    if (
-      state.topicSelection !== 'selectedTopic' ||
-      state.partitionSelection !== 'selectedPartition'
-    ) {
+    if (!hasSelectedTopic || !hasSelectedPartition) {
       errors.push({
         type: 'CustomOffsetError',
         message: 'Custom offset requires specific topic and partition',
@@ -70,22 +66,20 @@ export function validateResetOffsetForm(
   }
 
   // DateTime validation
-  if (state.offsetValue === 'specificDateTime') {
+  if (state.offsetValue === 'dateTimeIso' || state.offsetValue === 'dateTimeEpoch') {
     if (!state.dateTime) {
       errors.push({
         type: 'SpecificDateTimeNotValidError',
         message: 'Please enter a date and time',
       });
-    } else if (state.dateTimeFormat === 'ISO') {
-      // Validate ISO 8601 format
+    } else if (state.offsetValue === 'dateTimeIso') {
       if (!isValidISODateTime(state.dateTime)) {
         errors.push({
           type: 'SpecificDateTimeNotValidError',
           message: 'Invalid ISO 8601 format. Expected: yyyy-MM-ddTHH:mm:ss.SSSZ',
         });
       }
-    } else if (state.dateTimeFormat === 'Epoch') {
-      // Validate epoch timestamp
+    } else {
       const epoch = Number(state.dateTime);
       if (isNaN(epoch) || epoch < 0) {
         errors.push({
@@ -98,7 +92,7 @@ export function validateResetOffsetForm(
 
   // Delete offset validation
   if (state.offsetValue === 'delete') {
-    if (state.topicSelection !== 'selectedTopic') {
+    if (!hasSelectedTopic) {
       errors.push({
         type: 'GeneralError',
         message: 'Delete offset requires a specific topic to be selected',
@@ -169,23 +163,21 @@ export function generateOffsetRequests(
     case 'delete':
       offsetValue = null;
       break;
-    case 'specificDateTime':
-      if (state.dateTimeFormat === 'Epoch' && state.dateTime) {
-        offsetValue = convertEpochToISO(state.dateTime);
-      } else {
-        offsetValue = state.dateTime ?? '';
-      }
+    case 'dateTimeIso':
+      offsetValue = state.dateTime ?? '';
+      break;
+    case 'dateTimeEpoch':
+      offsetValue = state.dateTime ? convertEpochToISO(state.dateTime) : '';
       break;
     case 'earliest':
     case 'latest':
     default:
-      offsetValue = state.offsetValue;
+      offsetValue = state.offsetValue ?? 'latest';
       break;
   }
 
   // Generate requests based on topic/partition selection
-  if (state.topicSelection === 'allTopics') {
-    // Apply to all partitions of all topics
+  if (!state.selectedTopicId) {
     for (const partition of allPartitions) {
       requests.push({
         topicId: partition.topicId,
@@ -193,14 +185,12 @@ export function generateOffsetRequests(
         offset: offsetValue,
       });
     }
-  } else if (state.selectedTopicId) {
-    // Apply to specific topic
+  } else {
     const topicPartitions = allPartitions.filter(
       (p) => p.topicId === state.selectedTopicId
     );
 
-    if (state.partitionSelection === 'allPartitions') {
-      // Apply to all partitions of the selected topic
+    if (state.selectedPartition === undefined) {
       for (const partition of topicPartitions) {
         requests.push({
           topicId: partition.topicId,
@@ -208,8 +198,7 @@ export function generateOffsetRequests(
           offset: offsetValue,
         });
       }
-    } else if (state.selectedPartition !== undefined) {
-      // Apply to specific partition
+    } else {
       requests.push({
         topicId: state.selectedTopicId,
         partition: state.selectedPartition,

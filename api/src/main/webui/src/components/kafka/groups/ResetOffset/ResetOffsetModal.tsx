@@ -13,19 +13,14 @@ import {
   FormSection,
   Alert,
   AlertVariant,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
 } from '@patternfly/react-core';
-import {
-  ResetOffsetFormState,
-  TopicSelection,
-  PartitionSelection,
-  OffsetValue,
-  DateTimeFormat,
-  Group,
-  OffsetResetResult,
-} from '@/api/types';
+import { Group, OffsetResetResult } from '@/api/types';
+import { OffsetValue, ResetOffsetFormState } from './types';
 import { TopicPartitionSelector } from './TopicPartitionSelector';
 import { OffsetValueSelector } from './OffsetValueSelector';
-import { CliCommandDisplay } from './CliCommandDisplay';
 import { DryRunResults } from './DryRunResults';
 import { useResetGroupOffsets } from '@/api/hooks/useGroups';
 import {
@@ -34,13 +29,15 @@ import {
   isFormValid,
 } from '@/utils/offsetValidation';
 import { generateCliCommand } from '@/utils/cliCommandGenerator';
+import { ApiError } from '@/api/client';
+import { WrenchIcon } from '@patternfly/react-icons';
 
 interface ResetOffsetModalProps {
   isOpen: boolean;
   group: Group;
   kafkaId: string;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (message?: string) => void;
 }
 
 export function ResetOffsetModal({
@@ -54,16 +51,12 @@ export function ResetOffsetModal({
   const resetMutation = useResetGroupOffsets(kafkaId, group.id);
 
   // Form state
-  const [formState, setFormState] = useState<ResetOffsetFormState>({
-    topicSelection: 'allTopics',
-    partitionSelection: 'allPartitions',
-    offsetValue: 'latest',
-    dateTimeFormat: 'ISO',
-  });
+  const [formState, setFormState] = useState<ResetOffsetFormState>({});
 
   // Dry run state
   const [showDryRun, setShowDryRun] = useState(false);
   const [dryRunResults, setDryRunResults] = useState<OffsetResetResult[]>([]);
+  const [responseError, setResponseError] = useState<string>();
 
   // Derive topics from group offsets
   const topics = useMemo(() => {
@@ -123,6 +116,14 @@ export function ResetOffsetModal({
 
   const formIsValid = isFormValid(formState, selectedTopicPartitions);
 
+  const resetModalState = () => {
+    setFormState({});
+    setShowDryRun(false);
+    setDryRunResults([]);
+    setResponseError(undefined);
+    resetMutation.reset();
+  };
+
   // Generate CLI command
   const cliCommand = useMemo(() => {
     const selectedTopic = topics.find((t) => t.id === formState.selectedTopicId);
@@ -133,48 +134,42 @@ export function ResetOffsetModal({
     );
   }, [group.attributes.groupId, formState, topics]);
 
+  const getResponseErrorMessage = (
+    responseErrors?: Array<{ title: string; detail?: string }>
+  ) => responseErrors?.map((error) => error.detail || error.title).join(' ') || 'Unknown error';
+
   // Handlers
-  const handleTopicSelectionChange = (selection: TopicSelection) => {
-    setFormState((prev) => ({
-      ...prev,
-      topicSelection: selection,
-      selectedTopicId: undefined,
-      selectedTopicName: undefined,
-      selectedPartition: undefined,
-    }));
-  };
+  const handleTopicChange = (topicId?: string) => {
+    if (!topicId) {
+      setFormState((prev) => ({
+        ...prev,
+        selectedTopicId: undefined,
+        selectedPartition: undefined,
+      }));
+      return;
+    }
 
-  const handlePartitionSelectionChange = (selection: PartitionSelection) => {
-    setFormState((prev) => ({
-      ...prev,
-      partitionSelection: selection,
-      selectedPartition: undefined,
-    }));
-  };
-
-  const handleTopicChange = (topicId: string) => {
-    const topic = topics.find((t) => t.id === topicId);
     setFormState((prev) => ({
       ...prev,
       selectedTopicId: topicId,
-      selectedTopicName: topic?.name,
       selectedPartition: undefined,
     }));
   };
 
-  const handlePartitionChange = (partition: number) => {
+  const handlePartitionChange = (partition?: number) => {
     setFormState((prev) => ({
       ...prev,
       selectedPartition: partition,
     }));
   };
 
-  const handleOffsetValueChange = (value: OffsetValue) => {
+  const handleOffsetValueChange = (value?: OffsetValue) => {
     setFormState((prev) => ({
       ...prev,
       offsetValue: value,
       customOffset: undefined,
       dateTime: undefined,
+      dateTimeDisplayMode: value === 'dateTimeIso' ? 'utc' : undefined,
     }));
   };
 
@@ -192,25 +187,30 @@ export function ResetOffsetModal({
     }));
   };
 
-  const handleDateTimeFormatChange = (format: DateTimeFormat) => {
+  const handleDateTimeDisplayModeChange = (mode: 'utc' | 'local') => {
     setFormState((prev) => ({
       ...prev,
-      dateTimeFormat: format,
-      dateTime: undefined,
+      dateTimeDisplayMode: mode,
     }));
   };
 
   const handleDryRun = async () => {
     const requests = generateOffsetRequests(formState, allPartitions);
-    
+    setResponseError(undefined);
+
     try {
       const response = await resetMutation.mutateAsync({
         offsets: requests,
         dryRun: true,
       });
 
+      if (response.errors?.length) {
+        setResponseError(getResponseErrorMessage(response.errors));
+        setShowDryRun(false);
+        return;
+      }
+
       if (response.data) {
-        // Extract dry run results from response
         const results = response.data.attributes.offsets || [];
         setDryRunResults(results);
         setShowDryRun(true);
@@ -222,60 +222,64 @@ export function ResetOffsetModal({
 
   const handleApply = async () => {
     const requests = generateOffsetRequests(formState, allPartitions);
-    
+    setResponseError(undefined);
+    setShowDryRun(false);
+
     try {
-      await resetMutation.mutateAsync({
+      const response = await resetMutation.mutateAsync({
         offsets: requests,
         dryRun: false,
       });
 
-      onSuccess?.();
+      if (response.errors?.length) {
+        setResponseError(getResponseErrorMessage(response.errors));
+        return;
+      }
+
+      resetModalState();
       onClose();
+      onSuccess?.(t('groups.resetOffset.success', { groupId: group.attributes.groupId }));
     } catch (error) {
       console.error('Reset failed:', error);
     }
   };
 
-  const handleReset = () => {
-    setFormState({
-      topicSelection: 'allTopics',
-      partitionSelection: 'allPartitions',
-      offsetValue: 'latest',
-      dateTimeFormat: 'ISO',
-    });
-  };
-
   return (
     <>
       <Modal
-        variant={ModalVariant.large}
-        title={t('groups.resetOffset.title')}
+        variant={ModalVariant.medium}
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={() => {
+          resetModalState();
+          onClose();
+        }}
       >
-        <div style={{ padding: '1.5rem' }}>
-          {resetMutation.isError && (
+        <ModalHeader 
+          title={t('groups.resetOffset.title', { groupId: group.attributes.groupId })}
+          titleIconVariant={WrenchIcon}
+          />
+        <ModalBody>
+          {(responseError || resetMutation.isError) && (
             <Alert
               variant={AlertVariant.danger}
               isInline
               title={t('groups.resetOffset.errors.generalError')}
               style={{ marginBottom: '1rem' }}
             >
-              {resetMutation.error?.message || 'Unknown error'}
+              {responseError ??
+                getResponseErrorMessage((resetMutation.error as ApiError)?.errors) ??
+                resetMutation.error?.message ??
+                'Unknown error'}
             </Alert>
           )}
 
-          <Form>
-            <FormSection title={t('groups.resetOffset.targetWithGroupId', { groupId: group.attributes.groupId })}>
+          <Form isHorizontal>
+            <FormSection title={t('groups.resetOffset.targetSelectionTitle')}>
               <TopicPartitionSelector
                 topics={topicsList}
                 partitions={selectedTopicPartitions}
-                topicSelection={formState.topicSelection}
-                partitionSelection={formState.partitionSelection}
                 selectedTopicId={formState.selectedTopicId}
                 selectedPartition={formState.selectedPartition}
-                onTopicSelectionChange={handleTopicSelectionChange}
-                onPartitionSelectionChange={handlePartitionSelectionChange}
                 onTopicChange={handleTopicChange}
                 onPartitionChange={handlePartitionChange}
               />
@@ -286,13 +290,13 @@ export function ResetOffsetModal({
                 offsetValue={formState.offsetValue}
                 customOffset={formState.customOffset}
                 dateTime={formState.dateTime}
-                dateTimeFormat={formState.dateTimeFormat}
-                topicSelection={formState.topicSelection}
-                partitionSelection={formState.partitionSelection}
+                dateTimeDisplayMode={formState.dateTimeDisplayMode}
+                topicSelection={formState.selectedTopicId ? 'selectedTopic' : 'allTopics'}
+                partitionSelection={formState.selectedPartition !== undefined ? 'selectedPartition' : 'allPartitions'}
                 onOffsetValueChange={handleOffsetValueChange}
                 onCustomOffsetChange={handleCustomOffsetChange}
                 onDateTimeChange={handleDateTimeChange}
-                onDateTimeFormatChange={handleDateTimeFormatChange}
+                onDateTimeDisplayModeChange={handleDateTimeDisplayModeChange}
                 errors={{
                   customOffset: errors.CustomOffsetError,
                   dateTime: errors.SpecificDateTimeNotValidError,
@@ -300,11 +304,9 @@ export function ResetOffsetModal({
               />
             </FormSection>
 
-            <CliCommandDisplay command={cliCommand} />
           </Form>
-        </div>
-
-        <div style={{ padding: '1.5rem', paddingTop: '0', display: 'flex', gap: '0.5rem' }}>
+        </ModalBody>
+        <ModalFooter>
           <Button
             variant="primary"
             onClick={handleApply}
@@ -320,21 +322,24 @@ export function ResetOffsetModal({
           >
             {t('groups.resetOffset.dryRun')}
           </Button>
-          <Button variant="link" onClick={handleReset}>
-            {t('common.clear')}
-          </Button>
-          <Button variant="link" onClick={onClose}>
+          <Button
+            variant="link"
+            onClick={() => {
+              resetModalState();
+              onClose();
+            }}
+          >
             {t('common.cancel')}
           </Button>
-        </div>
+        </ModalFooter>
       </Modal>
 
       <DryRunResults
         isOpen={showDryRun}
         results={dryRunResults}
+        currentOffsets={group.attributes.offsets}
+        command={cliCommand}
         onClose={() => setShowDryRun(false)}
-        onApply={handleApply}
-        isApplying={resetMutation.isPending}
       />
     </>
   );

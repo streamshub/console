@@ -10,6 +10,9 @@ import {
   Button,
   Alert,
   AlertVariant,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
 } from '@patternfly/react-core';
 import {
   Table,
@@ -19,24 +22,30 @@ import {
   Tbody,
   Td,
 } from '@patternfly/react-table';
-import { OffsetResetResult } from '@/api/types';
+import { OffsetAndMetadata, OffsetResetResult } from '@/api/types';
+import { CliCommandDisplay } from './CliCommandDisplay';
 
 interface DryRunResultsProps {
   isOpen: boolean;
   results: OffsetResetResult[];
+  currentOffsets?: OffsetAndMetadata[] | null;
+  command: string;
   onClose: () => void;
-  onApply: () => void;
-  isApplying?: boolean;
 }
 
 export function DryRunResults({
   isOpen,
   results,
+  currentOffsets,
+  command,
   onClose,
-  onApply,
-  isApplying = false,
 }: DryRunResultsProps) {
   const { t } = useTranslation();
+
+  const currentOffsetsByPartition = (currentOffsets || []).reduce((acc, offset) => {
+    acc[`${offset.topicName}-${offset.partition}`] = offset.offset;
+    return acc;
+  }, {} as Record<string, number | null>);
 
   // Group results by topic
   const resultsByTopic = results.reduce((acc, result) => {
@@ -50,12 +59,12 @@ export function DryRunResults({
 
   return (
     <Modal
-      variant={ModalVariant.large}
-      title={t('groups.resetOffset.dryRunResults.title')}
+      variant={ModalVariant.medium}
       isOpen={isOpen}
       onClose={onClose}
     >
-      <div style={{ padding: '1.5rem' }}>
+      <ModalHeader title={t('groups.resetOffset.dryRunResults.title')} />
+      <ModalBody>
         <Alert
           variant={AlertVariant.info}
           isInline
@@ -79,6 +88,7 @@ export function DryRunResults({
                 <Thead>
                   <Tr>
                     <Th>{t('groups.resetOffset.dryRunResults.partition')}</Th>
+                    <Th>{t('groups.resetOffset.dryRunResults.currentOffset')}</Th>
                     <Th>{t('groups.resetOffset.dryRunResults.newOffset')}</Th>
                   </Tr>
                 </Thead>
@@ -87,6 +97,9 @@ export function DryRunResults({
                     <Tr key={`${result.topicName}-${result.partition}`}>
                       <Td dataLabel={t('groups.resetOffset.dryRunResults.partition')}>
                         {result.partition}
+                      </Td>
+                      <Td dataLabel={t('groups.resetOffset.dryRunResults.currentOffset')}>
+                        {currentOffsetsByPartition[`${result.topicName}-${result.partition}`] ?? t('common.notAvailable')}
                       </Td>
                       <Td dataLabel={t('groups.resetOffset.dryRunResults.newOffset')}>
                         {result.offset !== null
@@ -100,24 +113,16 @@ export function DryRunResults({
             </div>
           ))
         )}
-      </div>
-      <div style={{ padding: '1.5rem', paddingTop: '0', display: 'flex', gap: '0.5rem' }}>
-        <Button
-          variant="primary"
-          onClick={onApply}
-          isDisabled={isApplying || results.length === 0}
-          isLoading={isApplying}
-        >
-          {t('groups.resetOffset.dryRunResults.apply')}
-        </Button>
+        <CliCommandDisplay command={command} />
+      </ModalBody>
+      <ModalFooter>
         <Button
           variant="link"
           onClick={onClose}
-          isDisabled={isApplying}
         >
           {t('groups.resetOffset.dryRunResults.cancel')}
         </Button>
-      </div>
+      </ModalFooter>
     </Modal>
   );
 }
