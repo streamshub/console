@@ -1,6 +1,8 @@
 package com.github.streamshub.console.api;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Base64;
@@ -10,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 import jakarta.inject.Inject;
 import jakarta.json.Json;
@@ -25,11 +28,16 @@ import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.service.MetricsService;
@@ -38,6 +46,7 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.test.AdminClientSpy;
+import com.github.streamshub.console.test.LogCapture;
 import com.github.streamshub.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -50,16 +59,23 @@ import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 
 @QuarkusTest
 @TestHTTPEndpoint(KafkaClustersResource.class)
@@ -70,6 +86,11 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
             .add("data", Json.createObjectBuilder()
                     .add("result", Json.createArrayBuilder()))
             .build();
+
+    static LogCapture logCapture = LogCapture.with(logRecord -> logRecord
+            .getLoggerName()
+            .equals(MetricsService.class.getName()),
+            Level.WARNING);
 
     @Inject
     Config config;
@@ -94,6 +115,16 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
     Consumer<ClientRequestContext> filterQuery;
     Consumer<ClientRequestContext> filterQueryRange;
 
+    @BeforeAll
+    static void initialize() {
+        logCapture.register();
+    }
+
+    @AfterAll
+    static void cleanup() {
+        logCapture.deregister();
+    }
+
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         var requestUri = requestContext.getUri();
@@ -110,6 +141,7 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
         filterQuery = ctx -> { /* No-op */ };
         filterQueryRange = ctx -> { /* No-op */ };
         metricsService.setAdditionalFilter(Optional.of(this));
+        logCapture.records().clear();
 
         String metricsSource;
 
@@ -364,6 +396,93 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
             .body("data.attributes.metrics", allOf(
                     hasEntry(is("values"), anEmptyMap()),
                     hasEntry(is("ranges"), anEmptyMap())));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "",
+        """
+        EXPECTED: Prometheus error""",
+        """
+        EXPECTED: Prometheus error\
+        01234567890123456789012345678901234567890123456789\
+        01234567890123456789012345678901234567890123456789\
+        01234567890123456789012345678901234567890123456789\
+        012345678901234567890123""",
+        """
+        EXPECTED: Prometheus error\
+        01234567890123456789012345678901234567890123456789\
+        01234567890123456789012345678901234567890123456789\
+        01234567890123456789012345678901234567890123456789\
+        0123456789012345678901234"""
+    })
+    void testDescribeClusterWithMetricsErrorStream(String responseBody) {
+        filterQuery = ctx -> {
+            Response error = Response.status(Status.SERVICE_UNAVAILABLE)
+                    .entity(new ByteArrayInputStream(responseBody.getBytes()))
+                    .build();
+            throw new WebApplicationException(error);
+        };
+
+        filterQueryRange = ctx -> {
+            throw new RuntimeException("EXPECTED");
+        };
+
+        whenRequesting(req -> req
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", equalTo("test-kafka1"))
+            .body("data.attributes.metrics", allOf(
+                    hasEntry(is("values"), anEmptyMap()),
+                    hasEntry(is("ranges"), anEmptyMap())));
+
+        var logs = logCapture.records();
+        var expected = responseBody.length() > 200 ? responseBody.substring(0, 200) + "..." : responseBody;
+
+        assertThat(logs, hasItem(hasProperty("message", containsString(
+                "status %d: '%s'".formatted(Status.SERVICE_UNAVAILABLE.getStatusCode(), expected)
+        ))));
+    }
+
+    @Test
+    void testDescribeClusterWithMetricsErrorStreamException() throws IOException {
+        InputStream stream = Mockito.mock(InputStream.class);
+        IOException thrown = new IOException("EXPECTED");
+
+        Mockito.when(stream.read(any(byte[].class), eq(0), anyInt())).thenAnswer(args -> {
+            throw thrown;
+        });
+
+        filterQuery = ctx -> {
+            Response error = Response.status(Status.SERVICE_UNAVAILABLE)
+                    .entity(stream)
+                    .build();
+            throw new WebApplicationException(error);
+        };
+
+        filterQueryRange = ctx -> {
+            throw new RuntimeException("EXPECTED");
+        };
+
+        whenRequesting(req -> req
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", equalTo("test-kafka1"))
+            .body("data.attributes.metrics", allOf(
+                    hasEntry(is("values"), anEmptyMap()),
+                    hasEntry(is("ranges"), anEmptyMap())));
+
+        var logs = logCapture.records();
+
+        assertThat(logs, hasItem(hasProperty("thrown", equalTo(thrown))));
+
+        assertThat(logs, hasItem(hasProperty("message", containsString(
+                "status %d: '%s'".formatted(Status.SERVICE_UNAVAILABLE.getStatusCode(), "<Unknown>")
+        ))));
     }
 
     @Test
