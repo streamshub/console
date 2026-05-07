@@ -84,6 +84,9 @@
       "typescript": "$typescript"
     },
     "glob": "13.0.6",
+    "next": {
+      "postcss": "8.5.10"
+    },
     "rimraf": {
       ".": "4.4.1",
       "glob": "13.0.6"
