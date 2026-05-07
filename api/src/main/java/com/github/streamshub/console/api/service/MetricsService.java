@@ -1,5 +1,9 @@
 package com.github.streamshub.console.api.service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -132,7 +136,7 @@ public class MetricsService {
                 Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
                 Instant start = now.minus(durationMinutes, ChronoUnit.MINUTES);
                 Instant end = now;
-            
+
                 String step = calculateStep(durationMinutes);
 
                 return prometheusAPI.queryRange(query, start, end, step);
@@ -154,21 +158,21 @@ public class MetricsService {
 
     private String calculateStep(int durationMinutes) {
         if (durationMinutes <= 15) {
-            return "15s";   
+            return "15s";
         }
         if (durationMinutes <= 60) {
-            return "1m";  
-        } 
+            return "1m";
+        }
         if (durationMinutes <= 360) {
-            return "5m";  
-        } 
+            return "5m";
+        }
         if (durationMinutes <= 1440) {
-            return "15m"; 
+            return "15m";
         }
         if (durationMinutes <= 2880) {
-            return "30m"; 
+            return "30m";
         }
-        return "2h";                               
+        return "2h";
     }
 
     <M> CompletionStage<Map<String, List<M>>> fetchMetrics(
@@ -179,9 +183,15 @@ public class MetricsService {
             try {
                 return extractMetrics(operation.get(), builder);
             } catch (WebApplicationException wae) {
-                logger.warnf("Failed to retrieve Kafka cluster metrics, status %d: %s",
+                var entity = wae.getResponse().getEntity();
+
+                if (entity instanceof InputStream stream) {
+                    entity = readStream(stream);
+                }
+
+                logger.warnf("Failed to retrieve Kafka cluster metrics, status %d: '%s'",
                         wae.getResponse().getStatus(),
-                        wae.getResponse().getEntity());
+                        entity);
                 return Collections.emptyMap();
             } catch (Exception e) {
                 logger.warnf(e, "Failed to retrieve Kafka cluster metrics");
@@ -209,5 +219,32 @@ public class MetricsService {
                 return Map.entry(metricName, builder.apply(metric, attributes));
             })
             .collect(groupingBy(Map.Entry::getKey, mapping(Map.Entry::getValue, toList())));
+    }
+
+    /**
+     * Reads up to 200 characters from the response stream as a string
+     * for logging.
+     */
+    private String readStream(InputStream stream) {
+        StringBuilder buffer = new StringBuilder();
+
+        try (Reader reader = new InputStreamReader(stream)) {
+            char[] data = new char[201];
+            int length = reader.read(data);
+
+            if (length > 0) {
+                buffer.append(data, 0, Math.min(length, 200));
+
+                if (length > 200) {
+                    buffer.append("...");
+                }
+            }
+        } catch (IOException ioe) {
+            logger.warnf(ioe, "Error deserializing metrics response error body");
+            buffer.setLength(0);
+            buffer.append("<Unknown>");
+        }
+
+        return buffer.toString();
     }
 }
