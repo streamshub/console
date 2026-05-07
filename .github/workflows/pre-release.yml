@@ -37,7 +37,7 @@ jobs:
           metadata-file-path: '.github/project.yml'
 
       - name: Review Milestone
-        uses: radcortez/milestone-review-action@e0f8f2498c85fa915c1181ff93e5c16a810506ef
+        uses: radcortez/milestone-review-action@1126e9e9db5e39f8e3b6795d2718d73800ac89c5
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           milestone-title: ${{steps.metadata.outputs.current-version}}
