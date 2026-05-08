@@ -13,16 +13,18 @@ inputs:
     required: false
     default: "2"
     description: "Minikube CPU allocation"
+  OLM_VERSION:
+    required: false
+    default: "v0.42.0"
+    description: "Version of OLM to install"
+  OLM_SCRIPT_SHA256:
+    required: false
+    default: "1e8065cb503d2ee94ce82dd2591618022852f53a43df908b9f8c7d314cff3532"
+    description: "OLM installation script SHA256 hash"
 
 runs:
   using: "composite"
   steps:
-    - name: Install yq for deployment scripts
-      shell: bash
-      run: |
-        curl -L https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 > yq && chmod +x yq
-        sudo cp -v yq /usr/bin/
-
     - name: Start Minikube
       id: minikube
       uses: medyagh/setup-minikube@latest
@@ -63,5 +65,18 @@ runs:
 
     - name: Setup OLM
       shell: bash
+      env:
+        OLM_VERSION: "${{ inputs.OLM_VERSION }}"
+        OLM_SCRIPT_SHA256: "${{ inputs.OLM_SCRIPT_SHA256 }}"
       run: |
-        curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/install.sh | bash -s v0.28.0
+        curl \
+          --proto "=https" \
+          --tlsv1.3 \
+          -o install.sh \
+          -sL \
+          https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh
+
+        echo "${OLM_SCRIPT_SHA256} ./install.sh" | sha256sum --check --status || { echo "Hash verification failed"; exit 1; }
+        chmod +x ./install.sh
+
+        ./install.sh ${OLM_VERSION}
