@@ -27,17 +27,20 @@ import { ClusterSwitcher } from '@/components/kafka/ClusterSwitcher';
 import { KafkaCluster } from '@/api/types';
 import { useMetadata } from '@/api/hooks/useMetadata';
 import { UserDropdown } from './UserDropdown';
+import { RefreshAllButton } from './RefreshAllButton';
 
 export interface AppMastheadProps {
   readonly showSidebarToggle?: boolean;
   readonly clusters?: KafkaCluster[];
   readonly currentClusterId?: string;
+  readonly staticRefresh?: Date; // allows fixed value to be provided for storybook testing
 }
 
 export function AppMasthead({
   showSidebarToggle = false,
   clusters,
   currentClusterId,
+  staticRefresh,
 }: AppMastheadProps) {
   const { t } = useTranslation();
   const { toggleSidebar } = useAppLayout();
@@ -107,6 +110,9 @@ export function AppMasthead({
               >
                 <ToolbarItem>
                   <ThemeSwitcher />
+                </ToolbarItem>
+                <ToolbarItem>
+                  <RefreshAllButton staticRefresh={staticRefresh} />
                 </ToolbarItem>
                 <ToolbarItem>
                   <Button

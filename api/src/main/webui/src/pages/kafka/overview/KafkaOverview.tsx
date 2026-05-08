@@ -24,6 +24,7 @@ import { useTopics } from '@/api/hooks/useTopics';
 import { useGroups } from '@/api/hooks/useGroups';
 import { useNodes } from '@/api/hooks/useNodes';
 import { useViewedTopics } from '@/api/hooks/useViewedTopics';
+import { useShowLearning } from '@/hooks/useShowLearning';
 import { OverviewLayout } from '@/components/kafka/overview/OverviewLayout';
 import { ClusterCard } from '@/components/kafka/overview/ClusterCard';
 import { ClusterChartsCard } from '@/components/kafka/overview/ClusterChartsCard';
@@ -39,6 +40,7 @@ function KafkaOverviewContent() {
   const { t } = useTranslation();
   const { kafkaId } = useParams<{ kafkaId: string }>();
   const openConnectionPanel = useOpenClusterConnectionPanel();
+  const showLearning = useShowLearning();
 
   // Fetch cluster data with conditions field
   const { data: clusterData, isLoading: clusterLoading } = useKafkaCluster(kafkaId, {
@@ -125,7 +127,7 @@ function KafkaOverviewContent() {
   const isLoading = clusterLoading || topicsSummaryLoading || groupsLoading;
 
   return (
-    <ClusterConnectionDrawer cluster={cluster} showLearning={true}>
+    <ClusterConnectionDrawer cluster={cluster} showLearning={showLearning}>
       <PageSection>
         <Flex
           justifyContent={{ default: 'justifyContentSpaceBetween' }}
@@ -141,7 +143,7 @@ function KafkaOverviewContent() {
           </FlexItem>
           <FlexItem>
             <Button
-              variant="secondary"
+              variant="primary"
               onClick={() => kafkaId && openConnectionPanel(kafkaId)}
             >
               {t('ConnectButton.cluster_connection_details')}

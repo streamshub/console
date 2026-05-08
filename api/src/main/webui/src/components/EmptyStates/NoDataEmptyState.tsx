@@ -7,26 +7,33 @@ import { useTranslation } from 'react-i18next';
 import {
   EmptyState,
   EmptyStateBody,
+  EmptyStateFooter,
+  EmptyStateActions,
   Title,
 } from '@patternfly/react-core';
-import { CubesIcon } from '@patternfly/react-icons';
+import { CubesIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 
 interface NoDataEmptyStateProps {
   entityName?: string;
   title?: string;
   message?: string;
   icon?: React.ComponentType;
+  learningLink?: {
+    href: string;
+    label: string;
+  };
 }
 
-export function NoDataEmptyState({ 
-  entityName, 
-  title, 
+export function NoDataEmptyState({
+  entityName,
+  title,
   message,
-  icon: IconComponent = CubesIcon 
+  icon: IconComponent = CubesIcon,
+  learningLink,
 }: NoDataEmptyStateProps = {}) {
   const { t } = useTranslation();
 
-  const defaultTitle = entityName 
+  const defaultTitle = entityName
     ? t('common.noEntityAvailable', { entity: entityName })
     : t('common.noData');
 
@@ -43,6 +50,19 @@ export function NoDataEmptyState({
       <EmptyStateBody>
         {message || defaultMessage}
       </EmptyStateBody>
+      {learningLink && (
+        <EmptyStateFooter>
+          <EmptyStateActions>
+            <a
+              href={learningLink.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {learningLink.label} <ExternalLinkAltIcon />
+            </a>
+          </EmptyStateActions>
+        </EmptyStateFooter>
+      )}
     </EmptyState>
   );
 }

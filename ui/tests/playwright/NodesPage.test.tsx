@@ -6,7 +6,7 @@ test.beforeEach(async ({ authenticatedPage }) => {
 
 test("Nodes page", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to nodes page", async () => {
-    await authenticatedPage.clickLink('Nodes', "sidebar");
+    await authenticatedPage.clickLink('Kafka Nodes', "sidebar");
     await expect(page.getByRole('columnheader', { name: 'Rack' })).toBeVisible();
   });
   await test.step("Nodes page should display table", async () => {

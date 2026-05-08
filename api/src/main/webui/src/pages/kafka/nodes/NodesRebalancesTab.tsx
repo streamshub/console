@@ -35,10 +35,12 @@ import { RebalancesTable } from '@/components/kafka/nodes/RebalancesTable';
 import { RebalancesCountCard } from '@/components/kafka/nodes/RebalancesCountCard';
 import { Rebalance, RebalanceStatus, RebalanceMode } from '@/api/types';
 import { useTableState } from '@/hooks';
+import { useShowLearning } from '@/hooks/useShowLearning';
 
 export function NodesRebalancesTab() {
   const { t } = useTranslation();
   const { kafkaId } = useParams<{ kafkaId: string }>();
+  const showLearning = useShowLearning();
 
   // Alert state
   const [isAlertVisible, setIsAlertVisible] = useState(true);
@@ -153,7 +155,7 @@ export function NodesRebalancesTab() {
     return (
       <PageSection isFilled>
         <Grid hasGutter>
-          {isAlertVisible && (
+          {showLearning && isAlertVisible && (
             <GridItem>
               <Alert
                 variant="info"

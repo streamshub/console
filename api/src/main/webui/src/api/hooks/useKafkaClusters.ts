@@ -81,7 +81,7 @@ export function useKafkaCluster(kafkaId: string | undefined, params?: {
       return apiClient.get<{ data: KafkaCluster }>(path);
     },
     enabled: !!kafkaId,
-    refetchInterval: 10000,
+    refetchInterval: 30000,
   });
 }
 
