@@ -6,8 +6,6 @@ on:
 env:
   TARGET_NAMESPACE: "console-namespace"
   CI_CLUSTER: true
-  OLM_VERSION: "v0.28.0"
-  YQ_VERSION: "v4.44.1"
 
 jobs:
   Test:
