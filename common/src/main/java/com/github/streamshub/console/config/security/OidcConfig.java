@@ -20,11 +20,12 @@ public class OidcConfig implements Trustable {
     private String issuer;
     @NotBlank
     private String clientId;
-    @NotBlank
     private String clientSecret;
     private String scopes;
     @Valid
     private TrustStoreConfig trustStore;
+    private Boolean pkceRequired;
+    private String stateSecret;
 
     @Override
     @JsonIgnore
@@ -88,5 +89,21 @@ public class OidcConfig implements Trustable {
 
     public void setTrustStore(TrustStoreConfig trustStore) {
         this.trustStore = trustStore;
+    }
+
+    public Boolean isPkceRequired() {
+        return pkceRequired;
+    }
+
+    public void setPkceRequired(Boolean pkceRequired) {
+        this.pkceRequired = pkceRequired;
+    }
+
+    public String getStateSecret() {
+        return stateSecret;
+    }
+
+    public void setStateSecret(String stateSecret) {
+        this.stateSecret = stateSecret;
     }
 }
