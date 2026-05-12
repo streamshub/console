@@ -33,6 +33,7 @@ import { FilterIcon } from '@patternfly/react-icons';
 import { useRebalances, usePatchRebalance } from '@/api/hooks/useRebalances';
 import { RebalancesTable } from '@/components/kafka/nodes/RebalancesTable';
 import { RebalancesCountCard } from '@/components/kafka/nodes/RebalancesCountCard';
+import { RebalanceConfirmationModal } from '@/components/kafka/nodes/RebalanceConfirmationModal';
 import { Rebalance, RebalanceStatus, RebalanceMode } from '@/api/types';
 import { useTableState } from '@/hooks';
 import { useShowLearning } from '@/hooks/useShowLearning';
@@ -58,6 +59,11 @@ export function NodesRebalancesTab() {
   const [searchValue, setSearchValue] = useState('');
   const [isStatusSelectOpen, setIsStatusSelectOpen] = useState(false);
   const [isModeSelectOpen, setIsModeSelectOpen] = useState(false);
+
+  // Confirmation modal state
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'approve' | 'stop' | 'refresh'>('approve');
+  const [pendingRebalance, setPendingRebalance] = useState<Rebalance | null>(null);
 
   // Fetch rebalances with filters
   const { data, isLoading } = useRebalances(kafkaId!, {
@@ -101,24 +107,37 @@ export function NodesRebalancesTab() {
   };
 
   const handleApprove = (rebalance: Rebalance) => {
-    patchRebalance({
-      rebalanceId: rebalance.id,
-      action: 'approve',
-    });
+    setPendingRebalance(rebalance);
+    setPendingAction('approve');
+    setIsConfirmModalOpen(true);
   };
 
   const handleStop = (rebalance: Rebalance) => {
-    patchRebalance({
-      rebalanceId: rebalance.id,
-      action: 'stop',
-    });
+    setPendingRebalance(rebalance);
+    setPendingAction('stop');
+    setIsConfirmModalOpen(true);
   };
 
   const handleRefresh = (rebalance: Rebalance) => {
-    patchRebalance({
-      rebalanceId: rebalance.id,
-      action: 'refresh',
-    });
+    setPendingRebalance(rebalance);
+    setPendingAction('refresh');
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmAction = () => {
+    if (pendingRebalance) {
+      patchRebalance({
+        rebalanceId: pendingRebalance.id,
+        action: pendingAction,
+      });
+    }
+    setIsConfirmModalOpen(false);
+    setPendingRebalance(null);
+  };
+
+  const handleCancelAction = () => {
+    setIsConfirmModalOpen(false);
+    setPendingRebalance(null);
   };
 
   // Calculate status counts
@@ -418,6 +437,13 @@ export function NodesRebalancesTab() {
           </Toolbar>
         </GridItem>
       </Grid>
+
+      <RebalanceConfirmationModal
+        isOpen={isConfirmModalOpen}
+        action={pendingAction}
+        onConfirm={handleConfirmAction}
+        onCancel={handleCancelAction}
+      />
     </PageSection>
   );
 }
