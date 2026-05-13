@@ -43,12 +43,12 @@ CONSOLE_OLM_CHANNEL_NAME: alpha
 # YAML
 # -------------------------------------------
 # Which released version of Strimzi Cluster Operator to install
-STRIMZI_OPERATOR_VERSION: 0.51.0
+STRIMZI_OPERATOR_VERSION: 1.0.0
 # URL or local path for Console Operator installation
 # 1. URL - released console-operator.yaml
 # 2. Local path that is relative to the root project dir
 # 3. Local path that is absolute
-CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.11.0/streamshub-console-operator.yaml
+CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.12.4/streamshub-console-operator.yaml
 # Custom Console Operator image. Overrides default image used in bundle yaml
 CONSOLE_OPERATOR_IMAGE:
 # -------------------------------------------
@@ -62,12 +62,12 @@ CONSOLE_UI_IMAGE:
 # Kroxy
 # -------------------------------------------
 # Kroxy released yaml manifests version
-KROXYLICIOUS_VERSION: 0.18.0
+KROXYLICIOUS_VERSION: 0.20.0
 # -------------------------------------------
 # Apicurio
 # -------------------------------------------
 # Apicurio schema registry version
-APICURIO_VERSION: 3.1.7
+APICURIO_VERSION: 3.2.4
 # -------------------------------------------
 # Keycloak
 # -------------------------------------------
@@ -85,4 +85,4 @@ PROMETHEUS_VERSION: 0.89.0
 # Kafka version used in system tests
 ST_KAFKA_VERSION: 4.2.0
 # Image for test client containers in system tests
-TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:0.13.0-kafka-4.2.0
+TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:0.14.0-kafka-4.2.0
