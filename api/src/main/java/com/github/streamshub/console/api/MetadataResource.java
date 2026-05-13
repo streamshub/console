@@ -2,6 +2,7 @@ package com.github.streamshub.console.api;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -76,6 +77,9 @@ public class MetadataResource {
                 .orElseGet(this::determinePlatform));
         meta.put("options", Map.of(
                 "showLearning", consoleConfig.getOptions().isShowLearning()
+        ));
+        meta.put("security", Map.of(
+                "oidcEnabled", Objects.nonNull(consoleConfig.getSecurity().getOidc())
         ));
 
         var replacementMetadata = Optional.<Map<String, Object>>of(Map.of(

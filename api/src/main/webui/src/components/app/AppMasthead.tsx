@@ -64,7 +64,9 @@ export function AppMasthead({
     setIsFeedbackModalOpen(false);
   };
 
-  const { data: sessionUser } = useSessionUser();
+  const sessionClusterId = metadata?.attributes.security.oidcEnabled ? undefined : currentClusterId;
+
+  const { data: sessionUser } = useSessionUser(sessionClusterId);
 
   const userDisplayName = useMemo(() => {
     if (!sessionUser) {
@@ -149,6 +151,7 @@ export function AppMasthead({
               </ToolbarGroup>
                 <UserDropdown
                   username={userDisplayName}
+                  clusterId={sessionClusterId}
                   anonymous={isAnonymous}
                 />
             </ToolbarContent>

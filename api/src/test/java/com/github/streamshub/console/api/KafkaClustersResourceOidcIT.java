@@ -2,7 +2,6 @@ package com.github.streamshub.console.api;
 
 import java.net.URI;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -12,7 +11,6 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +25,6 @@ import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
-import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -347,25 +344,5 @@ class KafkaClustersResourceOidcIT {
                 .get("{clusterId}", clusterId1))
             .assertThat()
             .statusCode(is(expectedStatus.getStatusCode()));
-    }
-
-    // Helper methods
-
-    static Map<String, Object> mockAdminClient() {
-        return mockAdminClient(Map.of(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name));
-    }
-
-    static Map<String, Object> mockAdminClient(Map<String, Object> overrides) {
-        Map<String, Object> clientConfig = new HashMap<>();
-
-        AdminClientSpy.install(config -> {
-            clientConfig.putAll(config);
-
-            Map<String, Object> newConfig = new HashMap<>(config);
-            newConfig.putAll(overrides);
-            return newConfig;
-        }, client -> { /* No-op */ });
-
-        return clientConfig;
     }
 }

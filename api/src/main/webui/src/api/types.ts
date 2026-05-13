@@ -384,6 +384,9 @@ export interface Metadata {
     options: {
       showLearning: boolean;
     };
+    security: {
+      oidcEnabled: boolean;
+    };
   };
 }
 
