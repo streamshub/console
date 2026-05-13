@@ -484,9 +484,8 @@ public class ClientFactory {
              * so here we will only retrieve them (if applicable) and
              * set them in the admin configuration map.
              */
-            var adminConfigs = maybeAuthenticate(identity, ctx, Admin.class);
-            var admin = adminBuilder.apply(adminConfigs);
-            return new KafkaContext(ctx, filter.apply(admin));
+            var admin = createAdmin(filter, adminBuilder, ctx, identity.getCredential(SaslJaasConfigCredential.class));
+            return new KafkaContext(ctx, admin);
         }
 
         return ctx;
@@ -499,7 +498,8 @@ public class ClientFactory {
     @Produces
     @RequestScoped
     public Consumer<RecordData, RecordData> consumerSupplier(SecurityIdentity identity, KafkaContext context) {
-        var configs = maybeAuthenticate(identity, context, Consumer.class);
+        var configs = maybeAuthenticate(
+                identity.getCredential(SaslJaasConfigCredential.class), context, Consumer.class);
 
         return new KafkaConsumer<>(
                 configs,
@@ -514,7 +514,9 @@ public class ClientFactory {
     @Produces
     @RequestScoped
     public Producer<RecordData, RecordData> producerSupplier(SecurityIdentity identity, KafkaContext context) {
-        var configs = maybeAuthenticate(identity, context, Producer.class);
+        var configs = maybeAuthenticate(
+                identity.getCredential(SaslJaasConfigCredential.class), context, Producer.class);
+
         return new KafkaProducer<>(
                 configs,
                 context.schemaRegistryContext().keySerializer(),
@@ -525,13 +527,22 @@ public class ClientFactory {
         producer.close();
     }
 
-    Map<String, Object> maybeAuthenticate(SecurityIdentity identity, KafkaContext context, Class<?> clientType) {
+    public Admin createAdmin(UnaryOperator<Admin> filter,
+            Function<Map<String, Object>, Admin> adminBuilder,
+            KafkaContext context,
+            SaslJaasConfigCredential credential) {
+        var adminConfigs = maybeAuthenticate(credential, context, Admin.class);
+        var admin = adminBuilder.apply(adminConfigs);
+        return filter.apply(admin);
+    }
+
+    Map<String, Object> maybeAuthenticate(SaslJaasConfigCredential credential, KafkaContext context, Class<?> clientType) {
         Map<String, Object> configs = context.configs(clientType);
 
         if (configs.containsKey(SaslConfigs.SASL_MECHANISM)
                 && !configs.containsKey(SaslConfigs.SASL_JAAS_CONFIG)) {
             configs = new HashMap<>(configs);
-            configureAuthentication(identity, context.saslMechanism(clientType), configs);
+            configureAuthentication(credential, context.saslMechanism(clientType), configs);
         }
 
         return configs;
@@ -706,9 +717,7 @@ public class ClientFactory {
         }
     }
 
-    void configureAuthentication(SecurityIdentity identity, String saslMechanism, Map<String, Object> configs) {
-        SaslJaasConfigCredential credential = identity.getCredential(SaslJaasConfigCredential.class);
-
+    void configureAuthentication(SaslJaasConfigCredential credential, String saslMechanism, Map<String, Object> configs) {
         switch (saslMechanism) {
             case KafkaConfigs.MECHANISM_OAUTHBEARER:
                 configureOAuthBearer(credential, configs);

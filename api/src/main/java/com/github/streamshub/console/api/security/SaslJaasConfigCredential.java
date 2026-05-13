@@ -13,8 +13,10 @@ public class SaslJaasConfigCredential implements Credential {
             + " oauth.access.token=\"%s\" ;";
 
     private static final String BASIC_TEMPLATE = "%s required username=\"%%s\" password=\"%%s\" ;";
-    private static final String SASL_PLAIN_CONFIG_TEMPLATE = BASIC_TEMPLATE.formatted(PlainLoginModule.class.getName());
-    private static final String SASL_SCRAM_CONFIG_TEMPLATE = BASIC_TEMPLATE.formatted(ScramLoginModule.class.getName());
+    private static final String SASL_PLAIN_CONFIG_TEMPLATE = BASIC_TEMPLATE
+            .formatted(PlainLoginModule.class.getName());
+    private static final String SASL_SCRAM_CONFIG_TEMPLATE = BASIC_TEMPLATE
+            .formatted(ScramLoginModule.class.getName());
 
     public static SaslJaasConfigCredential forOAuthLogin(String accessToken) {
         return new SaslJaasConfigCredential(SASL_OAUTH_CONFIG_TEMPLATE.formatted(accessToken));
@@ -26,6 +28,10 @@ public class SaslJaasConfigCredential implements Credential {
 
     public static SaslJaasConfigCredential forScramLogin(String username, String password) {
         return new SaslJaasConfigCredential(SASL_SCRAM_CONFIG_TEMPLATE.formatted(username, password));
+    }
+
+    public static SaslJaasConfigCredential fromValue(String value) {
+        return new SaslJaasConfigCredential(value);
     }
 
     private final String value;

@@ -14,6 +14,8 @@ import {
   ResourceListDataViewRowMapper
 } from '../common/ResourceListDataView';
 import { UseQueryResult } from '@tanstack/react-query';
+import { useKafkaAuthContext } from '@/components/auth/KafkaAuthProvider';
+import { apiClient, ApiError } from '@/api/client';
 
 const columnNames = ['name', 'namespace', 'version', 'status'];
 
@@ -29,6 +31,7 @@ export function ClustersDataView({
 
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showLoginModal } = useKafkaAuthContext();
 
   // Memoized sort handler to avoid recreating on every render
   const handleSort = useCallback((
@@ -39,6 +42,37 @@ export function ClustersDataView({
   ) => {
     onSort?.(event, columnNames[columnIndex], direction);
   }, []);
+
+  const handleViewCluster = async (cluster: KafkaCluster) => {
+    // Check if cluster requires authentication (basic or oauth)
+    const requiresAuth = cluster.meta?.authentication?.method === 'basic' ||
+                         cluster.meta?.authentication?.method === 'oauth';
+
+    if (requiresAuth) {
+      // Try to access the cluster to check if authentication is needed
+      try {
+        await apiClient.get(`/api/kafkas/${cluster.id}`);
+        // If successful, navigate to the cluster
+        navigate(`/kafka/${cluster.id}`);
+      } catch (error) {
+        // If 401, show login modal
+        if (error instanceof ApiError && error.status === 401) {
+          showLoginModal(
+            cluster.id,
+            cluster.attributes.name,
+            cluster.meta?.authentication?.method,
+            `/kafka/${cluster.id}`
+          );
+        } else {
+          // For other errors, just navigate (let the cluster page handle it)
+          navigate(`/kafka/${cluster.id}`);
+        }
+      }
+    } else {
+      // No authentication required, navigate directly
+      navigate(`/kafka/${cluster.id}`);
+    }
+  };
 
   const colMapper: ResourceListDataViewColumnMapper = useCallback(
     (sortBy, direction, onSort) => [
@@ -108,7 +142,7 @@ export function ClustersDataView({
           cell: (
             <Button
               variant="primary"
-              onClick={() => navigate(`/kafka/${cluster.id}`)}
+              onClick={() => handleViewCluster(cluster)}
             >
               {t('common.view')}
             </Button>

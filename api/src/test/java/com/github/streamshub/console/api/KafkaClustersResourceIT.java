@@ -26,7 +26,7 @@ import jakarta.ws.rs.core.Response.Status;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule;
 import org.apache.kafka.common.security.scram.ScramLoginModule;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterAll;
@@ -40,7 +40,7 @@ import org.mockito.Mockito;
 
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.ListFetchParams;
-import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
+import com.github.streamshub.console.api.security.IdentitySupport;
 import com.github.streamshub.console.api.service.KafkaClusterService;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.Holder;
@@ -52,18 +52,22 @@ import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.LogCapture;
+import com.github.streamshub.console.test.OidcClientsSpy;
 import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.VarargsAggregator;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
+import io.quarkus.oidc.client.OidcClient;
+import io.quarkus.oidc.client.Tokens;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
@@ -72,6 +76,8 @@ import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAut
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512Builder;
 import io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler;
 
+import static com.github.streamshub.console.test.TestHelper.authenticate;
+import static com.github.streamshub.console.test.TestHelper.mockAdminClient;
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static java.util.Objects.isNull;
 import static org.awaitility.Awaitility.await;
@@ -92,6 +98,10 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @QuarkusTest
 @TestHTTPEndpoint(KafkaClustersResource.class)
@@ -106,7 +116,7 @@ class KafkaClustersResourceIT {
 
     static LogCapture auditLogCapture = LogCapture.with(logRecord -> logRecord
             .getLoggerName()
-            .equals(ConsoleAuthenticationMechanism.class.getName()),
+            .equals(IdentitySupport.AUDIT_LOG_NAME),
             Level.INFO);
 
     @Inject
@@ -126,6 +136,9 @@ class KafkaClustersResourceIT {
 
     @Inject
     ConsoleConfig consoleConfig;
+
+    @InjectMock
+    OidcClientsSpy oidcClients;
 
     TestHelper utils;
 
@@ -817,8 +830,20 @@ class KafkaClustersResourceIT {
                     .map(KafkaClusterConfig::clusterKey)
                     .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
 
+        when(oidcClients.newClient(any())).thenAnswer(a1 -> {
+            OidcClient mockClient = mock(OidcClient.class);
+
+            when(mockClient.getTokens(anyMap())).thenAnswer(a2 -> {
+                return Uni.createFrom().item(new Tokens("my-access-token", null, null, null, null, null, null));
+            });
+
+            return Uni.createFrom().item(mockClient);
+        });
+
+        var cookies = authenticate("{clusterId}/session", clusterId, "my-client-id", "my-client-secret");
+
         whenRequesting(req -> req
-                .auth().oauth2("my-secure-token")
+                .cookies(cookies)
                 .get("{clusterId}", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
@@ -830,6 +855,9 @@ class KafkaClustersResourceIT {
         assertEquals("OAUTHBEARER", clientConfig.get(SaslConfigs.SASL_MECHANISM));
         assertEquals(JaasClientOauthLoginCallbackHandler.class.getName(),
                 clientConfig.get(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS));
+        String saslJaasConfig = String.valueOf(clientConfig.get(SaslConfigs.SASL_JAAS_CONFIG));
+        assertThat(saslJaasConfig, containsString(OAuthBearerLoginModule.class.getName()));
+        assertThat(saslJaasConfig, containsString("oauth.access.token=\"my-access-token\""));
     }
 
     @ParameterizedTest
@@ -867,8 +895,10 @@ class KafkaClustersResourceIT {
                     .map(KafkaClusterConfig::clusterKey)
                     .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
 
+        var cookies = authenticate("{clusterId}/session", clusterId, "my-user", "my-password");
+
         whenRequesting(req -> req
-                .auth().basic("u", "p")
+                .cookies(cookies)
                 .get("{clusterId}", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
@@ -877,8 +907,10 @@ class KafkaClustersResourceIT {
 
         assertEquals(expectedProtocol, clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
         assertEquals("SCRAM-SHA-512", clientConfig.get(SaslConfigs.SASL_MECHANISM));
-        assertThat(String.valueOf(clientConfig.get(SaslConfigs.SASL_JAAS_CONFIG)),
-                containsString(ScramLoginModule.class.getName()));
+        String saslJaasConfig = String.valueOf(clientConfig.get(SaslConfigs.SASL_JAAS_CONFIG));
+        assertThat(saslJaasConfig, containsString(ScramLoginModule.class.getName()));
+        assertThat(saslJaasConfig, containsString("username=\"my-user\""));
+        assertThat(saslJaasConfig, containsString("password=\"my-password\""));
     }
 
     @Test
@@ -1010,25 +1042,5 @@ class KafkaClustersResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.kafkaVersion", is(expectedVersion));
-    }
-
-    // Helper methods
-
-    static Map<String, Object> mockAdminClient() {
-        return mockAdminClient(Map.of(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name));
-    }
-
-    static Map<String, Object> mockAdminClient(Map<String, Object> overrides) {
-        Map<String, Object> clientConfig = new HashMap<>();
-
-        AdminClientSpy.install(config -> {
-            clientConfig.putAll(config);
-
-            Map<String, Object> newConfig = new HashMap<>(config);
-            newConfig.putAll(overrides);
-            return newConfig;
-        }, client -> { /* No-op */ });
-
-        return clientConfig;
     }
 }

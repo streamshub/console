@@ -8,11 +8,13 @@ import { apiClient } from '../client';
 /**
  * Fetch a single Kafka user by ID
  */
-export function useSessionUser() {
+export function useSessionUser(clusterId?: string) {
   return useQuery({
-    queryKey: ['session-user'],
+    queryKey: ['session-user', clusterId],
     queryFn: async () => {
-      const path = `/api/session/user`;
+      const path = clusterId
+        ? `/api/kafkas/${clusterId}/session/user`
+        : `/api/session/user`;
 
       return apiClient.get<{
         username: string,

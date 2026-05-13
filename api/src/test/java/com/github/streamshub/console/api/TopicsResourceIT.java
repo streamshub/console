@@ -87,7 +87,7 @@ import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
-import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
+import com.github.streamshub.console.api.security.IdentitySupport;
 import com.github.streamshub.console.api.service.TopicService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
@@ -162,7 +162,7 @@ class TopicsResourceIT {
 
     static LogCapture auditLogCapture = LogCapture.with(logRecord -> logRecord
             .getLoggerName()
-            .equals(ConsoleAuthenticationMechanism.class.getName()),
+            .equals(IdentitySupport.AUDIT_LOG_NAME),
             Level.INFO);
 
     @Inject

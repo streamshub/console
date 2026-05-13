@@ -24,7 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
+import com.github.streamshub.console.api.security.IdentitySupport;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
@@ -74,7 +74,7 @@ class TopicsResourceOidcIT {
 
     static LogCapture auditLogCapture = LogCapture.with(logRecord -> logRecord
             .getLoggerName()
-            .equals(ConsoleAuthenticationMechanism.class.getName()),
+            .equals(IdentitySupport.AUDIT_LOG_NAME),
             Level.INFO);
 
     @Inject

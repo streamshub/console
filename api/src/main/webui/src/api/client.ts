@@ -102,6 +102,23 @@ class ApiClient {
   }
 
   /**
+   * POST request with form-encoded body
+   */
+  postForm<T>(path: string, data: Record<string, string>, options?: RequestInit): Promise<T> {
+    const formBody = new URLSearchParams(data).toString();
+
+    return this.fetch<T>(path, {
+      ...options,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...options?.headers,
+      },
+      body: formBody,
+    });
+  }
+
+  /**
    * PATCH request
    */
   patch<T>(path: string, data: unknown, options?: RequestInit): Promise<T> {
