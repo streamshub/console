@@ -2,15 +2,16 @@ package com.github.streamshub.console.dependents;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
+import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
-
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
+import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
+import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 
 @ApplicationScoped
 @KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
@@ -33,6 +34,13 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     @Override
     protected Ingress desired(Console primary, Context<Console> context) {
         String host = primary.getSpec().getHostname();
+
+        if (host == null || host.isBlank()) {
+            throw new ReconciliationException(
+                "spec.hostname is required when running on plain Kubernetes vanila clusters. " +
+                "Please set a hostname in your Console resource.");
+        }
+
         setAttribute(context, INGRESS_URL_KEY, "https://" + host);
 
         return load(context, "console.ingress.yaml", Ingress.class)
@@ -43,7 +51,9 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                 .withLabels(commonLabels("console"))
             .endMetadata()
             .editSpec()
-                .withIngressClassName(getIngressClassName(context))
+                // Plain Kubernetes (non-OCP) clusters don't need a class name; the
+                // default ingress controller picks it up automatically.
+                .withIngressClassName(null)
                 .editDefaultBackend()
                     .editService()
                         .withName(service.instanceName(primary))
@@ -66,10 +76,15 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     }
 
     /**
-     * The class name is not required for functionality on OCP. However, monitoring
-     * will issue an alert if it is not present.
+     * Only create the plain Ingress on clusters that do NOT support OpenShift
+     * Routes. On OpenShift / MicroShift, {@link ConsoleRoute} is used instead.
+     * <p>
+     * Note: not a CDI bean — conditions are instantiated by the operator SDK.
      */
-    private String getIngressClassName(Context<Console> context) {
-        return context.getClient().supports(Route.class) ? "openshift-default" : null;
+    public static class Precondition implements Condition<Ingress, Console> {
+        @Override
+        public boolean isMet(DependentResource<Ingress, Console> dependentResource, Console primary, Context<Console> context) {
+            return !context.getClient().supports(Route.class);
+        }
     }
 }
