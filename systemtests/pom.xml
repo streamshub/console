@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Simple logging facade for java for log4j -->
         <log4j.version>2.26.0</log4j.version>
-        <slf4j.version>2.0.17</slf4j.version>
+        <slf4j.version>2.0.18</slf4j.version>
         <!-- Helm -->
         <helm-client.version>0.0.20</helm-client.version>
         <!-- Playwright -->
