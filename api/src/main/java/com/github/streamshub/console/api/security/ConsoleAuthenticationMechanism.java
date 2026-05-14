@@ -169,11 +169,7 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
 
             var response = context.response();
             response.setStatusCode(challengeData.status);
-
-            if (challengeData.headerName != null) {
-                response.headers().set(challengeData.headerName, challengeData.headerContent);
-            }
-
+            challengeData.getHeaders().forEach(response.headers()::set);
             response.headers().set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
 
             try {
@@ -479,7 +475,7 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
         }
 
         public PayloadChallengeData(ChallengeData data, Object payload) {
-            super(data.status, data.headerName, data.headerContent);
+            super(data.status, data.getHeaders());
             this.payload = payload;
         }
     }
