@@ -17,6 +17,8 @@ import {
   Button,
   Flex,
   FlexItem,
+  Alert,
+  AlertActionCloseButton,
 } from '@patternfly/react-core';
 import { useGroup } from '@/api/hooks/useGroups';
 import { ResetOffsetModal } from '@/components/kafka/groups/ResetOffset';
@@ -31,6 +33,7 @@ export function GroupDetailPage() {
 
   // Reset offset modal state
   const [isResetOffsetModalOpen, setIsResetOffsetModalOpen] = useState(false);
+  const [resetOffsetSuccessMessage, setResetOffsetSuccessMessage] = useState<string>();
 
   // Determine active tab from URL
   const pathSegments = location.pathname.split('/').filter(Boolean);
@@ -95,7 +98,7 @@ export function GroupDetailPage() {
           {group && (
             <FlexItem>
               <Button
-                variant="secondary"
+                variant="primary"
                 onClick={handleResetOffset}
                 isDisabled={!canResetOffset}
               >
@@ -105,6 +108,17 @@ export function GroupDetailPage() {
           )}
         </Flex>
       </PageSection>
+      {resetOffsetSuccessMessage && (
+        <PageSection>
+          <Alert
+            variant="success"
+            isInline
+            title={resetOffsetSuccessMessage}
+            actionClose={<AlertActionCloseButton onClose={() => setResetOffsetSuccessMessage(undefined)} />}
+          />
+        </PageSection>
+      )}
+
       <PageSection>
         <Tabs
           activeKey={activeTab}
@@ -130,6 +144,7 @@ export function GroupDetailPage() {
         <ResetOffsetModal
           isOpen={isResetOffsetModalOpen}
           onClose={handleCloseResetOffsetModal}
+          onSuccess={(message) => setResetOffsetSuccessMessage(message)}
           kafkaId={kafkaId!}
           group={group}
         />

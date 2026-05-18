@@ -2,7 +2,7 @@
  * CLI command generator for kafka-consumer-groups commands
  */
 
-import { ResetOffsetFormState } from '../api/types';
+import { ResetOffsetFormState } from '../components/kafka/groups/ResetOffset/types';
 
 /**
  * Generate kafka-consumer-groups CLI command for reset offset operation
@@ -22,14 +22,11 @@ export function generateCliCommand(
   }
 
   // Add topic/partition specification
-  if (state.topicSelection === 'allTopics') {
+  if (!state.selectedTopicId) {
     command += '--all-topics';
   } else if (topicName) {
-    // Add partition if specific partition is selected
     const partition =
-      state.partitionSelection === 'allPartitions'
-        ? ''
-        : `:${state.selectedPartition}`;
+      state.selectedPartition === undefined ? '' : `:${state.selectedPartition}`;
 
     command += `--topic ${topicName}${partition}`;
   }
@@ -38,11 +35,11 @@ export function generateCliCommand(
   if (state.offsetValue !== 'delete') {
     if (state.offsetValue === 'custom') {
       command += ` --to-offset ${state.customOffset ?? 0}`;
-    } else if (state.offsetValue === 'specificDateTime') {
+    } else if (state.offsetValue === 'dateTimeIso') {
+      command += ` --to-datetime ${state.dateTime}`;
+    } else if (state.offsetValue === 'dateTimeEpoch') {
       const dateTimeValue =
-        state.dateTimeFormat === 'Epoch' && state.dateTime
-          ? new Date(parseInt(state.dateTime, 10)).toISOString()
-          : state.dateTime;
+        state.dateTime ? new Date(parseInt(state.dateTime, 10)).toISOString() : '';
       command += ` --to-datetime ${dateTimeValue}`;
     } else {
       // earliest or latest

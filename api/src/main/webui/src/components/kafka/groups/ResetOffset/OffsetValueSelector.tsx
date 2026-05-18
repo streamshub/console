@@ -13,26 +13,33 @@ import {
   SelectOption,
   MenuToggle,
   MenuContainer,
-  Radio,
   HelperText,
   HelperTextItem,
   FormHelperText,
+  Button,
+  FormSelect,
+  FormSelectOption,
 } from '@patternfly/react-core';
 import { ExclamationCircleIcon } from '@patternfly/react-icons';
 import { useState, useRef } from 'react';
-import { OffsetValue, DateTimeFormat, TopicSelection, PartitionSelection } from '@/api/types';
+import { formatDateTime } from '@/utils/dateTime';
+import {
+  OffsetValue,
+  TopicSelection,
+  PartitionSelection,
+} from './types';
 
 interface OffsetValueSelectorProps {
-  offsetValue: OffsetValue;
+  offsetValue?: OffsetValue;
   customOffset?: number;
   dateTime?: string;
-  dateTimeFormat: DateTimeFormat;
+  dateTimeDisplayMode?: 'utc' | 'local';
   topicSelection: TopicSelection;
   partitionSelection: PartitionSelection;
-  onOffsetValueChange: (value: OffsetValue) => void;
+  onOffsetValueChange: (value?: OffsetValue) => void;
   onCustomOffsetChange: (value: number) => void;
   onDateTimeChange: (value: string) => void;
-  onDateTimeFormatChange: (format: DateTimeFormat) => void;
+  onDateTimeDisplayModeChange: (mode: 'utc' | 'local') => void;
   errors?: {
     customOffset?: string;
     dateTime?: string;
@@ -43,13 +50,13 @@ export function OffsetValueSelector({
   offsetValue,
   customOffset,
   dateTime,
-  dateTimeFormat,
+  dateTimeDisplayMode = 'utc',
   topicSelection,
   partitionSelection,
   onOffsetValueChange,
   onCustomOffsetChange,
   onDateTimeChange,
-  onDateTimeFormatChange,
+  onDateTimeDisplayModeChange,
   errors,
 }: OffsetValueSelectorProps) {
   const { t } = useTranslation();
@@ -76,8 +83,12 @@ export function OffsetValueSelector({
     { value: 'earliest', label: t('groups.resetOffset.offset.earliest') },
     { value: 'latest', label: t('groups.resetOffset.offset.latest') },
     {
-      value: 'specificDateTime',
-      label: t('groups.resetOffset.offset.specificDateTime'),
+      value: 'dateTimeIso',
+      label: t('groups.resetOffset.offset.dateTimeIso'),
+    },
+    {
+      value: 'dateTimeEpoch',
+      label: t('groups.resetOffset.offset.dateTimeEpoch'),
     }
   );
 
@@ -109,6 +120,7 @@ export function OffsetValueSelector({
       onClick={() => setIsOffsetSelectOpen(!isOffsetSelectOpen)}
       isExpanded={isOffsetSelectOpen}
       isFullWidth
+      isPlaceholder={!offsetValue}
     >
       {selectedOffsetLabel}
     </MenuToggle>
@@ -128,6 +140,44 @@ export function OffsetValueSelector({
       </MenuContent>
     </Menu>
   );
+
+  const formatLocalDateTime = (value: Date | string) =>
+    formatDateTime({
+      value,
+      format: "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+    });
+
+  const handleUseCurrentDateTime = () => {
+    if (offsetValue === 'dateTimeEpoch') {
+      onDateTimeChange(Date.now().toString());
+      return;
+    }
+
+    if (offsetValue === 'dateTimeIso') {
+      const now = new Date();
+      onDateTimeChange(
+        dateTimeDisplayMode === 'local'
+          ? formatLocalDateTime(now)
+          : now.toISOString()
+      );
+    }
+  };
+
+  const handleDateTimeDisplayModeChange = (mode: 'utc' | 'local') => {
+    if (dateTime) {
+      const parsedDate = new Date(dateTime);
+
+      if (!isNaN(parsedDate.getTime())) {
+        onDateTimeChange(
+          mode === 'local'
+            ? formatLocalDateTime(parsedDate)
+            : parsedDate.toISOString()
+        );
+      }
+    }
+
+    onDateTimeDisplayModeChange(mode);
+  };
 
   return (
     <>
@@ -189,72 +239,78 @@ export function OffsetValueSelector({
         </FormGroup>
       )}
 
-      {offsetValue === 'specificDateTime' && (
-        <>
-          <FormGroup
-            label={t('groups.resetOffset.selectDateTime')}
-            isInline
-            role="radiogroup"
-          >
-            <Radio
-              id="iso-format-radio"
-              name="datetime-format"
-              label={t('groups.resetOffset.isoDateFormat')}
-              isChecked={dateTimeFormat === 'ISO'}
-              onChange={() => onDateTimeFormatChange('ISO')}
-            />
-            <Radio
-              id="epoch-format-radio"
-              name="datetime-format"
-              label={t('groups.resetOffset.unixDateFormat')}
-              isChecked={dateTimeFormat === 'Epoch'}
-              onChange={() => onDateTimeFormatChange('Epoch')}
-            />
-          </FormGroup>
-
-          <FormGroup
-            label={
-              dateTimeFormat === 'ISO'
-                ? t('groups.resetOffset.isoDateFormat')
-                : t('groups.resetOffset.unixDateFormat')
-            }
-            isRequired
-            fieldId="datetime-input"
-          >
-            <TextInput
-              id="datetime-input"
-              type={dateTimeFormat === 'Epoch' ? 'number' : 'text'}
-              value={dateTime || ''}
-              onChange={(_event, value) => onDateTimeChange(value)}
-              placeholder={
-                dateTimeFormat === 'ISO'
-                  ? t('groups.resetOffset.dateTimePlaceholder')
-                  : t('groups.resetOffset.epochPlaceholder')
-              }
-              validated={errors?.dateTime ? 'error' : 'default'}
-            />
-            {!errors?.dateTime && (
-              <FormHelperText>
-                <HelperText>
+      {(offsetValue === 'dateTimeIso' || offsetValue === 'dateTimeEpoch') && (
+        <FormGroup
+          label={t('groups.resetOffset.dateTime')}
+          isRequired
+          fieldId="datetime-input"
+        >
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+            {offsetValue === 'dateTimeIso' && (
+              <div style={{ width: '7rem', flex: '0 0 7rem' }}>
+                <FormSelect
+                  value={dateTimeDisplayMode}
+                  onChange={(_event, value) =>
+                    handleDateTimeDisplayModeChange(value as 'utc' | 'local')
+                  }
+                  aria-label={t('groups.resetOffset.timeZoneMode')}
+                >
+                  <FormSelectOption
+                    value="utc"
+                    label={t('groups.resetOffset.timeZoneUtc')}
+                  />
+                  <FormSelectOption
+                    value="local"
+                    label={t('groups.resetOffset.timeZoneLocal')}
+                  />
+                </FormSelect>
+              </div>
+            )}
+            <div style={{ flex: 1 }}>
+              <TextInput
+                id="datetime-input"
+                type={offsetValue === 'dateTimeEpoch' ? 'number' : 'text'}
+                value={dateTime || ''}
+                onChange={(_event, value) => onDateTimeChange(value)}
+                placeholder={
+                  offsetValue === 'dateTimeIso'
+                    ? t('groups.resetOffset.dateTimePlaceholder')
+                    : t('groups.resetOffset.epochPlaceholder')
+                }
+                validated={errors?.dateTime ? 'error' : 'default'}
+              />
+            </div>
+            <Button variant="secondary" onClick={handleUseCurrentDateTime}>
+              {t('groups.resetOffset.useCurrentDateTime')}
+            </Button>
+          </div>
+          {!errors?.dateTime && (
+            <FormHelperText>
+              <HelperText>
+                {offsetValue === 'dateTimeIso' ? (
                   <HelperTextItem>
-                    {dateTimeFormat === 'ISO'
-                      ? t('groups.resetOffset.dateTimeHelper')
-                      : t('groups.resetOffset.epochHelper')}
+                    {dateTimeDisplayMode === 'local'
+                      ? t('groups.resetOffset.dateTimeHelperLocal')
+                      : t('groups.resetOffset.dateTimeHelperUtc')}
                   </HelperTextItem>
-                </HelperText>
-              </FormHelperText>
-            )}
-            {errors?.dateTime && (
-              <FormHelperText>
-                <HelperText>
-                  <HelperTextItem icon={<ExclamationCircleIcon />} variant="error">
-                    {errors.dateTime}
+                ) : (
+                  <HelperTextItem>
+                    {t('groups.resetOffset.epochHelper')}
                   </HelperTextItem>
-                </HelperText>
-              </FormHelperText>
-            )}
-          </FormGroup>
-        </>
+                )}
+              </HelperText>
+            </FormHelperText>
+          )}
+          {errors?.dateTime && (
+            <FormHelperText>
+              <HelperText>
+                <HelperTextItem icon={<ExclamationCircleIcon />} variant="error">
+                  {errors.dateTime}
+                </HelperTextItem>
+              </HelperText>
+            </FormHelperText>
+          )}
+        </FormGroup>
       )}
     </>
   );
