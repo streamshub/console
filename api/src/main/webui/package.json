@@ -13,6 +13,7 @@
     "@patternfly/patternfly": "^6.4.0",
     "@patternfly/react-charts": "^8.4.1",
     "@patternfly/react-core": "^6.4.3",
+    "@patternfly/react-data-view": "^6.4.0",
     "@patternfly/react-drag-drop": "^6.4.3",
     "@patternfly/react-icons": "^6.4.0",
     "@patternfly/react-styles": "^6.4.0",
