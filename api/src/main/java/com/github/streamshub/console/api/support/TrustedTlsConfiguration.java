@@ -203,5 +203,10 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
         public Optional<String> provider() {
             return Optional.empty();
         }
+
+        @Override
+        public Optional<List<Path>> certDirs() {
+            return Optional.empty();
+        }
     }
 }
