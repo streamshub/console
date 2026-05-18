@@ -4,7 +4,6 @@ import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExecutableInvoker;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.MediaType;
 import org.junit.jupiter.api.extension.TestInstances;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -151,7 +150,7 @@ public class TestBucketExtensionContext implements ExtensionContext {
     }
 
     @Override
-    public <T> Optional<T> getConfigurationParameter(String key, Function<String, T> transformer) {
+    public <T> Optional<T> getConfigurationParameter(String key, Function<? super String, ? extends T> transformer) {
         return delegate.getConfigurationParameter(key, transformer);
     }
 
@@ -168,11 +167,6 @@ public class TestBucketExtensionContext implements ExtensionContext {
     @Override
     public void publishReportEntry(String value) {
         delegate.publishReportEntry(value);
-    }
-
-    @Override
-    public void publishFile(String name, MediaType mediaType, ThrowingConsumer<Path> action) {
-        delegate.publishFile(name, mediaType, action);
     }
 
     @Override
@@ -198,5 +192,10 @@ public class TestBucketExtensionContext implements ExtensionContext {
     @Override
     public ExecutableInvoker getExecutableInvoker() {
         return delegate.getExecutableInvoker();
+    }
+
+    @Override
+    public void publishFile(String name, org.junit.jupiter.api.MediaType mediaType, ThrowingConsumer<Path> action) {
+        delegate.publishFile(name, mediaType, action);
     }
 }
