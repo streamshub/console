@@ -1,10 +1,13 @@
 package com.github.streamshub.console.api;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -75,8 +79,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.AggregateWith;
-import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -2145,11 +2150,23 @@ class TopicsResourceIT {
             .body("data.attributes.configs.'retention.ms'.value", is("300000"));
     }
 
+    static Stream<Arguments> testPatchTopicWithInvalidRequestCases() throws IOException {
+        try (var stream = TopicsResourceIT.class.getResourceAsStream("/patchTopic-invalid-requests.txt")) {
+            String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            return Arrays.stream(text.split("@"))
+                    .filter(Predicate.not(String::isBlank))
+                    .map(rec -> rec.split("\\|"))
+                    .map(elements -> Arguments.of(
+                            elements[0].strip(),
+                            elements[1].strip(),
+                            Status.valueOf(elements[2].strip()),
+                            elements[3].strip()
+                        ));
+        }
+    }
+
     @ParameterizedTest
-    @CsvFileSource(
-        delimiter = '|',
-        lineSeparator = "@\n",
-        resources = { "/patchTopic-invalid-requests.txt" })
+    @MethodSource("testPatchTopicWithInvalidRequestCases")
     void testPatchTopicWithInvalidRequest(String label, String requestBody, Status responseStatus, String expectedResponse)
             throws JSONException {
 
