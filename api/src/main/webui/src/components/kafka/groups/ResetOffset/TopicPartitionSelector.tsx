@@ -6,7 +6,6 @@
 import { useTranslation } from 'react-i18next';
 import {
   FormGroup,
-  Radio,
   Menu,
   MenuList,
   MenuContent,
@@ -18,30 +17,21 @@ import {
   MenuContainer,
 } from '@patternfly/react-core';
 import { useState, useRef } from 'react';
-import { TopicSelection, PartitionSelection } from '@/api/types';
 
 interface TopicPartitionSelectorProps {
   topics: Array<{ id: string; name: string }>;
   partitions: number[];
-  topicSelection: TopicSelection;
-  partitionSelection: PartitionSelection;
   selectedTopicId?: string;
   selectedPartition?: number;
-  onTopicSelectionChange: (selection: TopicSelection) => void;
-  onPartitionSelectionChange: (selection: PartitionSelection) => void;
-  onTopicChange: (topicId: string) => void;
-  onPartitionChange: (partition: number) => void;
+  onTopicChange: (topicId?: string) => void;
+  onPartitionChange: (partition?: number) => void;
 }
 
 export function TopicPartitionSelector({
   topics,
   partitions,
-  topicSelection,
-  partitionSelection,
   selectedTopicId,
   selectedPartition,
-  onTopicSelectionChange,
-  onPartitionSelectionChange,
   onTopicChange,
   onPartitionChange,
 }: TopicPartitionSelectorProps) {
@@ -97,8 +87,9 @@ export function TopicPartitionSelector({
       onClick={() => setIsTopicSelectOpen(!isTopicSelectOpen)}
       isExpanded={isTopicSelectOpen}
       isFullWidth
+      isDisabled={topics.length === 0}
     >
-      {selectedTopic?.name || t('groups.resetOffset.selectTopicPlaceholder')}
+      {selectedTopic?.name || t('groups.resetOffset.allTopics')}
     </MenuToggle>
   );
 
@@ -106,11 +97,11 @@ export function TopicPartitionSelector({
     <Menu
       ref={topicMenuRef}
       onSelect={(_event, itemId) => {
-        onTopicChange(itemId as string);
+        onTopicChange(itemId as string | undefined);
         setIsTopicSelectOpen(false);
         setTopicFilter('');
       }}
-      activeItemId={selectedTopicId}
+      activeItemId={selectedTopicId ?? ''}
       isScrollable
     >
       <MenuSearch>
@@ -127,7 +118,12 @@ export function TopicPartitionSelector({
         </MenuSearchInput>
       </MenuSearch>
       <MenuContent maxMenuHeight="200px">
-        <MenuList>{topicMenuItems}</MenuList>
+        <MenuList>
+          <SelectOption itemId="">
+            {t('groups.resetOffset.allTopics')}
+          </SelectOption>
+          {topicMenuItems}
+        </MenuList>
       </MenuContent>
     </Menu>
   );
@@ -138,10 +134,11 @@ export function TopicPartitionSelector({
       onClick={() => setIsPartitionSelectOpen(!isPartitionSelectOpen)}
       isExpanded={isPartitionSelectOpen}
       isFullWidth
+      isDisabled={!selectedTopicId}
     >
       {selectedPartition !== undefined
         ? selectedPartition.toString()
-        : t('groups.resetOffset.selectPartitionPlaceholder')}
+        : t('groups.resetOffset.allPartitions')}
     </MenuToggle>
   );
 
@@ -149,14 +146,21 @@ export function TopicPartitionSelector({
     <Menu
       ref={partitionMenuRef}
       onSelect={(_event, itemId) => {
-        onPartitionChange(Number(itemId));
+        onPartitionChange(
+          itemId === '' ? undefined : Number(itemId)
+        );
         setIsPartitionSelectOpen(false);
       }}
-      activeItemId={selectedPartition}
+      activeItemId={selectedPartition ?? ''}
       isScrollable
     >
       <MenuContent maxMenuHeight="200px">
-        <MenuList>{partitionMenuItems}</MenuList>
+        <MenuList>
+          <SelectOption itemId="">
+            {t('groups.resetOffset.allPartitions')}
+          </SelectOption>
+          {partitionMenuItems}
+        </MenuList>
       </MenuContent>
     </Menu>
   );
@@ -164,84 +168,36 @@ export function TopicPartitionSelector({
   return (
     <>
       <FormGroup
-        label={t('groups.resetOffset.applyActionOn')}
+        label={t('groups.resetOffset.selectTopic')}
+        fieldId="topic-select"
         isInline
-        role="radiogroup"
       >
-        <Radio
-          id="all-topics-radio"
-          name="topic-selection"
-          label={t('groups.resetOffset.allConsumerTopics')}
-          isChecked={topicSelection === 'allTopics'}
-          onChange={() => onTopicSelectionChange('allTopics')}
-        />
-        <Radio
-          id="selected-topic-radio"
-          name="topic-selection"
-          label={t('groups.resetOffset.selectedTopic')}
-          isChecked={topicSelection === 'selectedTopic'}
-          onChange={() => onTopicSelectionChange('selectedTopic')}
+        <MenuContainer
+          toggle={topicToggle}
+          toggleRef={topicToggleRef}
+          menu={topicMenu}
+          menuRef={topicMenuRef}
+          isOpen={isTopicSelectOpen}
+          onOpenChange={setIsTopicSelectOpen}
+          onOpenChangeKeys={['Escape']}
         />
       </FormGroup>
 
-      {topicSelection === 'selectedTopic' && (
-        <>
-          <FormGroup
-            label={t('groups.resetOffset.selectTopic')}
-            isRequired
-            fieldId="topic-select"
-          >
-            <MenuContainer
-              toggle={topicToggle}
-              toggleRef={topicToggleRef}
-              menu={topicMenu}
-              menuRef={topicMenuRef}
-              isOpen={isTopicSelectOpen}
-              onOpenChange={setIsTopicSelectOpen}
-              onOpenChangeKeys={['Escape']}
-            />
-          </FormGroup>
-
-          <FormGroup
-            label={t('groups.resetOffset.partitions')}
-            isInline
-            role="radiogroup"
-          >
-            <Radio
-              id="all-partitions-radio"
-              name="partition-selection"
-              label={t('groups.resetOffset.allPartitions')}
-              isChecked={partitionSelection === 'allPartitions'}
-              onChange={() => onPartitionSelectionChange('allPartitions')}
-            />
-            <Radio
-              id="selected-partition-radio"
-              name="partition-selection"
-              label={t('groups.resetOffset.selectedPartition')}
-              isChecked={partitionSelection === 'selectedPartition'}
-              onChange={() => onPartitionSelectionChange('selectedPartition')}
-            />
-          </FormGroup>
-
-          {partitionSelection === 'selectedPartition' && (
-            <FormGroup
-              label={t('groups.resetOffset.selectPartition')}
-              isRequired
-              fieldId="partition-select"
-            >
-              <MenuContainer
-                toggle={partitionToggle}
-                toggleRef={partitionToggleRef}
-                menu={partitionMenu}
-                menuRef={partitionMenuRef}
-                isOpen={isPartitionSelectOpen}
-                onOpenChange={setIsPartitionSelectOpen}
-                onOpenChangeKeys={['Escape']}
-              />
-            </FormGroup>
-          )}
-        </>
-      )}
+      <FormGroup
+        label={t('groups.resetOffset.selectPartition')}
+        fieldId="partition-select"
+        isInline
+      >
+        <MenuContainer
+          toggle={partitionToggle}
+          toggleRef={partitionToggleRef}
+          menu={partitionMenu}
+          menuRef={partitionMenuRef}
+          isOpen={isPartitionSelectOpen}
+          onOpenChange={setIsPartitionSelectOpen}
+          onOpenChangeKeys={['Escape']}
+        />
+      </FormGroup>
     </>
   );
 }

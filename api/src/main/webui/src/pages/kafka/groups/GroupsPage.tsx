@@ -78,6 +78,7 @@ export function GroupsPage() {
   // Reset offset modal state
   const [isResetOffsetModalOpen, setIsResetOffsetModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [resetOffsetSuccessMessage, setResetOffsetSuccessMessage] = useState<string>();
 
   // Fetch groups
   const { data, isLoading, error } = useGroups(kafkaId, {
@@ -145,6 +146,15 @@ export function GroupsPage() {
       </PageSection>
       <PageSection>
         <Grid hasGutter>
+          {resetOffsetSuccessMessage && (
+            <Alert
+              variant="success"
+              isInline
+              title={resetOffsetSuccessMessage}
+              actionClose={<AlertActionCloseButton onClose={() => setResetOffsetSuccessMessage(undefined)} />}
+              style={{ marginBottom: '1rem' }}
+            />
+          )}
           {showLearning && isAlertVisible && (
             <GridItem>
               <Alert
@@ -314,6 +324,7 @@ export function GroupsPage() {
         <ResetOffsetModal
           isOpen={isResetOffsetModalOpen}
           onClose={handleCloseResetOffsetModal}
+          onSuccess={(message) => setResetOffsetSuccessMessage(message)}
           kafkaId={kafkaId!}
           group={selectedGroup}
         />
