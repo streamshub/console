@@ -6,9 +6,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PageSection,
-  Title,
-  EmptyState,
-  EmptyStateBody,
   Skeleton,
   Card,
   CardTitle,
@@ -35,29 +32,14 @@ import { ResourceListParams } from '@/api/hooks/useResourceList';
 export function HomePage() {
   const { t } = useTranslation();
   const [dataParams, setDataParams] = useState<ResourceListParams>({});
-  const { data: clusterResponse, isLoading, error } = useKafkaClusters(dataParams);
+  const clusterResult = useKafkaClusters(dataParams);
   const { data: metadata } = useMetadata();
 
-  const totalCount = clusterResponse?.meta?.page?.total;
+  const totalCount = clusterResult?.data?.meta?.page?.total;
   const platform = metadata?.data?.attributes?.platform;
 
   const showLearning = useShowLearning();
   const [isLearningExpanded, setIsLearningExpanded] = useState(false);
-
-  if (error) {
-    return (
-      <AppLayout>
-        <PageSection>
-          <EmptyState>
-            <Title headingLevel="h1" size="lg">
-              {t('common.error')}
-            </Title>
-            <EmptyStateBody>{error.message}</EmptyStateBody>
-          </EmptyState>
-        </PageSection>
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout>
@@ -76,8 +58,7 @@ export function HomePage() {
       </PageSection>
       <PageSection>
         <ClustersDataView
-          clusterResponse={clusterResponse}
-          isLoading={isLoading}
+          clusterResult={clusterResult}
           onDataViewChange={setDataParams}
         />
       </PageSection>

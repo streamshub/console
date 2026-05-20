@@ -13,18 +13,17 @@ import {
   ResourceListDataViewColumnMapper,
   ResourceListDataViewRowMapper
 } from '../common/ResourceListDataView';
+import { UseQueryResult } from '@tanstack/react-query';
 
 const columnNames = ['name', 'namespace', 'version', 'status'];
 
 interface ClustersDataViewProps {
-  clusterResponse?: ListResponse<KafkaCluster>;
-  isLoading?: boolean;
+  clusterResult: UseQueryResult<ListResponse<KafkaCluster>, Error>;
   onDataViewChange: (params: ResourceListParams) => void;
 }
 
 export function ClustersDataView({
-  clusterResponse,
-  isLoading = false,
+  clusterResult,
   onDataViewChange,
 }: ClustersDataViewProps) {
 
@@ -126,9 +125,8 @@ export function ClustersDataView({
 
   return (
     <ResourceListDataView
-      listResponse={clusterResponse}
+      resourceResult={clusterResult}
       onDataViewChange={onDataViewChange}
-      isLoading={isLoading}
       ariaLabel={t('kafka.clusterList')}
       ouiaIdPrefix='kafka-clusters'
       dataFilters={{

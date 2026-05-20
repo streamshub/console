@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -25,6 +25,8 @@ import { ISortBy, Tbody, Td, Tr } from '@patternfly/react-table';
 import { ListResponse, Resource } from '@/api/types';
 import { DataViewFilters } from '@patternfly/react-data-view/dist/dynamic/DataViewFilters';
 import { ResourceListParams } from '@/api/hooks/useResourceList';
+import { UseQueryResult } from '@tanstack/react-query';
+import { ApiError } from '@/api/client';
 
 const perPageOptions = [
   { title: '5', value: 5 },
@@ -35,6 +37,44 @@ const perPageOptions = [
 ];
 
 const DEFAULT_PAGE_SIZE = 10;
+
+// Custom hook for text filter handlers
+const useTextFilterHandlers = (
+  filterId: string,
+  pendingFilters: Record<string, string>,
+  setPendingFilters: React.Dispatch<React.SetStateAction<Record<string, string>>>,
+  onSetFilters: (newFilters: Partial<Record<string, string | string[]>>) => void,
+) => {
+  const handleChange = useCallback((_event: React.FormEvent<HTMLInputElement> | undefined, value: string) => {
+    if (value) {
+      setPendingFilters(prev => ({ ...prev, [filterId]: value }));
+    } else {
+      onSetFilters({ [filterId]: '' });
+      setPendingFilters(prev => {
+        const { [filterId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [filterId]);
+
+  const handleClear = useCallback(() => {
+    onSetFilters({ [filterId]: '' });
+    setPendingFilters(prev => {
+      const { [filterId]: _, ...rest } = prev;
+      return rest;
+    });
+  }, [filterId]);
+
+  const handleSearch = useCallback((_event: React.SyntheticEvent<HTMLButtonElement>, value: string) => {
+    onSetFilters({ [filterId]: pendingFilters[filterId] ?? value });
+    setPendingFilters(prev => {
+      const { [filterId]: _, ...rest } = prev;
+      return rest;
+    });
+  }, [filterId, pendingFilters[filterId]]);
+
+  return { handleChange, handleClear, handleSearch };
+};
 
 export interface ResourceListDataViewColumnMapper {
   (
@@ -53,8 +93,7 @@ export interface ResourceListDataViewRowMapper<T extends Resource> {
 }
 
 export interface ResourceListDataViewProps<T extends Resource> {
-  listResponse: ListResponse<T> | undefined;
-  isLoading: boolean;
+  resourceResult: UseQueryResult<ListResponse<T>, Error>;
   columnProvider: {
     dependencies: unknown[];
     callback: ResourceListDataViewColumnMapper;
@@ -75,8 +114,7 @@ export interface ResourceListDataViewProps<T extends Resource> {
 }
 
 export function ResourceListDataView<T extends Resource>({
-  listResponse,
-  isLoading = false,
+  resourceResult,
   columnProvider,
   rowProvider,
   dataFilters,
@@ -158,6 +196,7 @@ export function ResourceListDataView<T extends Resource>({
     searchParams: sortSearchParams,
   });
 
+  const listResponse = resourceResult.data;
   const totalCount = listResponse?.meta?.page?.total ?? 0;
 
   // Track current page number locally to avoid flashing during navigation
@@ -237,42 +276,6 @@ export function ResourceListDataView<T extends Resource>({
     onSetFilters(newValues as Record<string, string | string[]>);
   }, [onSetFilters]);
 
-  // Custom hook for text filter handlers
-  const useTextFilterHandlers = (filterId: string) => {
-    const handleChange = useCallback((_event: React.FormEvent<HTMLInputElement> | undefined, value: string) => {
-      if (value) {
-        setPendingFilters(prev => ({ ...prev, [filterId]: value }));
-      } else {
-        onSetFilters({ [filterId]: '' });
-        setPendingFilters(prev => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [filterId]: _, ...rest } = prev;
-          return rest;
-        });
-      }
-    }, [filterId]);
-
-    const handleClear = useCallback(() => {
-      onSetFilters({ [filterId]: '' });
-      setPendingFilters(prev => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [filterId]: _, ...rest } = prev;
-        return rest;
-      });
-    }, [filterId]);
-
-    const handleSearch = useCallback((_event: React.SyntheticEvent<HTMLButtonElement>, value: string) => {
-      onSetFilters({ [filterId]: pendingFilters[filterId] ?? value });
-      setPendingFilters(prev => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [filterId]: _, ...rest } = prev;
-        return rest;
-      });
-    }, [filterId, pendingFilters[filterId]]);
-
-    return { handleChange, handleClear, handleSearch };
-  };
-
   // Manually sync to URL in a single effect
   useEffect(() => {
     setSearchParams(params => {
@@ -338,12 +341,23 @@ export function ResourceListDataView<T extends Resource>({
 
   // Determine the active state, errors, and table rows for DataView
   const [ activeState, errors, rows ] = useMemo(() => {
-    if (isLoading) {
+    if (resourceResult.isLoading) {
       return [ DataViewState.loading, undefined, [] ];
     }
 
-    if (listResponse?.errors) {
-      return [ DataViewState.error, listResponse.errors, [] ];
+    if (resourceResult?.error) {
+      const e = resourceResult.error;
+
+      if (e instanceof ApiError) {
+        return [ DataViewState.error, e.errors, [] ];
+      }
+
+      const errObjects = [{
+        title: e.message,
+        detail: e.toString(),
+      }];
+
+      return [ DataViewState.error, errObjects, [] ];
     }
 
     if (listResponse?.data && listResponse?.data.length === 0) {
@@ -355,7 +369,7 @@ export function ResourceListDataView<T extends Resource>({
       [], 
       listResponse?.data?.map(entry => rowProvider.callback(entry)) ?? []
     ];
-  }, [ isLoading, listResponse, ...rowProvider.dependencies ]);
+  }, [ resourceResult.isLoading, listResponse, ...rowProvider.dependencies ]);
 
   useEffect(() => {
     const pageSize = searchParams.get('page[size]');
@@ -433,7 +447,7 @@ export function ResourceListDataView<T extends Resource>({
   );
 
   const bodyLoading = useMemo(
-    () => <SkeletonTableBody rowsCount={DEFAULT_PAGE_SIZE} columnsCount={columns.length} />,
+    () => <SkeletonTableBody rowsCount={perPage ?? DEFAULT_PAGE_SIZE} columnsCount={columns.length} />,
     [columns.length]
   );
 
@@ -452,7 +466,12 @@ export function ResourceListDataView<T extends Resource>({
                 if (filter.type === 'checkbox') {
                   return <></>; // TODO: Add checkbox filter component
                 } else {
-                  const { handleChange, handleClear, handleSearch } = useTextFilterHandlers(name);
+                  const { handleChange, handleClear, handleSearch } = useTextFilterHandlers(
+                    name,
+                    pendingFilters,
+                    setPendingFilters,
+                    onSetFilters,
+                  );
                   return <DataViewTextFilter
                     key={`filter-${name}`}
                     filterId={name}

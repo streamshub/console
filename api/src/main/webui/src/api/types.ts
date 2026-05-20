@@ -6,8 +6,12 @@
  */
 
 // Common types
+
+// All `meta` properties are generic records with can be extended with type-specific properties.
+export type AbstractMeta = Record<string, unknown>;
+
 export interface ListResponse<T extends Resource> {
-  meta?: {
+  meta?: AbstractMeta & {
     page: {
       total: number;
       pageNumber: number;
@@ -21,13 +25,13 @@ export interface ListResponse<T extends Resource> {
     next?: string;
   };
   data?: T[];
-  errors?: ApiError[];
+  errors?: ErrorObject[];
 }
 
 export interface ApiResponse<T> {
   data?: T;
-  errors?: ApiError[];
-  meta?: Record<string, unknown>;
+  errors?: ErrorObject[];
+  meta?: AbstractMeta;
   links?: {
     first?: string;
     last?: string;
@@ -36,10 +40,17 @@ export interface ApiResponse<T> {
   };
 }
 
-export interface ApiError {
+export interface ErrorObject {
+  id: string;
   status: string;
+  code?: string;
   title: string;
   detail?: string;
+  source?: {
+    pointer?: string;
+    parameter?: string;
+    header?: string;
+  };
 }
 
 export interface ResourceIdentifier {
@@ -56,7 +67,7 @@ export interface Resource {
   id: string;
   attributes?: Record<string, unknown>;
   relationships?: Record<string, { data: ResourceIdentifier | ResourceIdentifier[] }>;
-  meta?: object;
+  meta?: AbstractMeta;
 }
 
 // Kafka Cluster types
@@ -87,7 +98,7 @@ export interface KafkaCluster extends Resource {
     listeners?: KafkaClusterListener[];
     conditions?: KafkaClusterCondition[];
   };
-  meta?: MetaWithPrivileges & {
+  meta?: AbstractMeta & MetaWithPrivileges & {
     authentication?: {
       method: string;
     };
@@ -385,7 +396,7 @@ export interface RelatedSchema {
   meta?: {
     artifactType?: string;
     name?: string;
-    errors?: ApiError[];
+    errors?: ErrorObject[];
   } | null;
   links?: {
     content: string;

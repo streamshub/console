@@ -4,7 +4,7 @@
 
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import { KafkaRecord, KafkaRecordsResponse, ApiError } from '../types';
+import { KafkaRecord, KafkaRecordsResponse, ErrorObject } from '../types';
 
 interface GetMessagesParams {
   kafkaId: string;
@@ -110,9 +110,9 @@ export async function getMessage(
  */
 export function useMessages(
   params: GetMessagesParams,
-  options?: Omit<UseQueryOptions<KafkaRecord[], ApiError>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<KafkaRecord[], ErrorObject>, 'queryKey' | 'queryFn'>
 ) {
-  return useQuery<KafkaRecord[], ApiError>({
+  return useQuery({
     queryKey: [
       'messages',
       params.kafkaId,
@@ -138,9 +138,9 @@ export function useMessage(
   topicId: string,
   partition: number | undefined,
   offset: number | undefined,
-  options?: Omit<UseQueryOptions<KafkaRecord | undefined, ApiError>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<KafkaRecord | undefined, ErrorObject>, 'queryKey' | 'queryFn'>
 ) {
-  return useQuery<KafkaRecord | undefined, ApiError>({
+  return useQuery({
     queryKey: ['message', kafkaId, topicId, partition, offset],
     queryFn: () =>
       partition !== undefined && offset !== undefined
