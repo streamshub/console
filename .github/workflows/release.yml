@@ -26,7 +26,7 @@ jobs:
         run: echo "PRERELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Retrieve Project Metadata
-        uses: radcortez/project-metadata-action@c38225619f10c1f9c9116d3ce4c9c41648a59e1c
+        uses: radcortez/project-metadata-action@62527b4a896343d4c0c6b2a61eff07f6b59fcbd8
         id: metadata
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
