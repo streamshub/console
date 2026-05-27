@@ -9,11 +9,18 @@ import {
   useDataViewFilters,
   useDataViewPagination,
   DataViewEventsProvider,
-  DataViewTh,
   DataViewTr,
   DataViewState,
   useDataViewSort,
 } from '@patternfly/react-data-view';
+/* 
+ * The following import is a work-around for 
+ * https://github.com/patternfly/react-data-view/issues/662 
+ * and should be removed when upgrading to a version of react-data-view
+ * that includes the fix. The DataViewTh import should be moved above to
+ * be from '@patternfly/react-data-view'.
+ */
+import { DataViewTh } from '@patternfly/react-data-view/dist/cjs/DataViewTable';
 import {
   Pagination,
   EmptyState,
