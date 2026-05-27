@@ -6,10 +6,32 @@
  */
 
 // Common types
+
+// All `meta` properties are generic records with can be extended with type-specific properties.
+export type AbstractMeta = Record<string, unknown>;
+
+export interface ListResponse<T extends Resource> {
+  meta?: AbstractMeta & {
+    page: {
+      total: number;
+      pageNumber: number;
+      rangeTruncated: boolean;
+    } & Record<string, unknown>;
+  };
+  links?: {
+    first?: string;
+    last?: string;
+    prev?: string;
+    next?: string;
+  };
+  data?: T[];
+  errors?: ErrorObject[];
+}
+
 export interface ApiResponse<T> {
   data?: T;
-  errors?: ApiError[];
-  meta?: Record<string, unknown>;
+  errors?: ErrorObject[];
+  meta?: AbstractMeta;
   links?: {
     first?: string;
     last?: string;
@@ -18,10 +40,17 @@ export interface ApiResponse<T> {
   };
 }
 
-export interface ApiError {
+export interface ErrorObject {
+  id: string;
   status: string;
+  code?: string;
   title: string;
   detail?: string;
+  source?: {
+    pointer?: string;
+    parameter?: string;
+    header?: string;
+  };
 }
 
 export interface ResourceIdentifier {
@@ -33,12 +62,12 @@ export interface MetaWithPrivileges {
   privileges?: string[];
 }
 
-export interface Resource<T = Record<string, unknown>> {
+export interface Resource {
   type: string;
   id: string;
-  attributes?: T;
+  attributes?: Record<string, unknown>;
   relationships?: Record<string, { data: ResourceIdentifier | ResourceIdentifier[] }>;
-  meta?: Record<string, unknown>;
+  meta?: AbstractMeta;
 }
 
 // Kafka Cluster types
@@ -57,7 +86,7 @@ export interface KafkaClusterCondition {
   lastTransitionTime?: string;
 }
 
-export interface KafkaCluster {
+export interface KafkaCluster extends Resource {
   id: string;
   type: 'kafkas';
   attributes: {
@@ -69,7 +98,7 @@ export interface KafkaCluster {
     listeners?: KafkaClusterListener[];
     conditions?: KafkaClusterCondition[];
   };
-  meta?: MetaWithPrivileges & {
+  meta?: AbstractMeta & MetaWithPrivileges & {
     authentication?: {
       method: string;
     };
@@ -367,7 +396,7 @@ export interface RelatedSchema {
   meta?: {
     artifactType?: string;
     name?: string;
-    errors?: ApiError[];
+    errors?: ErrorObject[];
   } | null;
   links?: {
     content: string;

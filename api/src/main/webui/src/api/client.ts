@@ -5,11 +5,13 @@
  * No authentication initially - will be added later.
  */
 
+import { ErrorObject } from "./types";
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     public statusText: string,
-    public errors?: Array<{ status: string; title: string; detail?: string }>
+    public errors?: ErrorObject[],
   ) {
     super(`API Error: ${status} ${statusText}`);
     this.name = 'ApiError';
