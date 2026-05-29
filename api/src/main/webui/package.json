@@ -30,7 +30,7 @@
     "react-i18next": "^17.0.8",
     "react-router-dom": "^7.15.1",
     "victory": "^37.3.6",
-    "zustand": "^5.0.13"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
