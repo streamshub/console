@@ -1,5 +1,17 @@
 package com.github.streamshub.console;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
@@ -21,9 +33,9 @@ import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
-import com.github.streamshub.console.dependents.conditions.IngressOrRouteReadyCondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
 import com.github.streamshub.console.support.RootCause;
+
 import io.javaoperatorsdk.operator.AggregatedOperatorException;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -43,18 +55,6 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Link;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Maintainer;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 @ControllerConfiguration(
         maxReconciliationInterval = @MaxReconciliationInterval(
@@ -104,9 +104,7 @@ import java.util.stream.Collectors;
                     name = PrometheusService.NAME,
                     type = PrometheusService.class,
                     reconcilePrecondition = PrometheusPrecondition.class,
-                    dependsOn = {
-                        PrometheusDeployment.NAME
-                    }),
+                    dependsOn = PrometheusDeployment.NAME),
             @Dependent(
                     name = ConsoleClusterRole.NAME,
                     type = ConsoleClusterRole.class,
@@ -126,9 +124,7 @@ import java.util.stream.Collectors;
                     name = ConsoleMonitoringClusterRoleBinding.NAME,
                     type = ConsoleMonitoringClusterRoleBinding.class,
                     reconcilePrecondition = ConsoleMonitoringClusterRoleBinding.Precondition.class,
-                    dependsOn = {
-                        ConsoleServiceAccount.NAME
-                    }),
+                    dependsOn = ConsoleServiceAccount.NAME),
             @Dependent(
                     name = ConsoleSecret.NAME,
                     type = ConsoleSecret.class,
@@ -138,32 +134,26 @@ import java.util.stream.Collectors;
                     type = ConsoleService.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
-                    name = ConsoleIngress.NAME,
-                    type = ConsoleIngress.class,
-                    reconcilePrecondition = ConsoleIngress.Precondition.class,
-                    activationCondition = ConsoleIngress.Precondition.class,
-                    readyPostcondition = IngressOrRouteReadyCondition.class,
-                    dependsOn = {
-                        ConsoleService.NAME
-                    }),
-            @Dependent(
-                    name = ConsoleRoute.NAME,
-                    type = ConsoleRoute.class,
-                    reconcilePrecondition = ConsoleRoute.Precondition.class,
-                    activationCondition = ConsoleRoute.Precondition.class,
-                    readyPostcondition = IngressOrRouteReadyCondition.class,
-                    dependsOn = {
-                        ConsoleService.NAME
-                    }),
-            @Dependent(
                     name = ConsoleDeployment.NAME,
                     type = ConsoleDeployment.class,
-                    reconcilePrecondition = IngressOrRouteReadyCondition.class,
                     dependsOn = {
                         ConsoleClusterRoleBinding.NAME,
                         ConsoleSecret.NAME
                     },
                     readyPostcondition = DeploymentReadyCondition.class),
+            // Only one of ingress or route will be active for Kubernetes/OpenShift cluster.
+            @Dependent(
+                    name = ConsoleIngress.NAME,
+                    type = ConsoleIngress.class,
+                    activationCondition = ConsoleIngress.Precondition.class,
+                    readyPostcondition = ConsoleIngress.Postcondition.class,
+                    dependsOn = ConsoleDeployment.NAME),
+            @Dependent(
+                    name = ConsoleRoute.NAME,
+                    type = ConsoleRoute.class,
+                    activationCondition = ConsoleRoute.Precondition.class,
+                    readyPostcondition = ConsoleRoute.Postcondition.class,
+                    dependsOn = ConsoleDeployment.NAME),
         })
 @CSVMetadata(
         provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"),

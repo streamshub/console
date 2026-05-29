@@ -55,6 +55,8 @@ import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -64,7 +66,7 @@ abstract class ConsoleReconcilerTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTestBase.class);
 
-    protected static final Duration LIMIT = Duration.ofSeconds(10);
+    protected static final Duration LIMIT = Duration.ofSeconds(5);
     protected static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
 
     protected static final String KAFKA_NS = "ns1";
@@ -352,9 +354,10 @@ abstract class ConsoleReconcilerTestBase {
             assertEquals("False", condition.getStatus(), condition::toString);
             assertEquals(Condition.Reasons.DEPENDENTS_NOT_READY, condition.getReason(), condition::toString);
 
-            for (String dependent : dependents) {
-                assertTrue(condition.getMessage().contains(dependent));
-            }
+            assertThat(condition.getMessage(), stringContainsInOrder(dependents));
+//            for (String dependent : dependents) {
+//                assertTrue(condition.getMessage().contains(dependent));
+//            }
         });
     }
 
