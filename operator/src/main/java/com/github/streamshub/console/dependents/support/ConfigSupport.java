@@ -151,6 +151,10 @@ public class ConfigSupport {
                 .orElseGet(Collections::emptyMap);
     }
 
+    public static <T extends HasMetadata> boolean resourceSupported(Context<Console> context, Class<T> resourceType) {
+        return context.getClient().supports(resourceType);
+    }
+
     public static <T extends HasMetadata> T getResource(
             Context<Console> context, Class<T> resourceType, String namespace, String name) {
         return getResource(context, resourceType, namespace, name, false);

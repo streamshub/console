@@ -1,8 +1,8 @@
 package com.github.streamshub.console.dependents;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -21,6 +21,8 @@ import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
+
+import static com.github.streamshub.console.dependents.support.ConfigSupport.resourceSupported;
 
 @ApplicationScoped
 @KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
@@ -88,7 +90,7 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
     public static class Precondition implements Condition<Route, Console> {
         @Override
         public boolean isMet(DependentResource<Route, Console> dependentResource, Console primary, Context<Console> context) {
-            return context.getClient().supports(Route.class);
+            return resourceSupported(context, Route.class);
         }
     }
 
@@ -106,38 +108,30 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
         }
 
         private boolean isReady(Route route) {
-            String routeName = route.getMetadata().getName();
-
-            Optional<RouteIngress> admittedIngress = Optional.ofNullable(route.getStatus())
+            List<RouteIngress> admittedIngresses = Optional.ofNullable(route.getStatus())
                 .map(RouteStatus::getIngress)
                 .orElseGet(Collections::emptyList)
                 .stream()
                 .filter(this::isAdmitted)
-                .findFirst();
+                .toList();
 
-            boolean ready = admittedIngress.isPresent();
-
-            if (ready) {
-                // When the user did not specify hostname in the Console spec, OpenShift auto-assigns it
-                admittedIngress
-                    .map(RouteIngress::getHost)
-                    .filter(Predicate.not(String::isBlank))
-                    .ifPresent(host -> LOGGER.debugf("Route %s ready: true, auto-assigned host: %s", routeName, host));
-            } else {
-                LOGGER.debugf("Route %s ready: false", routeName);
+            if (admittedIngresses.isEmpty()) {
+                LOGGER.debugf("Route %s ready: false", route.getMetadata().getName());
+                return false;
             }
 
-            return ready;
+            // When the user did not specify hostname in the Console spec, OpenShift auto-assigns it
+            var hosts = admittedIngresses.stream().map(RouteIngress::getHost).toList();
+            LOGGER.debugf("Route %s ready: true, hosts: %s", route.getMetadata().getName(), hosts);
+            return true;
         }
 
         private boolean isAdmitted(RouteIngress ingress) {
             return Optional.ofNullable(ingress.getConditions())
                 .orElseGet(Collections::emptyList)
                 .stream()
-                .anyMatch(condition ->
-                    "Admitted".equals(condition.getType()) &&
-                    "True".equals(condition.getStatus())
-                );
+                .filter(condition -> "Admitted".equals(condition.getType()))
+                .anyMatch(condition -> "True".equals(condition.getStatus()));
         }
     }
 }

@@ -9,7 +9,6 @@ import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.security.GlobalSecurity;
 
-import io.fabric8.generator.annotation.Required;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.sundr.builder.annotations.Buildable;
 
@@ -26,7 +25,6 @@ import io.sundr.builder.annotations.Buildable;
 //         message = "Metrics source names must be unique")
 public class ConsoleSpec {
 
-    @Required
     String hostname;
 
     @JsonPropertyDescription("""

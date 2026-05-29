@@ -8,7 +8,6 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
@@ -21,6 +20,8 @@ import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
+
+import static com.github.streamshub.console.dependents.support.ConfigSupport.resourceSupported;
 
 @ApplicationScoped
 @KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
@@ -42,14 +43,6 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
 
     @Override
     protected Ingress desired(Console primary, Context<Console> context) {
-        String host = primary.getSpec().getHostname();
-
-        if (host == null || host.isBlank()) {
-            throw new ReconciliationException(
-                "spec.hostname is required when running on plain Kubernetes vanila clusters. " +
-                "Please set a hostname in your Console resource.");
-        }
-
         return load(context, "console.ingress.yaml", Ingress.class)
             .edit()
             .editMetadata()
@@ -67,7 +60,7 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                     .endService()
                 .endDefaultBackend()
                 .editFirstRule()
-                    .withHost(host)
+                    .withHost(primary.getSpec().getHostname())
                     .editHttp()
                         .editFirstPath()
                             .editBackend()
@@ -89,7 +82,7 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     public static class Precondition implements Condition<Ingress, Console> {
         @Override
         public boolean isMet(DependentResource<Ingress, Console> dependentResource, Console primary, Context<Console> context) {
-            return !context.getClient().supports(Route.class);
+            return !resourceSupported(context, Route.class);
         }
     }
 

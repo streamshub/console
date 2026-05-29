@@ -56,7 +56,7 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.stringContainsInOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -65,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 abstract class ConsoleReconcilerTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTestBase.class);
+    static final String REQUIRES_OPENSHIFT_ROUTE = "requires:routes.route.openshift.io";
 
     protected static final Duration LIMIT = Duration.ofSeconds(5);
     protected static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
@@ -149,11 +150,10 @@ abstract class ConsoleReconcilerTestBase {
         client.resource(Crds.kafka()).serverSideApply();
         client.resource(Crds.kafkaUser()).serverSideApply();
 
-        if (testInfo.getTags().contains("requires:routes.route.openshift.io")) {
+        if (testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
             createRouteCRD();
         } else {
             try {
-                delete(client.resources(Route.class).inAnyNamespace());
                 client.resources(CustomResourceDefinition.class).withName("routes.route.openshift.io").delete();
             } catch (KubernetesClientException e) {
                 // Ignore
@@ -170,6 +170,14 @@ abstract class ConsoleReconcilerTestBase {
 
         delete(allConsoles, allKafkas, allKafkaUsers);
         delete(allDeployments, allConfigMaps, allSecrets, allIngresses);
+
+        if (!testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
+            try {
+                delete(client.resources(Route.class).inAnyNamespace());
+            } catch (KubernetesClientException e) {
+                // Ignore
+            }
+        }
 
         operator.start();
 
@@ -347,17 +355,16 @@ abstract class ConsoleReconcilerTestBase {
                     .withName(resource.getMetadata().getName())
                     .get();
 
-            assertEquals(1, console.getStatus().getConditions().size());
+            assertTrue(console.getStatus().getConditions().size() >= 1);
             var condition = console.getStatus().getConditions().iterator().next();
 
             assertEquals(Condition.Types.READY, condition.getType(), condition::toString);
             assertEquals("False", condition.getStatus(), condition::toString);
             assertEquals(Condition.Reasons.DEPENDENTS_NOT_READY, condition.getReason(), condition::toString);
 
-            assertThat(condition.getMessage(), stringContainsInOrder(dependents));
-//            for (String dependent : dependents) {
-//                assertTrue(condition.getMessage().contains(dependent));
-//            }
+            for (String dependent : dependents) {
+                assertThat(condition.getMessage(), containsString(dependent));
+            }
         });
     }
 
@@ -419,6 +426,26 @@ abstract class ConsoleReconcilerTestBase {
                     .build();
         client.resource(consoleIngress).patchStatus();
         LOGGER.info("Set ingress status for Console ingress");
+    }
+
+    void setConsoleRouteReady(Console consoleCR) {
+        var consoleRoute = client.resources(Route.class)
+                .inNamespace(consoleCR.getMetadata().getNamespace())
+                .withName("%s-console-route".formatted(consoleCR.getMetadata().getName()))
+                .get();
+
+        consoleRoute = consoleRoute.edit()
+                    .editOrNewStatus()
+                        .addNewIngress()
+                            .addNewCondition()
+                                .withType("Admitted")
+                                .withStatus("True")
+                            .endCondition()
+                        .endIngress()
+                    .endStatus()
+                    .build();
+        client.resource(consoleRoute).patchStatus();
+        LOGGER.info("Set route status for Console route");
     }
 
     Deployment setDeploymentReady(Console consoleCR, String deploymentName) {

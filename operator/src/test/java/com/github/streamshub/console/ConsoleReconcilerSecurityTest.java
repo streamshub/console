@@ -295,9 +295,10 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
 
         client.resource(consoleCR).create();
 
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
+        setDeploymentReady(consoleCR, "console-deployment");
         awaitDependentsNotReady(consoleCR, "ConsoleIngress");
         setConsoleIngressReady(consoleCR);
-        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
 
         assertConsoleConfig(consoleConfig -> {
             var trustStore = consoleConfig.getSecurity().getOidc().getTrustStore();

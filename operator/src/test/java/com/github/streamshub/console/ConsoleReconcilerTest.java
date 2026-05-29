@@ -79,7 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
     @Test
-    void testBasicConsoleReconciliation() {
+    void testBasicConsoleReconciliationWithIngress() {
         Console consoleCR = createConsole(new ConsoleBuilder()
                 .withNewSpec()
                     .withHostname("example.com")
@@ -90,12 +90,42 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .endKafkaCluster()
                 .endSpec());
 
-        awaitDependentsNotReady(consoleCR, "ConsoleIngress", "PrometheusDeployment");
-        setConsoleIngressReady(consoleCR);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment", "PrometheusDeployment");
         setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
         awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
 
         var consoleDeployment = setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress");
+        setConsoleIngressReady(consoleCR);
+        // Images were not set in CR, so assert that the defaults were used
+        var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
+
+        assertEquals(config.getValue("console.deployment.default-api-image", String.class),
+                consoleContainers.get(0).getImage());
+
+        awaitReady(consoleCR);
+    }
+
+    @Test
+    @Tag(REQUIRES_OPENSHIFT_ROUTE)
+    void testBasicConsoleReconciliationWithRoute() {
+        Console consoleCR = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec());
+
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment", "PrometheusDeployment");
+        setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
+
+        var consoleDeployment = setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleRoute");
+        setConsoleRouteReady(consoleCR);
         // Images were not set in CR, so assert that the defaults were used
         var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
 
@@ -122,11 +152,12 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .endKafkaCluster()
                 .endSpec());
 
-        awaitDependentsNotReady(consoleCR, "ConsoleIngress", "PrometheusDeployment");
-        setConsoleIngressReady(consoleCR);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment", "PrometheusDeployment");
         setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
         awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
         setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress");
+        setConsoleIngressReady(consoleCR);
         awaitReady(consoleCR);
 
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
@@ -191,10 +222,10 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
         client.resource(consoleCR).create();
 
-        awaitDependentsNotReady(consoleCR, "ConsoleIngress");
-        setConsoleIngressReady(consoleCR);
         awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
         var consoleDeployment = setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress");
+        setConsoleIngressReady(consoleCR);
         var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
         var apiContainer = consoleContainers.get(0);
 
@@ -855,7 +886,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
     }
 
     @Test
-    @Tag("requires:routes.route.openshift.io")
+    @Tag(REQUIRES_OPENSHIFT_ROUTE)
     void testConsoleReconciliationWithOpenShiftMonitoring() {
         String thanosQueryHost = "thanos.example.com";
 
@@ -1178,9 +1209,10 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
         client.resource(consoleCR).create();
 
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
+        setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
         awaitDependentsNotReady(consoleCR, "ConsoleIngress");
         setConsoleIngressReady(consoleCR);
-        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
 
         assertConsoleConfig(consoleConfig -> {
             var metricsTrustStore = consoleConfig.getMetricsSources().get(0).getTrustStore();
@@ -1257,6 +1289,33 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
     }
 
     @Test
+    void testConsoleReconciliationWithMissingIngressHostname() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(CONSOLE_NAME)
+                        .withNamespace(CONSOLE_NS)
+                        .build())
+                .withNewSpec()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        assertInvalidConfiguration(consoleCR, conditions -> {
+            var errorCondition = conditions.get(0);
+            assertEquals(Condition.Types.ERROR, errorCondition.getType(), errorCondition::toString);
+            assertEquals("True", errorCondition.getStatus(), errorCondition::toString);
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, errorCondition.getReason(), errorCondition::toString);
+            assertEquals("spec.hostname is required for Ingress", errorCondition.getMessage(), errorCondition::toString);
+        });
+    }
+
+    @Test
     void testMultipleConsoleReconciliationsWithSameName() {
         Console consoleCR1 = createConsole(new ConsoleBuilder()
                 .withNewSpec()
@@ -1283,11 +1342,12 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         Stream.of(consoleCR1, consoleCR2)
             .map(cr -> {
                 return CompletableFuture.runAsync(() -> {
-                    awaitDependentsNotReady(cr, "ConsoleIngress", "PrometheusDeployment");
-                    setConsoleIngressReady(cr);
+                    awaitDependentsNotReady(cr, "ConsoleDeployment", "PrometheusDeployment");
                     setDeploymentReady(cr, PrometheusDeployment.NAME);
                     awaitDependentsNotReady(cr, "ConsoleDeployment");
                     setDeploymentReady(cr, ConsoleDeployment.NAME);
+                    awaitDependentsNotReady(cr, "ConsoleIngress");
+                    setConsoleIngressReady(cr);
                     awaitReady(cr);
                 }).thenRunAsync(() -> {
                     String prefix = cr.optionalMetadata()
@@ -1371,6 +1431,8 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .build();
 
         client.resource(consoleCR).serverSideApply();
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
+        setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
 
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
             var console = client.resources(Console.class)

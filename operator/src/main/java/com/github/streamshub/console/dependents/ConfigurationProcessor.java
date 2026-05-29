@@ -106,6 +106,7 @@ import io.strimzi.api.kafka.model.user.KafkaUserTlsClientAuthentication;
 
 import static com.github.streamshub.console.dependents.support.ConfigSupport.getResource;
 import static com.github.streamshub.console.dependents.support.ConfigSupport.getValue;
+import static com.github.streamshub.console.dependents.support.ConfigSupport.resourceSupported;
 import static com.github.streamshub.console.dependents.support.ConfigSupport.setConfigVars;
 
 /**
@@ -231,11 +232,31 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             currentConfig = new ConsoleConfig();
         }
 
-
         final var consoleConfig = buildConfig(primary, context, currentConfig);
-        var violations = validator.validate(consoleConfig);
 
-        if (!violations.isEmpty()) {
+        if (valid(primary, context, consoleConfig)) {
+            try {
+                desiredData.put(CONFIG_KEY, encodeString(yaml.writeValueAsString(consoleConfig)));
+            } catch (JsonProcessingException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+
+    private boolean valid(Console primary, Context<Console> context, ConsoleConfig consoleConfig) {
+        var violations = validator.validate(consoleConfig);
+        boolean missingHost = false;
+
+        if (!resourceSupported(context, Route.class)) {
+            String host = primary.getSpec().getHostname();
+
+            if (host == null || host.isBlank()) {
+                missingHost = true;
+                addErrorCondition(primary, "spec.hostname is required for Ingress");
+            }
+        }
+
+        if (missingHost || !violations.isEmpty()) {
             for (var violation : violations) {
                 StringBuilder message = new StringBuilder();
                 if (!violation.getPropertyPath().toString().isBlank()) {
@@ -243,24 +264,23 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     message.append(' ');
                 }
                 message.append(violation.getMessage());
-
-                primary.getStatus().updateCondition(new ConditionBuilder()
-                        .withType(Types.ERROR)
-                        .withStatus("True")
-                        .withLastTransitionTime(Instant.now().toString())
-                        .withReason(Reasons.INVALID_CONFIGURATION)
-                        .withMessage(message.toString())
-                        .build());
+                addErrorCondition(primary, message.toString());
             }
 
-            return;
+            return false;
         }
 
-        try {
-            desiredData.put(CONFIG_KEY, encodeString(yaml.writeValueAsString(consoleConfig)));
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        return true;
+    }
+
+    private static void addErrorCondition(Console primary, String message) {
+        primary.getStatus().updateCondition(new ConditionBuilder()
+                .withType(Types.ERROR)
+                .withStatus("True")
+                .withLastTransitionTime(Instant.now().toString())
+                .withReason(Reasons.INVALID_CONFIGURATION)
+                .withMessage(message)
+                .build());
     }
 
     /**
