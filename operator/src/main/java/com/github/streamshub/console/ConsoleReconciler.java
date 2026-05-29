@@ -145,7 +145,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
             @Dependent(
                     name = ConsoleIngress.NAME,
                     type = ConsoleIngress.class,
-                    activationCondition = ConsoleIngress.Precondition.class,
+                    reconcilePrecondition = ConsoleIngress.Precondition.class,
                     readyPostcondition = ConsoleIngress.Postcondition.class,
                     dependsOn = ConsoleDeployment.NAME),
             @Dependent(
