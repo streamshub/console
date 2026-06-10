@@ -501,6 +501,10 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     // The current PKCE state secret is unchanged if it exists and
                     // PKCE is required. Otherwise, the secret is removed.
                     .withStateSecret(currentOrNewStateSecret(oidc, currentConfig))
+                    // Indicates to Quarkus OIDC to perform redirects using HTTPS. The created
+                    // ingress or route uses Edge TLS termination, making the OIDC framework unaware 
+                    // of TLS being used by the client's browser.
+                    .withForceRedirectHttpsScheme(Boolean.TRUE)
                     .build());
         }
 

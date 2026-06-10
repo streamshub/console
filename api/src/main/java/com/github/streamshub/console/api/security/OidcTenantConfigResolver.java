@@ -55,6 +55,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
                 .discoveryEnabled(true)
                 .authentication()
                     .redirectPath("/")
+                    .forceRedirectHttpsScheme(Boolean.TRUE.equals(oidc.isForceRedirectHttpsScheme()))
                     .restorePathAfterRedirect(true)
                     // Do not redirect to the IdP for JavaScript requests. They are identified by
                     // requests from the React UI with header `X-Requested-With: JavaScript`.
