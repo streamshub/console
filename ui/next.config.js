@@ -36,6 +36,12 @@ const nextConfig = {
   images: {
     // disable the disk cache entirely
     maximumDiskCacheSize: 0,
+    // block all local image optimizations
+    localPatterns: [],
+    // block all remote image optimizations
+    remotePatterns: [],
+    // disable image optimization
+    unoptimized: true,
   },
 };
 
