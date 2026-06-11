@@ -16,7 +16,7 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.27.3.1</quarkus.platform.version>
+        <quarkus.platform.version>3.27.4</quarkus.platform.version>
         <strimzi-api.version>0.51.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
         <apicurio-registry.version>3.2.1</apicurio-registry.version>
@@ -91,41 +91,23 @@
     <dependencyManagement>
         <dependencies>
             <!--
-                Jackson BOM management to replicate Quarkus change
-                https://github.com/quarkusio/quarkus/pull/53210 and should be removed
-                upon upgrade to Quarkus 3.27.4
-            -->
-            <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>2.21.2</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <!--
                 The following three managed dependencies replicate Quarkus change
-                https://github.com/quarkusio/quarkus/pull/53975 and should be removed
-                upon upgrade to Quarkus 3.27.4
+                https://github.com/quarkusio/quarkus/pull/54649 and should be removed
+                upon upgrade to Quarkus 3.27.5
             -->
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.133.Final</version>
+                <version>4.1.135.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-dependencies</artifactId>
-                <version>4.5.27</version>
+                <version>4.5.28</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.aayushatharva.brotli4j</groupId>
-                <artifactId>brotli4j</artifactId>
-                <version>1.23.0</version>
             </dependency>
 
             <dependency>
