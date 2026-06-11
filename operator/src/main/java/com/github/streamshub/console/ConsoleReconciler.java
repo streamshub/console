@@ -22,6 +22,7 @@ import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
 import com.github.streamshub.console.dependents.ConsoleMonitoringClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleResource;
+import com.github.streamshub.console.dependents.ConsoleRoute;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.ConsoleServiceAccount;
@@ -32,7 +33,6 @@ import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
-import com.github.streamshub.console.dependents.conditions.IngressReadyCondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
 import com.github.streamshub.console.support.RootCause;
 
@@ -104,9 +104,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     name = PrometheusService.NAME,
                     type = PrometheusService.class,
                     reconcilePrecondition = PrometheusPrecondition.class,
-                    dependsOn = {
-                        PrometheusDeployment.NAME
-                    }),
+                    dependsOn = PrometheusDeployment.NAME),
             @Dependent(
                     name = ConsoleClusterRole.NAME,
                     type = ConsoleClusterRole.class,
@@ -126,9 +124,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     name = ConsoleMonitoringClusterRoleBinding.NAME,
                     type = ConsoleMonitoringClusterRoleBinding.class,
                     reconcilePrecondition = ConsoleMonitoringClusterRoleBinding.Precondition.class,
-                    dependsOn = {
-                        ConsoleServiceAccount.NAME
-                    }),
+                    dependsOn = ConsoleServiceAccount.NAME),
             @Dependent(
                     name = ConsoleSecret.NAME,
                     type = ConsoleSecret.class,
@@ -138,21 +134,26 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     type = ConsoleService.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
-                    name = ConsoleIngress.NAME,
-                    type = ConsoleIngress.class,
-                    dependsOn = {
-                        ConsoleService.NAME
-                    },
-                    readyPostcondition = IngressReadyCondition.class),
-            @Dependent(
                     name = ConsoleDeployment.NAME,
                     type = ConsoleDeployment.class,
                     dependsOn = {
                         ConsoleClusterRoleBinding.NAME,
-                        ConsoleSecret.NAME,
-                        ConsoleIngress.NAME
+                        ConsoleSecret.NAME
                     },
                     readyPostcondition = DeploymentReadyCondition.class),
+            // Only one of ingress or route will be active for Kubernetes/OpenShift cluster.
+            @Dependent(
+                    name = ConsoleIngress.NAME,
+                    type = ConsoleIngress.class,
+                    reconcilePrecondition = ConsoleIngress.Precondition.class,
+                    readyPostcondition = ConsoleIngress.Postcondition.class,
+                    dependsOn = ConsoleDeployment.NAME),
+            @Dependent(
+                    name = ConsoleRoute.NAME,
+                    type = ConsoleRoute.class,
+                    activationCondition = ConsoleRoute.Precondition.class,
+                    readyPostcondition = ConsoleRoute.Postcondition.class,
+                    dependsOn = ConsoleDeployment.NAME),
         })
 @CSVMetadata(
         provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"),

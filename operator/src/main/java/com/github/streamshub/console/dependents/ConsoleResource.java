@@ -31,7 +31,6 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
     static final String COMPONENT_LABEL = "app.kubernetes.io/component";
     static final String INSTANCE_LABEL = "app.kubernetes.io/instance";
     static final String MANAGER = "streamshub-console-operator";
-    static final String INGRESS_URL_KEY = "console.ingress-url";
 
     public static final Map<String, String> MANAGEMENT_LABEL = Map.of(MANAGED_BY_LABEL, MANAGER);
     static final String MANAGEMENT_SELECTOR = MANAGED_BY_LABEL + '=' + MANAGER;

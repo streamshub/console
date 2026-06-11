@@ -26,6 +26,7 @@ public class OidcConfig implements Trustable {
     private TrustStoreConfig trustStore;
     private Boolean pkceRequired;
     private String stateSecret;
+    private Boolean forceRedirectHttpsScheme;
 
     @Override
     @JsonIgnore
@@ -105,5 +106,13 @@ public class OidcConfig implements Trustable {
 
     public void setStateSecret(String stateSecret) {
         this.stateSecret = stateSecret;
+    }
+
+    public Boolean isForceRedirectHttpsScheme() {
+        return forceRedirectHttpsScheme;
+    }
+
+    public void setForceRedirectHttpsScheme(Boolean forceRedirectHttpsScheme) {
+        this.forceRedirectHttpsScheme = forceRedirectHttpsScheme;
     }
 }

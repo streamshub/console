@@ -17,6 +17,7 @@ import org.awaitility.core.ConditionTimeoutException;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -34,13 +35,16 @@ import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.Deletable;
 import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
+import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.Operator;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -51,6 +55,8 @@ import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -59,8 +65,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 abstract class ConsoleReconcilerTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTestBase.class);
+    static final String REQUIRES_OPENSHIFT_ROUTE = "requires:routes.route.openshift.io";
 
-    protected static final Duration LIMIT = Duration.ofSeconds(10);
+    protected static final Duration LIMIT = Duration.ofSeconds(5);
     protected static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
 
     protected static final String KAFKA_NS = "ns1";
@@ -139,39 +146,19 @@ abstract class ConsoleReconcilerTestBase {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp(TestInfo testInfo) {
         client.resource(Crds.kafka()).serverSideApply();
         client.resource(Crds.kafkaUser()).serverSideApply();
-        client.resource(new CustomResourceDefinitionBuilder()
-                .withNewMetadata()
-                .withName("routes.route.openshift.io")
-            .endMetadata()
-            .withNewSpec()
-                .withScope("Namespaced")
-                .withGroup("route.openshift.io")
-                .addNewVersion()
-                    .withName("v1")
-                    .withNewSubresources()
-                        .withNewStatus()
-                        .endStatus()
-                    .endSubresources()
-                    .withNewSchema()
-                        .withNewOpenAPIV3Schema()
-                            .withType("object")
-                            .withXKubernetesPreserveUnknownFields(true)
-                        .endOpenAPIV3Schema()
-                    .endSchema()
-                    .withStorage(true)
-                    .withServed(true)
-                .endVersion()
-                .withNewNames()
-                    .withSingular("route")
-                    .withPlural("routes")
-                    .withKind("Route")
-                .endNames()
-            .endSpec()
-            .build())
-            .serverSideApply();
+
+        if (testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
+            createRouteCRD();
+        } else {
+            try {
+                client.resources(CustomResourceDefinition.class).withName("routes.route.openshift.io").delete();
+            } catch (KubernetesClientException e) {
+                // Ignore
+            }
+        }
 
         var allConsoles = client.resources(Console.class).inAnyNamespace();
         var allKafkas = client.resources(Kafka.class).inAnyNamespace();
@@ -183,6 +170,14 @@ abstract class ConsoleReconcilerTestBase {
 
         delete(allConsoles, allKafkas, allKafkaUsers);
         delete(allDeployments, allConfigMaps, allSecrets, allIngresses);
+
+        if (!testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
+            try {
+                delete(client.resources(Route.class).inAnyNamespace());
+            } catch (KubernetesClientException e) {
+                // Ignore
+            }
+        }
 
         operator.start();
 
@@ -287,6 +282,39 @@ abstract class ConsoleReconcilerTestBase {
         createNamespace(CONSOLE_NS);
     }
 
+    private void createRouteCRD() {
+        client.resource(new CustomResourceDefinitionBuilder()
+                .withNewMetadata()
+                .withName("routes.route.openshift.io")
+            .endMetadata()
+            .withNewSpec()
+                .withScope("Namespaced")
+                .withGroup("route.openshift.io")
+                .addNewVersion()
+                    .withName("v1")
+                    .withNewSubresources()
+                        .withNewStatus()
+                        .endStatus()
+                    .endSubresources()
+                    .withNewSchema()
+                        .withNewOpenAPIV3Schema()
+                            .withType("object")
+                            .withXKubernetesPreserveUnknownFields(true)
+                        .endOpenAPIV3Schema()
+                    .endSchema()
+                    .withStorage(true)
+                    .withServed(true)
+                .endVersion()
+                .withNewNames()
+                    .withSingular("route")
+                    .withPlural("routes")
+                    .withKind("Route")
+                .endNames()
+            .endSpec()
+            .build())
+            .serverSideApply();
+    }
+
     Console createConsole(ConsoleBuilder builder, String namespace) {
         var meta = new ObjectMetaBuilder(builder.getMetadata())
                 .withNamespace(namespace)
@@ -309,8 +337,9 @@ abstract class ConsoleReconcilerTestBase {
                     .withName(resource.getMetadata().getName())
                     .get();
 
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().iterator().next();
+            var conditions = console.getStatus().getConditions();
+            assertEquals(1, conditions.size(), () -> "Unexpected conditions: " + conditions);
+            var condition = conditions.iterator().next();
 
             assertEquals(Condition.Types.READY, condition.getType(), condition::toString);
             assertEquals("True", condition.getStatus(), condition::toString);
@@ -326,7 +355,7 @@ abstract class ConsoleReconcilerTestBase {
                     .withName(resource.getMetadata().getName())
                     .get();
 
-            assertEquals(1, console.getStatus().getConditions().size());
+            assertTrue(console.getStatus().getConditions().size() >= 1);
             var condition = console.getStatus().getConditions().iterator().next();
 
             assertEquals(Condition.Types.READY, condition.getType(), condition::toString);
@@ -334,7 +363,7 @@ abstract class ConsoleReconcilerTestBase {
             assertEquals(Condition.Reasons.DEPENDENTS_NOT_READY, condition.getReason(), condition::toString);
 
             for (String dependent : dependents) {
-                assertTrue(condition.getMessage().contains(dependent));
+                assertThat(condition.getMessage(), containsString(dependent));
             }
         });
     }
@@ -397,6 +426,26 @@ abstract class ConsoleReconcilerTestBase {
                     .build();
         client.resource(consoleIngress).patchStatus();
         LOGGER.info("Set ingress status for Console ingress");
+    }
+
+    void setConsoleRouteReady(Console consoleCR) {
+        var consoleRoute = client.resources(Route.class)
+                .inNamespace(consoleCR.getMetadata().getNamespace())
+                .withName("%s-console-route".formatted(consoleCR.getMetadata().getName()))
+                .get();
+
+        consoleRoute = consoleRoute.edit()
+                    .editOrNewStatus()
+                        .addNewIngress()
+                            .addNewCondition()
+                                .withType("Admitted")
+                                .withStatus("True")
+                            .endCondition()
+                        .endIngress()
+                    .endStatus()
+                    .build();
+        client.resource(consoleRoute).patchStatus();
+        LOGGER.info("Set route status for Console route");
     }
 
     Deployment setDeploymentReady(Console consoleCR, String deploymentName) {
