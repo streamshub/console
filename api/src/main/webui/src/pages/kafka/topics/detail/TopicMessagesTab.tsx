@@ -102,6 +102,7 @@ export function TopicMessagesTab() {
   );
 
   // Handle message selection from URL
+  // Sync selected message with URL parameter
   useEffect(() => {
     if (selectedMessageId && messages.length > 0) {
       const [partStr, offsetStr] = selectedMessageId.split(':');
@@ -111,10 +112,11 @@ export function TopicMessagesTab() {
         m => m.attributes.partition === part && m.attributes.offset === off
       );
       if (msg) {
-        setSelectedMessage(msg);
+        // Use setTimeout to defer state update to avoid cascading renders
+        setTimeout(() => setSelectedMessage(msg), 0);
       }
     } else if (!selectedMessageId) {
-      setSelectedMessage(undefined);
+      setTimeout(() => setSelectedMessage(undefined), 0);
     }
   }, [selectedMessageId, messages]);
 
@@ -174,7 +176,8 @@ export function TopicMessagesTab() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          setChosenColumns(parsed);
+          // Use setTimeout to defer state update to avoid cascading renders
+          setTimeout(() => setChosenColumns(parsed), 0);
         }
       } catch {
         // Ignore parse errors

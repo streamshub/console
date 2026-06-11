@@ -111,7 +111,7 @@ export function TopicPartitionsTab() {
   }, [refetch]);
 
   const topic = data?.data;
-  const partitions = topic?.attributes.partitions || [];
+  const partitions = useMemo(() => topic?.attributes.partitions || [], [topic?.attributes.partitions]);
 
   // Filter and sort partitions
   const filteredAndSortedPartitions = useMemo(() => {
