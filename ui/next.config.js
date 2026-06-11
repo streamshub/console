@@ -33,6 +33,10 @@ const nextConfig = {
           },
         }
       : undefined,
+  images: {
+    // disable the disk cache entirely
+    maximumDiskCacheSize: 0,
+  },
 };
 
 module.exports = withNextIntl(nextConfig);
