@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +24,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.junit.jupiter.api.AfterAll;
@@ -45,7 +43,6 @@ import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.LogCapture;
 import com.github.streamshub.console.test.TestHelper;
 
@@ -539,25 +536,5 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
                     //hasEntry("range", arrayContaining("", "")),
                     hasEntry("custom-attribute", "attribute-value")
             )));
-    }
-
-    // Helper methods
-
-    static Map<String, Object> mockAdminClient() {
-        return mockAdminClient(Map.of(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name));
-    }
-
-    static Map<String, Object> mockAdminClient(Map<String, Object> overrides) {
-        Map<String, Object> clientConfig = new HashMap<>();
-
-        AdminClientSpy.install(config -> {
-            clientConfig.putAll(config);
-
-            Map<String, Object> newConfig = new HashMap<>(config);
-            newConfig.putAll(overrides);
-            return newConfig;
-        }, client -> { /* No-op */ });
-
-        return clientConfig;
     }
 }

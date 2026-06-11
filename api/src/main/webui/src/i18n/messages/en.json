@@ -91,6 +91,17 @@
     "nodes": "Kafka Nodes",
     "users": "Kafka Users",
     "schemaRegistry": "Schema Registry",
+    "login": {
+      "title": "Login to Kafka Cluster",
+      "description": "Please enter your credentials to access cluster \"{{clusterName}}\".",
+      "descriptionOAuth": "Please enter your OAuth credentials to access cluster \"{{clusterName}}\".",
+      "descriptionBasic": "Please enter your SCRAM credentials to access cluster \"{{clusterName}}\".",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Login",
+      "error": "Authentication failed",
+      "errorGeneric": "Invalid username or password"
+    },
     "connect": {
       "title": "Kafka Connect",
       "connectors": "Connectors",

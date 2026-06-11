@@ -20,6 +20,7 @@ import org.apache.kafka.common.config.SaslConfigs;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
 import com.github.streamshub.console.api.support.serdes.ForceCloseable;
 import com.github.streamshub.console.api.support.serdes.MultiformatDeserializer;
 import com.github.streamshub.console.api.support.serdes.MultiformatSerializer;
@@ -27,6 +28,7 @@ import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
@@ -142,6 +144,7 @@ public class KafkaContext implements Closeable {
     final Map<Class<?>, Map<String, Object>> configs;
     final Admin admin;
     boolean applicationScoped;
+    final HttpAuthenticationMechanism formAuthentication;
     SchemaRegistryContext schemaRegistryContext;
     PrometheusAPI prometheus;
 
@@ -151,6 +154,13 @@ public class KafkaContext implements Closeable {
         this.configs = Map.copyOf(configs);
         this.admin = admin;
         this.applicationScoped = true;
+
+        if (clusterConfig != null && admin == null) {
+            String id = clusterId(clusterConfig, Optional.ofNullable(resource));
+            this.formAuthentication = ConsoleAuthenticationMechanism.form(id);
+        } else {
+            this.formAuthentication = null;
+        }
     }
 
     public KafkaContext(KafkaContext other, Admin admin) {
@@ -239,6 +249,10 @@ public class KafkaContext implements Closeable {
         return applicationScoped;
     }
 
+    public HttpAuthenticationMechanism formAuthentication() {
+        return formAuthentication;
+    }
+
     public void schemaRegistryClient(RegistryClientFacade registryClient, SchemaRegistryConfig config, ObjectMapper objectMapper) {
         schemaRegistryContext = new SchemaRegistryContext(registryClient, config, objectMapper);
     }
@@ -275,14 +289,10 @@ public class KafkaContext implements Closeable {
                     .filter(listener -> listener.getName().equals(clusterConfig.getListener()))
                     .findFirst()
                     .map(GenericKafkaListener::getAuth)
-                    .map(authn -> {
-                        if (authn instanceof KafkaListenerAuthenticationCustom custom) {
-                            return tokenUrlCustom(custom);
-                        } else if (authn instanceof KafkaListenerAuthenticationOAuth oauth) {
-                            return oauth.getTokenEndpointUri();
-                        } else {
-                            return null;
-                        }
+                    .map(authn -> switch (authn) {
+                        case KafkaListenerAuthenticationCustom custom -> tokenUrlCustom(custom);
+                        case KafkaListenerAuthenticationOAuth oauth -> oauth.getTokenEndpointUri();
+                        default -> null;
                     }));
     }
 

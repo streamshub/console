@@ -127,7 +127,7 @@ public class KafkaClusterConfig implements Named {
 
     public void setKind(ClusterKind kind) {
         this.kind = kind;
-    }   
+    }
 
     public Map<String, String> getProperties() {
         return properties;
