@@ -19,8 +19,7 @@ public class KafkaConfig {
 
     static final String UNIQUE_NAMES_MESSAGE = "Kafka cluster name and namespace combinations must be unique";
 
-    @Valid
-    List<KafkaClusterConfig> clusters = new ArrayList<>();
+    List<@Valid KafkaClusterConfig> clusters = new ArrayList<>();
 
     private boolean uniqueNames() {
         if (clusters == null) {

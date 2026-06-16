@@ -52,17 +52,14 @@ public class ConsoleConfig {
     @ValidResourceTypes(type = ResourceTypes.Global.class)
     GlobalSecurityConfig security = new GlobalSecurityConfig();
 
-    @Valid
-    List<PrometheusConfig> metricsSources = new ArrayList<>();
+    List<@Valid PrometheusConfig> metricsSources = new ArrayList<>();
 
-    @Valid
-    List<SchemaRegistryConfig> schemaRegistries = new ArrayList<>();
+    List<@Valid SchemaRegistryConfig> schemaRegistries = new ArrayList<>();
 
     @Valid
     KafkaConfig kafka = new KafkaConfig();
 
-    @Valid
-    List<KafkaConnectConfig> kafkaConnectClusters = new ArrayList<>();
+    List<@Valid KafkaConnectConfig> kafkaConnectClusters = new ArrayList<>();
 
     @JsonIgnore
     @AssertTrue(message = "Metrics source names must be unique")

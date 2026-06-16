@@ -10,14 +10,11 @@ import io.sundr.builder.annotations.Buildable;
 @Buildable(editableEnabled = false)
 public abstract class SecurityConfig {
 
-    @Valid
-    private List<SubjectConfig> subjects = new ArrayList<>();
+    private List<@Valid SubjectConfig> subjects = new ArrayList<>();
 
-    @Valid
-    private List<RoleConfig> roles = new ArrayList<>();
+    private List<@Valid RoleConfig> roles = new ArrayList<>();
 
-    @Valid
-    private List<AuditConfig> audit = new ArrayList<>();
+    private List<@Valid AuditConfig> audit = new ArrayList<>();
 
     public List<SubjectConfig> getSubjects() {
         return subjects;
