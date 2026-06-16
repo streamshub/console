@@ -15,9 +15,8 @@ public class RoleConfig {
     @NotBlank
     private String name;
 
-    @Valid
     @NotEmpty
-    private List<RuleConfig> rules = new ArrayList<>();
+    private List<@Valid RuleConfig> rules = new ArrayList<>();
 
     public String getName() {
         return name;
