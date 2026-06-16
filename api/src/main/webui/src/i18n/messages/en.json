@@ -160,8 +160,8 @@
     "columnPartitions": "Partitions",
     "columnGroups": "Groups",
     "columnStorage": "Storage",
-    "hideInternalTopics": "Hide internal topics",
-    "hideInternalTopicsTooltip": "By convention internal topics are prefixed with __. These topics are usually created and managed by Kafka.",
+    "showInternalTopics": "Show internal topics",
+    "showInternalTopicsTooltip": "By convention internal topics are prefixed with __. These topics are usually created and managed by Kafka.",
     "filter": {
       "name": "Name",
       "topicId": "Topic ID",

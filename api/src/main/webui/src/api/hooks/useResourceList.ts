@@ -16,6 +16,11 @@ export interface ResourceListPageParams {
   } | string;
 }
 
+export interface ResourceListFilterValue {
+  operator: 'eq' | 'in' | 'like';
+  value: string;
+}
+
 export interface ResourceListParams {
   /**
    * Parameters for pagination (page size, sorting, etc.)
@@ -24,7 +29,7 @@ export interface ResourceListParams {
   /**
    * Parameters for filtering by specific fields (search, etc.)
    */
-  filters?: Record<string, string | string[]>;
+  filters?: Record<string, string | string[] | ResourceListFilterValue>;
   /**
    * Comma-separated list of fields to include in the response.
    * @example
@@ -84,10 +89,21 @@ export function useResourceList<T extends Resource>(
         updatePageParams(params.page, searchParams);
       }
 
-      // Handle name filter
       if (params?.filters) {
         Object.entries(params.filters).forEach(([key, value]) => {
-          searchParams.set(`filter[${key}]`, `like,*${value}*`);
+          if (Array.isArray(value)) {
+            if (value.length > 0) {
+              searchParams.set(`filter[${key}]`, `in,${value.join(',')}`);
+            }
+            return;
+          }
+
+          if (typeof value === 'string') {
+            searchParams.set(`filter[${key}]`, `like,*${value}*`);
+            return;
+          }
+
+          searchParams.set(`filter[${key}]`, `${value.operator},${value.value}`);
         });
       }
 
