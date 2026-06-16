@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   DataView,
+  DataViewCheckboxFilter,
   DataViewTable,
   DataViewToolbar,
   DataViewTextFilter,
@@ -23,15 +24,16 @@ import {
  */
 import { DataViewTh } from '@patternfly/react-data-view/dist/cjs/DataViewTable';
 import {
-  Pagination,
   EmptyState,
   EmptyStateBody,
+  Pagination,
+  Switch,
 } from '@patternfly/react-core';
 import { SkeletonTableBody, SkeletonTableHead } from '@patternfly/react-component-groups';
-import { SearchIcon, CubesIcon, ErrorCircleOIcon } from '@patternfly/react-icons';
+import { CubesIcon, ErrorCircleOIcon, SearchIcon } from '@patternfly/react-icons';
 import { ISortBy, Tbody, Td, Tr } from '@patternfly/react-table';
 import { ListResponse, Resource } from '@/api/types';
-import { DataViewFilters } from '@patternfly/react-data-view/dist/dynamic/DataViewFilters';
+import { DataViewFilters } from './DataViewFilters';
 import { ResourceListParams } from '@/api/hooks/useResourceList';
 import { UseQueryResult } from '@tanstack/react-query';
 import { ApiError } from '@/api/client';
@@ -46,12 +48,50 @@ const perPageOptions = [
 
 const DEFAULT_PAGE_SIZE = 10;
 
+type FilterValue = string | string[] | boolean;
+
+interface ResourceListTextFilterConfig {
+  type: 'text';
+  title: string;
+  placeholder: string;
+  initialValue?: string;
+  chipLabel?: string;
+}
+
+interface ResourceListCheckboxFilterOption {
+  value: string;
+  label: React.ReactNode;
+}
+
+interface ResourceListCheckboxFilterConfig {
+  type: 'checkbox';
+  title: string;
+  placeholder: string;
+  initialValue?: string[];
+  chipLabel?: string;
+  options: ResourceListCheckboxFilterOption[];
+}
+
+interface ResourceListToggleFilterConfig {
+  type: 'toggle';
+  title: string;
+  placeholder?: string;
+  initialValue?: boolean;
+  chipLabel?: string;
+  label: React.ReactNode;
+}
+
+export type ResourceListFilterConfig =
+  | ResourceListTextFilterConfig
+  | ResourceListCheckboxFilterConfig
+  | ResourceListToggleFilterConfig;
+
 // Custom hook for text filter handlers
 const useTextFilterHandlers = (
   filterId: string,
   pendingFilters: Record<string, string>,
   setPendingFilters: React.Dispatch<React.SetStateAction<Record<string, string>>>,
-  onSetFilters: (newFilters: Partial<Record<string, string | string[]>>) => void,
+  onSetFilters: (newFilters: Partial<Record<string, FilterValue>>) => void,
 ) => {
   const handleChange = useCallback((_event: React.FormEvent<HTMLInputElement> | undefined, value: string) => {
     if (value) {
@@ -87,7 +127,7 @@ const useTextFilterHandlers = (
 type TextFilterWrapperProps = DataViewTextFilterProps & {
   pendingFilters: Record<string, string>;
   setPendingFilters: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  onSetFilters: (newFilters: Partial<Record<string, string | string[]>>) => void;
+  onSetFilters: (newFilters: Partial<Record<string, FilterValue>>) => void;
 };
 
 // Component wrapper for text filter to avoid hooks-in-callback issue
@@ -107,6 +147,30 @@ const TextFilterWrapper: React.FC<TextFilterWrapperProps> = (props) => {
     />,
     [filterProps, handleChange, handleClear, handleSearch]);
 }
+
+function ToggleFilter({
+  filterId,
+  filter,
+  isChecked,
+  onChange,
+}: {
+  filterId: string;
+  filter: ResourceListToggleFilterConfig;
+  isChecked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div style={{ display: 'inline-flex', alignSelf: 'center' }}>
+      <Switch
+        id={`${filterId}-filter-toggle`}
+        label={filter.label}
+        isChecked={isChecked}
+        onChange={(_event, checked) => onChange(checked)}
+      />
+    </div>
+  );
+}
+
 export interface ResourceListDataViewColumnMapper {
   (
     sortBy?: string, 
@@ -133,12 +197,7 @@ export interface ResourceListDataViewProps<T extends Resource> {
     dependencies: unknown[];
     callback: ResourceListDataViewRowMapper<T>;
   };
-  dataFilters?: Record<string, {
-    type: 'text' | 'checkbox';
-    title: string;
-    placeholder: string;
-    initialValue?: string | string[];
-  }>;
+  dataFilters?: Record<string, ResourceListFilterConfig>;
   ariaLabel?: string;
   ouiaIdPrefix?: string;
   onDataViewChange: (params: ResourceListParams) => void;
@@ -168,19 +227,22 @@ export function ResourceListDataView<T extends Resource>({
       if (config.type === 'checkbox') {
         // Empty array for checkbox filters
         acc[filterId] = config.initialValue ?? [];
+      } else if (config.type === 'toggle') {
+        // False for toggle filters
+        acc[filterId] = config.initialValue ?? false;
       } else {
         // Empty string for text filters
         acc[filterId] = config.initialValue ?? '';
       }
       return acc;
-    }, {} as Record<string, string | string[]>);
+    }, {} as Record<string, FilterValue>);
   }, [ dataFilters ]);
 
   const {
     filters,
     onSetFilters,
     clearAllFilters
-  } = useDataViewFilters<Record<string, string | string[]>>({
+  } = useDataViewFilters<Record<string, FilterValue>>({
     initialFilters,
     searchParams,
     setSearchParams: () => {
@@ -224,9 +286,19 @@ export function ResourceListDataView<T extends Resource>({
     return params;
   }, [sortParam]);
 
-  const { sortBy, direction, onSort } = useDataViewSort({
+  const { sortBy, direction, onSort: originalOnSort } = useDataViewSort({
     searchParams: sortSearchParams,
   });
+
+  const onSort = useCallback((
+    event: React.MouseEvent | React.KeyboardEvent | MouseEvent | undefined,
+    newSortBy: string,
+    newDirection: ISortBy["direction"]
+  ) => {
+    setBeforeCursor(undefined);
+    setAfterCursor(undefined);
+    originalOnSort?.(event, newSortBy, newDirection);
+  }, [originalOnSort]);
 
   const listResponse = resourceResult.data;
   const totalCount = listResponse?.meta?.page?.total ?? 0;
@@ -285,8 +357,8 @@ export function ResourceListDataView<T extends Resource>({
     setPendingFilters({});
   }, [clearAllFilters]);
 
-  const handleFilterChange = useCallback((_key: string, newValues: Partial<Record<string, string | string[]>>) => {
-    onSetFilters(newValues as Record<string, string | string[]>);
+  const handleFilterChange = useCallback((_key: string, newValues: Partial<Record<string, FilterValue>>) => {
+    onSetFilters(newValues as Record<string, FilterValue>);
   }, [onSetFilters]);
 
   // Manually sync to URL in a single effect
@@ -302,12 +374,22 @@ export function ResourceListDataView<T extends Resource>({
         let newValue: string | undefined;
         const oldNormalized: string | undefined = oldValue;
         
-        if (value) {
-          if (Array.isArray(value)) {
+        if (Array.isArray(value)) {
+          if (value.length > 0) {
             newValue = value.join(',');
+            newParams.set(key, newValue);
           } else {
-            newValue = value;
+            newValue = undefined;
           }
+        } else if (typeof value === 'boolean') {
+          if (value) {
+            newValue = 'true';
+            newParams.set(key, newValue);
+          } else {
+            newValue = undefined;
+          }
+        } else if (value) {
+          newValue = value;
           newParams.set(key, newValue);
         } else {
           newValue = undefined;
@@ -389,7 +471,15 @@ export function ResourceListDataView<T extends Resource>({
     const searchFilters: Record<string, string | string[]> = {};
 
     Object.entries(filters).forEach(([ key, value ]) => {
-      if (value) {
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          searchFilters[key] = value;
+        }
+      } else if (typeof value === 'boolean') {
+        if (value) {
+          searchFilters[key] = 'true';
+        }
+      } else if (value) {
         searchFilters[key] = value;
       }
     });
@@ -428,7 +518,10 @@ export function ResourceListDataView<T extends Resource>({
       if (Array.isArray(value)) {
         return value.length > 0;
       }
-      return value?.trim().length > 0
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      return value?.trim().length > 0;
     });
 
     return (
@@ -464,6 +557,14 @@ export function ResourceListDataView<T extends Resource>({
     [perPage, columns.length]
   );
 
+  const serializableFilters = dataFilters
+    ? Object.entries(dataFilters).filter(([, filter]) => filter.type !== 'toggle')
+    : [];
+
+  const toggleFilters = dataFilters
+    ? Object.entries(dataFilters).filter(([, filter]) => filter.type === 'toggle')
+    : [];
+
   return (
     <DataViewEventsProvider>
       <DataView activeState={activeState}>
@@ -471,27 +572,54 @@ export function ResourceListDataView<T extends Resource>({
         <DataViewToolbar
           ouiaId={`${ouiaIdPrefix}-toolbar`}
           clearAllFilters={handleClearAllFilters}
-          filters={ dataFilters &&
-            <DataViewFilters
-              onChange={handleFilterChange}
-              values={filters}>
-              { Object.entries(dataFilters).map(([name, filter]) => {
-                if (filter.type === 'checkbox') {
-                  return <React.Fragment key={`filter-${name}`} />; // TODO: Add checkbox filter component
-                } else {
-                  return <TextFilterWrapper
-                    key={`filter-${name}`}
-                    filterId={name}
-                    title={filter.title}
-                    placeholder={filter.placeholder}
-                    pendingFilters={pendingFilters}
-                    setPendingFilters={setPendingFilters}
-                    onSetFilters={onSetFilters}
-                  />;
-                }
-              })}
-            </DataViewFilters>
-          }
+          filters={serializableFilters.length > 0 && (
+            <>
+              <DataViewFilters
+                onChange={handleFilterChange}
+                values={filters}>
+                {serializableFilters.map(([name, filter]) => {
+                  if (filter.type === 'checkbox') {
+                    return (
+                      <DataViewCheckboxFilter
+                        key={`filter-${name}`}
+                        filterId={name}
+                        title={filter.title}
+                        chipTitle={filter.chipLabel}
+                        placeholder={filter.placeholder}
+                        value={Array.isArray(filters[name]) ? filters[name] as string[] : []}
+                        options={filter.options.map(option => ({
+                          label: option.label,
+                          value: option.value,
+                        }))}
+                        onChange={(_event, newValues) => onSetFilters({ [name]: newValues ?? [] })}
+                      />
+                    );
+                  }
+
+                  if (filter.type === 'text') {
+                    return <TextFilterWrapper
+                      key={`filter-${name}`}
+                      filterId={name}
+                      title={filter.title}
+                      placeholder={filter.placeholder}
+                      pendingFilters={pendingFilters}
+                      setPendingFilters={setPendingFilters}
+                      onSetFilters={onSetFilters}
+                    />;
+                  }
+                }).filter(entry => entry !== undefined)}
+              </DataViewFilters>
+              {toggleFilters.map(([name, filter]) => (
+                <ToggleFilter
+                  key={`filter-${name}`}
+                  filterId={name}
+                  filter={filter as ResourceListToggleFilterConfig}
+                  isChecked={filters[name] === true}
+                  onChange={(checked) => onSetFilters({ [name]: checked })}
+                />
+              ))}
+            </>
+          )}
           pagination={paginationControl}
         />
 
