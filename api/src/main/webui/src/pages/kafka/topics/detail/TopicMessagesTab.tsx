@@ -2,7 +2,7 @@
  * Topic Messages Tab - Shows messages in a topic with advanced search and detail drawer
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -61,12 +61,7 @@ export function TopicMessagesTab() {
   const timestamp = searchParams.get('timestamp') || undefined;
   const epochParam = searchParams.get('epoch');
   const epoch = epochParam ? parseInt(epochParam) : undefined;
-  const selectedMessageId = searchParams.get('selected');
-
   const [showColumnsModal, setShowColumnsModal] = useState(false);
-  const [chosenColumns, setChosenColumns] = useState<Column[]>(defaultColumns);
-
-  const [selectedMessage, setSelectedMessage] = useState<KafkaRecord | undefined>();
 
   // Fetch topic info to get partition count
   const { data: topic, isLoading: isLoadingTopic } = useTopic(
@@ -101,24 +96,21 @@ export function TopicMessagesTab() {
     }
   );
 
+  const selectedMessageId = useMemo(() => searchParams.get('selected'), [searchParams]);
   // Handle message selection from URL
-  // Sync selected message with URL parameter
-  useEffect(() => {
+  const urlSelectedMessage = useMemo(() => {
     if (selectedMessageId && messages.length > 0) {
       const [partStr, offsetStr] = selectedMessageId.split(':');
       const part = parseInt(partStr);
       const off = parseInt(offsetStr);
-      const msg = messages.find(
+      return messages.find(
         m => m.attributes.partition === part && m.attributes.offset === off
       );
-      if (msg) {
-        // Use setTimeout to defer state update to avoid cascading renders
-        setTimeout(() => setSelectedMessage(msg), 0);
-      }
     } else if (!selectedMessageId) {
-      setTimeout(() => setSelectedMessage(undefined), 0);
+      return undefined;
     }
   }, [selectedMessageId, messages]);
+  const [selectedMessage, setSelectedMessage] = useState<KafkaRecord | undefined>(urlSelectedMessage);
 
   const handleSearch = useCallback((params: SearchParams) => {
     const newParams = new URLSearchParams();
@@ -148,42 +140,48 @@ export function TopicMessagesTab() {
       newParams.set('retrieve', String(params.limit));
     }
     
-    setSearchParams(newParams);
+    setSearchParams(newParams, { replace: true });
   }, [setSearchParams]);
 
   const handleSelectMessage = useCallback((message: KafkaRecord) => {
     setSelectedMessage(message);
     const newParams = new URLSearchParams(searchParams);
     newParams.set('selected', `${message.attributes.partition}:${message.attributes.offset}`);
-    setSearchParams(newParams);
-  }, [searchParams, setSearchParams]);
+    setSearchParams(newParams, { replace: true });
+  }, [setSelectedMessage, searchParams, setSearchParams]);
 
   const handleDeselectMessage = useCallback(() => {
     setSelectedMessage(undefined);
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('selected');
-    setSearchParams(newParams);
-  }, [searchParams, setSearchParams]);
+    setSearchParams(newParams, { replace: true });
+  }, [setSelectedMessage, searchParams, setSearchParams]);
 
   const handleReset = useCallback(() => {
     setSearchParams(new URLSearchParams());
   }, [setSearchParams]);
 
   // Load saved column preferences from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('message-browser-columns');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // Use setTimeout to defer state update to avoid cascading renders
-          setTimeout(() => setChosenColumns(parsed), 0);
+  const persistedColumns = useMemo(
+    () => {
+      const columnsJson = localStorage.getItem('message-browser-columns');
+      if (columnsJson) {
+        try {
+          const parsed = JSON.parse(columnsJson);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch {
+          // Ignore parse errors
         }
-      } catch {
-        // Ignore parse errors
       }
-    }
-  }, []);
+    },
+    []
+  );
+
+  const [chosenColumns, setChosenColumns] = useState<Column[]>(
+    persistedColumns ?? defaultColumns
+  );
 
   const handleColumnsConfirm = (columns: Column[]) => {
     setChosenColumns(columns);

@@ -4,7 +4,7 @@
 
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   PageSection,
   EmptyState,
@@ -121,27 +121,21 @@ export function TopicConfigurationTab() {
 
   const topic = data?.data;
   const allData = Object.entries(topic?.attributes.configs || {});
-  
   const hasUpdatePrivilege = hasPrivilege('UPDATE', topic);
-
-  const typedAllData = allData as Array<[string, ConfigValue]>;
 
   // Derive available data sources from config values
   const dataSources = useMemo(() => {
-    return Array.from(new Set(typedAllData.map(([, property]) => property.source)));
-  }, [typedAllData]);
+    return Array.from(new Set(allData.map(([, property]) => property.source)));
+  }, [allData]);
 
   // Initialize selected data sources to all sources
-  useEffect(() => {
-    if (dataSources.length > 0 && selectedDataSources.length === 0) {
-      // Use setTimeout to defer state update to avoid cascading renders
-      setTimeout(() => setSelectedDataSources(dataSources), 0);
-    }
-  }, [dataSources, selectedDataSources.length]);
+  if (dataSources.length > 0 && selectedDataSources.length === 0) {
+    setSelectedDataSources(dataSources);
+  }
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
-    let filtered = typedAllData
+    let filtered = allData
       .filter(([name]) => (propertyFilter ? name.includes(propertyFilter) : true))
       .filter(([, property]) =>
         selectedDataSources.length > 0 ? selectedDataSources.includes(property.source) : true
@@ -156,7 +150,7 @@ export function TopicConfigurationTab() {
     });
 
     return filtered;
-  }, [typedAllData, propertyFilter, selectedDataSources, sortColumn, sortDirection]);
+  }, [allData, propertyFilter, selectedDataSources, sortColumn, sortDirection]);
 
   const handleSort = (column: SortableColumn) => {
     if (sortColumn === column) {

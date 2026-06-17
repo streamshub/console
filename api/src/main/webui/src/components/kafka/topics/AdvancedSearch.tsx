@@ -3,7 +3,7 @@
  * Provides filtering options for Kafka messages
  */
 
-import { useState, useCallback, useEffect, useTransition } from 'react';
+import { useState, useCallback, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   SearchInput,
@@ -114,7 +114,7 @@ export function AdvancedSearch({
     };
   }, [query, where, partition, fromCategory, fromOffset, fromEpoch, fromTimestamp, retrieveCategory, limit]);
 
-  const getSearchInputValue = useCallback(() => {
+  const buildSearchInputValue = useCallback(() => {
     const parameters = getParameters();
     const { query, from, limit, partition } = parameters;
     return (() => {
@@ -141,10 +141,6 @@ export function AdvancedSearch({
       return composed.join(" ");
     })();
   }, [getParameters]);
-
-  const [searchInputValue, setSearchInputValue] = useState(
-    getSearchInputValue(),
-  );
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -173,11 +169,8 @@ export function AdvancedSearch({
     setIsExpanded(false);
   };
 
-  // Sync search input value with URL params
-  useEffect(() => {
-    // Use setTimeout to defer state update to avoid cascading renders
-    setTimeout(() => setSearchInputValue(getSearchInputValue()), 0);
-  }, [getSearchInputValue]);
+  const searchString = buildSearchInputValue();
+  const [searchInputValue, setSearchInputValue] = useState(searchString);
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
