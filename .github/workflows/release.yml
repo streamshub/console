@@ -26,7 +26,7 @@ jobs:
         run: echo "PRERELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Retrieve Project Metadata
-        uses: radcortez/project-metadata-action@c38225619f10c1f9c9116d3ce4c9c41648a59e1c
+        uses: smallrye/project-metadata-action@62527b4a896343d4c0c6b2a61eff07f6b59fcbd8
         id: metadata
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
@@ -179,7 +179,7 @@ jobs:
           git push --tags
 
       - name: Create GitHub Release
-        uses: radcortez/milestone-release-action@2acb408c26989c8a6db893eb3a3dea9cd1f4d875
+        uses: smallrye/milestone-release-action@237ed06dfae11a23d65206210f3b3cc65144d909
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           milestone-title: ${{steps.metadata.outputs.current-version}}
