@@ -12,6 +12,7 @@ import {
   DataViewTr,
   DataViewState,
   useDataViewSort,
+  DataViewTextFilterProps,
 } from '@patternfly/react-data-view';
 /*
  * The following import is a work-around for
@@ -45,60 +46,67 @@ const perPageOptions = [
 
 const DEFAULT_PAGE_SIZE = 10;
 
-// Component wrapper for text filter to avoid hooks-in-callback issue
-const TextFilterWrapper: React.FC<{
-  name: string;
-  filter: {
-    type: 'text' | 'checkbox';
-    title: string;
-    placeholder: string;
-    initialValue?: string | string[];
-  };
-  pendingFilters: Record<string, string>;
-  setPendingFilters: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  onSetFilters: (newFilters: Partial<Record<string, string | string[]>>) => void;
-}> = ({ name, filter, pendingFilters, setPendingFilters, onSetFilters }) => {
-  const handleChange = (_event: React.FormEvent<HTMLInputElement> | undefined, value: string) => {
+// Custom hook for text filter handlers
+const useTextFilterHandlers = (
+  filterId: string,
+  pendingFilters: Record<string, string>,
+  setPendingFilters: React.Dispatch<React.SetStateAction<Record<string, string>>>,
+  onSetFilters: (newFilters: Partial<Record<string, string | string[]>>) => void,
+) => {
+  const handleChange = useCallback((_event: React.FormEvent<HTMLInputElement> | undefined, value: string) => {
     if (value) {
-      setPendingFilters(prev => ({ ...prev, [name]: value }));
+      setPendingFilters(prev => ({ ...prev, [filterId]: value }));
     } else {
-      onSetFilters({ [name]: '' });
+      onSetFilters({ [filterId]: '' });
       setPendingFilters(prev => {
-        const { [name]: _, ...rest } = prev;
+        const { [filterId]: _, ...rest } = prev;
         return rest;
       });
     }
-  };
+  }, [filterId, onSetFilters, setPendingFilters]);
 
-  const handleClear = () => {
-    onSetFilters({ [name]: '' });
+  const handleClear = useCallback(() => {
+    onSetFilters({ [filterId]: '' });
     setPendingFilters(prev => {
-      const { [name]: _, ...rest } = prev;
+      const { [filterId]: _, ...rest } = prev;
       return rest;
     });
-  };
+  }, [filterId, onSetFilters, setPendingFilters]);
 
-  const handleSearch = (_event: React.SyntheticEvent<HTMLButtonElement>, value: string) => {
-    const filterValue = pendingFilters[name] ?? value;
-    onSetFilters({ [name]: filterValue });
+  const handleSearch = useCallback((_event: React.SyntheticEvent<HTMLButtonElement>, value: string) => {
+    onSetFilters({ [filterId]: pendingFilters[filterId] ?? value });
     setPendingFilters(prev => {
-      const { [name]: _, ...rest } = prev;
+      const { [filterId]: _, ...rest } = prev;
       return rest;
     });
-  };
+  }, [filterId, pendingFilters, onSetFilters, setPendingFilters]);
 
-  return (
-    <DataViewTextFilter
-      filterId={name}
-      title={filter.title}
-      placeholder={filter.placeholder}
+  return { handleChange, handleClear, handleSearch };
+};
+
+type TextFilterWrapperProps = DataViewTextFilterProps & {
+  pendingFilters: Record<string, string>;
+  setPendingFilters: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onSetFilters: (newFilters: Partial<Record<string, string | string[]>>) => void;
+};
+
+// Component wrapper for text filter to avoid hooks-in-callback issue
+const TextFilterWrapper: React.FC<TextFilterWrapperProps> = (props) => {
+  const { pendingFilters, setPendingFilters, onSetFilters, ...filterProps } = props;
+  const { handleChange, handleClear, handleSearch } = useTextFilterHandlers(
+    filterProps.filterId,
+    pendingFilters,
+    setPendingFilters,
+    onSetFilters,
+  );
+  return useMemo(() => <DataViewTextFilter
+      {...filterProps}
       onChange={handleChange}
       onClear={handleClear}
       onSearch={handleSearch}
-    />
-  );
-};
-
+    />,
+    [filterProps, handleChange, handleClear, handleSearch]);
+}
 export interface ResourceListDataViewColumnMapper {
   (
     sortBy?: string, 
@@ -196,24 +204,25 @@ export function ResourceListDataView<T extends Resource>({
    * synthetic URLSearchParams to convert single sort parameter
    * to two parameters expected by the hook
    */
+  const sortParam = useMemo(() => searchParams.get('sort'), [searchParams]);
   const sortSearchParams = useMemo(() => {
     const params = new URLSearchParams();
-    const sort = searchParams.get("sort");
-    if (sort) {
+
+    if (sortParam) {
       let sortBy: string;
 
-      if (sort.startsWith("-")) {
+      if (sortParam.startsWith("-")) {
         params.set("direction", "desc");
-        sortBy = sort.substring(1);
+        sortBy = sortParam.substring(1);
       } else {
         params.set("direction", "asc");
-        sortBy = sort;
+        sortBy = sortParam;
       }
 
       params.set("sortBy", sortBy);
     }
     return params;
-  }, [searchParams]);
+  }, [sortParam]);
 
   const { sortBy, direction, onSort } = useDataViewSort({
     searchParams: sortSearchParams,
@@ -221,44 +230,24 @@ export function ResourceListDataView<T extends Resource>({
 
   const listResponse = resourceResult.data;
   const totalCount = listResponse?.meta?.page?.total ?? 0;
-
-  // Track current page number locally to avoid flashing during navigation
-  const [currentPage, setCurrentPage] = useState(listResponse?.meta?.page?.pageNumber ?? 1);
-
-  // Update current page when API response arrives
-  useEffect(() => {
-    const pageNumber = listResponse?.meta?.page?.pageNumber;
-    if (pageNumber) {
-      setTimeout(() => setCurrentPage(pageNumber), 0);
-    }
-  }, [listResponse?.meta?.page?.pageNumber]);
-
-  // Reset to page 1 when filters or sort change
-  useEffect(() => {
-    const hasFilters = Object.values(filters).some(v =>
-      Array.isArray(v) ? v.length > 0 : v?.trim().length > 0
-    );
-    if (hasFilters || sortBy) {
-      setTimeout(() => setCurrentPage(listResponse?.meta?.page?.pageNumber ?? 1), 0);
-    }
-  }, [filters, sortBy, listResponse?.meta?.page?.pageNumber]);
+  const currentPage = listResponse?.meta?.page?.pageNumber ?? 1;
 
   /*
    * synthetic URLSearchParams that includes the current page number.
    * Uses local state to avoid flashing during navigation.
    */
-  const pageSize = useMemo(() => searchParams.get('page[size]'), [searchParams]);
+  const pageSizeParam = useMemo(() => searchParams.get('page[size]'), [searchParams]);
   const paginationSearchParams = useMemo(() => {
     const params = new URLSearchParams();
     params.set('page', String(currentPage));
 
     // Only copy the page size param if it exists
-    if (pageSize) {
-      params.set('page[size]', pageSize);
+    if (pageSizeParam) {
+      params.set('page[size]', pageSizeParam);
     }
 
     return params;
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSizeParam]);
 
   // DataView manages pagination state internally
   const pagination = useDataViewPagination({
@@ -492,8 +481,9 @@ export function ResourceListDataView<T extends Resource>({
                 } else {
                   return <TextFilterWrapper
                     key={`filter-${name}`}
-                    name={name}
-                    filter={filter}
+                    filterId={name}
+                    title={filter.title}
+                    placeholder={filter.placeholder}
                     pendingFilters={pendingFilters}
                     setPendingFilters={setPendingFilters}
                     onSetFilters={onSetFilters}
