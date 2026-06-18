@@ -24,7 +24,7 @@
         <kafka.version>4.3.0</kafka.version>
 
         <!-- Test Dependencies -->
-        <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.116.0</strimzi-test-container.version>
         <kroxy-api.version>0.21.0</kroxy-api.version>
 
         <!-- Plugin Versions -->
