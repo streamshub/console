@@ -4,10 +4,15 @@
 = Logging in to a Kafka cluster from the homepage
 
 [role="_abstract"]
+[WARNING]
+====
+**This authentication method is deprecated.** Entering personal Kafka credentials into the console is insecure because credentials are transmitted through and stored by the console. Use OIDC application-scoped authentication instead (see xref:ref-authentication-options-{context}[]).
+====
+
 The console supports authenticated user login to a Kafka cluster using SCRAM-SHA-512 and OAuth 2.0 authentication mechanisms.
 For secure login, authentication must be configured in your Strimzi managed Kafka cluster.
 
-NOTE: If authentication is not set up for a Kafka cluster or the credentials have been provided using the Kafka `sasl.jaas.config` property (which defines SASL authentication settings) in the console configuration, you can log in anonymously to the cluster without authentication.
+NOTE: If authentication is not set up for a Kafka cluster or the credentials have been provided using the Kafka `sasl.jaas.config` property (which defines SASL authentication settings) in the console configuration, you can log in anonymously to the cluster without authentication. The per-Kafka login prompt only appears when SASL authentication is enabled but no console credentials are configured.
 
 .Prerequisites
 
