@@ -215,7 +215,7 @@ export function NodesOverviewTab() {
         description: `Roles: ${typedPoolMeta.roles.join(', ')}`,
       };
     });
-  }, [summary?.nodePools]);
+  }, [summary]);
 
   // Role options for filter
   const roleOptions: { value: NodeRoles; label: string; count: number }[] = [
@@ -243,7 +243,7 @@ export function NodesOverviewTab() {
       label: status,
       count: summary.statuses.brokers[status as BrokerStatus] || 0,
     }));
-  }, [summary?.statuses, brokerStatusLabels]);
+  }, [summary, brokerStatusLabels]);
 
   const controllerStatusOptions = useMemo(() => {
     if (!summary?.statuses?.controllers) return [];
@@ -252,7 +252,7 @@ export function NodesOverviewTab() {
       label: status,
       count: summary.statuses.controllers[status as ControllerStatus] || 0,
     }));
-  }, [summary?.statuses, controllerStatusLabels]);
+  }, [summary, controllerStatusLabels]);
 
   // Clear all filters
   const clearAllFilters = () => {

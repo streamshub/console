@@ -108,11 +108,9 @@ export function GroupConfigurationTab() {
   }, [allData]);
 
   // Initialize selected data sources to all sources
-  useMemo(() => {
-    if (dataSources.length > 0 && selectedDataSources.length === 0) {
-      setSelectedDataSources(dataSources);
-    }
-  }, [dataSources, selectedDataSources.length]);
+  if (dataSources.length > 0 && selectedDataSources.length === 0) {
+    setSelectedDataSources(dataSources);
+  }
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {

@@ -36,20 +36,25 @@ export function useChartWidth(): [RefObject<HTMLDivElement | null>, number] {
   }, [handleResize]);
 
   const requestRef = useRef<number | undefined>(undefined);
+  const checkSizeRef = useRef<(() => void) | null>(null);
 
-  const checkSize = useCallback(() => {
-    requestRef.current = requestAnimationFrame(checkSize);
-    handleResize();
+  useEffect(() => {
+    checkSizeRef.current = () => {
+      requestRef.current = requestAnimationFrame(checkSizeRef.current!);
+      handleResize();
+    };
   }, [handleResize]);
 
   useEffect(() => {
-    requestRef.current = requestAnimationFrame(checkSize);
+    if (checkSizeRef.current) {
+      requestRef.current = requestAnimationFrame(checkSizeRef.current);
+    }
     return () => {
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
     };
-  }, [checkSize]);
+  }, [handleResize]);
 
   return [containerRef, width];
 }

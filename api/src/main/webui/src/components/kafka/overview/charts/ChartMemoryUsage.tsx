@@ -25,6 +25,9 @@ import { useChartWidth } from '@/components/kafka/overview/utils/useChartWidth';
 import { getHeight, getPadding } from '@/components/kafka/overview/utils/chartConsts';
 import { DurationOptions, TimeSeriesMetrics, ChartDatum } from '@/components/kafka/overview/utils/types';
 
+// Create container component outside of render
+const CursorVoronoiContainer = createContainer('voronoi', 'cursor');
+
 interface ChartLegendTitleDatum {
   x?: number;
 }
@@ -56,7 +59,6 @@ export function ChartMemoryUsage({ usages, duration }: ChartMemoryUsageProps) {
     );
   }
 
-  const CursorVoronoiContainer = createContainer('voronoi', 'cursor');
   const legendData = Object.keys(usages).map((nodeId) => ({
     name: `Node ${nodeId}`,
     childName: `node ${nodeId}`,

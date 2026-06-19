@@ -7,7 +7,7 @@
  * Supports topic filtering and time range selection.
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -52,6 +52,7 @@ export function TopicChartsCard({
   isVirtualKafkaCluster = false,
 }: TopicChartsCardProps) {
   const { t } = useTranslation();
+  const allTopics = useMemo(() => [null, t('metrics.all_topics')], [t]);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<DurationOptions>(
     DurationOptions.Last5minutes
@@ -65,43 +66,45 @@ export function TopicChartsCard({
       : topics;
   }, [topics, hideInternal]);
 
-  // Reset selected topic if it's filtered out
-  useEffect(() => {
-    if (!selectedTopic) return;
-
-    const existsInFiltered = filteredTopics.some(
-      (t) => t.id === selectedTopic
-    );
-
-    if (!existsInFiltered) {
-      setSelectedTopic(null);
+  // Selected topic that is actually present in the filtered list
+  const [validSelectedTopic, validSelectedTopicName] = useMemo(() => {
+    if (!selectedTopic) {
+      return allTopics;
     }
-  }, [filteredTopics, selectedTopic]);
+    
+    const matchingTopic = filteredTopics.find((t) => t.id === selectedTopic);
+
+    if (matchingTopic) {
+      return [matchingTopic.id, matchingTopic.name];
+    } else {
+      return allTopics;
+    }
+  }, [filteredTopics, selectedTopic, allTopics]);
 
   // Fetch cluster-level metrics when "All topics" is selected (no topic selected)
   const clusterMetrics = useKafkaMetrics({
     kafkaId,
     duration: selectedDuration,
-    enabled: metricsAvailable && !isLoading && selectedTopic === null,
+    enabled: metricsAvailable && !isLoading && validSelectedTopic === null,
     refetchInterval: 30000,
   });
 
   // Fetch individual topic metrics when a specific topic is selected
   const topicMetrics = useTopicMetrics({
     kafkaId,
-    topicId: selectedTopic || undefined,
+    topicId: validSelectedTopic || undefined,
     duration: selectedDuration,
-    enabled: metricsAvailable && !isLoading && selectedTopic !== null,
+    enabled: metricsAvailable && !isLoading && validSelectedTopic !== null,
     refetchInterval: 30000,
   });
 
-  const isLoadingMetrics = selectedTopic === null ? clusterMetrics.isLoading : topicMetrics.isLoading;
-  const isError = selectedTopic === null ? clusterMetrics.isError : topicMetrics.isError;
+  const isLoadingMetrics = validSelectedTopic === null ? clusterMetrics.isLoading : topicMetrics.isLoading;
+  const isError = validSelectedTopic === null ? clusterMetrics.isError : topicMetrics.isError;
 
   // Extract incoming and outgoing metrics
   const { incoming, outgoing } = useMemo(() => {
     // Use cluster metrics when no topic selected, otherwise use topic metrics
-    const metricsData = selectedTopic === null
+    const metricsData = validSelectedTopic === null
       ? clusterMetrics.data?.data?.attributes?.metrics
       : topicMetrics.data?.data?.attributes?.metrics;
 
@@ -113,11 +116,7 @@ export function TopicChartsCard({
       incoming: singleTimeSeriesMetrics(metricsData.ranges, 'incoming_byte_rate'),
       outgoing: singleTimeSeriesMetrics(metricsData.ranges, 'outgoing_byte_rate'),
     };
-  }, [clusterMetrics.data, topicMetrics.data, selectedTopic, selectedDuration]);
-
-  const selectedTopicName = useMemo(() => {
-    return topics.find((t) => t.id === selectedTopic)?.name;
-  }, [topics, selectedTopic]);
+  }, [clusterMetrics.data, topicMetrics.data, validSelectedTopic]);
 
   return (
     <Card component="div" isFullHeight>
@@ -180,7 +179,7 @@ export function TopicChartsCard({
                 <FlexItem>
                   <FilterByTopic
                     topics={filteredTopics}
-                    value={selectedTopic}
+                    value={validSelectedTopic}
                     onChange={setSelectedTopic}
                   />
                 </FlexItem>
@@ -220,7 +219,7 @@ export function TopicChartsCard({
                   incoming={incoming}
                   outgoing={outgoing}
                   isVirtualKafkaCluster={isVirtualKafkaCluster}
-                  selectedTopicName={selectedTopicName}
+                  selectedTopicName={validSelectedTopicName ?? "N/A"}
                   duration={selectedDuration}
                 />
               </StackItem>

@@ -35,7 +35,7 @@ export function HomePage() {
   const clusterResult = useKafkaClusters(dataParams);
   const { data: metadata } = useMetadata();
 
-  const totalCount = clusterResult?.data?.meta?.page?.total;
+  const totalCount = clusterResult.data?.meta?.page?.total;
   const platform = metadata?.data?.attributes?.platform;
 
   const showLearning = useShowLearning();

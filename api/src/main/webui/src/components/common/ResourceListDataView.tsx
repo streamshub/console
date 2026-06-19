@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,10 +12,11 @@ import {
   DataViewTr,
   DataViewState,
   useDataViewSort,
+  DataViewTextFilterProps,
 } from '@patternfly/react-data-view';
-/* 
- * The following import is a work-around for 
- * https://github.com/patternfly/react-data-view/issues/662 
+/*
+ * The following import is a work-around for
+ * https://github.com/patternfly/react-data-view/issues/662
  * and should be removed when upgrading to a version of react-data-view
  * that includes the fix. The DataViewTh import should be moved above to
  * be from '@patternfly/react-data-view'.
@@ -62,7 +63,7 @@ const useTextFilterHandlers = (
         return rest;
       });
     }
-  }, [filterId]);
+  }, [filterId, onSetFilters, setPendingFilters]);
 
   const handleClear = useCallback(() => {
     onSetFilters({ [filterId]: '' });
@@ -70,7 +71,7 @@ const useTextFilterHandlers = (
       const { [filterId]: _, ...rest } = prev;
       return rest;
     });
-  }, [filterId]);
+  }, [filterId, onSetFilters, setPendingFilters]);
 
   const handleSearch = useCallback((_event: React.SyntheticEvent<HTMLButtonElement>, value: string) => {
     onSetFilters({ [filterId]: pendingFilters[filterId] ?? value });
@@ -78,11 +79,34 @@ const useTextFilterHandlers = (
       const { [filterId]: _, ...rest } = prev;
       return rest;
     });
-  }, [filterId, pendingFilters[filterId]]);
+  }, [filterId, pendingFilters, onSetFilters, setPendingFilters]);
 
   return { handleChange, handleClear, handleSearch };
 };
 
+type TextFilterWrapperProps = DataViewTextFilterProps & {
+  pendingFilters: Record<string, string>;
+  setPendingFilters: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onSetFilters: (newFilters: Partial<Record<string, string | string[]>>) => void;
+};
+
+// Component wrapper for text filter to avoid hooks-in-callback issue
+const TextFilterWrapper: React.FC<TextFilterWrapperProps> = (props) => {
+  const { pendingFilters, setPendingFilters, onSetFilters, ...filterProps } = props;
+  const { handleChange, handleClear, handleSearch } = useTextFilterHandlers(
+    filterProps.filterId,
+    pendingFilters,
+    setPendingFilters,
+    onSetFilters,
+  );
+  return useMemo(() => <DataViewTextFilter
+      {...filterProps}
+      onChange={handleChange}
+      onClear={handleClear}
+      onSearch={handleSearch}
+    />,
+    [filterProps, handleChange, handleClear, handleSearch]);
+}
 export interface ResourceListDataViewColumnMapper {
   (
     sortBy?: string, 
@@ -180,24 +204,25 @@ export function ResourceListDataView<T extends Resource>({
    * synthetic URLSearchParams to convert single sort parameter
    * to two parameters expected by the hook
    */
+  const sortParam = useMemo(() => searchParams.get('sort'), [searchParams]);
   const sortSearchParams = useMemo(() => {
     const params = new URLSearchParams();
-    const sort = searchParams.get("sort");
-    if (sort) {
+
+    if (sortParam) {
       let sortBy: string;
 
-      if (sort.startsWith("-")) {
+      if (sortParam.startsWith("-")) {
         params.set("direction", "desc");
-        sortBy = sort.substring(1);
+        sortBy = sortParam.substring(1);
       } else {
         params.set("direction", "asc");
-        sortBy = sort;
+        sortBy = sortParam;
       }
 
       params.set("sortBy", sortBy);
     }
     return params;
-  }, [searchParams.get("sort")]);
+  }, [sortParam]);
 
   const { sortBy, direction, onSort } = useDataViewSort({
     searchParams: sortSearchParams,
@@ -205,43 +230,24 @@ export function ResourceListDataView<T extends Resource>({
 
   const listResponse = resourceResult.data;
   const totalCount = listResponse?.meta?.page?.total ?? 0;
-
-  // Track current page number locally to avoid flashing during navigation
-  const [currentPage, setCurrentPage] = useState(listResponse?.meta?.page?.pageNumber ?? 1);
-
-  // Update current page when API response arrives
-  useEffect(() => {
-    if (listResponse?.meta?.page?.pageNumber) {
-      setCurrentPage(listResponse.meta.page.pageNumber);
-    }
-  }, [listResponse?.meta?.page?.pageNumber]);
-
-  // Reset to page 1 when filters or sort change
-  useEffect(() => {
-    const hasFilters = Object.values(filters).some(v =>
-      Array.isArray(v) ? v.length > 0 : v?.trim().length > 0
-    );
-    if (hasFilters || sortBy) {
-      setCurrentPage(listResponse?.meta?.page?.pageNumber ?? 1);
-    }
-  }, [filters, sortBy]);
+  const currentPage = listResponse?.meta?.page?.pageNumber ?? 1;
 
   /*
    * synthetic URLSearchParams that includes the current page number.
    * Uses local state to avoid flashing during navigation.
    */
+  const pageSizeParam = useMemo(() => searchParams.get('page[size]'), [searchParams]);
   const paginationSearchParams = useMemo(() => {
     const params = new URLSearchParams();
     params.set('page', String(currentPage));
 
     // Only copy the page size param if it exists
-    const pageSize = searchParams.get('page[size]');
-    if (pageSize) {
-      params.set('page[size]', pageSize);
+    if (pageSizeParam) {
+      params.set('page[size]', pageSizeParam);
     }
 
     return params;
-  }, [currentPage, searchParams.get('page[size]')]);
+  }, [currentPage, pageSizeParam]);
 
   // DataView manages pagination state internally
   const pagination = useDataViewPagination({
@@ -257,7 +263,7 @@ export function ResourceListDataView<T extends Resource>({
     setBeforeCursor(undefined);
     setAfterCursor(undefined);
     pagination.onPerPageSelect(event, newPerPage);
-  }, [pagination.onPerPageSelect]);
+  }, [pagination]);
 
   const handleNextPage = useCallback(() => {
     const nextPage = listResponse?.links?.next;
@@ -339,12 +345,12 @@ export function ResourceListDataView<T extends Resource>({
 
       return newParams;
     }, { replace: true }); // Replace current history entry instead of pushing new one
-  }, [filters, sortBy, direction, perPage, beforeCursor, afterCursor]);
+  }, [filters, sortBy, direction, perPage, beforeCursor, afterCursor, setSearchParams]);
 
   // Define columns
   const columns: DataViewTh[] = useMemo(() => {
     return columnProvider.callback(sortBy, direction, onSort);
-  }, [sortBy, direction, ...columnProvider.dependencies]);
+  }, [sortBy, direction, onSort, columnProvider]);
 
   // Determine the active state, errors, and table rows for DataView
   const [ activeState, errors, rows ] = useMemo(() => {
@@ -371,12 +377,12 @@ export function ResourceListDataView<T extends Resource>({
       return [ DataViewState.empty, [], [] ];
     }
 
-    return [ 
-      undefined, 
-      [], 
+    return [
+      undefined,
+      [],
       listResponse?.data?.map(entry => rowProvider.callback(entry)) ?? []
     ];
-  }, [ resourceResult.isLoading, listResponse, ...rowProvider.dependencies ]);
+  }, [ resourceResult.isLoading, resourceResult.error, listResponse, rowProvider ]);
 
   useEffect(() => {
     const pageSize = searchParams.get('page[size]');
@@ -399,7 +405,7 @@ export function ResourceListDataView<T extends Resource>({
     };
 
     onDataViewChange(modifiedParams);
-  }, [ searchParams.toString(), filters ]);
+  }, [ searchParams, filters, onDataViewChange ]);
 
   // Use the same pagination component in the header and footer
   const paginationControl = useMemo(() => {
@@ -455,7 +461,7 @@ export function ResourceListDataView<T extends Resource>({
 
   const bodyLoading = useMemo(
     () => <SkeletonTableBody rowsCount={perPage ?? DEFAULT_PAGE_SIZE} columnsCount={columns.length} />,
-    [columns.length]
+    [perPage, columns.length]
   );
 
   return (
@@ -471,22 +477,16 @@ export function ResourceListDataView<T extends Resource>({
               values={filters}>
               { Object.entries(dataFilters).map(([name, filter]) => {
                 if (filter.type === 'checkbox') {
-                  return <></>; // TODO: Add checkbox filter component
+                  return <React.Fragment key={`filter-${name}`} />; // TODO: Add checkbox filter component
                 } else {
-                  const { handleChange, handleClear, handleSearch } = useTextFilterHandlers(
-                    name,
-                    pendingFilters,
-                    setPendingFilters,
-                    onSetFilters,
-                  );
-                  return <DataViewTextFilter
+                  return <TextFilterWrapper
                     key={`filter-${name}`}
                     filterId={name}
                     title={filter.title}
                     placeholder={filter.placeholder}
-                    onChange={handleChange}
-                    onClear={handleClear}
-                    onSearch={handleSearch}
+                    pendingFilters={pendingFilters}
+                    setPendingFilters={setPendingFilters}
+                    onSetFilters={onSetFilters}
                   />;
                 }
               })}
