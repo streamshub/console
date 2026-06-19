@@ -24,6 +24,13 @@ const initialAuthState = {
   pendingNavigation: undefined,
 };
 
+export type KafkaAuthShowLoginModalType = (
+  clusterId: string,
+  clusterName: string,
+  authMethod?: string,
+  pendingNavigation?: string
+) => void;
+
 interface KafkaAuthContextType {
   showLoginModal: (clusterId: string, clusterName: string, authMethod?: string, pendingNavigation?: string) => void;
   hideLoginModal: () => void;
@@ -132,6 +139,8 @@ export function KafkaAuthProvider({ children }: KafkaAuthProviderProps) {
       <QueryErrorHandler />
       {children}
       <KafkaLoginModal
+        // key forces a clean state when the modal is re-opened
+        key={authState.isModalOpen ? 'open' : 'closed'}
         isOpen={authState.isModalOpen}
         clusterName={authState.clusterName}
         authMethod={authState.authMethod}

@@ -14,7 +14,7 @@ import {
   ResourceListDataViewRowMapper
 } from '../common/ResourceListDataView';
 import { UseQueryResult } from '@tanstack/react-query';
-import { useKafkaAuthContext } from '@/components/auth/KafkaAuthProvider';
+import { KafkaAuthShowLoginModalType, useKafkaAuthContext } from '@/components/auth/KafkaAuthProvider';
 import { apiClient, ApiError } from '@/api/client';
 
 const columnNames = ['name', 'namespace', 'version', 'status'];
@@ -24,27 +24,8 @@ interface ClustersDataViewProps {
   onDataViewChange: (params: ResourceListParams) => void;
 }
 
-export function ClustersDataView({
-  clusterResult,
-  onDataViewChange,
-}: ClustersDataViewProps) {
-
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { showLoginModal } = useKafkaAuthContext();
-
-  // Memoized sort handler to avoid recreating on every render
-  const handleSort = useCallback((
-    onSort: ((event: React.MouseEvent, sortBy: string, direction: 'asc' | 'desc') => void) | undefined,
-    event: React.MouseEvent,
-    columnIndex: number,
-    direction: 'asc' | 'desc'
-  ) => {
-    onSort?.(event, columnNames[columnIndex], direction);
-  }, []);
-
-  const handleViewCluster = async (cluster: KafkaCluster) => {
-    // Check if cluster requires authentication (basic or oauth)
+async function handleViewCluster(cluster: KafkaCluster, showLoginModal: KafkaAuthShowLoginModalType, navigate: ReturnType<typeof useNavigate>) {
+  // Check if cluster requires authentication (basic or oauth)
     const requiresAuth = cluster.meta?.authentication?.method === 'basic' ||
                          cluster.meta?.authentication?.method === 'oauth';
 
@@ -72,7 +53,26 @@ export function ClustersDataView({
       // No authentication required, navigate directly
       navigate(`/kafka/${cluster.id}`);
     }
-  };
+}
+
+export function ClustersDataView({
+  clusterResult,
+  onDataViewChange,
+}: ClustersDataViewProps) {
+
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { showLoginModal } = useKafkaAuthContext();
+
+  // Memoized sort handler to avoid recreating on every render
+  const handleSort = useCallback((
+    onSort: ((event: React.MouseEvent, sortBy: string, direction: 'asc' | 'desc') => void) | undefined,
+    event: React.MouseEvent,
+    columnIndex: number,
+    direction: 'asc' | 'desc'
+  ) => {
+    onSort?.(event, columnNames[columnIndex], direction);
+  }, []);
 
   const colMapper: ResourceListDataViewColumnMapper = useCallback(
     (sortBy, direction, onSort) => [
@@ -142,7 +142,7 @@ export function ClustersDataView({
           cell: (
             <Button
               variant="primary"
-              onClick={() => handleViewCluster(cluster)}
+              onClick={() => handleViewCluster(cluster, showLoginModal, navigate)}
             >
               {t('common.view')}
             </Button>
@@ -154,7 +154,7 @@ export function ClustersDataView({
         },
       ],
     }),
-    [t, navigate]
+    [t, showLoginModal, navigate]
   );
 
   return (

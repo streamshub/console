@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Modal,
@@ -36,17 +36,9 @@ export function KafkaLoginModal({
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Clear fields when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setUsername('');
-      setPassword('');
-    }
-  }, [isOpen]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!username || !password) {
       return;
     }
