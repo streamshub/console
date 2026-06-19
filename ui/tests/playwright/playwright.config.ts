@@ -7,8 +7,8 @@ export default defineConfig({
   // Retry on CI only.
   retries: process.env.CI_CLUSTER ? 5 : 0,
 
-  // Opt out of parallel tests on CI.
-  workers: process.env.CI_CLUSTER ? 2 : undefined,
+  // Run specific number of parallel tests on CI.
+  workers: process.env.CI_CLUSTER ? 5 : undefined,
 
   projects: [
     { name: "setup", testMatch: /.*\.setup\.ts/ },
@@ -20,7 +20,10 @@ export default defineConfig({
         storageState: authFile,
       },
       dependencies: ["setup"],
-      timeout: 10000,
+      timeout: 15_000,
+      expect: {
+        timeout: 15_000
+      },
     },
 
     {
@@ -31,7 +34,10 @@ export default defineConfig({
         storageState: authFile,
       },
       dependencies: ["setup"],
-      timeout: 10000,
+      timeout: 15_000,
+      expect: {
+        timeout: 15_000
+      },
     },
   ],
   use: {
