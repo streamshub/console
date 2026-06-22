@@ -10,6 +10,10 @@ export default defineConfig({
   // Run specific number of parallel tests on CI.
   workers: process.env.CI_CLUSTER ? 5 : undefined,
 
+  expect: {
+    timeout: 15_000,
+  },
+
   projects: [
     { name: "setup", testMatch: /.*\.setup\.ts/ },
     {
@@ -21,9 +25,6 @@ export default defineConfig({
       },
       dependencies: ["setup"],
       timeout: 15_000,
-      expect: {
-        timeout: 15_000
-      },
     },
 
     {
@@ -35,13 +36,12 @@ export default defineConfig({
       },
       dependencies: ["setup"],
       timeout: 15_000,
-      expect: {
-        timeout: 15_000
-      },
     },
   ],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
     ignoreHTTPSErrors: true,
+    screenshot: 'only-on-failure',  // or 'on', 'off'
+    trace: 'retain-on-failure',     // or 'on', 'off', 'on-first-retry'
   },
 });

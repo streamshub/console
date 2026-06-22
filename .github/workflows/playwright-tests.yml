@@ -198,6 +198,13 @@ jobs:
             mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION} \
             /bin/bash -c 'cd /app && npm test'
 
+      - name: Archive Playwright Results (failure)
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-tests-failed
+          path: ./ui/test-results
+
       - name: Backup Logs
         if: always()
         run: |
