@@ -7,8 +7,8 @@ export default defineConfig({
   // Retry on CI only.
   retries: process.env.CI_CLUSTER ? 5 : 0,
 
-  // Run specific number of parallel tests on CI.
-  workers: process.env.CI_CLUSTER ? 5 : undefined,
+  // Opt out of parallel tests on CI.
+  workers: process.env.CI_CLUSTER ? 2 : undefined,
 
   expect: {
     timeout: 15_000,
