@@ -66,6 +66,7 @@
     "viewDocumentation": "View documentation"
   },
   "kafka": {
+    "authentication": "Authentication",
     "clusters": "Kafka Clusters",
     "selectCluster": "Kafka Clusters",
     "noCluster": "No clusters available",
@@ -759,7 +760,10 @@
   },
   "ClustersTable": {
     "version_derived": "Version derived from broker metadata",
-    "not_available": "N/A"
+    "not_available": "N/A",
+    "authentication_basic": "SCRAM-SHA",
+    "authentication_oauth": "OAuth (client credentials)",
+    "authentication_anonymous": "No authentication"
   },
   "metrics": {
     "all_topics": "All Topics",

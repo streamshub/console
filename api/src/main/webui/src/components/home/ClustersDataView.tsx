@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
+  Tooltip,
   Truncate,
 } from '@patternfly/react-core';
 import { ThProps } from '@patternfly/react-table';
@@ -16,6 +17,7 @@ import {
 import { UseQueryResult } from '@tanstack/react-query';
 import { KafkaAuthShowLoginModalType, useKafkaAuthContext } from '@/components/auth/KafkaAuthProvider';
 import { apiClient, ApiError } from '@/api/client';
+import { HelpIcon } from '@patternfly/react-icons';
 
 const columnNames = ['name', 'namespace', 'version', 'status'];
 
@@ -101,6 +103,9 @@ export function ClustersDataView({
         cell: t('kafka.status'),
       },
       {
+        cell: t('kafka.authentication'),
+      },
+      {
         cell: t('common.actions'),
         props: {
           modifier: 'fitContent',
@@ -127,7 +132,19 @@ export function ClustersDataView({
           },
         },
         {
-          cell: cluster.attributes.kafkaVersion || t('common.notAvailable', 'N/A'),
+          cell: cluster.attributes.kafkaVersion 
+            ? (<>
+                {cluster.attributes.kafkaVersion}
+                {!cluster.meta?.managed && (
+                  <>
+                    {" "}
+                    <Tooltip content={t("ClustersTable.version_derived")}>
+                      <HelpIcon />
+                    </Tooltip>
+                  </>
+                )}
+              </>)
+            : t('common.notAvailable', 'N/A'),
           props: {
             dataLabel: t('kafka.version'),
           },
@@ -137,6 +154,13 @@ export function ClustersDataView({
           props: {
             dataLabel: t('kafka.status'),
           },
+        },
+        {
+          cell: {
+            basic: t("ClustersTable.authentication_basic"),
+            oauth: t("ClustersTable.authentication_oauth"),
+            anonymous: t("ClustersTable.authentication_anonymous"),
+          }[cluster.meta?.authentication?.method ?? "anonymous"]
         },
         {
           cell: (
