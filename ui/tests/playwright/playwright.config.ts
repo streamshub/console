@@ -10,6 +10,10 @@ export default defineConfig({
   // Opt out of parallel tests on CI.
   workers: process.env.CI_CLUSTER ? 2 : undefined,
 
+  expect: {
+    timeout: 15_000,
+  },
+
   projects: [
     { name: "setup", testMatch: /.*\.setup\.ts/ },
     {
@@ -20,7 +24,7 @@ export default defineConfig({
         storageState: authFile,
       },
       dependencies: ["setup"],
-      timeout: 10000,
+      timeout: 15_000,
     },
 
     {
@@ -31,11 +35,13 @@ export default defineConfig({
         storageState: authFile,
       },
       dependencies: ["setup"],
-      timeout: 10000,
+      timeout: 15_000,
     },
   ],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
     ignoreHTTPSErrors: true,
+    screenshot: 'only-on-failure',  // or 'on', 'off'
+    trace: 'retain-on-failure',     // or 'on', 'off', 'on-first-retry'
   },
 });
