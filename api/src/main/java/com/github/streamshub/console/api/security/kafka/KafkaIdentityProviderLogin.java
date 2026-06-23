@@ -67,8 +67,10 @@ public class KafkaIdentityProviderLogin implements IdentityProvider<UsernamePass
             SaslJaasConfigCredential credential) {
 
         var promise = new CompletableFuture<SecurityIdentity>();
-        var admin = clientFactory.createAdmin(filter, adminBuilder, kafkaContext, credential);
+        @SuppressWarnings("java:S2095") // Admin must remain open until async operation completes
+        Admin admin = clientFactory.createAdmin(filter, adminBuilder, kafkaContext, credential);
 
+        // Close admin after async operation completes (success or failure)
         promise.whenComplete((identity, error) -> {
             try {
                 admin.close();
