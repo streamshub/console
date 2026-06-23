@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import jakarta.json.Json;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.ClientFactory;
 import com.github.streamshub.console.api.security.IdentitySupport;
@@ -27,6 +28,9 @@ import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class KafkaIdentityProviderLogin implements IdentityProvider<UsernamePasswordAuthenticationRequest> {
+
+    @Inject
+    Logger logger;
 
     @Inject
     IdentitySupport identities;
@@ -63,26 +67,33 @@ public class KafkaIdentityProviderLogin implements IdentityProvider<UsernamePass
             SaslJaasConfigCredential credential) {
 
         var promise = new CompletableFuture<SecurityIdentity>();
+        var admin = clientFactory.createAdmin(filter, adminBuilder, kafkaContext, credential);
 
-        try (var admin = clientFactory.createAdmin(filter, adminBuilder, kafkaContext, credential)) {
-            admin.describeCluster()
-                    .clusterId()
-                    .toCompletionStage()
-                    .thenApply(clusterId -> {
-                        var principalJson = Json.createObjectBuilder()
-                                .add("name", principalName)
-                                .add("sasl.jaas.config", credential.value())
-                                .build();
+        promise.whenComplete((identity, error) -> {
+            try {
+                admin.close();
+            } catch (Exception e) {
+                logger.debug("Exception closing Admin client after login attempt", e);
+            }
+        });
 
-                        return QuarkusSecurityIdentity.builder()
-                                .setPrincipal(new QuarkusPrincipal(principalJson.toString()))
-                                .addAttribute("principal.name", principalName)
-                                .addCredential(credential)
-                                .build();
-                    })
-                    .thenApply(promise::complete)
-                    .exceptionally(promise::completeExceptionally);
-        }
+        admin.describeCluster()
+                .clusterId()
+                .toCompletionStage()
+                .thenApply(clusterId -> {
+                    var principalJson = Json.createObjectBuilder()
+                            .add("name", principalName)
+                            .add("sasl.jaas.config", credential.value())
+                            .build();
+
+                    return QuarkusSecurityIdentity.builder()
+                            .setPrincipal(new QuarkusPrincipal(principalJson.toString()))
+                            .addAttribute("principal.name", principalName)
+                            .addCredential(credential)
+                            .build();
+                })
+                .thenApply(promise::complete)
+                .exceptionally(promise::completeExceptionally);
 
         return Uni.createFrom().completionStage(promise);
     }

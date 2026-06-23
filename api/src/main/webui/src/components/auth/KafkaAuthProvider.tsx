@@ -83,7 +83,7 @@ export function KafkaAuthProvider({ children }: KafkaAuthProviderProps) {
       if (targetClusterId) {
         // Get cluster name from the error context or use clusterId as fallback
         const clusterName = targetClusterId;
-        showLoginModal(targetClusterId, clusterName, window.location.pathname);
+        showLoginModal(targetClusterId, clusterName, undefined, window.location.pathname);
         return true; // Indicates the error was handled
       }
     }
