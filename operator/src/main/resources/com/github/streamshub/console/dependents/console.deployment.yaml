@@ -38,11 +38,11 @@ spec:
             path: /health/started
             port: http
             scheme: HTTP
-          initialDelaySeconds: 5
-          periodSeconds: 10
+          initialDelaySeconds: 3
+          periodSeconds: 5
           timeoutSeconds: 10
           successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 24
         livenessProbe:
           httpGet:
             path: /health/live
