@@ -3,13 +3,13 @@ apiVersion: networking.k8s.io/v1
 metadata:
   name: console-ui-ingress
   annotations:
-    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/backend-protocol: placeholder
 spec:
   defaultBackend:
     service:
       name: console-ui
       port:
-        number: 80
+        number: 0
   rules:
     - host: placeholder
       http:
@@ -19,4 +19,4 @@ spec:
               service:
                 name: console-ui
                 port:
-                  number: 80
+                  number: 0

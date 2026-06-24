@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -78,6 +79,28 @@ public class TlsHelper {
         try {
             return pemEncodeCertificate(rootCA);
         } catch (CertificateEncodingException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getServerCertificatePem() {
+        try {
+            Certificate serverCert = keyStore.getCertificate("localhost");
+            return pemEncodeCertificate(serverCert);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getServerPrivateKeyPem() {
+        try {
+            Key privateKey = keyStore.getKey("localhost", null);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            out.write("-----BEGIN PRIVATE KEY-----\n".getBytes(StandardCharsets.UTF_8));
+            out.write(Base64.getMimeEncoder(80, new byte[] {'\n'}).encode(privateKey.getEncoded()));
+            out.write("\n-----END PRIVATE KEY-----\n".getBytes(StandardCharsets.UTF_8));
+            return new String(out.toByteArray(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

@@ -23,8 +23,8 @@ spec:
       - name: console-api
         image: quay.io/streamshub/console-api
         ports:
-        - containerPort: 8080
-          name: http
+        - containerPort: 0
+          name: placeholder
         volumeMounts:
         - name: config
           mountPath: /deployments/config
@@ -37,8 +37,8 @@ spec:
         startupProbe:
           httpGet:
             path: /health/started
-            port: http
-            scheme: HTTP
+            port: placeholder
+            scheme: placeholder
           initialDelaySeconds: 3
           periodSeconds: 5
           timeoutSeconds: 10
@@ -47,8 +47,8 @@ spec:
         livenessProbe:
           httpGet:
             path: /health/live
-            port: http
-            scheme: HTTP
+            port: placeholder
+            scheme: placeholder
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 10
@@ -57,8 +57,8 @@ spec:
         readinessProbe:
           httpGet:
             path: /health/ready
-            port: http
-            scheme: HTTP
+            port: placeholder
+            scheme: placeholder
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 10
