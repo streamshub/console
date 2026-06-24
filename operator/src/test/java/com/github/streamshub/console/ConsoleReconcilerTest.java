@@ -36,6 +36,7 @@ import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
 import com.github.streamshub.console.dependents.ConsoleResource;
+import com.github.streamshub.console.dependents.ConsoleRoute;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
@@ -73,6 +74,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1470,4 +1472,189 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         assertEquals("test-console-operator-id", lease.getSpec().getHolderIdentity());
     }
 
+    @Test
+    void testConsoleReconciliationWithTlsIngressMode() {
+        String cert = "-----BEGIN CERTIFICATE-----\nMIIBcert\n-----END CERTIFICATE-----\n";
+        String key  = "-----BEGIN PRIVATE KEY-----\nMIIBkey\n-----END PRIVATE KEY-----\n";
+
+        Console consoleCR = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .withNewTls()
+                        .withNewCertificate()
+                            .withValue(cert)
+                        .endCertificate()
+                        .withNewKey()
+                            .withValue(key)
+                        .endKey()
+                    .endTls()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec());
+
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment", "PrometheusDeployment");
+        setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
+        setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress");
+
+        // Verify the Ingress uses HTTPS backend protocol and port 443
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var ingress = client.network().v1().ingresses()
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + '-' + ConsoleIngress.NAME)
+                    .get();
+            assertNotNull(ingress);
+            assertEquals("HTTPS", ingress.getMetadata().getAnnotations()
+                    .get("nginx.ingress.kubernetes.io/backend-protocol"));
+            assertEquals(443, ingress.getSpec().getDefaultBackend().getService().getPort().getNumber());
+            assertEquals(443, ingress.getSpec().getRules().get(0).getHttp()
+                    .getPaths().get(0).getBackend().getService().getPort().getNumber());
+        });
+
+        // Verify the Service exposes port 443 targeting 8443
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var service = client.services()
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + "-console-service")
+                    .get();
+            assertNotNull(service);
+            var port = service.getSpec().getPorts().get(0);
+            assertEquals("https", port.getName());
+            assertEquals(443, port.getPort());
+            assertEquals(8443, port.getTargetPort().getIntVal());
+        });
+
+        // Verify the Deployment exposes port 8443 with HTTPS probes
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var deployment = client.apps().deployments()
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + '-' + ConsoleDeployment.NAME)
+                    .get();
+            assertNotNull(deployment);
+            var container = deployment.getSpec().getTemplate().getSpec().getContainers().get(0);
+            var containerPort = container.getPorts().get(0);
+            assertEquals("https", containerPort.getName());
+            assertEquals(8443, containerPort.getContainerPort());
+            assertEquals("HTTPS", container.getStartupProbe().getHttpGet().getScheme());
+            assertEquals("HTTPS", container.getLivenessProbe().getHttpGet().getScheme());
+            assertEquals("HTTPS", container.getReadinessProbe().getHttpGet().getScheme());
+        });
+
+        // Verify the ConsoleConfig YAML references the cert and key by file path
+        assertConsoleConfig(consoleConfig -> {
+            assertNotNull(consoleConfig.getTls());
+            assertEquals(
+                "/deployments/config/console-tls-certificate.txt",
+                consoleConfig.getTls().getCertificate().getValueFrom());
+            assertEquals(
+                "/deployments/config/console-tls-key.txt",
+                consoleConfig.getTls().getKey().getValueFrom());
+        });
+
+        // Verify the secret contains the raw cert and key bytes
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var secret = getConsoleSecret(consoleCR);
+            assertNotNull(secret);
+            assertArrayEquals(cert.getBytes(),
+                Base64.getDecoder().decode(secret.getData().get("console-tls-certificate.txt")));
+            assertArrayEquals(key.getBytes(),
+                Base64.getDecoder().decode(secret.getData().get("console-tls-key.txt")));
+        });
+    }
+
+    @Test
+    @Tag(REQUIRES_OPENSHIFT_ROUTE)
+    void testConsoleReconciliationWithTlsRouteMode() {
+        String cert = "-----BEGIN CERTIFICATE-----\nMIIBcert\n-----END CERTIFICATE-----\n";
+        String key  = "-----BEGIN PRIVATE KEY-----\nMIIBkey\n-----END PRIVATE KEY-----\n";
+
+        Console consoleCR = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .withNewTls()
+                        .withNewCertificate()
+                            .withValue(cert)
+                        .endCertificate()
+                        .withNewKey()
+                            .withValue(key)
+                        .endKey()
+                    .endTls()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec());
+
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment", "PrometheusDeployment");
+        setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
+        setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, ConsoleRoute.NAME);
+
+        // Verify the Route uses passthrough TLS termination (no insecureEdgeTerminationPolicy)
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var route = client.resources(Route.class)
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + '-' + ConsoleRoute.NAME)
+                    .get();
+            assertNotNull(route);
+            assertEquals("passthrough", route.getSpec().getTls().getTermination());
+            assertNull(route.getSpec().getTls().getInsecureEdgeTerminationPolicy());
+        });
+
+        // Verify the Service exposes port 443 targeting 8443
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var service = client.services()
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + "-console-service")
+                    .get();
+            assertNotNull(service);
+            var port = service.getSpec().getPorts().get(0);
+            assertEquals("https", port.getName());
+            assertEquals(443, port.getPort());
+            assertEquals(8443, port.getTargetPort().getIntVal());
+        });
+
+        // Verify the Deployment exposes port 8443 with HTTPS probes
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var deployment = client.apps().deployments()
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + '-' + ConsoleDeployment.NAME)
+                    .get();
+            assertNotNull(deployment);
+            var container = deployment.getSpec().getTemplate().getSpec().getContainers().get(0);
+            var containerPort = container.getPorts().get(0);
+            assertEquals("https", containerPort.getName());
+            assertEquals(8443, containerPort.getContainerPort());
+            assertEquals("HTTPS", container.getStartupProbe().getHttpGet().getScheme());
+            assertEquals("HTTPS", container.getLivenessProbe().getHttpGet().getScheme());
+            assertEquals("HTTPS", container.getReadinessProbe().getHttpGet().getScheme());
+        });
+
+        // Verify the ConsoleConfig YAML references the cert and key by file path
+        assertConsoleConfig(consoleConfig -> {
+            assertNotNull(consoleConfig.getTls());
+            assertEquals(
+                "/deployments/config/console-tls-certificate.txt",
+                consoleConfig.getTls().getCertificate().getValueFrom());
+            assertEquals(
+                "/deployments/config/console-tls-key.txt",
+                consoleConfig.getTls().getKey().getValueFrom());
+        });
+
+        // Verify the secret contains the raw cert and key bytes
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var secret = getConsoleSecret(consoleCR);
+            assertNotNull(secret);
+            assertArrayEquals(cert.getBytes(),
+                Base64.getDecoder().decode(secret.getData().get("console-tls-certificate.txt")));
+            assertArrayEquals(key.getBytes(),
+                Base64.getDecoder().decode(secret.getData().get("console-tls-key.txt")));
+        });
+    }
 }

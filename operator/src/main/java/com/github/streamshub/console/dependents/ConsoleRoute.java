@@ -15,6 +15,8 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.fabric8.openshift.api.model.RouteStatus;
+import io.fabric8.openshift.api.model.TLSConfig;
+import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
@@ -54,6 +56,7 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
         // name, namespace, and cluster domain (issue #1471)
         String host = primary.getSpec().getHostname();
         String serviceName = service.instanceName(primary);
+        boolean tls = primary.getSpec().getTls() != null;
 
         return new RouteBuilder()
             .withNewMetadata()
@@ -69,12 +72,25 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
                     .withName(serviceName)
                     .withWeight(100)
                 .endTo()
-                .withNewTls()
-                    .withTermination("edge")
-                    .withInsecureEdgeTerminationPolicy("Redirect")
-                .endTls()
+                .withTls(buildTls(tls))
             .endSpec()
             .build();
+    }
+
+    private static TLSConfig buildTls(boolean tls) {
+        TLSConfigBuilder tlsBuilder = new TLSConfigBuilder();
+
+        if (tls) {
+            // The console terminates TLS itself; the router passes through the connection
+            tlsBuilder = tlsBuilder.withTermination("passthrough");
+        } else {
+            // The router terminates TLS at the edge and forwards plain HTTP to the console
+            tlsBuilder = tlsBuilder
+                .withTermination("edge")
+                .withInsecureEdgeTerminationPolicy("Redirect");
+        }
+
+        return tlsBuilder.build();
     }
 
     /**

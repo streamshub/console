@@ -4,6 +4,7 @@ metadata:
   name: console-ui
 spec:
   ports:
-  - port: 80
-    targetPort: 8080
+  - name: placeholder
+    port: 0
+    targetPort: 0
   selector: {}

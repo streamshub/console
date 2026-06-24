@@ -49,6 +49,9 @@ public class ConsoleConfig {
     KubernetesConfig kubernetes = new KubernetesConfig();
 
     @Valid
+    TlsConfig tls;
+
+    @Valid
     @ValidResourceTypes(type = ResourceTypes.Global.class)
     GlobalSecurityConfig security = new GlobalSecurityConfig();
 
@@ -119,6 +122,14 @@ public class ConsoleConfig {
 
     public void setKubernetes(KubernetesConfig kubernetes) {
         this.kubernetes = kubernetes;
+    }
+
+    public TlsConfig getTls() {
+        return tls;
+    }
+
+    public void setTls(TlsConfig tls) {
+        this.tls = tls;
     }
 
     public GlobalSecurityConfig getSecurity() {
