@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState } from 'react';
 import { KafkaCluster } from '@/api/types';
+import { KroxyliciousClusterLabel } from './KroxyliciousClusterLabel';
 
 export interface ClusterSwitcherProps {
   clusters: KafkaCluster[];
@@ -100,7 +101,10 @@ export function ClusterSwitcher({
             isSelected={currentClusterId === cluster.id}
           >
             <Flex>
-              <FlexItem>{cluster.attributes.name}</FlexItem>
+              <FlexItem>
+                {cluster.attributes.name}
+                <KroxyliciousClusterLabel cluster={cluster} />
+              </FlexItem>
               <FlexItem align={{ default: 'alignRight' }}>
                 {cluster.id !== currentClusterId && (
                   <Tooltip content={t('kafka.switchToCluster')}>

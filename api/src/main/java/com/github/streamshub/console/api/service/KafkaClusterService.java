@@ -24,6 +24,7 @@ import jakarta.ws.rs.BadRequestException;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.apache.kafka.clients.admin.DescribeFeaturesOptions;
 import org.apache.kafka.clients.admin.DescribeFeaturesResult;
 import org.apache.kafka.clients.admin.FeatureMetadata;
 import org.apache.kafka.clients.admin.FinalizedVersionRange;
@@ -271,9 +272,17 @@ public class KafkaClusterService {
              * application-wide authentication.
              */
             Optional.ofNullable(kafkaContext.admin())
-                    .map(Admin::describeFeatures)
+                    .map(admin -> admin.describeFeatures(new DescribeFeaturesOptions()
+                        .timeoutMs(5000)))
                     .map(DescribeFeaturesResult::featureMetadata)
-                    .map(metadata -> get(() -> metadata))
+                    .map(metadata -> {
+                        try {
+                            return get(() -> metadata);
+                        } catch (Exception e) {
+                            logger.infof("Exception fetching feature metadata for cluster %s: %s", config.clusterKey(), e);
+                            return null;
+                        }
+                    })
                     .map(FeatureMetadata::finalizedFeatures)
                     .map(features -> features.get(MetadataVersion.FEATURE_NAME))
                     .map(FinalizedVersionRange::maxVersionLevel)

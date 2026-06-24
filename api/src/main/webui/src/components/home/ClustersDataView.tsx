@@ -18,6 +18,7 @@ import { UseQueryResult } from '@tanstack/react-query';
 import { KafkaAuthShowLoginModalType, useKafkaAuthContext } from '@/components/auth/KafkaAuthProvider';
 import { apiClient, ApiError } from '@/api/client';
 import { HelpIcon } from '@patternfly/react-icons';
+import { KroxyliciousClusterLabel } from '@/components/kafka/KroxyliciousClusterLabel';
 
 const columnNames = ['name', 'namespace', 'version', 'status'];
 
@@ -120,7 +121,12 @@ export function ClustersDataView({
       id: cluster.id,
       row: [
         {
-          cell: <Truncate content={cluster.attributes.name} />,
+          cell: (
+            <>
+              <Truncate content={cluster.attributes.name} />
+              <KroxyliciousClusterLabel cluster={cluster} />
+            </>
+          ),
           props: {
             dataLabel: t('kafka.name'),
           },

@@ -65,6 +65,10 @@
     "documentation": "Documentation",
     "viewDocumentation": "View documentation"
   },
+  "KroxyliciousCluster": {
+    "label": "Virtual",
+    "tooltip": "A virtual cluster is a logical Kafka endpoint that clients connect to. The proxy forwards requests to a physical Kafka cluster through its filters."
+  },
   "kafka": {
     "authentication": "Authentication",
     "clusters": "Kafka Clusters",
