@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.github.streamshub.console.api.support.TrustStoreSupport;
 import com.github.streamshub.console.api.support.UncheckedIO;
 import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -44,9 +43,6 @@ public class ConsoleConfigFactory {
     @Inject
     ValidationProxy validationService;
 
-    @Inject
-    TrustStoreSupport trustStores;
-
     @Produces
     @ApplicationScoped
     public ConsoleConfig produceConsoleConfig() {
@@ -57,7 +53,6 @@ public class ConsoleConfigFactory {
             .filter(Objects::nonNull)
             .map(this::loadConfiguration)
             .map(validationService::validate)
-            .map(trustStores::registerTrustStores)
             .orElseGet(() -> {
                 log.warn("Console configuration has not been specified using `console.config-path` property");
                 return new ConsoleConfig();
