@@ -2,6 +2,8 @@ package com.github.streamshub.console.test;
 
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -14,9 +16,12 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonStructure;
 import jakarta.json.JsonValue;
+import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
@@ -40,6 +45,7 @@ import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestHelper {
@@ -208,5 +214,38 @@ public class TestHelper {
                     .endContent()
                 .endTrustStore()
             .endOidc();
+    }
+
+    public static Map<String, Object> mockAdminClient() {
+        return mockAdminClient(Map.of(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name));
+    }
+
+    public static Map<String, Object> mockAdminClient(Map<String, Object> overrides) {
+        Map<String, Object> clientConfig = new HashMap<>();
+
+        AdminClientSpy.install(config -> {
+            clientConfig.putAll(config);
+
+            Map<String, Object> newConfig = new HashMap<>(config);
+            newConfig.putAll(overrides);
+            return newConfig;
+        }, client -> { /* No-op */ });
+
+        return clientConfig;
+    }
+
+    public static Map<String, String> authenticate(String path, String clusterId, String username, String password) {
+        var sessionCookieName = "streamshub-console-kafka-" + clusterId;
+
+        var sessionCookie = whenRequesting(req -> req
+                .formParams(Map.of("u", username, "p", password))
+                .post(path, clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .cookie(sessionCookieName)
+            .extract()
+            .cookie(sessionCookieName);
+
+        return Map.of(sessionCookieName, sessionCookie);
     }
 }

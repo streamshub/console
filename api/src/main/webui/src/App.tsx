@@ -6,12 +6,15 @@
 import { Outlet } from 'react-router-dom';
 import { AppLayoutProvider } from '@/components/app/AppLayoutProvider';
 import { ThemeProvider } from '@/components/app/ThemeProvider';
+import { KafkaAuthProvider } from '@/components/auth/KafkaAuthProvider';
 
 function App() {
   return (
     <ThemeProvider>
       <AppLayoutProvider>
-        <Outlet />
+        <KafkaAuthProvider>
+          <Outlet />
+        </KafkaAuthProvider>
       </AppLayoutProvider>
     </ThemeProvider>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
+  Tooltip,
   Truncate,
 } from '@patternfly/react-core';
 import { ThProps } from '@patternfly/react-table';
@@ -14,12 +15,46 @@ import {
   ResourceListDataViewRowMapper
 } from '../common/ResourceListDataView';
 import { UseQueryResult } from '@tanstack/react-query';
+import { KafkaAuthShowLoginModalType, useKafkaAuthContext } from '@/components/auth/KafkaAuthProvider';
+import { apiClient, ApiError } from '@/api/client';
+import { HelpIcon } from '@patternfly/react-icons';
 
 const columnNames = ['name', 'namespace', 'version', 'status'];
 
 interface ClustersDataViewProps {
   clusterResult: UseQueryResult<ListResponse<KafkaCluster>, Error>;
   onDataViewChange: (params: ResourceListParams) => void;
+}
+
+async function handleViewCluster(cluster: KafkaCluster, showLoginModal: KafkaAuthShowLoginModalType, navigate: ReturnType<typeof useNavigate>) {
+  // Check if cluster requires authentication (basic or oauth)
+    const requiresAuth = cluster.meta?.authentication?.method === 'basic' ||
+                         cluster.meta?.authentication?.method === 'oauth';
+
+    if (requiresAuth) {
+      // Try to access the cluster to check if authentication is needed
+      try {
+        await apiClient.get(`/api/kafkas/${cluster.id}`);
+        // If successful, navigate to the cluster
+        navigate(`/kafka/${cluster.id}`);
+      } catch (error) {
+        // If 401, show login modal
+        if (error instanceof ApiError && error.status === 401) {
+          showLoginModal(
+            cluster.id,
+            cluster.attributes.name,
+            cluster.meta?.authentication?.method,
+            `/kafka/${cluster.id}`
+          );
+        } else {
+          // For other errors, just navigate (let the cluster page handle it)
+          navigate(`/kafka/${cluster.id}`);
+        }
+      }
+    } else {
+      // No authentication required, navigate directly
+      navigate(`/kafka/${cluster.id}`);
+    }
 }
 
 export function ClustersDataView({
@@ -29,6 +64,7 @@ export function ClustersDataView({
 
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showLoginModal } = useKafkaAuthContext();
 
   // Memoized sort handler to avoid recreating on every render
   const handleSort = useCallback((
@@ -67,6 +103,9 @@ export function ClustersDataView({
         cell: t('kafka.status'),
       },
       {
+        cell: t('kafka.authentication'),
+      },
+      {
         cell: t('common.actions'),
         props: {
           modifier: 'fitContent',
@@ -93,7 +132,19 @@ export function ClustersDataView({
           },
         },
         {
-          cell: cluster.attributes.kafkaVersion || t('common.notAvailable', 'N/A'),
+          cell: cluster.attributes.kafkaVersion 
+            ? (<>
+                {cluster.attributes.kafkaVersion}
+                {!cluster.meta?.managed && (
+                  <>
+                    {" "}
+                    <Tooltip content={t("ClustersTable.version_derived")}>
+                      <HelpIcon />
+                    </Tooltip>
+                  </>
+                )}
+              </>)
+            : t('common.notAvailable', 'N/A'),
           props: {
             dataLabel: t('kafka.version'),
           },
@@ -105,10 +156,17 @@ export function ClustersDataView({
           },
         },
         {
+          cell: {
+            basic: t("ClustersTable.authentication_basic"),
+            oauth: t("ClustersTable.authentication_oauth"),
+            anonymous: t("ClustersTable.authentication_anonymous"),
+          }[cluster.meta?.authentication?.method ?? "anonymous"]
+        },
+        {
           cell: (
             <Button
               variant="primary"
-              onClick={() => navigate(`/kafka/${cluster.id}`)}
+              onClick={() => handleViewCluster(cluster, showLoginModal, navigate)}
             >
               {t('common.view')}
             </Button>
@@ -120,7 +178,7 @@ export function ClustersDataView({
         },
       ],
     }),
-    [t, navigate]
+    [t, showLoginModal, navigate]
   );
 
   return (

@@ -11,11 +11,12 @@ import { useTranslation } from 'react-i18next';
 
 interface UserDropdownProps {
   readonly username: string;
+  readonly clusterId?: string;
   readonly anonymous: boolean;
   readonly picture?: string;
 }
 
-export function UserDropdown({ username, anonymous, picture }: UserDropdownProps) {
+export function UserDropdown({ username, clusterId, anonymous, picture }: UserDropdownProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const logoutDisabled = anonymous;
@@ -55,7 +56,15 @@ export function UserDropdown({ username, anonymous, picture }: UserDropdownProps
       >
         <DropdownList>
           <DropdownItem key="logout" inert={logoutDisabled} isDisabled={logoutDisabled} onClick={() => {
-              window.location.href = `/api/session/logout?redirect_uri=${encodeURIComponent('/')}`;
+              let sessionPath;
+
+              if (clusterId) {
+                sessionPath = `/api/kafkas/${clusterId}/session`;
+              } else {
+                sessionPath = `/api/session`;
+              }
+
+              window.location.href = `${sessionPath}/logout?redirect_uri=${encodeURIComponent('/')}`;
             }}>
             {t('user.logout')}
           </DropdownItem>

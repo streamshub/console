@@ -66,6 +66,7 @@
     "viewDocumentation": "View documentation"
   },
   "kafka": {
+    "authentication": "Authentication",
     "clusters": "Kafka Clusters",
     "selectCluster": "Kafka Clusters",
     "noCluster": "No clusters available",
@@ -91,6 +92,17 @@
     "nodes": "Kafka Nodes",
     "users": "Kafka Users",
     "schemaRegistry": "Schema Registry",
+    "login": {
+      "title": "Login to Kafka Cluster",
+      "description": "Please enter your credentials to access cluster \"{{clusterName}}\".",
+      "descriptionOAuth": "Please enter your OAuth credentials to access cluster \"{{clusterName}}\".",
+      "descriptionBasic": "Please enter your SCRAM credentials to access cluster \"{{clusterName}}\".",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Login",
+      "error": "Authentication failed",
+      "errorGeneric": "Invalid username or password"
+    },
     "connect": {
       "title": "Kafka Connect",
       "connectors": "Connectors",
@@ -748,7 +760,10 @@
   },
   "ClustersTable": {
     "version_derived": "Version derived from broker metadata",
-    "not_available": "N/A"
+    "not_available": "N/A",
+    "authentication_basic": "SCRAM-SHA",
+    "authentication_oauth": "OAuth (client credentials)",
+    "authentication_anonymous": "No authentication"
   },
   "metrics": {
     "all_topics": "All Topics",

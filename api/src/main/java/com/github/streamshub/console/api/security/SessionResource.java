@@ -81,12 +81,12 @@ public class SessionResource {
                 .flatMap(this::nameClaim)
                 .or(() -> nameClaim(oidcSession.getIdToken()));
         } else {
-            fullName = Optional.ofNullable(identity.getAttribute(ConsoleAuthenticationMechanism.FULL_NAME));
+            fullName = Optional.ofNullable(identity.getAttribute(IdentitySupport.FULL_NAME));
         }
 
         // this is not the `name` claim when the principal is a JWT
         properties.put("username", principal.getName());
-        fullName.ifPresent(fn -> properties.put(ConsoleAuthenticationMechanism.FULL_NAME, String.valueOf(fn)));
+        fullName.ifPresent(fn -> properties.put(IdentitySupport.FULL_NAME, String.valueOf(fn)));
         properties.put("anonymous", identity.isAnonymous());
 
         return Response.ok(properties).build();
