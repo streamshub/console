@@ -17,13 +17,13 @@ trap 'handle_error $LINENO' ERR
 OLM_VERSION="v0.42.0"
 OLM_SCRIPT_SHA256="1e8065cb503d2ee94ce82dd2591618022852f53a43df908b9f8c7d314cff3532"
 
-if [ -n "${MINIKUBE_PROFILE}" ] ; then
+if [ -n "${MINIKUBE_PROFILE:-}" ] ; then
     MK_PROFILE_ARG="--profile=${MINIKUBE_PROFILE}"
 else
     MK_PROFILE_ARG=""
 fi
 
-if ! minikube status ${MK_PROFILE_ARG} ; then
+if ! minikube status ${MK_PROFILE_ARG} >/dev/null 2>&1 ; then
   minikube start ${MK_PROFILE_ARG} \
     --driver=${MINIKUBE_DRIVER:-kvm2} \
     --cpus=${MINIKUBE_CPU_COUNT:-6} \
@@ -56,9 +56,34 @@ rm -v ${OLM_INSTALL_SCRIPT}
 
 # Build and push Console images ---------------------------------
 PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
-CONTAINER_RUNTIME=$(which podman || which docker)
-SKOPEO_LOCAL=$(which podman >/dev/null && echo "containers-storage:" || echo "docker-daemon:")
-PLATFORMS=$(docker system info --format '{{.OSType}}/{{.Architecture}}' 2>/dev/null || podman info --format={{".Version.OsArch"}})
+
+if which podman 1>/dev/null 2>&1 && which docker 1>/dev/null 2>&1 ; then
+    if docker --version | grep "podman" ; then
+        # podman masquerading as docker
+        CONTAINER_RUNTIME=podman
+    else
+        # both present, prefer docker
+        CONTAINER_RUNTIME=docker
+    fi
+elif which podman 1>/dev/null 2>&1 ; then
+    CONTAINER_RUNTIME=podman
+else
+    CONTAINER_RUNTIME=docker
+fi
+
+if [ "${CONTAINER_RUNTIME}" == "podman" ] ; then
+    SKOPEO_LOCAL="containers-storage:"
+else
+    SKOPEO_LOCAL="docker-daemon:"
+fi
+
+if [ -z "${PLATFORMS:-}" ] ; then
+    if [ "${CONTAINER_RUNTIME}" == "podman" ] ; then
+        PLATFORMS=$(podman info --format={{".Version.OsArch"}})
+    else
+        PLATFORMS=$(docker system info --format '{{.OSType}}/{{.Architecture}}' 2>/dev/null)
+    fi
+fi
 
 mvn clean package -Pcontainer-image -B --no-transfer-progress -DskipTests \
  -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
@@ -73,7 +98,8 @@ mvn clean package -Pcontainer-image -B --no-transfer-progress -DskipTests \
 
 ${CONTAINER_RUNTIME} build \
  -t localhost:5000/streamshub/console-operator-bundle:${PROJECT_VERSION} \
- -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
+ -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile \
+ operator/target/bundle/streamshub-console-operator
 
 ./operator/bin/generate-catalog.sh ./operator/target/bundle/streamshub-console-operator true
 

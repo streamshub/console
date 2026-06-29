@@ -231,5 +231,5 @@ jobs:
   Playwright:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}
     uses: ./.github/workflows/playwright-tests.yml
-    needs:
-      - build-images
+    #needs:
+    #  - build-images
