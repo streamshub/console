@@ -1,13 +1,20 @@
 package com.github.streamshub.systemtests.setup.strimzi;
 
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
@@ -28,12 +35,6 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
-import org.apache.logging.log4j.Logger;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
 
 import static io.skodjob.kubetest4j.KubeTestEnv.USER_PATH;
 
@@ -83,16 +84,14 @@ public class KafkaSetup {
      */
     public static void setupKafkaIfNeeded(ConfigMap configMap, KafkaNodePool brokerNodePools, KafkaNodePool controllerNodePools, KafkaUser kafkaUser, Kafka kafka) {
         LOGGER.info("Setup test Kafka {}/{}  and it's components", kafka.getMetadata().getNamespace(), kafka.getMetadata().getName());
-        if (ResourceUtils.getKubeResource(Kafka.class, kafka.getMetadata().getNamespace(), kafka.getMetadata().getName()) == null) {
-            KubeResourceManager.get().createResourceWithWait(configMap);
-            KubeResourceManager.get().createResourceWithWait(brokerNodePools);
-            KubeResourceManager.get().createResourceWithWait(controllerNodePools);
-            KubeResourceManager.get().createResourceWithWait(kafka);
-            KubeResourceManager.get().createResourceWithWait(kafkaUser);
-            WaitUtils.waitForSecretReady(kafkaUser.getMetadata().getNamespace(), kafkaUser.getMetadata().getName());
-        }  else {
-            LOGGER.warn("Skipping Kafka deployment, there already is a Kafka cluster");
-        }
+        KubeResourceManager.get().createOrUpdateResourceAsyncWait(
+                configMap,
+                brokerNodePools,
+                controllerNodePools,
+                kafka,
+                kafkaUser
+        );
+        WaitUtils.waitForSecretReady(kafkaUser.getMetadata().getNamespace(), kafkaUser.getMetadata().getName());
     }
 
     /**
