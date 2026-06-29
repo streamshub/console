@@ -56,14 +56,13 @@ jobs:
         id: generate-matrix
         run: ./.github/actions/systemtests/generate-test-matrix.sh
 
-
   # Run single or matrix of ST jobs
   run-systemtests:
     needs: generate-matrix
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-      max-parallel: 2
+      #max-parallel: 2
     permissions:
       contents: read
       statuses: write
@@ -88,28 +87,33 @@ jobs:
         with:
           ref: ${{ env.COMMIT_SHA }}
 
-      - name: Download Image Artifacts
-        uses: actions/download-artifact@v8
+      - name: Set Up JDK
+        uses: actions/setup-java@v5
         with:
-          name: streamshub-images
-          run-id: ${{ env.ARTIFACTS_RUN_ID }}
-          repository: ${{ env.REPO }}
-          github-token: ${{ env.GH_TOKEN }}
-          path: .
+          java-version: '21'
+          distribution: 'temurin'
 
-      - name: Setup Minikube
-        id: setup_minikube
-        uses: ./.github/actions/setup-minikube
-        with:
-          MEM: 15g
-          CPUS: 4
-
-      - name: Cache Maven packages
+      - name: Cache Maven Packages
         uses: actions/cache@v6
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Fetch Operator Framework Utilities
+        run: ./operator/bin/fetch-operator-utilities.sh
+
+      - name: Setup Minikube Environment
+        run: |
+          # Needed for skopeo in setup-minikube.sh script
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          
+          # Needed to copy locally built images to minikube registry
+          sudo apt-get install -y socat
+          
+          # Execute the setup
+          MINIKUBE_CPU_COUNT=4 MINIKUBE_MEMORY=15g MINIKUBE_DRIVER=docker ./systemtests/scripts/setup-minikube.sh
 
       - name: Set Dynamic Environment Vars
         run: |
@@ -122,16 +126,13 @@ jobs:
           set -x
           echo "Preparing YAML-based installation..."
 
-          gh run download ${{ env.ARTIFACTS_RUN_ID }} --repo ${{ env.REPO }} -n k8s-resources --dir ./k8s-resources
-
-          mkdir -p ./k8s-resources/merged
-          cat ./k8s-resources/kubernetes/consoles.console.streamshub.github.com-v1.yml \
-              ./k8s-resources/kubernetes/kubernetes.yml \
-              > ./k8s-resources/merged/streamshub-console-operator.yaml
+          cat ./operator/target/kubernetes/consoles.console.streamshub.github.com-v1.yml \
+              ./operator/target/kubernetes/kubernetes.yml \
+              > ./target/streamshub-console-operator.yaml
 
           # Export as environment variable
           echo "CONSOLE_INSTALL_TYPE=yaml" >> $GITHUB_ENV
-          CONSOLE_OPERATOR_BUNDLE_URL=$(realpath ./k8s-resources/merged/streamshub-console-operator.yaml)
+          CONSOLE_OPERATOR_BUNDLE_URL=$(realpath ./target/streamshub-console-operator.yaml)
           echo "CONSOLE_OPERATOR_BUNDLE_URL=$CONSOLE_OPERATOR_BUNDLE_URL" >> $GITHUB_ENV
 
           echo "YAML operator manifest created at: $CONSOLE_OPERATOR_BUNDLE_URL"
@@ -160,25 +161,19 @@ jobs:
         with:
           node-version: lts/*
       - run: |
-          npm install -g playwright
-          npx playwright install --with-deps
-
-      - name: Setup JDK
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'temurin'
+          npm install -g playwright --ignore-scripts
+          npx --ignore-scripts playwright install --with-deps
 
       - name: Build project
         run: |
-          mvn clean install -B -DskipTests --no-transfer-progress
+          mvn install -B -DskipTests --no-transfer-progress
 
       - name: Prepare systemtest ENV
         run: ./.github/actions/systemtests/prepare-systemtests-env.sh
 
       - name: Run systemtests
         run: |
-          mvn clean verify -B --no-transfer-progress -pl systemtests $PARAMETERS
+          mvn verify -B --no-transfer-progress -pl systemtests $PARAMETERS
 
       - name: Archive systemtest artifacts
         uses: actions/upload-artifact@v7
