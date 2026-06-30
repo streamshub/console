@@ -9,11 +9,11 @@ test("Topics page", async ({ page }) => {
     const label = page.locator("label.pf-v6-c-switch").first();
     expect(label).not.toBeNull();
     const labelText = await label?.innerText();
-    expect(labelText?.trim()).toBe("Hide internal topics");
+    expect(labelText?.trim()).toBe("Show internal topics");
     const input = label?.locator("input.pf-v6-c-switch__input").first();
     expect(input).not.toBeNull();
     const isChecked = await input?.isChecked();
-    expect(isChecked).toBe(true);
+    expect(isChecked).toBe(false);
     //const button = await page.$('button:has-text("Create Topic")');
     //expect(button).not.toBeNull();
     const filterInput = page.locator("div.pf-v6-c-input-group input").first();
