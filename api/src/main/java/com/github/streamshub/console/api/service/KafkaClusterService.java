@@ -24,6 +24,7 @@ import jakarta.ws.rs.BadRequestException;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.apache.kafka.clients.admin.DescribeFeaturesOptions;
 import org.apache.kafka.clients.admin.DescribeFeaturesResult;
 import org.apache.kafka.clients.admin.FeatureMetadata;
 import org.apache.kafka.clients.admin.FinalizedVersionRange;
@@ -70,6 +71,13 @@ public class KafkaClusterService {
 
     private static final String AUTHN_KEY = "authentication";
     private static final String AUTHN_METHOD_KEY = "method";
+
+    /**
+     * Options for the describeFeatures operation used to obtain a Kafka cluster
+     * version when a Strimzi Kafka CR is not present. We keep the timeout low to
+     * limit impact to list cluster operations.
+     */
+    private static final DescribeFeaturesOptions FEATURES_OPTS = new DescribeFeaturesOptions().timeoutMs(5000);
 
     @Inject
     Logger logger;
@@ -271,9 +279,16 @@ public class KafkaClusterService {
              * application-wide authentication.
              */
             Optional.ofNullable(kafkaContext.admin())
-                    .map(Admin::describeFeatures)
+                    .map(admin -> admin.describeFeatures(FEATURES_OPTS))
                     .map(DescribeFeaturesResult::featureMetadata)
-                    .map(metadata -> get(() -> metadata))
+                    .map(metadata -> {
+                        try {
+                            return get(() -> metadata);
+                        } catch (Exception e) {
+                            logger.infof("Exception fetching feature metadata for cluster %s: %s", config.clusterKey(), e);
+                            return null;
+                        }
+                    })
                     .map(FeatureMetadata::finalizedFeatures)
                     .map(features -> features.get(MetadataVersion.FEATURE_NAME))
                     .map(FinalizedVersionRange::maxVersionLevel)

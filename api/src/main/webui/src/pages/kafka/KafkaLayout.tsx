@@ -23,6 +23,7 @@ import { KafkaClusterSidebar } from '@/components/kafka/KafkaClusterSidebar';
 import { AppMasthead } from '@/components/app/AppMasthead';
 import { ReconciliationControls } from '@/components/kafka/overview/ReconciliationControls';
 import { useGroup } from '@/api/hooks/useGroups';
+import { KroxyliciousClusterLabel } from '@/components/kafka/KroxyliciousClusterLabel';
 
 export function KafkaLayout() {
   const { t } = useTranslation();
@@ -207,6 +208,7 @@ export function KafkaLayout() {
       <BreadcrumbItem>
         <Link to={`/kafka/${kafkaId}`}>
           {clusterName}
+          <KroxyliciousClusterLabel cluster={cluster} />
         </Link>
       </BreadcrumbItem>
       {isTopicDetailPage && (
