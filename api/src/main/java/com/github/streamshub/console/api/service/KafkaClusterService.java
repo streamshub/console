@@ -72,6 +72,13 @@ public class KafkaClusterService {
     private static final String AUTHN_KEY = "authentication";
     private static final String AUTHN_METHOD_KEY = "method";
 
+    /**
+     * Options for the describeFeatures operation used to obtain a Kafka cluster
+     * version when a Strimzi Kafka CR is not present. We keep the timeout low to
+     * limit impact to list cluster operations.
+     */
+    private static final DescribeFeaturesOptions FEATURES_OPTS = new DescribeFeaturesOptions().timeoutMs(5000);
+
     @Inject
     Logger logger;
 
@@ -272,8 +279,7 @@ public class KafkaClusterService {
              * application-wide authentication.
              */
             Optional.ofNullable(kafkaContext.admin())
-                    .map(admin -> admin.describeFeatures(new DescribeFeaturesOptions()
-                        .timeoutMs(5000)))
+                    .map(admin -> admin.describeFeatures(FEATURES_OPTS))
                     .map(DescribeFeaturesResult::featureMetadata)
                     .map(metadata -> {
                         try {
