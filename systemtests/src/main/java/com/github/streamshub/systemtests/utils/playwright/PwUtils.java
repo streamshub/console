@@ -70,11 +70,15 @@ public class PwUtils {
      * @param tcc the test case configuration containing page and Kafka cluster information
      */
     public static void login(TestCaseConfig tcc, String kafkaName) {
-        String overviewUrl = PwPageUrls.getOverviewPage(tcc, kafkaName);
-        LOGGER.info("Logging in to the Console with URL: {}", overviewUrl);
+        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, kafkaName);
+        LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
+        waitForConsoleUiAnonymousLoginToBecomeReady(tcc);
         // Anonymous login
-        navigate(tcc, overviewUrl);
-        waitForUrl(tcc, overviewUrl, true);
+        navigate(tcc, loginUrl);
+        waitForUrl(tcc, loginUrl, false);
+        // Go to login
+        waitForLocatorAndClick(tcc, CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
+        waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName), true);
         LOGGER.info("Successfully logged into Console");
     }
 

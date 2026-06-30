@@ -46,7 +46,7 @@ fi
 # Setup OLM -----------------------------------------------------
 OLM_INSTALL_SCRIPT=$(mktemp)
 
-curl --proto "=https" --tlsv1.3 -o ${OLM_INSTALL_SCRIPT} -sL \
+curl --proto "=https" -o ${OLM_INSTALL_SCRIPT} -sL \
   https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh
 
 echo "${OLM_SCRIPT_SHA256} ${OLM_INSTALL_SCRIPT}" | sha256sum --check --status || { echo "Hash verification failed"; exit 1; }

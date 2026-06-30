@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-      #max-parallel: 2
+      max-parallel: 2
     permissions:
       contents: read
       statuses: write
@@ -161,7 +161,8 @@ jobs:
         with:
           node-version: lts/*
       - run: |
-          npm install -g playwright --ignore-scripts
+          PLAYWRIGHT_VERSION=$(mvn help:evaluate -f systemtests/pom.xml -Dexpression=playwright.version -q -DforceStdout)
+          npm install -g playwright@${PLAYWRIGHT_VERSION} --ignore-scripts
           npx --ignore-scripts playwright install --with-deps
 
       - name: Build project

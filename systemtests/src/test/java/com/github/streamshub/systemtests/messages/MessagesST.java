@@ -1,23 +1,5 @@
 package com.github.streamshub.systemtests.messages;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
@@ -42,12 +24,24 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUt
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.MessagesChecks;
-import com.microsoft.playwright.Page.GetByRoleOptions;
-import com.microsoft.playwright.assertions.LocatorAssertions.ContainsTextOptions;
-import com.microsoft.playwright.assertions.PlaywrightAssertions;
-import com.microsoft.playwright.options.AriaRole;
-
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -325,12 +319,8 @@ public class MessagesST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         LOGGER.info("Wait for page toolbar to be fully loaded before filtering");
-        PlaywrightAssertions.assertThat(tcc.page().getByRole(AriaRole.HEADING, new GetByRoleOptions().setLevel(1)))
-            .containsText(kafkaTopicName, new ContainsTextOptions().setTimeout(20000));
-        PlaywrightAssertions.assertThat(tcc.page().getByPlaceholder("Search")).isVisible();
-
-        //PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
-        //PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
+        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
         LOGGER.info("Verify default state of displayed messages");
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
@@ -455,14 +445,14 @@ public class MessagesST extends AbstractST {
 
         // Setup UI form filtering
         // First set clients to send messages with KEY
-        KafkaClients clients1 = new KafkaClientsBuilder()
+        KafkaClients clients = new KafkaClientsBuilder()
             .withNamespaceName(tcc.namespace())
             .withTopicName(kafkaTopicName)
             .withMessageCount(MESSAGE_COUNT)
             .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName) + "-1")
-            .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName) + "-1")
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName) + "-1")
+            .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
+            .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
+            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName))
             .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
             .withUsername(tcc.kafkaUserName())
             .withMessage(KEY_FILTER_MESSAGE)
@@ -470,36 +460,22 @@ public class MessagesST extends AbstractST {
             .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
             .build();
 
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+
         // create second set of messages with different HEADER and MESSAGE
-        KafkaClients clients2 = new KafkaClientsBuilder(clients1)
-                .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName) + "-2")
-                .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName) + "-2")
-                .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName) + "-2")
-                .withMessageKey("NoDataInKey-True")
-                .withHeaders(HEADER_FILTER)
-                .withMessage(HEADER_FILTER_MESSAGE)
-                .build();
+        clients.setMessageKey("NoDataInKey-True");
+        clients.setHeaders(HEADER_FILTER);
+        clients.setMessage(HEADER_FILTER_MESSAGE);
 
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
         // create third set of messages with different MESSAGE
-        KafkaClients clients3 = new KafkaClientsBuilder(clients2)
-                .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName) + "-3")
-                .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName) + "-3")
-                .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName) + "-3")
-                .withHeaders("NoDataInHeader=true")
-                .withMessage(VALUE_FILTER)
-                .build();
+        clients.setHeaders("NoDataInHeader=true");
+        clients.setMessage(VALUE_FILTER);
 
-        KubeResourceManager.get().createOrUpdateResourceAsyncWait(
-                clients1.producer(),
-                clients1.consumer(),
-                clients2.producer(),
-                clients2.consumer(),
-                clients3.producer(),
-                clients3.consumer()
-        );
-        WaitUtils.waitForClientsSuccess(clients1);
-        WaitUtils.waitForClientsSuccess(clients2);
-        WaitUtils.waitForClientsSuccess(clients3);
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
         LOGGER.info("Filtering scenario prepared");
     }
 
