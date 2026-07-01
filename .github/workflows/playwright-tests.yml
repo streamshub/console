@@ -15,16 +15,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Download Images
-        uses: actions/download-artifact@v8
+      - name: Set Up JDK
+        uses: actions/setup-java@v5
         with:
-          name: streamshub-images
+          java-version: '21'
+          distribution: 'temurin'
+  
+      - name: Cache Maven Packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Fetch Operator Framework Utilities
+        run: ./operator/bin/fetch-operator-utilities.sh
 
       - name: Setup Minikube Environment
-        uses: ./.github/actions/setup-minikube
-        with:
-          MEM: 8g
-          CPUS: 2
+        run: |
+          # Needed for skopeo in setup-minikube.sh script
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          
+          # Needed to copy locally built images to minikube registry
+          sudo apt-get install -y socat
+          
+          # Execute the setup
+          MINIKUBE_CPU_COUNT=2 MINIKUBE_MEMORY=8g MINIKUBE_DRIVER=docker ./systemtests/scripts/setup-minikube.sh
 
       - name: Set Dynamic Environment Vars
         run: |
