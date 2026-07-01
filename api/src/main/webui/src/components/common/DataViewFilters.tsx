@@ -3,11 +3,13 @@
 // This file is adapted from PatternFly with minimal changes
 /**
  * This component was copied from @patternfly/react-data-view and modified to support arbitrary children,
- * e.g. to allow filters to render icons. The original component uses JSON.stringify to generate the childrenHash,
- * which breaks with a cyclic object error for some React component children.
+ * e.g. to allow filters to render icons. The original component uses JSON.stringify over child element properties
+ * to generate the childrenHash, which breaks with a cyclic object error for some React component children.
  * 
  * This component should be kept in sync with the original component and removed if and when the original no longer
- * uses JSON.stringify.
+ * results in cyclic object errors from JSON.stringify.
+ * 
+ * See: https://github.com/patternfly/patternfly-react/issues/12536
  */
 import { Children, isValidElement, cloneElement, useMemo, useState, useRef, useEffect, ReactElement, ReactNode } from 'react';
 import {
@@ -61,8 +63,12 @@ export const DataViewFilters = <T extends object>({
   const attributeContainerRef = useRef<HTMLDivElement>(null);
 
   const childrenHash = useMemo(() =>
-    Children.map(children, (child) =>
-      isValidElement(child) ? { type: child.type, key: child.key, props: child.props } : child
+    JSON.stringify(
+      Children.map(children, (child) =>
+        isValidElement(child)
+          ? { key: child.key, filterId: (child.props as any).filterId, title: (child.props as any).title }
+          : child
+      )
     )
   , [ children ]);
 
