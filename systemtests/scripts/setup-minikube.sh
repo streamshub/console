@@ -17,7 +17,7 @@ cleanup_and_exit() {
     fi
 
     if [ "${exit_code}" -ne 0 ]; then
-        echo "❌ Failed with exit code ${exit_code} at line ${last_line}"
+        echo "❌ Failed with exit code ${exit_code} at line ${last_line:-UNKNOWN}"
     fi
 
     kill $(jobs -p) 2>/dev/null || true
@@ -129,6 +129,8 @@ for i in $(seq 1 30); do
     nc -z localhost 5000 && break
     sleep 1
 done
+
+nc -z localhost 5000 || { echo "socat not reachable"; exit 1; }
 
 for img in console-api console-operator console-operator-bundle console-operator-catalog ; do
   # TODO: deeper evaluation of `minikube image load`
