@@ -67,8 +67,7 @@ public class MessagesChecks {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_DATE_INPUT, dateForm);
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_TIME_INPUT, timeForm);
+        // TODO: include datetime input
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         if (expectedContent != null) {

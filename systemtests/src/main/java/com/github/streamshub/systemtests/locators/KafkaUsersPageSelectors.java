@@ -39,22 +39,11 @@ public class KafkaUsersPageSelectors {
     }
 
     // Single user page
-    public static final String KUPS_KAFKA_USER_NAME_HEADER = SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME;
+    public static final String KUPS_KAFKA_USER_NAME_HEADER = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > h1.pf-v6-c-title";
 
 
     // Authorization table
-    public static final String KUPS_AUTHORIZATION_TABLE_ROWS = new CssBuilder(CssSelectors.PAGES_CONTENT)
-        .withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().nth(2).withChild()
-        .withElementSection().withComponentTabContent().withChild()
-        .withElementDiv().withComponentTabContent().withSubComponentBody().withChild()
-        .withElementDiv().withComponentScrollOuterWrapper().withChild()
-        .withElementDiv().withComponentScrollInnerWrapper().withChild()
-        .withElementTable().withComponentTable().withChild()
-        .withElementTbody().withComponentTable().withSubComponentTbody()
-        .build();
+    public static final String KUPS_AUTHORIZATION_TABLE_ROWS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-flex > div:nth-of-type(2) > section.pf-v6-c-tab-content > div.pf-v6-c-tab-content__body > table.pf-v6-c-table > tbody.pf-v6-c-table__tbody > tr.pf-v6-c-table__tr";
 
     public static String getAuthTableRowItems(int nth) {
         return CssBuilder.joinLocators(new CssBuilder(KUPS_AUTHORIZATION_TABLE_ROWS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
@@ -68,43 +57,11 @@ public class KafkaUsersPageSelectors {
         return new CssBuilder(getAuthTableRowItems(nthRow)).nth(nthColumn).build();
     }
 
-    // Description list
-    public static final String KUPS_DESCRIPTION_LIST = new CssBuilder(CssSelectors.PAGES_CONTENT)
-        .withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().nth(1).withChild()
-        .withElementDl().withComponentDescriptionList().withChild()
-        .withElementDiv().withComponentDescriptionList().withSubComponentGroup()
-        .build();
+    public static final String KUPS_DESCRIPTION_NAME = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-flex > div:nth-of-type(1) > dl.pf-v6-c-description-list > div.pf-v6-c-description-list__group:nth-of-type(1) > dd.pf-v6-c-description-list__description > div.pf-v6-c-description-list__text";
 
-    public static final String KUPS_DESCRIPTION_NAME = new CssBuilder(KUPS_DESCRIPTION_LIST)
-        .nth(1).withChild()
-        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
-        .withElementDiv().withComponentDescriptionList().withSubComponentText()
-        .build();
+    public static final String KUPS_DESCRIPTION_AUTH = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-flex > div:nth-of-type(1) > dl.pf-v6-c-description-list > div.pf-v6-c-description-list__group:nth-of-type(3) > dd.pf-v6-c-description-list__description > div.pf-v6-c-description-list__text";
 
-    public static final String KUPS_DESCRIPTION_AUTH = new CssBuilder(KUPS_DESCRIPTION_LIST)
-        .nth(3).withChild()
-        .withElementDd().withComponentDescriptionList().withSubComponentDescription().nth(1).withChild()
-        .withElementDiv().withComponentDescriptionList().withSubComponentText()
-        .build();
+    public static final String KUPS_DESCRIPTION_USERNAME = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-flex > div:nth-of-type(1) > dl.pf-v6-c-description-list > div.pf-v6-c-description-list__group:nth-of-type(2) > dd.pf-v6-c-description-list__description > div.pf-v6-c-description-list__text";
 
-    public static final String KUPS_DESCRIPTION_USERNAME = new CssBuilder(KUPS_DESCRIPTION_LIST)
-        .nth(2).withChild()
-        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
-        .withElementDiv().withComponentDescriptionList().withSubComponentText()
-        .build();
-
-    public static final String KUPS_DESCRIPTION_NAMESPACE = new CssBuilder(KUPS_DESCRIPTION_LIST)
-        .nth(4).withChild()
-        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
-        .withElementDiv().withComponentDescriptionList().withSubComponentText()
-        .build();
-
-    public static final String KUPS_DESCRIPTION_CREATION_TIMESTAMP = new CssBuilder(KUPS_DESCRIPTION_LIST)
-        .nth(5).withChild()
-        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
-        .withElementDiv().withComponentDescriptionList().withSubComponentText()
-        .build();
+    public static final String KUPS_DESCRIPTION_CREATION_TIMESTAMP = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-flex > div:nth-of-type(1) > dl.pf-v6-c-description-list > div.pf-v6-c-description-list__group:nth-of-type(5) > dd.pf-v6-c-description-list__description > div.pf-v6-c-description-list__text";
 }

@@ -65,7 +65,7 @@ public class KafkaUtils {
         Map<String, String> anno = oldKafka.getMetadata().getAnnotations();
         if (!java.util.Objects.equals(anno.get(annoKey), annoVal)) {
             anno.put(annoKey, annoVal);
-            KubeResourceManager.get().createOrUpdateResourceWithWait(
+            KubeResourceManager.get().updateResource(
                 new KafkaBuilder(oldKafka)
                 .editMetadata()
                     .withAnnotations(anno)
@@ -96,7 +96,7 @@ public class KafkaUtils {
         Map<String, String> anno = oldKafka.getMetadata().getAnnotations();
         if (anno.containsKey(annoKey)) {
             anno.remove(annoKey);
-            KubeResourceManager.get().createOrUpdateResourceWithWait(
+            KubeResourceManager.get().updateResource(
                 new KafkaBuilder(oldKafka)
                 .editMetadata()
                     .withAnnotations(anno)
@@ -218,7 +218,7 @@ public class KafkaUtils {
         }
 
         // Process new broker config listener list
-        KubeResourceManager.get().createOrUpdateResourceWithoutWait(
+        KubeResourceManager.get().updateResource(
             new KafkaBuilder(ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName))
                 .editSpec()
                     .editKafka()
@@ -232,7 +232,7 @@ public class KafkaUtils {
                 .build());
 
         // Edit KNP
-        KubeResourceManager.get().createOrUpdateResourceWithoutWait(
+        KubeResourceManager.get().updateResource(
             new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName)))
                 .editSpec()
                     .withReplicas(scaledBrokersCount)

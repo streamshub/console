@@ -15,6 +15,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakAp
 import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.skodjob.kubetest4j.KubeTestEnv;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.vertx.core.json.JsonObject;
@@ -117,6 +118,16 @@ public class KeycloakInstanceSetup {
      */
     public void setup() {
         LOGGER.info("----------- Install Keycloak Instance -----------");
+        if (ResourceUtils.getKubeResource(Deployment.class, namespace, Constants.POSTGRES) != null &&
+            ResourceUtils.getKubeResource(Secret.class, namespace, keycloakSecretName) != null) {
+
+            LOGGER.info("Keycloak already deployed");
+            Secret adminSecret = ResourceUtils.getKubeResource(Secret.class, namespace, keycloakSecretName);
+            userName = new String(Base64.getDecoder().decode(adminSecret.getData().get("username")), StandardCharsets.UTF_8);
+            userPassword = new String(Base64.getDecoder().decode(adminSecret.getData().get("password")), StandardCharsets.UTF_8);
+            return;
+        }
+
         KeycloakUtils.createTlsSecret(namespace, keycloakTlsSecretName, httpHostname());
 
         // Deploy postgres
@@ -170,6 +181,10 @@ public class KeycloakInstanceSetup {
             LOGGER.info("Realm {} already exists, deleting before reimport", realmName);
             KeycloakApiUtils.deleteRealm(httpsHostname(), userName, userPassword, realmName);
             WaitUtils.waitForKeycloakRealmDeleted(httpsHostname(), userName, userPassword, realmName);
+        }
+
+        if (KeycloakApiUtils.realmExists(httpsHostname(), userName, userPassword, realmName)) {
+
         }
         JsonObject realmJson = KeycloakUtils.loadRealmTemplate(consoleUiUrl, DEFAULT_REALM_TEMPLATE_PATH, realmName, clientId, roleMapping, userMapping);
         KeycloakApiUtils.importRealm(httpsHostname(), userName, userPassword, realmJson.encode());

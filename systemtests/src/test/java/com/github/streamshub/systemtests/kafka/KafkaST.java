@@ -3,10 +3,14 @@ package com.github.streamshub.systemtests.kafka;
 import java.util.List;
 
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.MessageStore;
@@ -25,41 +29,53 @@ import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
-import com.microsoft.playwright.Locator.ClickOptions;
-import com.microsoft.playwright.assertions.LocatorAssertions;
-import com.microsoft.playwright.assertions.PlaywrightAssertions;
+import com.github.streamshub.systemtests.utils.testchecks.KafkaNodePoolChecks;
+import com.github.streamshub.systemtests.utils.testutils.KafkaTestUtils;
 
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
-import io.strimzi.api.kafka.model.common.Condition;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBroker;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
+import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 
-import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
+import java.util.stream.Stream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TestTags.REGRESSION)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaST.class);
+    private static final String ADDITIONAL_BRK_KNP_NAME = "additional-brk";
+    private static final int ADDITIONAL_BRK_NODES = 2;
+
+    protected TestCaseConfig tcc;
 
     /**
-     * Tests the pause and resume functionality of Kafka reconciliation via the UI.
+     * Tests the pause and resume functionality of Kafka reconciliation via the UI, and warning display.
      *
      * <p>The test verifies the initial state where reconciliation is not paused, then pauses reconciliation using the UI modal.</p>
      * <p>It checks that the pause notification appears and that the Kafka resource annotation reflects the paused state.</p>
+     * <p>It also verifies that pausing reconciliation triggers a warning condition that is displayed in the UI.</p>
      * <p>After pausing, it attempts to scale Kafka brokers, which should not apply until reconciliation is resumed.</p>
      * <p>After that the test resumes reconciliation through the UI and verifies that the annotation is cleared and scaling proceeds as expected.</p>
      * <p>Finally, the test tries pausing reconciliation again and this time checks only for Kafka annotation. Later Kafka is resumed by another Resume button on top of the page.</p>
      *
-     * <p>This ensures that reconciliation pause/resume works correctly, blocking changes when paused and applying them upon resuming.</p>
+     * <p>This ensures that reconciliation pause/resume works correctly, blocking changes when paused and applying them upon resuming,
+     * and that warnings are properly displayed in the UI.</p>
      */
     @Test
-    void testPauseAndResumeReconciliation() {
-        final TestCaseConfig tcc = getTestCaseConfig();
+    @Order(Order.DEFAULT)
+    void testPauseResumeReconciliationAndDisplayWarnings() {
         final int scaledBrokersCount = 6;
 
         LOGGER.debug("Check that Kafka does not contain paused reconciliation");
@@ -92,6 +108,16 @@ public class KafkaST extends AbstractST {
 
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
+
+        // Verify warning is displayed in UI
+        LOGGER.info("Verify ReconciliationPaused warning appears in UI");
+
+        // Check the reconciliation paused warning is displayed in the warnings card
+        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+        PwUtils.waitForContainsText(tcc,
+            ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS,
+            MessageStore.reconciliationPausedWarning(),
+            false);
 
         // Scale brokers (without wait) and expect nothing happens because of paused reconciliation
         LOGGER.info("Trying to fail scaling Kafka brokers count to {}", scaledBrokersCount);
@@ -167,8 +193,8 @@ public class KafkaST extends AbstractST {
      * <p>This ensures that Kafka node scaling is correctly reflected in the UI and that related components react appropriately to changes.</p>
      */
     @Test
+    @Order(Order.DEFAULT)
     void testAddRemoveKafkaNodes() {
-        final TestCaseConfig tcc = getTestCaseConfig();
         final int scaledBrokersCount = 7;
 
         LOGGER.info("Verify that default Kafka broker count is {} and controller count is {}", Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS);
@@ -207,7 +233,7 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify new Kafka broker count on OverviewPage is {}", scaledBrokersCount);
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            scaledBrokersCount + "/" + scaledBrokersCount, TimeConstants.ACTION_WAIT_LONG);
+            scaledBrokersCount + "/" + scaledBrokersCount, TimeConstants.ACTION_WAIT_MEDIUM);
 
         LOGGER.debug("Verify new Kafka node count on Nodes page");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
@@ -254,138 +280,185 @@ public class KafkaST extends AbstractST {
     }
 
     /**
-     * Tests Kafka warnings display in the Console UI.
+     * Verifies filtering of Kafka Node Pools by name and by role in the UI.
      *
-     * <p>Verifies that initially no warnings are shown, then injects a faulty config to trigger a warning,
-     * checks the warning appears in the UI, and finally removes the fault to confirm warnings clear.</p>
+     * <p>This test validates that both default and additional Kafka Node Pools (broker and controller)
+     * are correctly displayed and filtered in the Console using different filter types.</p>
      *
-     * <p>This ensures the UI properly reflects Kafka’s warning status changes after config updates.</p>
+     * <p>The test performs the following steps:</p>
+     * <ul>
+     *     <li>Sets up an additional broker node pool for testing filters</li>
+     *     <li>Retrieves broker and controller node IDs from all node pools</li>
+     *     <li>Verifies the default node state contains all expected nodes</li>
+     *     <li><b>Filters by node pool name:</b>
+     *         <ul>
+     *             <li>Default broker pool - displays only default broker nodes</li>
+     *             <li>Additional broker pool - displays only additional broker nodes</li>
+     *             <li>Default controller pool - displays only controller nodes</li>
+     *         </ul>
+     *     </li>
+     *     <li><b>Filters by role:</b>
+     *         <ul>
+     *             <li>Broker role - displays all broker nodes (default + additional)</li>
+     *             <li>Controller role - displays all controller nodes</li>
+     *         </ul>
+     *     </li>
+     *     <li>Resets filters after each validation and verifies the total node count is restored</li>
+     * </ul>
      */
     @Test
-    void testDisplayKafkaWarnings() {
-        final TestCaseConfig tcc = getTestCaseConfig();
+    @Order(Integer.MAX_VALUE)
+    void testFilterKafkaNodes() {
+        // Add additional KNP for filtering
+        setupAdditionalBrokerNodePool();
 
-        List<String> initialWarningMessages = KafkaUtils.warningConditions(tcc.namespace(), tcc.kafkaName())
-                .stream()
-                .map(Condition::getMessage)
-                .toList();
+        LOGGER.debug("Fetching default broker and controller node IDs");
+        List<Integer> defaultBrokerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()))
+            .getStatus().getNodeIds();
 
-        LOGGER.info("Verify default Kafka state - expecting {} warnings/errors", initialWarningMessages.size());
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        List<Integer> defaultControllerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.controllerPoolName(tcc.kafkaName()))
+            .getStatus().getNodeIds();
 
-        // Open warnings
-        var warningsToggle = tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
-        PlaywrightAssertions.assertThat(warningsToggle).isVisible();
+        LOGGER.debug("Fetching additional broker node IDs");
+        List<Integer> addedBrokerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), ADDITIONAL_BRK_KNP_NAME)
+            .getStatus().getNodeIds();
 
-        // Check warnings list
-        var messageItems = tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
-        Runnable initialStateAssertions;
+        List<Integer> brokerIds = Stream.of(defaultBrokerIds, addedBrokerIds).flatMap(List::stream).toList();
+        int totalNodeCount = brokerIds.size() + defaultControllerIds.size();
 
-        /*
-         * Two possible initial states:
-         * - the list has warnings and is expanded by default
-         * - the list is empty and is collapsed by default
-         */
-        if (!initialWarningMessages.isEmpty()) {
-            initialStateAssertions = () -> {
-                messageItems.all()
-                    .stream()
-                    .map(PlaywrightAssertions::assertThat)
-                    .forEach(LocatorAssertions::isVisible);
-                PlaywrightAssertions
-                    .assertThat(messageItems)
-                    .hasCount(initialWarningMessages.size());
-                PlaywrightAssertions
-                    .assertThat(messageItems)
-                    .not()
-                    .containsText(MessageStore.clusterCardNoMessages());
-            };
-        } else {
-            initialStateAssertions = () -> {
-                LOGGER.debug("Verify warnings list contains only one row with `No messages` text");
-                warningsToggle.click(new ClickOptions().setForce(true));
-                PlaywrightAssertions
-                    .assertThat(messageItems)
-                    .isVisible();
-                PlaywrightAssertions
-                    .assertThat(messageItems)
-                    .hasCount(1);
-                PlaywrightAssertions
-                    .assertThat(messageItems)
-                    .containsText(MessageStore.clusterCardNoMessages());
-            };
+        KafkaNodePoolChecks.checkDefaultNodeState(tcc, brokerIds, defaultControllerIds);
+
+        // Test filtering by role
+        LOGGER.info("Testing filter by role");
+
+        LOGGER.debug("Filtering Kafka nodes by role: {}", ProcessRoles.BROKER.toValue());
+        KafkaTestUtils.filterKnpByRole(tcc, ProcessRoles.BROKER.toValue());
+        KafkaNodePoolChecks.checkFilterTypeResults(tcc, brokerIds, ProcessRoles.BROKER.toValue(), null);
+        KafkaTestUtils.resetKnpFilters(tcc, totalNodeCount);
+
+        LOGGER.debug("Filtering Kafka nodes by role: {}", ProcessRoles.CONTROLLER.toValue());
+        KafkaTestUtils.filterKnpByRole(tcc, ProcessRoles.CONTROLLER.toValue());
+        KafkaNodePoolChecks.checkFilterTypeResults(tcc, defaultControllerIds, ProcessRoles.CONTROLLER.toValue(), null);
+    }
+
+    /**
+     * Sets up an additional broker node pool for filtering tests.
+     *
+     * <p>Due to quorum voters, it's currently only possible to add broker role node pools.
+     * Controller node pools cause crash with: Configuration can't be updated dynamically
+     * because its scope is ready only: AlterConfigOp(name=controller.quorum.voters)</p>
+     */
+    private void setupAdditionalBrokerNodePool() {
+        // Skip if already created
+        if (ResourceUtils.getKubeResourceClient(KafkaNodePool.class).inNamespace(tcc.namespace()).withName(ADDITIONAL_BRK_KNP_NAME).get() != null) {
+            LOGGER.debug("Additional broker node pool {} already exists, skipping setup", ADDITIONAL_BRK_KNP_NAME);
+            return;
         }
 
-        initialStateAssertions.run();
+        LOGGER.info("Setting up additional broker node pool: {}", ADDITIONAL_BRK_KNP_NAME);
 
-        // Make kafka fail
-        LOGGER.info("Cause Kafka status to display Warning state by setting DeprecatedFields");
-        KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
-            kafka -> {
-                //KafkaClusterSpec spec = kafka.getSpec().getKafka();
-                //spec.setStorage(new JbodStorageBuilder()
-                //    .addToVolumes(new PersistentClaimStorageBuilder().withId(0).withSize("1Gi").withDeleteClaim(true).build())
-                //    .build());
-            });
+        // Update kafka to accept new brokers
+        Kafka currentKafka = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName());
 
-        WaitUtils.waitForKafkaCondition(tcc.namespace(), tcc.kafkaName(), k -> {
-            var warningCount = KafkaUtils.warningConditions(k).size();
-            return warningCount == initialWarningMessages.size() + 1;
-        });
+        // Get existing broker configuration
+        List<GenericKafkaListenerConfigurationBroker> existingBrokers = currentKafka.getSpec().getKafka().getListeners().stream()
+            .filter(l -> l.getName().equals(Constants.SECURE_LISTENER_NAME))
+            .findFirst()
+            .map(l -> l.getConfiguration() != null && l.getConfiguration().getBrokers() != null
+                ? l.getConfiguration().getBrokers()
+                : new java.util.ArrayList<GenericKafkaListenerConfigurationBroker>())
+            .orElse(new java.util.ArrayList<>());
 
-        // Expect a warning message
-        List<String> warningMessages = KafkaUtils.warningConditions(tcc.namespace(), tcc.kafkaName())
-                .stream()
-                .map(Condition::getMessage)
-                .toList();
-        LOGGER.debug("Kafka currently contains warning messages: {}", warningMessages);
-
-        // Reload using on page button
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_HEADER_RELOAD_BUTTON);
-
-        // Check warnings list
-        LOGGER.debug("Verify warnings list now contains {} row(s) with warning messages", warningMessages.size());
-
-        PlaywrightAssertions
-            .assertThat(messageItems)
-            .hasCount(warningMessages.size());
-        messageItems.all()
+        // Create new broker hosts for additional brokers
+        List<GenericKafkaListenerConfigurationBroker> newBrokerHosts = KafkaUtils.getNewNodePoolNodeIds(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_BROKER_REPLICAS + ADDITIONAL_BRK_NODES)
             .stream()
-            .map(PlaywrightAssertions::assertThat)
-            .forEach(LocatorAssertions::isVisible);
-        PlaywrightAssertions
-            .assertThat(messageItems)
-            .containsText(warningMessages.toArray(String[]::new));
+            .sorted()
+            .map(id -> new GenericKafkaListenerConfigurationBrokerBuilder()
+                .withBroker(id)
+                .withHost(String.join(".", "broker-" + id, Utils.hashStub(tcc.namespace()), tcc.kafkaName(), ClusterUtils.getClusterDomain()))
+                .build())
+            .toList();
 
-        // Remove wrong config
-        LOGGER.info("Remove incorrect Kafka config to get rid off the warning from UI status");
-        KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
-            kafka -> {
-                //kafka.getSpec().getKafka().setStorage(null);
-            }
-        );
+        // Combine existing and new brokers
+        List<GenericKafkaListenerConfigurationBroker> allBrokers = new java.util.ArrayList<>(existingBrokers);
+        allBrokers.addAll(newBrokerHosts);
 
-        WaitUtils.waitForKafkaCondition(tcc.namespace(), tcc.kafkaName(), k -> {
-            var warningCount = KafkaUtils.warningConditions(k).size();
-            return warningCount == initialWarningMessages.size();
-        });
+        KubeResourceManager.get().updateResource(
+            new KafkaBuilder(currentKafka)
+                .editSpec()
+                    .editKafka()
+                        .editMatchingListener(l -> l.getName().equals(Constants.SECURE_LISTENER_NAME))
+                            .editConfiguration()
+                                .withBrokers(allBrokers)
+                            .endConfiguration()
+                        .endListener()
+                    .endKafka()
+                .endSpec()
+                .build());
 
-        LOGGER.debug("Reload page and verify the initial assertions are again true");
-        tcc.page().reload(PwUtils.getDefaultReloadOpts());
-        initialStateAssertions.run();
+        KafkaNodePool addedBrokerPool = KafkaSetup.getDefaultBrokerNodePools(tcc.namespace(), tcc.kafkaName(), ADDITIONAL_BRK_NODES)
+            .editMetadata()
+                .withName(ADDITIONAL_BRK_KNP_NAME)
+            .endMetadata()
+            .build();
+
+        KubeResourceManager.get().createOrUpdateResourceWithWait(addedBrokerPool);
+        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpLabelSelector(tcc.kafkaName(), ADDITIONAL_BRK_KNP_NAME, ProcessRoles.BROKER), ADDITIONAL_BRK_NODES, true);
+        WaitUtils.waitForKafkaReady(tcc.namespace(), tcc.kafkaName());
     }
 
-    @AfterEach
-    void testCaseTeardown() {
-        getTestCaseConfig().playwright().close();
-    }
-
-    @BeforeEach
-    void testCaseSetup() {
-        final TestCaseConfig tcc = getTestCaseConfig();
+    @BeforeAll
+    void testClassSetup() {
+        tcc = Utils.getTestCaseConfig();
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
         PwUtils.login(tcc);
+    }
+
+    @BeforeEach
+    void testCaseCleanup() {
+        // Reset Kafka to default state for next test, even if current test failed
+        LOGGER.info("Resetting Kafka to default state");
+
+        // Ensure reconciliation is not paused
+        Kafka kafka = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName());
+        if (kafka != null && "true".equals(kafka.getMetadata().getAnnotations().getOrDefault(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false"))) {
+            LOGGER.info("Resuming paused reconciliation");
+            KubeResourceManager.get().replaceResource(kafka, k -> {
+                k.getMetadata().getAnnotations().put(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
+            });
+            WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
+        }
+
+        // Scale back to default broker count (in default broker pool)
+        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
+        if (knp != null && knp.getSpec().getReplicas() != Constants.REGULAR_BROKER_REPLICAS) {
+            LOGGER.info("Scaling default broker pool back to default count {}", Constants.REGULAR_BROKER_REPLICAS);
+            KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS);
+        }
+
+        // Clean up additional broker node pool if it exists (from filter tests)
+        KafkaNodePool additionalKnp = ResourceUtils.getKubeResourceClient(KafkaNodePool.class).inNamespace(tcc.namespace()).withName(ADDITIONAL_BRK_KNP_NAME).get();
+        if (additionalKnp != null) {
+            LOGGER.info("Removing additional broker node pool: {}", ADDITIONAL_BRK_KNP_NAME);
+            KubeResourceManager.get().deleteResourceWithWait(additionalKnp);
+            WaitUtils.waitForKafkaReady(tcc.namespace(), tcc.kafkaName());
+        }
+
+        // Verify that in UI kafka is updated
+        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc,
+            ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS,
+            true,
+            true,
+            TimeConstants.COMPONENT_LOAD_TIMEOUT_MEDIUM,
+            Constants.SELECTOR_RETRIES);
+    }
+
+    @AfterAll
+    void testClassTeardown() {
+        tcc.playwright().close();
     }
 }

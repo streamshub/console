@@ -3,337 +3,41 @@ package com.github.streamshub.systemtests.locators;
 public class SingleGroupPageSelectors {
     private SingleGroupPageSelectors() {}
 
-    public static final String SGPS_PAGE_HEADER = new CssBuilder(CssSelectors.PAGES_HEADER)
-        .withChild()
-        .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withLayoutFlex()
-        .build();
+    public static final String SGPS_PAGE_HEADER_NAME = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-flex > div:nth-of-type(1) > h1.pf-v6-c-title";
 
-    public static final String SGPS_PAGE_HEADER_NAME = new CssBuilder(SGPS_PAGE_HEADER)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(1).withChild()
-        .withElementDiv().nth(1).withChild()
-        .withElementH1().withComponentTitle()
-        .build();
+    public static final String SGPS_HEADER_BREADCRUMB_GROUP_NAME = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-breadcrumb:nth-of-type(1) > div.pf-v6-c-page__main-body > div.pf-v6-c-page__main-body > nav.pf-v6-c-breadcrumb > ol.pf-v6-c-breadcrumb__list > li.pf-v6-c-breadcrumb__item:nth-of-type(4)";
 
-    public static final String SGPS_RELOAD_PAGE_BUTTON = new CssBuilder(SGPS_PAGE_HEADER)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(1).withChild()
-        .withElementDiv().nth(2).withChild()
-        .withElementDiv().withChild()
-        .withElementButton().withComponentButton()
-        .build();
+    public static final String SGPS_RESET_CONSUMER_OFFSET_BUTTON = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-flex > div:nth-of-type(2) > button.pf-v6-c-button > span.pf-v6-c-button__text";
 
-    public static final String SGPS_PAGE = new CssBuilder(CssSelectors.PAGES_CONTENT)
-        .withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withComponentPanel().withChild()
-        .withElementDiv().withComponentPanel().withSubComponentMain().withChild()
-        .withElementDiv().withComponentPanel().withSubComponentMainBody()
-        .build();
+    public static final String SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_RESULT = "body.pf-v6-c-backdrop__open > div.pf-v6-c-menu:nth-of-type(3) > div.pf-v6-c-menu__content:nth-of-type(2) > ul.pf-v6-c-menu__list > li.pf-v6-c-menu__list-item:nth-of-type(2) > button.pf-v6-c-menu__item > span.pf-v6-c-menu__item-main > span.pf-v6-c-menu__item-text";
 
-    public static final String SGPS_FORM = new CssBuilder(SGPS_PAGE)
-        .withChild()
-        .withElementForm().withComponentForm()
-        .build();
-
-    public static final String SGPS_GROUPS_TABLE = new CssBuilder(CssSelectors.PAGES_CONTENT)
-        .withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementTable().withComponentTable()
-        .build();
-
-    public static final String SGPS_GROUPS_TABLE_ITEMS = new CssBuilder(SGPS_GROUPS_TABLE)
-        .withChild()
-        .withElementTbody().withComponentTable().withSubComponentTbody()
-        .build();
-
-    public static String getGroupsTableRow(int nth) {
-        return CssBuilder.joinLocators(new CssBuilder(SGPS_GROUPS_TABLE_ITEMS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
-    }
-
-    public static String getGroupsTableRowItem(int nthRow, int nthColumn) {
-        return new CssBuilder(getGroupsTableRow(nthRow)).nth(nthColumn).build();
-    }
-
-    public static final String SGPS_RESET_CONSUMER_OFFSET_BUTTON = new CssBuilder(SGPS_PAGE_HEADER)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(2).withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withChild()
-        .withElementButton().withComponentButton()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_CONSUMER_GROUP_NAME = new CssBuilder(SGPS_PAGE_HEADER)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(2).withChild()
-        .withElementDiv().withChild()
-        .withElementSpan().withChild()
-        .withElementB()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_APPLY_TARGET = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_APPLY_ON_ALL_TOPICS_RADIO = new CssBuilder(SGPS_RESET_PAGE_APPLY_TARGET)
-        .withChild()
-        .withElementDiv().withComponentRadio().nth(1).withChild()
-        .withElementInput().withComponentRadio().withSubComponentInput()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_APPLY_ON_SELECTED_TOPIC_RADIO = new CssBuilder(SGPS_RESET_PAGE_APPLY_TARGET)
-        .withChild()
-        .withElementDiv().withComponentRadio().nth(2).withChild()
-        .withElementInput().withComponentRadio().withSubComponentInput()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_INPUT = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
-        .withElementDiv().withComponentMenuToggle().withChild()
-        .withElementDiv().withComponentTextInputGroup().withChild()
-        .withElementDiv().withComponentTextInputGroup().withSubComponentMain().withChild()
-        .withElementSpan().withComponentTextInputGroup().withSubComponentText().withChild()
-        .withElementInput().withComponentTextInputGroup().withSubComponentTextInput()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS = new CssBuilder()
-        .withElementBody().withChild()
-        .withElementDiv().withComponentMenu().withChild()
-        .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
-        .withElementUl().withComponentMenu().withSubComponentList().withChild()
-        .withElementLi().withComponentMenu().withSubComponentListItem()
-        .build();
-
-    public static final String SGPS_AD_TARGET_SEARCH_TOPIC_RESULTS_BUTTON = new CssBuilder()
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem()
-        .build();
-
-    public static String getResetPageSelectedTopicResultItems(int nth) {
-        return CssBuilder.joinLocators(new CssBuilder(SGPS_GROUPS_TABLE_ITEMS).nth(nth).build(), SGPS_AD_TARGET_SEARCH_TOPIC_RESULTS_BUTTON);
-    }
-
-    public static final String SGPS_RESET_PAGE_PARTITIONS_RADIOS = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_ALL_PARTITIONS_RADIO = new CssBuilder(SGPS_RESET_PAGE_PARTITIONS_RADIOS)
-        .withChild()
-        .withElementDiv().withComponentRadio().nth(1).withChild()
-        .withElementInput().withComponentRadio().withSubComponentInput()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_SELECTED_PARTITION_RADIO = new CssBuilder(SGPS_RESET_PAGE_PARTITIONS_RADIOS)
-        .withChild()
-        .withElementDiv().withComponentRadio().nth(2).withChild()
-        .withElementInput().withComponentRadio().withSubComponentInput()
-        .build();
+    public static final String SGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON = "body.pf-v6-c-backdrop__open > div:nth-of-type(2) > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > div.pf-v6-c-modal-box__body:nth-of-type(2) > form.pf-v6-c-form > section.pf-v6-c-form__section:nth-of-type(2) > div.pf-v6-c-form__group:nth-of-type(2) > div.pf-v6-c-form__group-control:nth-of-type(2) > button.pf-v6-c-menu-toggle";
 
 
-    public static final String SGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_BUTTON = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
-        .withElementButton().withComponentMenuToggle()
-        .build();
+    public static final String SGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET = "body.pf-v6-c-backdrop__open > div.pf-v6-c-menu:nth-of-type(3) > div.pf-v6-c-menu__content > ul.pf-v6-c-menu__list > li.pf-v6-c-menu__list-item:nth-of-type(1) > button.pf-v6-c-menu__item > span.pf-v6-c-menu__item-main > span.pf-v6-c-menu__item-text";
 
-    public static final String SGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_ITEMS = SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS;
+    public static final String SGPS_RESET_PAGE_OFFSET_LATEST_OFFSET = "body.pf-v6-c-backdrop__open > div.pf-v6-c-menu:nth-of-type(3) > div.pf-v6-c-menu__content > ul.pf-v6-c-menu__list > li.pf-v6-c-menu__list-item:nth-of-type(2) > button.pf-v6-c-menu__item > span.pf-v6-c-menu__item-main > span.pf-v6-c-menu__item-text";
 
-    public static final String SGPS_AD_RESET_PAGE_SELECTED_PARTITION_ITEM_BUTTTON = new CssBuilder(SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS)
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem().withChild()
-        .withElementSpan().withComponentMenu().withSubComponentItemMain().withChild()
-        .withElementSpan().withComponentMenu().withSubComponentItemText()
-        .build();
+    public static final String SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET_ISO = "body.pf-v6-c-backdrop__open > div.pf-v6-c-menu:nth-of-type(3) > div.pf-v6-c-menu__content > ul.pf-v6-c-menu__list > li.pf-v6-c-menu__list-item:nth-of-type(3) > button.pf-v6-c-menu__item > span.pf-v6-c-menu__item-main > span.pf-v6-c-menu__item-text";
 
-    public static String getResetPageSelectedPartitionItems(int nth) {
-        return CssBuilder.joinLocators(new CssBuilder(SGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_ITEMS).nth(nth).build(), SGPS_AD_RESET_PAGE_SELECTED_PARTITION_ITEM_BUTTTON);
-    }
+    public static final String SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET_UNIX = "body.pf-v6-c-backdrop__open > div.pf-v6-c-menu:nth-of-type(3) > div.pf-v6-c-menu__content > ul.pf-v6-c-menu__list > li.pf-v6-c-menu__list-item:nth-of-type(4) > button.pf-v6-c-menu__item > span.pf-v6-c-menu__item-main > span.pf-v6-c-menu__item-text";
 
-    public static final String SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON = new CssBuilder(SGPS_PAGE)
-        .withChild()
-        .withElementForm().withComponentForm().withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
-        .withElementDiv().withComponentMenuToggle().withChild()
-        .withElementButton().withComponentMenuToggle().withSubComponentButton()
-        .build();
+    public static final String SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS = "body.pf-v6-c-backdrop__open > div.pf-v6-c-menu:nth-of-type(3) > div.pf-v6-c-menu__content > ul.pf-v6-c-menu__list > li.pf-v6-c-menu__list-item:nth-of-type(5) > button.pf-v6-c-menu__item > span.pf-v6-c-menu__item-main > span.pf-v6-c-menu__item-text";
 
-    public static final String SGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementButton().withComponentMenuToggle()
-        .build();
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_UNIX = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop:nth-of-type(2) > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > div.pf-v6-c-modal-box__body:nth-of-type(2) > form.pf-v6-c-form > section.pf-v6-c-form__section:nth-of-type(2) > div.pf-v6-c-form__group:nth-of-type(3) > div.pf-v6-c-form__group-control:nth-of-type(2) > div:nth-of-type(1) > div > span.pf-v6-c-form-control > input";
 
+    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_ISO = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop:nth-of-type(2) > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > div.pf-v6-c-modal-box__body:nth-of-type(2) > form.pf-v6-c-form > section.pf-v6-c-form__section:nth-of-type(2) > div.pf-v6-c-form__group:nth-of-type(3) > div.pf-v6-c-form__group-control:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > span.pf-v6-c-form-control > input";
 
-    public static final String SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS = SGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS;
+    public static final String SGPS_RESET_PAGE_OFFSET_RESET_BUTTON = "body.pf-v6-c-backdrop__open > div#pf-modal-part-2.pf-v6-c-backdrop:nth-of-type(2) > div.pf-v6-l-bullseye > div#pf-modal-part-1.pf-v6-c-modal-box > footer.pf-v6-c-modal-box__footer > button.pf-v6-c-button:nth-of-type(1) > span.pf-v6-c-button__text";
 
-    public static final String SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(3)
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem()
-        .build();
+    public static final String SGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON = "body.pf-v6-c-backdrop__open > div#pf-modal-part-2.pf-v6-c-backdrop:nth-of-type(2) > div.pf-v6-l-bullseye > div#pf-modal-part-1.pf-v6-c-modal-box > footer.pf-v6-c-modal-box__footer > button.pf-v6-c-button:nth-of-type(2) > span.pf-v6-c-button__text";
 
-    public static final String SGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(1)
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem()
-        .build();
+    public static final String SGPS_DRY_RUN_COMMAND = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > div.pf-v6-c-modal-box__body > div.pf-v6-c-expandable-section > div.pf-v6-c-expandable-section__content > div.pf-v6-c-code-block > div.pf-v6-c-code-block__content > pre.pf-v6-c-code-block__pre > code.pf-v6-c-code-block__code";
+    public static final String SGPS_DRY_RUN_COMMAND_DROPDOWN = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > div.pf-v6-c-modal-box__body > div.pf-v6-c-expandable-section > div.pf-v6-c-expandable-section__toggle > button.pf-v6-c-button > span.pf-v6-c-button__text";
+    public static final String SGPS_CANCEL_DRY_RUN_OFFSET_BUTTON = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop:nth-of-type(3) > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > footer.pf-v6-c-modal-box__footer > button.pf-v6-c-button > span.pf-v6-c-button__text";
 
-    public static final String SGPS_RESET_PAGE_OFFSET_LATEST_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(2)
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem()
-        .build();
+    public static final String SGPS_SELECTED_TOPIC_DROPDOWN_BUTTON = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop:nth-of-type(2) > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > div.pf-v6-c-modal-box__body:nth-of-type(2) > form.pf-v6-c-form > section.pf-v6-c-form__section:nth-of-type(1) > div.pf-v6-c-form__group:nth-of-type(2) > div.pf-v6-c-form__group-control:nth-of-type(2) > button.pf-v6-c-menu-toggle";
 
-    public static final String SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(3)
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem()
-        .build();
+    public static final String SGPS_SELECTED_TOPIC_DROPDOWN_SEARCH_INPUT = "body.pf-v6-c-backdrop__open > div.pf-v6-c-menu:nth-of-type(3) > div.pf-v6-c-menu__search:nth-of-type(1) > div.pf-v6-c-menu__search-input > div.pf-v6-c-text-input-group > div.pf-v6-c-text-input-group__main:nth-of-type(1) > span.pf-v6-c-text-input-group__text > input.pf-v6-c-text-input-group__text-input";
 
-    public static final String SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(4)
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_PARTITION_SPECIFIC_DATETIME_OFFSET = new CssBuilder(SGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(4)
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementSpan().withComponentFormControl().withChild()
-        .withElementInput()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementDiv().withComponentRadio()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO = new CssBuilder(SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME)
-        .nth(1).withChild()
-        .withElementInput().withComponentRadio().withSubComponentInput()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO = new CssBuilder(SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME)
-        .nth(2).withChild()
-        .withElementInput().withComponentRadio().withSubComponentInput()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_UNIX = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementSpan().withComponentFormControl().withChild()
-        .withElementInput()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_ISO = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementSpan().withComponentFormControl().withChild()
-        .withElementInput()
-        .build();
-
-
-
-    public static final String SGPS_RESET_PAGE_RESET_BUTTONS = new CssBuilder(SGPS_FORM)
-        .withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementDiv().withComponentForm().withSubComponentActions()
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_RESET_BUTTON = new CssBuilder(SGPS_RESET_PAGE_RESET_BUTTONS)
-        .withChild()
-        .withElementButton().withComponentButton().nth(1)
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON = new CssBuilder(SGPS_RESET_PAGE_RESET_BUTTONS)
-        .withChild()
-        .withElementDiv().withComponentMenuToggle().withChild()
-        .withElementButton().withComponentMenuToggle().withSubComponentButton().nth(1)
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_DRY_RUN_MORE_BUTTON = new CssBuilder(SGPS_RESET_PAGE_RESET_BUTTONS)
-        .withChild()
-        .withElementDiv().withComponentMenuToggle().withChild()
-        .withElementButton().withComponentMenuToggle().withSubComponentButton().nth(2)
-        .build();
-
-    public static final String SGPS_RESET_PAGE_OFFSET_CANCEL_BUTTON = new CssBuilder(SGPS_RESET_PAGE_RESET_BUTTONS)
-        .withChild()
-        .withElementButton().withComponentButton().nth(2).withChild()
-        .withElementSpan().withComponentButton().withSubComponentText()
-        .build();
-
-    public static final String SGPS_DRY_RUN_COMMAND = new CssBuilder(SGPS_PAGE)
-        .withChild()
-        .withElementDiv().withLayoutStack().withChild()
-        .withElementDiv().withLayoutStack().withSubComponentItem().nth(1).withChild()
-        .withElementDiv().withComponentClipboardCopy().withChild()
-        .withElementDiv().withComponentClipboardCopy().withSubComponentGroup().withChild()
-        .withElementSpan().withComponentFormControl().withChild()
-        .withElementInput()
-        .build();
-
-    public static final String SGPS_BACK_TO_EDIT_OFFSET_BUTTON = new CssBuilder(CssSelectors.PAGES_CONTENT)
-        .withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withComponentPanel().withChild()
-        .withElementDiv().withComponentPanel().withSubComponentMain().withChild()
-        .withElementDiv().withComponentPanel().withSubComponentMainBody().withChild()
-        .withElementDiv().withLayoutStack().withChild()
-        .withElementDiv().withLayoutStack().withSubComponentItem().nth(4).withChild()
-        .withElementButton().withComponentButton().withChild()
-        .withElementSpan().withComponentButton().withSubComponentText()
-        .build();
-
-    public static final String SGPS_SELECTED_TOPIC_RADIO = new CssBuilder(SGPS_PAGE)
-        .withChild()
-        .withElementForm().withComponentForm().withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementDiv().withComponentRadio().nth(2).withChild()
-        .withElementInput().withComponentRadio().withSubComponentInput()
-        .build();
-
-    public static final String SGPS_SELECTED_TOPIC_INPUT = new CssBuilder(SGPS_PAGE)
-        .withChild()
-        .withElementForm().withComponentForm().withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
-        .withElementDiv().withComponentMenuToggle().withChild()
-        .withElementDiv().withComponentTextInputGroup().withChild()
-        .withElementDiv().withComponentTextInputGroup().withSubComponentMain().withChild()
-        .withElementSpan().withComponentTextInputGroup().withSubComponentText().withChild()
-        .withElementInput().withComponentTextInputGroup().withSubComponentTextInput()
-        .build();
 }

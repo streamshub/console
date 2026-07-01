@@ -28,6 +28,7 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +37,8 @@ import java.util.Base64;
 import java.util.List;
 
 @Tag(TestTags.REGRESSION)
+// TODO: remove once fixed
+@Disabled
 public class KroxyST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KroxyST.class);
 

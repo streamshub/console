@@ -12,8 +12,6 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
-import com.github.streamshub.systemtests.locators.CssBuilder;
-import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.SingleGroupPageSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
@@ -32,7 +30,6 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUt
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testutils.GroupsTestUtils;
-import com.microsoft.playwright.Locator;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
@@ -108,8 +105,8 @@ public class GroupsST extends AbstractST {
             KafkaClients clients = new KafkaClientsBuilder()
                 .withNamespaceName(tcc.namespace())
                 .withTopicName(topicName)
-                .withMessageCount(Constants.MESSAGE_COUNT)
-                .withDelayMs(0)
+                .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
+                .withDelayMs(1000)
                 .withProducerName(KafkaNamingUtils.producerName(topicName))
                 .withConsumerName(KafkaNamingUtils.consumerName(topicName))
                 .withConsumerGroup(k8sFriendlyName)
@@ -118,54 +115,48 @@ public class GroupsST extends AbstractST {
                 .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
                 .build();
 
-            KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-            WaitUtils.waitForClientsSuccess(clients);
-        }
+            KubeResourceManager.get().createResourceAsyncWait(clients.producer(), clients.consumer());
 
-        LOGGER.info("Verify group names");
-        for (var scenario : scenarios) {
-            String displayName = scenario.getKey();
-            String consumerGroupName = scenario.getValue();
+            LOGGER.info("Verify group names");
             String consumerGroupEncodedName = Identifiers.encode(consumerGroupName);
 
             // Verify row on groups page
             LOGGER.info("Verify group '{}' is present in groups table", displayName);
             PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
             PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
-            GroupsTestUtils.waitForGroupInTable(tcc, consumerGroupName);
+            PwUtils.fill(tcc, GroupsPageSelectors.GPS_GROUP_NAME_INPUT, consumerGroupName);
+            PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_RESULT_FIRST_NAME, consumerGroupName, false);
 
             // Verify single group page
             LOGGER.info("Navigate to single consumer group page for '{}'", displayName);
             PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName));
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
-            PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_HEADER_BREADCRUMB_GROUP_NAME, consumerGroupName, true);
 
             // Click through from groups page
             LOGGER.info("Navigate back to groups page and test click-through for '{}'", displayName);
             PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
             PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
-            GroupsTestUtils.clickGroupInTable(tcc, consumerGroupName);
+            PwUtils.fill(tcc, GroupsPageSelectors.GPS_GROUP_NAME_INPUT, consumerGroupName);
+            PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_RESULT_FIRST_NAME, consumerGroupName, false);
+            tcc.page().click(GroupsPageSelectors.GPS_RESULT_FIRST_NAME);
 
             PwUtils.waitForUrl(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), true);
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
-            PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_HEADER_BREADCRUMB_GROUP_NAME, consumerGroupName, true);
 
             // Verify group on topic page
             LOGGER.info("Check topic page if consumer group '{}' is present", displayName);
-            String topicName = "topic-" + Utils.hashStub(displayName);
             final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
 
             PwUtils.navigate(tcc, PwPageUrls.getSingleTopicGroupsPage(tcc, tcc.kafkaName(), topicId), true, true);
 
             // Topic page is focused on one topic so filter by text is safer than row index
-            PwUtils.waitForLocatorAndClick(tcc.page().locator(TopicsPageSelectors.TPS_GROUPS_TABLE_ITEMS)
-                .filter(new Locator.FilterOptions().setHasText(consumerGroupName))
-                .locator("a")
-                .first());
+            PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_GROUPS_TABLE_FIRST_GROUP);
 
             PwUtils.waitForUrl(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), true);
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
-            PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_HEADER_BREADCRUMB_GROUP_NAME, consumerGroupName, true);
         }
     }
 
@@ -204,31 +195,12 @@ public class GroupsST extends AbstractST {
             Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
             // Only one that uses `--to-latest` which sets the index to nth+1 for consuming the next message
             Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.LATEST, null, String.valueOf(Constants.MESSAGE_COUNT_HIGH)),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, earliestOffsetIndex),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, middleOffsetIndex),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, earliestOffsetIndex),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, latestOffsetIndex),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex)
-        );
-    }
-
-    /**
-     * Provides a few parameterized scenarios for verifying consumer group offset reset functionality
-     * across all topics and partitions using different reset types.
-     * Same types as above with added specific offset reset types for single topic.
-     */
-    public Stream<Arguments> resetOffsetSpecificTopicScenarios() {
-        final String earliestOffsetIndex = "0";
-        // Use index to reset consumers to previous offset to read timestamp
-        final String latestOffsetIndex = String.valueOf(Constants.MESSAGE_COUNT_HIGH - 1);
-        final String middleOffsetIndex = String.valueOf((int) Math.ceil(Constants.MESSAGE_COUNT_HIGH / 2.0) - 1);
-
-        return Stream.of(
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex),
-            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DELETE_COMMITED_OFFSETS, null, earliestOffsetIndex)
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME_UNIX, ResetOffsetDateTimeType.UNIX_EPOCH, earliestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME_UNIX, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME_UNIX, ResetOffsetDateTimeType.UNIX_EPOCH, middleOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME_ISO, ResetOffsetDateTimeType.ISO_8601, earliestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME_ISO, ResetOffsetDateTimeType.ISO_8601, latestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME_ISO, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex)
         );
     }
 
@@ -295,14 +267,18 @@ public class GroupsST extends AbstractST {
                 } else {
                     String epoch = KafkaCmdUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, kafkaTopicName,
                         KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), expectedOffset, 0, 1);
-                    resetValue = Instant.ofEpochMilli(Long.parseLong(epoch)).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                    resetValue = Instant.ofEpochMilli(Long.parseLong(epoch)).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
                 }
             }
 
-            PwUtils.navigate(tcc, PwPageUrls.getGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
-            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
-
+            PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+            PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON);
             GroupsTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
+
+            PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+            PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+            PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON);
             GroupsTestUtils.execResetOffset(tcc, resetType, dateTimeType, resetValue);
 
             LOGGER.info("Verify expected consumer offset value");
@@ -312,6 +288,25 @@ public class GroupsST extends AbstractST {
         }
     }
 
+
+    /**
+     * Provides a few parameterized scenarios for verifying consumer group offset reset functionality
+     * across all topics and partitions using different reset types.
+     * Same types as above with added specific offset reset types for single topic.
+     */
+    public Stream<Arguments> resetOffsetSpecificTopicScenarios() {
+        final String earliestOffsetIndex = "0";
+        // Use index to reset consumers to previous offset to read timestamp
+        final String latestOffsetIndex = String.valueOf(Constants.MESSAGE_COUNT_HIGH - 1);
+        final String middleOffsetIndex = String.valueOf((int) Math.ceil(Constants.MESSAGE_COUNT_HIGH / 2.0) - 1);
+
+        return Stream.of(
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME_UNIX, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DATE_TIME_ISO, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex),
+            Arguments.of(Constants.MESSAGE_COUNT_HIGH, ResetOffsetType.DELETE_COMMITED_OFFSETS, null, earliestOffsetIndex)
+        );
+    }
     @TestBucket(RESET_OFFSET_BUCKET)
     @ParameterizedTest(name = "Type: {1} - DateTime: {2} - Offset: {3}")
     @MethodSource("resetOffsetSpecificTopicScenarios")
@@ -349,22 +344,27 @@ public class GroupsST extends AbstractST {
             } else {
                 String epoch = KafkaCmdUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, kafkaTopicName,
                     KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), expectedOffset, 0, 1);
-                resetValue = Instant.ofEpochMilli(Long.parseLong(epoch)).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                resetValue = Instant.ofEpochMilli(Long.parseLong(epoch)).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
             }
         }
 
-        PwUtils.navigate(tcc, PwPageUrls.getGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
-        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+
         // Dry-run
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_RADIO);
-        PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_INPUT, kafkaTopicName);
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON);
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_DROPDOWN_BUTTON);
+        PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_DROPDOWN_SEARCH_INPUT, kafkaTopicName);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_RESULT);
         GroupsTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
 
         // Reset offset
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_RADIO);
-        PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_INPUT, kafkaTopicName);
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON);
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_CONSUMER_OFFSET_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_DROPDOWN_BUTTON);
+        PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_SELECTED_TOPIC_DROPDOWN_SEARCH_INPUT, kafkaTopicName);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_RESULT);
         GroupsTestUtils.execResetOffset(tcc, resetType, dateTimeType, resetValue);
 
         LOGGER.info("Verify expected consumer offset value");

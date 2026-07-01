@@ -1,7 +1,6 @@
 package com.github.streamshub.systemtests.utils.testutils;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
 import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
@@ -30,7 +29,7 @@ public class GroupsTestUtils {
      * @param offsetType the type of offset to select (e.g., EARLIEST, LATEST, DATE_TIME, CUSTOM_OFFSET)
      * @param value      the value to fill in, used only for {@code CUSTOM_OFFSET} (and reused elsewhere for consistency)
      */
-    public static void selectResetOffsetType(TestCaseConfig tcc, ResetOffsetType offsetType, String value) {
+    public static void selectResetOffsetType(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.debug("Select reset offset type");
         PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON);
 
@@ -41,17 +40,13 @@ public class GroupsTestUtils {
             case LATEST:
                 PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_LATEST_OFFSET);
                 break;
-            case DATE_TIME:
-                Locator specificPartitionRadio = tcc.page().locator(SingleGroupPageSelectors.SGPS_RESET_PAGE_SELECTED_PARTITION_RADIO);
-                if (specificPartitionRadio.isVisible() && specificPartitionRadio.getAttribute(Constants.CHECKED_ATTRIBUTE) != null) {
-                    PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_PARTITION_SPECIFIC_DATETIME_OFFSET);
-                } else {
-                    PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET);
-                }
+            case DATE_TIME_ISO:
+                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET_ISO);
+                fillResetOffsetDatetime(tcc, dateTimeType, value);
                 break;
-            case CUSTOM_OFFSET:
-                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET);
-                PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT, value);
+            case DATE_TIME_UNIX:
+                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET_UNIX);
+                fillResetOffsetDatetime(tcc, dateTimeType, value);
                 break;
             case DELETE_COMMITED_OFFSETS:
                 PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS);
@@ -71,47 +66,15 @@ public class GroupsTestUtils {
      * @param dateTimeType the format of the datetime input ({@code UNIX_EPOCH} or {@code ISO_8601})
      * @param value        the datetime value to enter into the input field
      */
-    public static void selectResetOffsetDatetimeTypeAndFill(TestCaseConfig tcc, ResetOffsetDateTimeType dateTimeType, String value) {
+    public static void fillResetOffsetDatetime(TestCaseConfig tcc, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.debug("Select reset offset datetime type and fill value");
         switch (dateTimeType) {
             case UNIX_EPOCH:
-                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO);
                 PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_UNIX, value);
                 break;
             case ISO_8601:
-                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO);
                 PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_ISO, value);
                 break;
-        }
-    }
-
-    /**
-     * Selects and fills the reset offset parameters in the consumer group offset reset UI.
-     * <p>
-     * This method handles the UI interactions required to set the reset offset type
-     * and associated parameters based on the provided input values. It delegates to helper
-     * methods based on the type of offset:
-     * <ul>
-     *   <li>If {@code offsetType} is {@code DATE_TIME}, it selects the datetime type and fills the value field.</li>
-     *   <li>If {@code offsetType} is {@code CUSTOM_OFFSET}, it fills the custom offset input field.</li>
-     *   <li>For all types, it selects the correct offset type radio button or dropdown.</li>
-     * </ul>
-     *
-     * @param tcc          the test case configuration containing the page context and cluster setup
-     * @param offsetType   the type of offset reset to apply (e.g., {@code EARLIEST}, {@code LATEST}, {@code DATE_TIME}, {@code CUSTOM_OFFSET})
-     * @param dateTimeType the type of datetime input format to use (only applicable when {@code offsetType} is {@code DATE_TIME})
-     * @param value        the value to input (timestamp string or numeric offset, depending on {@code offsetType})
-     */
-    public static void selectResetOffsetParameters(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
-        LOGGER.debug("Select reset offset parameters");
-        selectResetOffsetType(tcc, offsetType, value);
-
-        if (offsetType.equals(ResetOffsetType.DATE_TIME)) {
-            selectResetOffsetDatetimeTypeAndFill(tcc, dateTimeType, value);
-        }
-
-        if (offsetType.equals(ResetOffsetType.CUSTOM_OFFSET)) {
-            PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT, value);
         }
     }
 
@@ -132,11 +95,12 @@ public class GroupsTestUtils {
      */
     public static void execDryRun(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.info("DryRun reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
-        selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
+        selectResetOffsetType(tcc, offsetType, dateTimeType, value);
 
         PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, SingleGroupPageSelectors.SGPS_DRY_RUN_COMMAND, offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true, true);
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_BACK_TO_EDIT_OFFSET_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_DRY_RUN_COMMAND_DROPDOWN);
+        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_DRY_RUN_COMMAND, offsetType.getCommand(), false, false);
+        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_CANCEL_DRY_RUN_OFFSET_BUTTON);
     }
 
     /**
@@ -155,7 +119,7 @@ public class GroupsTestUtils {
      */
     public static void execResetOffset(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.info("Reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
-        selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
+        selectResetOffsetType(tcc, offsetType, dateTimeType, value);
         PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_RESET_BUTTON);
     }
 

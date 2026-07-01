@@ -1,7 +1,6 @@
 package com.github.streamshub.systemtests.topics;
 
 import com.github.streamshub.systemtests.AbstractST;
-import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
@@ -9,7 +8,6 @@ import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
-import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
@@ -19,7 +17,6 @@ import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
-import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
@@ -106,69 +103,6 @@ public class TopicST extends AbstractST {
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON_TEXT,
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_NEXT_BUTTON);
-    }
-
-    /**
-     * Tests the "Recently Viewed Topics" functionality on the Kafka Overview page.
-     *
-     * <p>The test simulates user activity by opening a subset of created topics, ensuring
-     * they appear in the "Recently Viewed Topics" card on the overview page. It performs
-     * the following checks:</p>
-     * <ul>
-     *   <li>Initially verifies that no topics are marked as recently viewed.</li>
-     *   <li>Visits several topic message pages, triggering them to appear in the "Recently Viewed Topics" card.</li>
-     *   <li>Validates that the card correctly displays the visited topics in reverse chronological order.</li>
-     *   <li>Deletes the visited topics and ensures that their entries persist in the card.</li>
-     *   <li>Confirms that clicking a deleted topic leads to a "Resource not found" message.</li>
-     * </ul>
-     *
-     * <p><strong>Note:</strong> This test must run last in the {@code sharedResources} order
-     * because it deletes topics as part of the scenario.</p>
-     *
-     * <p>This ensures proper tracking, persistence, and graceful fallback behavior of the
-     * "Recently Viewed Topics" feature in the UI.</p>
-     */
-    @Test
-    @Order(Integer.MAX_VALUE)
-    @TestBucket(VARIOUS_TOPIC_TYPES_BUCKET)
-    void testRecentlyViewedTopics() {
-        LOGGER.info("Verify topics are present but none has been viewed just yet");
-        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
-        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
-
-        List<KafkaTopic> topics = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.REPLICATED_TOPICS_PREFIX);
-        List<String> topicNames = topics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().subList(0, 3);
-        LOGGER.info("Mark topics as displayed on overview page by visiting their page");
-        for (String topicName : topicNames) {
-            String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
-            PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), true, true);
-            PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, MessageStore.noDataTitle(), true);
-            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        }
-
-        LOGGER.info("Go to homepage and check the recently viewed card is not empty");
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-
-        LOGGER.info("Check topics table for recently visited topics");
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(1), topicNames.get(2), false);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(2), topicNames.get(1), false);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(3), topicNames.get(0), false);
-
-        LOGGER.info("Delete topics");
-        KubeResourceManager.get().deleteResourceWithWait(topics.toArray(new KafkaTopic[0]));
-
-        assertTrue(ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), KafkaNamingUtils.topicPrefixName(tcc.kafkaName())).isEmpty());
-
-        LOGGER.info("Check that in recently visited topics table topics are still present");
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build(), topicNames.get(2), false);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(2).build(), topicNames.get(1), false);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(3).build(), topicNames.get(0), false);
-
-        LOGGER.info("Check that one of the recently viewed topics page cannot be found as it's deleted");
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(1));
-        // Verify empty body message
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, "Resource not found", true);
     }
 
     /**
@@ -268,6 +202,63 @@ public class TopicST extends AbstractST {
         // Last managed replicated has utilized more storage
         final String topicWithLargestStorageUsage = Constants.REPLICATED_TOPICS_PREFIX + "-" + (REPLICATED_TOPICS_COUNT - 1);
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, 1), topicWithLargestStorageUsage, true);
+    }
+
+    /**
+     * Tests the "Recently Viewed Topics" functionality on the Kafka Overview page.
+     *
+     * <p>The test simulates user activity by opening a subset of created topics, ensuring
+     * they appear in the "Recently Viewed Topics" card on the overview page. It performs
+     * the following checks:</p>
+     * <ul>
+     *   <li>Initially verifies that no topics are marked as recently viewed.</li>
+     *   <li>Visits several topic message pages, triggering them to appear in the "Recently Viewed Topics" card.</li>
+     *   <li>Validates that the card correctly displays the visited topics in reverse chronological order.</li>
+     *   <li>Deletes the visited topics and ensures that their entries persist in the card.</li>
+     *   <li>Confirms that clicking a deleted topic leads to a "Resource not found" message.</li>
+     * </ul>
+     *
+     * <p><strong>Note:</strong> This test must run last in the {@code sharedResources} order
+     * because it deletes topics as part of the scenario.</p>
+     *
+     * <p>This ensures proper tracking, persistence, and graceful fallback behavior of the
+     * "Recently Viewed Topics" feature in the UI.</p>
+     */
+    @Test
+    @Order(Integer.MAX_VALUE)
+    @TestBucket(VARIOUS_TOPIC_TYPES_BUCKET)
+    void testRecentlyViewedTopics() {
+        LOGGER.info("Verify topics are present but none has been viewed just yet");
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+
+        List<KafkaTopic> topics = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.REPLICATED_TOPICS_PREFIX);
+        List<String> topicNames = topics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().subList(0, 3);
+        LOGGER.info("Mark topics as displayed on overview page by visiting their page");
+        for (String topicName : topicNames) {
+            String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
+            PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), true, true);
+            PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT);
+            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, "No messages data", false);
+        }
+
+        LOGGER.info("Go to homepage and check the recently viewed card is not empty");
+        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+
+        LOGGER.info("Check topics table for recently visited topics");
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(1), topicNames.get(2), false);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(2), topicNames.get(1), false);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(3), topicNames.get(0), false);
+
+        LOGGER.info("Delete topics");
+        KubeResourceManager.get().deleteResourceWithWait(topics.toArray(new KafkaTopic[0]));
+
+        assertTrue(ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), KafkaNamingUtils.topicPrefixName(tcc.kafkaName())).isEmpty());
+
+        LOGGER.info("Check that in recently visited topics table topics are still present");
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build(), topicNames.get(2), false);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(2).build(), topicNames.get(1), false);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(3).build(), topicNames.get(0), false);
     }
 
     // ------

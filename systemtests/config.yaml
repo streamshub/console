@@ -5,7 +5,7 @@
 # Cleanup environment after test. In case of debugging, this env lets you skip afterEach and afterAll.
 CLEANUP_ENVIRONMENT: true
 # This allows re-deployment of console operator if it already exists
-DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL: true
+DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL: false
 # Log level used in file output
 TEST_FILE_LOG_LEVEL: DEBUG
 # Log level used in console output
@@ -56,13 +56,11 @@ CONSOLE_OPERATOR_IMAGE:
 # -------------------------------------------
 # Custom Console API image. Overrides default image installed automatically by Operator
 CONSOLE_API_IMAGE:
-# Custom Console UI image. Overrides default image installed automatically by Operator
-CONSOLE_UI_IMAGE:
 # -------------------------------------------
 # Kroxy
 # -------------------------------------------
 # Kroxy released yaml manifests version
-KROXYLICIOUS_VERSION: 0.20.0
+KROXYLICIOUS_VERSION: 0.21.0
 # -------------------------------------------
 # Apicurio
 # -------------------------------------------

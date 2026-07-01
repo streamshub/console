@@ -57,9 +57,13 @@ public class KafkaTopicUtils {
             KubeResourceManager.get().deleteResourceWithWait(existingTopics.toArray(new KafkaTopic[0]));
         }
 
-        KubeResourceManager.get().createResourceAsyncWait(topics.toArray(new KafkaTopic[0]));
+        if (ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, namespace, topicNamePrefix).isEmpty()) {
+            KubeResourceManager.get().createResourceAsyncWait(topics.toArray(new KafkaTopic[0]));
+            return topics;
+        }
 
-        return topics;
+        LOGGER.info("Topics are already present");
+        return ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, namespace, topicNamePrefix);
     }
 
     /**
@@ -111,7 +115,7 @@ public class KafkaTopicUtils {
                 .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT))
                 .build();
 
-            KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+            KubeResourceManager.get().createResourceAsyncWait(clients.producer(), clients.consumer());
             WaitUtils.waitForClientsSuccess(clients);
         });
 
@@ -185,7 +189,7 @@ public class KafkaTopicUtils {
                 KafkaNamingUtils.brokerPodNamePrefix(kafkaName)).getFirst().getMetadata().getName(), kt.getMetadata().getName(), lastBrokerId, clients);
 
             // Produce + consume messages
-            KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+            KubeResourceManager.get().createResourceAsyncWait(clients.producer(), clients.consumer());
             WaitUtils.waitForClientsSuccess(clients);
         });
 
@@ -261,7 +265,7 @@ public class KafkaTopicUtils {
                 .withUsername(kafkaUser)
                 .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT))
                 .build();
-            KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+            KubeResourceManager.get().createResourceAsyncWait(clients.producer(), clients.consumer());
             WaitUtils.waitForClientsSuccess(clients);
         });
 

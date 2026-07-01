@@ -4,9 +4,8 @@ public enum ResetOffsetType {
 
     EARLIEST("Earliest", "--to-earliest"),
     LATEST("Latest", "--to-latest"),
-    DATE_TIME("DateTime", "--to-datetime"),
-    // Is displayed only if resetting with specific partition
-    CUSTOM_OFFSET("CustomOffset", "--to-offset"),
+    DATE_TIME_ISO("DateTime ISO", "--to-datetime"),
+    DATE_TIME_UNIX("DateTime UNIX", "--to-datetime"),
     DELETE_COMMITED_OFFSETS("DeleteCommitedOffsets", "--delete-offsets");
 
     private final String description;

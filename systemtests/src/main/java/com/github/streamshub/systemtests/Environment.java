@@ -26,7 +26,6 @@ public class Environment {
 
     // Console
     public static final String CONSOLE_API_IMAGE = ENVS.getOrDefault("CONSOLE_API_IMAGE", "");
-    public static final String CONSOLE_UI_IMAGE = ENVS.getOrDefault("CONSOLE_UI_IMAGE", "");
     public static final InstallType CONSOLE_INSTALL_TYPE = ENVS.getOrDefault("CONSOLE_INSTALL_TYPE", InstallType::fromString, InstallType.Yaml);
     public static final String CONSOLE_DEPLOYMENT_NAME = ENVS.getOrDefault("CONSOLE_DEPLOYMENT_NAME", "streamshub-console");
     public static final String CONSOLE_CLUSTER_DOMAIN = ENVS.getOrDefault("CONSOLE_CLUSTER_DOMAIN", "");

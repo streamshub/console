@@ -140,7 +140,7 @@ public class KafkaSetup {
                     .addNewPersistentClaimStorageVolume()
                         .withId(0)
                         .withDeleteClaim(true)
-                        .withSize("1Gi")
+                        .withSize("256Mi")
                     .endPersistentClaimStorageVolume()
                 .endJbodStorage()
             .endSpec();
@@ -150,7 +150,7 @@ public class KafkaSetup {
      * Creates the default {@link KafkaNodePoolBuilder} for Kafka controllers with the specified configuration.
      *
      * <p>The node pool is configured with the given namespace, cluster name, number of replicas,
-     * controller role, and JBOD persistent storage of 1Gi per controller with claim deletion enabled.
+     * controller role, and JBOD persistent storage of 256Mi per controller with claim deletion enabled.
      *
      * @param namespaceName the Kubernetes namespace for the KafkaNodePool resource
      * @param clusterName the name of the Kafka cluster
@@ -172,7 +172,7 @@ public class KafkaSetup {
                     .addNewPersistentClaimStorageVolume()
                         .withId(0)
                         .withDeleteClaim(true)
-                        .withSize("1Gi")
+                        .withSize("256Mi")
                     .endPersistentClaimStorageVolume()
                 .endJbodStorage()
             .endSpec();

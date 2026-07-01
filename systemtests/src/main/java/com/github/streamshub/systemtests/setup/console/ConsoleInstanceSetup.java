@@ -75,18 +75,6 @@ public class ConsoleInstanceSetup {
             .endSpec();
         }
 
-        if (!Environment.CONSOLE_UI_IMAGE.isEmpty()) {
-            builder = builder.editSpec()
-                .editOrNewContainers()
-                    .editOrNewUi()
-                        .editOrNewSpec()
-                            .withImage(Environment.CONSOLE_UI_IMAGE)
-                        .endSpec()
-                    .endUi()
-                .endContainers()
-            .endSpec();
-        }
-
         return builder;
     }
 
@@ -127,7 +115,7 @@ public class ConsoleInstanceSetup {
                 .endSecurity()
             .endSpec();
 
-        return forceNodeJsToAcceptSelfSignedCerts(builder);
+        return builder;
     }
 
     public static List<KafkaCluster> getOidcKafkaClusters(String namespace, List<KeycloakTestConfig.KafkaConfig> kafkaConfig) {

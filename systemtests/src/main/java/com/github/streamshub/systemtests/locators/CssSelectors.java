@@ -17,18 +17,6 @@ public class CssSelectors {
         .withElementDiv().withId("root")
         .build();
 
-    // ----------------------------
-    // Login page
-    // ----------------------------
-    public static final String LOGIN_ANONYMOUSLY_BUTTON = new CssBuilder(PAGE_DIV)
-        .withChild()
-        .withElementDiv().withComponentLogin().withChild()
-        .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
-        .withElementMain().withComponentLogin().withSubComponentMain().withChild()
-        .withElementDiv().withComponentLogin().withSubComponentMainBody().withChild()
-        .withElementButton().withComponentButton()
-        .build();
-
     // Keycloak
     public static final String LOGIN_KEYCLOAK_PAGE_TITLE = new CssBuilder()
         .withElementHeader().withId("kc-header")
@@ -60,16 +48,12 @@ public class CssSelectors {
         .withChild()
         .withElementDiv().withComponentPage().withChild()
         .withElementDiv().withComponentPage().withSubComponentMainContainer().withChild()
-        .withElementMain().withComponentPage().withSubComponentMain().withChild()
-        .withElementDiv().withComponentDrawer().withChild()
-        .withElementDiv().withComponentDrawer().withSubComponentMain().withChild()
-        .withElementDiv().withComponentDrawer().withSubComponentContent().withChild()
-        .withElementDiv().withComponentDrawer().withSubComponentBody()
+        .withElementMain().withComponentPage().withSubComponentMain()
         .build();
 
     public static final String PAGES_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
         .withChild()
-        .withElementSection().withComponentPage().withSubComponentMainSection()
+        .withElementDiv().withComponentDrawer()
         .build();
 
     public static final String PAGES_HEADER = new CssBuilder(PAGES_MAIN_CONTENT)
@@ -77,46 +61,7 @@ public class CssSelectors {
         .withElementDiv().withComponentPage().withSubComponentMainGroup()
         .build();
 
-    public static final String PAGES_HEADER_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
-        .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withLayoutFlex().nth(1)
-        .build();
-
-    public static final String PAGES_HEADER_BREADCRUMB = new CssBuilder(PAGES_HEADER)
-        .withChild()
-        .withElementSection().withComponentPage().withSubComponentMainBreadcrumb().withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementNav().withComponentBreadcrumb()
-        .build();
-
-    public static final String PAGES_HEADER_BREADCRUMB_ITEMS = new CssBuilder(PAGES_HEADER_BREADCRUMB)
-        .withChild()
-        .withElementOl().withComponentBreadcrumb().withSubComponentList().withChild()
-        .withElementLi().withComponentBreadcrumb().withSubComponentItem()
-        .build();
-
-    public static final String PAGES_HEADER_RELOAD_BUTTON = new CssBuilder(PAGES_HEADER_CONTENT)
-        .withElementDiv().nth(2).withChild()
-        .withElementDiv().withChild()
-        .withElementButton().withComponentButton()
-        .build();
-
-    public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT = new CssBuilder(PAGES_HEADER_CONTENT)
-        .withElementDiv().withChild()
-        .withElementH1().withComponentTitle()
-        .build();
-
-    public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT)
-        .withChild()
-        .withElementDiv().withLayoutSplit().withChild()
-        .withElementDiv().withLayoutSplit().withSubComponentItem()
-        .build();
-
-    public static final String PAGES_CONTENT_HEADER_PAGE_NAME = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
-        .nth(1)
-        .build();
+    public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section > div.pf-v6-c-page__main-body > h1.pf-v6-c-title";
 
     public static final String PAGES_POPUP_MODAL = new CssBuilder()
         .withElementBody().withComponentBackdrop().withSubComponentOpen().withChild()
@@ -147,14 +92,7 @@ public class CssSelectors {
         .withElementButton().withComponentButton().nth(2)
         .build();
 
-    public static final String PAGES_MODAL_CLOSE_BUTTON = new CssBuilder(PAGES_POPUP_MODAL)
-        .withChild()
-        .withElementDiv().withComponentModalBox().withSubComponentClose().withChild()
-        .withElementButton().withComponentButton()
-        .build();
-
     public static final String PAGES_AD_TABLE_ROW_ITEMS = new CssBuilder()
-        .withElementTr().withComponentTable().withSubComponentTr().withChild()
         .withElementTd().withComponentTable().withSubComponentTd()
         .build();
 
@@ -175,18 +113,6 @@ public class CssSelectors {
         .withElementDiv().withComponentToolbar().withSubComponentContentSection().withChild()
         .withElementDiv().withComponentToolbar().withSubComponentItem().nth(3).withChild()
         .withElementButton().withComponentMenuToggle()
-        .build();
-
-    // Name of kafka cluster
-    public static final String PAGES_LEFT_TOOLBAR_KAFKA_NAME = new CssBuilder(CssSelectors.PAGE_DIV)
-        .withChild()
-        .withElementDiv().withComponentPage().withChild()
-        .withElementDiv().withComponentPage().withSubComponentSidebar().withChild()
-        .withElementDiv().withComponentPage().withSubComponentSidebarBody().withChild()
-        .withElementNav().withComponentNav().withChild()
-        .withElementUl().withComponentNav().withSubComponentList().withChild()
-        .withElementSection().withComponentNav().withSubComponentSection().withChild()
-        .withElementH2().withComponentNav().withSubComponentSectionTitle()
         .build();
 
     // Select kafka
@@ -220,66 +146,14 @@ public class CssSelectors {
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String PAGES_NOT_AUTHORIZED_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
-        .withDesc()
-        .withElementDiv().withComponentEmptyState().withChild()
-        .withElementDiv().withComponentEmptyState().withSubComponentContent().withChild()
-        .withElementDiv().withComponentEmptyState().withSubComponentHeader().withChild()
-        .withElementDiv().withComponentEmptyState().withSubComponentTitle().withChild()
-        .withElementH4().withComponentEmptyState().withSubComponentTitleText()
-        .build();
 
     // Kafka credentials login page
 
-    public static final String PAGES_KAFKA_CREDENTIALS_NAME_INPUT = new CssBuilder()
-        .withElementBody().withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withComponentLogin().withChild()
-        .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
-        .withElementMain().withComponentLogin().withSubComponentMain().withChild()
-        .withElementDiv().withComponentLogin().withSubComponentMainBody().withChild()
-        .withElementForm().withComponentForm().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(1).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementSpan().withComponentFormControl().withChild()
-        .withElementInput()
-        .build();
+    public static final String PAGES_KAFKA_CREDENTIALS_NAME_INPUT = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop:nth-of-type(2) > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > div.pf-v6-c-modal-box__body:nth-of-type(2) > form.pf-v6-c-form > div.pf-v6-c-form__group:nth-of-type(1) > div.pf-v6-c-form__group-control:nth-of-type(2) > span.pf-v6-c-form-control > input#username";
 
-    public static final String PAGES_KAFKA_CREDENTIALS_PASSWORD_INPUT = new CssBuilder()
-        .withElementBody().withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withComponentLogin().withChild()
-        .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
-        .withElementMain().withComponentLogin().withSubComponentMain().withChild()
-        .withElementDiv().withComponentLogin().withSubComponentMainBody().withChild()
-        .withElementForm().withComponentForm().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementSpan().withComponentFormControl().withChild()
-        .withElementInput()
-        .build();
+    public static final String PAGES_KAFKA_CREDENTIALS_PASSWORD_INPUT = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop:nth-of-type(2) > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > div.pf-v6-c-modal-box__body:nth-of-type(2) > form.pf-v6-c-form > div.pf-v6-c-form__group:nth-of-type(2) > div.pf-v6-c-form__group-control:nth-of-type(2) > span.pf-v6-c-form-control > input#password";
 
-    public static final String PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON = new CssBuilder()
-        .withElementBody().withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withComponentLogin().withChild()
-        .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
-        .withElementMain().withComponentLogin().withSubComponentMain().withChild()
-        .withElementDiv().withComponentLogin().withSubComponentMainBody().withChild()
-        .withElementForm().withComponentForm().withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(3).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementDiv().withComponentForm().withSubComponentActions().withChild()
-        .withElementButton().withComponentButton()
-        .build();
+    public static final String PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON = "body.pf-v6-c-backdrop__open > div.pf-v6-c-backdrop:nth-of-type(2) > div.pf-v6-l-bullseye > div.pf-v6-c-modal-box > footer.pf-v6-c-modal-box__footer > button.pf-v6-c-button:nth-of-type(1) > span.pf-v6-c-button__text";
 
-    public static final String PAGES_NAV_KAFKA_CLUSTERS_LIST_ITEMS = new CssBuilder()
-        .withElementBody().withChild()
-        .withElementDiv().withComponentMenu().withChild()
-        .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
-        .withElementUl().withComponentMenu().withSubComponentList().withChild()
-        .withElementSection().withComponentMenu().withSubComponentGroup().withChild()
-        .withElementUl().withComponentMenu().withSubComponentList().withChild()
-        .withElementLi().withComponentMenu().withSubComponentListItem()
-        .build();
+    public static final String PAGES_NAV_KAFKA_CLUSTERS_LIST_ITEMS = "body > div.pf-v6-c-menu:nth-of-type(2) > div.pf-v6-c-menu__content:nth-of-type(2) > ul.pf-v6-c-menu__list > section.pf-v6-c-menu__group > ul.pf-v6-c-menu__list > li.pf-v6-c-menu__list-item";
 }

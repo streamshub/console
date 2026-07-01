@@ -40,6 +40,12 @@ public class OlmConfig extends InstallConfig {
 
     @Override
     public void install() {
+
+        if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, deploymentName).isEmpty() &&
+            !Environment.DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL) {
+            return;
+        }
+
         KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmOperatorGroup());
         KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmSubscription());
 

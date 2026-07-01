@@ -14,28 +14,6 @@ public class KafkaTestUtils {
     private KafkaTestUtils() {}
 
     /**
-     * Applies filtering on the Kafka Nodes page by Kafka Node Pool (KNP) name.
-     *
-     * <p>Selects the {@code NodePool} filter type and chooses the specified
-     * node pool name from the filter dropdown options.</p>
-     *
-     * @param tcc     the test case configuration
-     * @param knpName the Kafka Node Pool name to filter by
-     */
-    public static void filterKnpByName(TestCaseConfig tcc, String knpName) {
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_TYPE_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_TYPE_NODEPOOL_BUTTON);
-
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_BY_DROPDOWN_BUTTON);
-        List<Locator> knpItems = tcc.page().locator(NodesPageSelectors.NPS_FILTER_BY_NODEPOOL_ITEMS).all();
-        for (Locator knpItem : knpItems) {
-            if (PwUtils.locatorContainsText(knpItem, knpName, true)) {
-                PwUtils.waitForLocatorAndClick(knpItem);
-            }
-        }
-    }
-
-    /**
      * Applies filtering on the Kafka Nodes page by node role.
      *
      * <p>Selects the {@code Role} filter type and chooses the specified
@@ -45,10 +23,7 @@ public class KafkaTestUtils {
      * @param roleName the node role to filter by
      */
     public static void filterKnpByRole(TestCaseConfig tcc, String roleName) {
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_TYPE_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_TYPE_ROLE_BUTTON);
-
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_BY_DROPDOWN_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_TYPE_ROLE_DROPDOWN_BUTTON);
         List<Locator> knpItems = tcc.page().locator(NodesPageSelectors.NPS_FILTER_BY_NODEPOOL_ITEMS).all();
         for (Locator knpItem : knpItems) {
             if (PwUtils.locatorContainsText(knpItem, roleName, false)) {
@@ -70,5 +45,6 @@ public class KafkaTestUtils {
         LOGGER.debug("Resetting filters after default broker validation");
         PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_CLEAR_ALL_FILTERS_BUTTON);
         PwUtils.waitForLocatorCount(tcc, defaultNodeCount, NodesPageSelectors.NPS_TABLE_BODY, true);
+        PwUtils.reload(tcc);
     }
 }

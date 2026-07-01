@@ -7,6 +7,7 @@ import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -75,6 +76,10 @@ public class KeycloakOperatorSetup {
 
     public void setup() {
         LOGGER.info("----------- Install Keycloak Operator -----------");
+        if (ResourceUtils.getKubeResource(Deployment.class, deploymentNamespace, KEYCLOAK_OPERATOR_DEPLOYMENT_NAME) != null) {
+            LOGGER.info("Keycloak operator already deployed");
+            return;
+        }
 
         allResources.forEach(resource ->
             KubeResourceManager.get().createOrUpdateResourceWithoutWait(resource));

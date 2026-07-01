@@ -9,7 +9,6 @@ import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.prometheus.PrometheusInstanceSetup;
@@ -52,33 +51,25 @@ public class PrometheusST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         LOGGER.info("Verify charts are present and contain data");
         // Disk
-        PwUtils.waitForContainsText(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS).nth(1).build(), "Node 0", true);
-        PwUtils.waitForContainsText(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS).nth(6).build(), "Node 5", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
         // CPU
-        PwUtils.waitForContainsText(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS).nth(1).build(), "Node 0", true);
-        PwUtils.waitForContainsText(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS).nth(6).build(), "Node 5", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
         // Memory
-        PwUtils.waitForContainsText(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS).nth(1).build(), "Node 0", true);
-        PwUtils.waitForContainsText(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS).nth(6).build(), "Node 5", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
         // Topics
-        PwUtils.waitForContainsText(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS).nth(1).build(), "Incoming bytes", true);
-        PwUtils.waitForContainsText(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS).nth(2).build(), "Outgoing bytes", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Incoming bytes", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Outgoing bytes", true);
     }
 
     @BeforeAll
     void testClassSetup() {
-        // Init test case config based on the test context
+        // // Init test case config based on the test context
         tcc = Utils.getTestCaseConfig();
         // Prepare test environment
         NamespaceUtils.prepareNamespace(tcc.namespace());

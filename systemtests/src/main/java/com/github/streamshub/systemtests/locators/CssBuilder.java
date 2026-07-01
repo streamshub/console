@@ -51,8 +51,10 @@ public class CssBuilder {
     }
 
     public CssBuilder nth(int nth) {
-        // Append nothing to make the element with class
-        this.cssClass.append(":nth-of-type(" + nth + ")");
+        // Use nth-child instead of nth-of-type to properly count elements with specific classes
+        // nth-of-type counts by element tag (div, span, etc.) which doesn't work when siblings
+        // have the same tag but different classes
+        this.cssClass.append(":nth-child(" + nth + ")");
         return this;
     }
 

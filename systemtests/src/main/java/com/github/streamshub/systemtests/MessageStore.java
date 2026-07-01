@@ -15,16 +15,11 @@ import java.nio.file.Path;
  * Utility class responsible for loading and providing UI text messages from a localized JSON resource file.
  * <p>
  * The {@code MessageStore} loads the English messages file at initialization and allows retrieval
- * of specific UI messages based on keys. Placeholders such as <code>{product}</code> and <code>{brand}</code>
- * are replaced during initialization using values found in the JSON itself.
+ * of specific UI messages based on keys from the new Vite-based UI's i18n messages.
  * </p>
  * <p>
- * This class is systemtests to ensure displayed messages match expected values.
+ * This class is used in systemtests to ensure displayed messages match expected values.
  * </p>
- * <p>
- * The expected JSON file is located at: {@code ../ui/messages/en.json}, relative to the user path.
- * </p>
- *
  * @throws SetupException if the messages file cannot be read or parsed.
  **/
 public class MessageStore {
@@ -33,50 +28,26 @@ public class MessageStore {
     private MessageStore() {}
 
     private static JsonNode jsonResources;
-    private static final Path MESSAGES_PATH = Path.of(KubeTestEnv.USER_PATH + "/../ui/messages/en.json");
+    private static final Path MESSAGES_PATH = Path.of(KubeTestEnv.USER_PATH + "/../api/src/main/webui/src/i18n/messages/en.json");
 
     static {
         try {
             LOGGER.info("initializing MessageStore");
-            // Load the JSON to get product and brand
+            // Load the JSON file
             String source = Files.readString(MESSAGES_PATH);
             jsonResources = new ObjectMapper().readTree(source);
-            // Replace product and brand from the node and load the object again
-            jsonResources = new ObjectMapper().readTree(source
-                .replace("{product}", getProductName())
-                .replace("{brand}", getBrand()));
         } catch (IOException e) {
             throw new SetupException("Cannot load a file with messages", e);
         }
     }
 
     static final String COMMON = "common";
-    static final String HOMEPAGE = "homepage";
+    static final String TOPICS = "topics";
     static final String OVERVIEW = "overview";
     static final String CLUSTER_CARD = "ClusterCard";
-    static final String PRODUCT = "product";
-    static final String BRAND = "brand";
     static final String RECONCILIATION = "reconciliation";
-    static final String MESSAGE_BROWSER = "message-browser";
-    static final String APP_LAYOUT = "AppLayout";
-    static final String KAFKA_CONNECT = "KafkaConnect";
-    static final String GROUPS_TABLE = "GroupsTable";
-
-    public static String getProductName() {
-        return jsonResources.get(COMMON).get(PRODUCT).textValue();
-    }
-
-    public static String getBrand() {
-        return jsonResources.get(COMMON).get(BRAND).textValue();
-    }
-
-    public static String emptyTopicsDescription() {
-        return jsonResources.get(HOMEPAGE).get("empty_topics_description").textValue();
-    }
-
-    public static String lastAccessedTopics() {
-        return jsonResources.get(HOMEPAGE).get("last_accessed_topics").textValue();
-    }
+    static final String KAFKA = "kafka";
+    static final String GROUPS = "groups";
     
     public static String pauseReconciliationButton() {
         return jsonResources.get(RECONCILIATION).get("pause_reconciliation_button").textValue();
@@ -112,19 +83,19 @@ public class MessageStore {
     }
 
     public static String noDataTitle() {
-        return jsonResources.get(MESSAGE_BROWSER).get("no_data_title").textValue();
+        return jsonResources.get(TOPICS).get("messages").get("noDataTitle").textValue();
     }
 
     public static String noConsumerGroups() {
-        return jsonResources.get(GROUPS_TABLE).get("no_consumer_groups").textValue();
+        return jsonResources.get(GROUPS).get("noGroups").textValue();
     }
 
     public static String groupsTitle() {
-        return jsonResources.get(GROUPS_TABLE).get("title").textValue();
+        return jsonResources.get(GROUPS).get("title").textValue();
     }
 
     public static String kafkaConnect() {
-        return jsonResources.get(APP_LAYOUT).get("kafka_connect").textValue();
+        return jsonResources.get(KAFKA).get("connect").get("title").textValue();
     }
 
 }

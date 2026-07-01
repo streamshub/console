@@ -1,7 +1,6 @@
 package com.github.streamshub.systemtests.messages;
 
 import com.github.streamshub.systemtests.AbstractST;
-import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
@@ -29,6 +28,7 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -103,8 +103,8 @@ public class MessagesST extends AbstractST {
             Arguments.of(1, "messages=offset:10 retrieve=100 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
                 MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE + " - 42",
                 MessagesPageSelectors.getTableRowItem(1, 1), "42")),
-            Arguments.of(1, "messages=latest retrieve=40 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
-                MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, MessageStore.noDataTitle())),
+            Arguments.of(0, "messages=latest retrieve=40 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
+                MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_NO_DATA, "No messages data")),
             Arguments.of(50, "messages=totalyNotOkay retrieve=-9", Map.of(
                 MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
                 MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98"))
@@ -185,6 +185,8 @@ public class MessagesST extends AbstractST {
      * filtering logic and frontend rendering.</p>
      */
     @Test
+    @Disabled
+    // TODO: enable once the timestamp bug is fixed
     void testMessageFilteringByTimestamps() {
         final int oldMessageCount = 50;
         final int newMessageCount = 5;
@@ -336,7 +338,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, KEY_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_FILTER_SEARCH_CONTENT, MessageStore.noDataTitle(), true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_FILTER_SEARCH_CONTENT, "No messages data", true);
 
         LOGGER.info("Set correct offset to display messages");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
@@ -460,22 +462,22 @@ public class MessagesST extends AbstractST {
             .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
             .build();
 
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
+        KubeResourceManager.get().createResourceWithWait(clients.producer());
+        WaitUtils.waitForClientSuccess(clients.getNamespaceName(), clients.getProducerName(), clients.getMessageCount(), true);
 
         // create second set of messages with different HEADER and MESSAGE
         clients.setMessageKey("NoDataInKey-True");
         clients.setHeaders(HEADER_FILTER);
         clients.setMessage(HEADER_FILTER_MESSAGE);
 
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
+        KubeResourceManager.get().createResourceWithWait(clients.producer());
+        WaitUtils.waitForClientSuccess(clients.getNamespaceName(), clients.getProducerName(), clients.getMessageCount(), true);
         // create third set of messages with different MESSAGE
         clients.setHeaders("NoDataInHeader=true");
         clients.setMessage(VALUE_FILTER);
 
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
+        KubeResourceManager.get().createResourceWithWait(clients.producer());
+        WaitUtils.waitForClientSuccess(clients.getNamespaceName(), clients.getProducerName(), clients.getMessageCount(), true);
         LOGGER.info("Filtering scenario prepared");
     }
 

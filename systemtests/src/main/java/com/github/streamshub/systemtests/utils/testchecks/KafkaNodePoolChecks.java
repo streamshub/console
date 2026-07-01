@@ -50,7 +50,7 @@ public class KafkaNodePoolChecks {
         LOGGER.info("Verify kafka nodes on overview page");
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            brokerCount + "/" + brokerCount, TimeConstants.ACTION_WAIT_LONG);
+            brokerCount + "/" + brokerCount, TimeConstants.ACTION_WAIT_SHORT);
     }
 
     public static void checkNodesPageKafkaNodes(TestCaseConfig tcc, int totalNodeCount) {

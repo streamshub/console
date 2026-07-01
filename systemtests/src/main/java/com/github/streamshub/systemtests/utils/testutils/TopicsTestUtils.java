@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.utils.testutils;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.locators.CssBuilder;
@@ -33,7 +32,6 @@ public class TopicsTestUtils {
     public static void selectSortBy(TestCaseConfig tcc, String selectorWithAttribute, String selectorSortButton, String expectedAttr) {
         LOGGER.info("Select sort by with value {}", expectedAttr);
         Utils.retryAction("Ensure topics table is sorted correctly", () -> {
-            PwUtils.removeFocus(tcc);
             Locator locator = tcc.page().locator(selectorWithAttribute);
 
             if (locator == null || locator.isHidden()) {
@@ -43,7 +41,6 @@ public class TopicsTestUtils {
 
             String currentAttr = locator.getAttribute("aria-sort");
             if (!expectedAttr.equals(currentAttr)) {
-                PwUtils.screenshot(tcc, tcc.kafkaName(), "topicStatusFilterIncorrect");
                 PwUtils.waitForLocatorAndClick(tcc, selectorSortButton);
                 LOGGER.warn("Locator had incorrect aria-sort={}, expected={}", currentAttr, expectedAttr);
                 return false;
@@ -69,36 +66,28 @@ public class TopicsTestUtils {
      */
     public static void selectFilter(TestCaseConfig tcc, FilterType filterType) {
         LOGGER.debug("Selecting topic filter type [{}]", filterType.getName());
-        PwUtils.waitForLocatorVisible(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
+        PwUtils.waitForLocatorVisible(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME);
+        String filterTypeSelector = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN).build();
+        // if status is selected and both are present
+        if (tcc.page().locator(filterTypeSelector).count() > 1) {
+            LOGGER.debug("Topic filter type status is already present = two identical css buttons, select the first button");
+            filterTypeSelector = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN).nth(1).build();
+        }
 
-        Utils.retryAction("Select filter type " + filterType.getName(), () -> {
-            String currentText = tcc.page().locator(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN).innerText();
+        String currentText = tcc.page().locator(filterTypeSelector).innerText();
+        LOGGER.debug("Filter type contains [{}]", currentText);
 
-            LOGGER.debug("Filter type contains [{}]", currentText);
+        // Already correct
+        if (currentText != null && currentText.contains(filterType.getName())) {
+            LOGGER.debug("Filter [{}] already selected", filterType.getName());
+            return;
+        }
 
-            // Already correct - stop retrying
-            if (currentText != null && currentText.contains(filterType.getName())) {
-                LOGGER.debug("Filter [{}] already selected", filterType.getName());
-                return true;
-            }
-
-            // Try to select the filter
-            PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
-
-            String dropdownItem = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN_ITEMS)
-                .nth(filterType.getPosition())
-                .build();
-
-            if (tcc.page().locator(dropdownItem).isVisible()) {
-                PwUtils.waitForLocatorAndClick(tcc, dropdownItem);
-            } else {
-                LOGGER.warn("Filter type in dropdown [{}] not visible", filterType.getName());
-            }
-
-            // Fail this attempt so retryAction will try again
-            LOGGER.warn("Filter [" + filterType.getName() + "] not yet selected");
-            return false;
-        }, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForLocatorAndClick(tcc, filterTypeSelector);
+        String dropdownItem = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN_ITEMS)
+            .nth(filterType.getPosition())
+            .build();
+        PwUtils.waitForLocatorAndClick(tcc, dropdownItem);
     }
 
 
@@ -115,39 +104,12 @@ public class TopicsTestUtils {
      */
     public static void selectTopicStatus(TestCaseConfig tcc, TopicStatus topicStatus) {
         LOGGER.debug("Selecting topic status [{}]", topicStatus.getName());
-        PwUtils.waitForLocatorVisible(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
+        // Try selecting it
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
+        String dropdownItemInput = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN_ITEMS)
+            .nth(topicStatus.getPosition()).build();
+        PwUtils.waitForLocatorAndClick(tcc, dropdownItemInput);
 
-        Utils.retryAction("Select topic status " + topicStatus.getName(), () -> {
-            String currentFilters = tcc.page()
-                .locator(TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CURRENT_STATUS_ITEMS)
-                .allInnerTexts()
-                .toString();
-
-            LOGGER.debug("Locator contains {}", currentFilters);
-
-            // Already selected - success
-            if (currentFilters != null && currentFilters.contains(topicStatus.getName())) {
-                LOGGER.debug("Topic status [{}] selected", topicStatus.getName());
-                return true;
-            }
-
-            // Try selecting it
-            tcc.page().focus(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
-            PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
-            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-
-            String dropdownItemInput = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN_ITEMS)
-                .nth(topicStatus.getPosition())
-                .withDesc()
-                .withElementInput()
-                .build();
-
-            PwUtils.waitForLocatorAndClick(tcc, dropdownItemInput);
-            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-
-            LOGGER.warn("Topic status [" + topicStatus.getName() + "] not yet selected");
-            return false;
-        }, Constants.SELECTOR_RETRIES);
     }
 
 }
