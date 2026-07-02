@@ -833,10 +833,6 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 .orElse("");
 
         switch (authenticationType) {
-            case KafkaConfigs.TYPE_OAUTH: // deprecated type
-                properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, saslType(listenerSpec));
-                properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "OAUTHBEARER");
-                break;
             case KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512:
                 properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, saslType(listenerSpec));
                 properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");

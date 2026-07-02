@@ -72,7 +72,6 @@ import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
-import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuthBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512Builder;
 import io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler;
 
@@ -745,34 +744,6 @@ class KafkaClustersResourceIT {
             .body("errors.size()", is(1))
             .body("errors.status", contains("404"))
             .body("errors.code", contains("4041"));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "true, SASL_SSL",
-        "false, SASL_PLAINTEXT"
-    })
-    void testDescribeClusterWithDeprecatedOAuthTokenUrl(boolean tls, String expectedProtocol) {
-        String clusterId = UUID.randomUUID().toString();
-
-        /*
-         * Create a Kafka CR that proxies to kafka1.
-         * test-kafka3 is predefined in KafkaUnsecuredResourceManager
-         */
-        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers,
-                    new KafkaListenerAuthenticationOAuthBuilder()
-                        .withTokenEndpointUri("https://example.com/token")
-                    .build()))
-                .editSpec()
-                    .editKafka()
-                    .editMatchingListener(l -> "listener0".equals(l.getName()))
-                        .withTls(tls)
-                    .endListener()
-                .endKafka()
-                .endSpec()
-                .build();
-
-        testDescribeClusterWithOAuthTokenUrl(clusterId, kafka, expectedProtocol);
     }
 
     @ParameterizedTest
