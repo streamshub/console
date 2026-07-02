@@ -45,7 +45,7 @@ jobs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.COMMIT_SHA }}
 
@@ -83,7 +83,7 @@ jobs:
       OLM_MINIKUBE_NAMESPACE: "olm"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.COMMIT_SHA }}
 
@@ -207,7 +207,7 @@ jobs:
       RETRY_COUNT: ${{ github.event.inputs.retry_count }}
       ENVS: ${{ github.event.inputs.envs }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Download all systemtest artifacts
         uses: actions/download-artifact@v8
         with:
