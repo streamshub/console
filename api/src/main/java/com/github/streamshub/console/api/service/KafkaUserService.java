@@ -139,7 +139,6 @@ public class KafkaUserService {
             .map(KafkaUserAuthorizationSimple.class::cast)
             .map(KafkaUserAuthorizationSimple::getAcls)
             .map(acls -> {
-                @SuppressWarnings("deprecation")
                 var accessControl = acls
                     .stream()
                     .map(rule -> new KafkaUser.KafkaUserAccessControl(
@@ -147,7 +146,7 @@ public class KafkaUserService {
                         mapResourceName(rule.getResource()),
                         mapResourcePatternType(rule.getResource()),
                         rule.getHost(),
-                        mapOperations(rule.getOperation(), rule.getOperations()),
+                        mapOperations(rule.getOperations()),
                         rule.getType().toValue()
                     ))
                     .toList();
@@ -193,12 +192,8 @@ public class KafkaUserService {
         return null;
     }
 
-    private static List<String> mapOperations(AclOperation operation, List<AclOperation> operations) {
+    private static List<String> mapOperations(List<AclOperation> operations) {
         List<String> result = new ArrayList<>();
-
-        if (operation != null) {
-            result.add(operation.toValue());
-        }
 
         if (operations != null) {
             operations.stream().map(AclOperation::toValue).forEach(result::add);

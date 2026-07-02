@@ -7,11 +7,14 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.strimzi.api.kafka.Crds;
+import io.strimzi.api.kafka.model.common.Constants;
 
 /**
  * This manager creates the Strimzi CRDs needed by the application prior to the test
@@ -87,16 +90,26 @@ public class StrimziCrdResourceManager implements QuarkusTestResourceLifecycleMa
             .endConfig()
             .build();
 
-        k8s.resource(Crds.kafka()).serverSideApply();
-        k8s.resource(Crds.kafkaNodePool()).serverSideApply();
-        k8s.resource(Crds.kafkaRebalance()).serverSideApply();
-        k8s.resource(Crds.kafkaTopic()).serverSideApply();
-        k8s.resource(Crds.kafkaConnect()).serverSideApply();
-        k8s.resource(Crds.kafkaConnector()).serverSideApply();
-        k8s.resource(Crds.kafkaMirrorMaker2()).serverSideApply();
-        k8s.resource(Crds.kafkaUser()).serverSideApply();
+        apply(k8s, Crds.kafka());
+        apply(k8s, Crds.kafkaNodePool());
+        apply(k8s, Crds.kafkaRebalance());
+        apply(k8s, Crds.kafkaTopic());
+        apply(k8s, Crds.kafkaConnect());
+        apply(k8s, Crds.kafkaConnector());
+        apply(k8s, Crds.kafkaMirrorMaker2());
+        apply(k8s, Crds.kafkaUser());
 
         return Collections.emptyMap();
+    }
+
+    static void apply(KubernetesClient k8s, CustomResourceDefinition crd) {
+        crd.getSpec().getVersions().forEach(v -> {
+            // Temporary work-around for https://github.com/strimzi/strimzi-kafka-operator/issues/12896 
+            if (Constants.V1.equals(v.getName())) {
+                v.setStorage(true);
+            }
+        });
+        k8s.resource(crd).serverSideApply();
     }
 
     @Override

@@ -137,8 +137,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
     @ParameterizedTest
     @CsvSource({
-        "2, oauth-auth-listener",
-        "3, oauth-custom-auth-listener"
+        "2, oauth-custom-auth-listener"
     })
     void testConsoleReconciliationWithOAuthBearerPlaintext(int listenerIndex, String listenerName) {
         Console consoleCR = createConsole(new ConsoleBuilder()

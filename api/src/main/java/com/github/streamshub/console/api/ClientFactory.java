@@ -628,11 +628,6 @@ public class ClientFactory {
         boolean saslEnabled;
 
         switch (authType) {
-            case KafkaConfigs.TYPE_OAUTH: // deprecated type
-                cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, KafkaConfigs.MECHANISM_OAUTHBEARER);
-                cfg.putIfAbsent(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, STRIMZI_OAUTH_CALLBACK);
-                saslEnabled = true;
-                break;
             case KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512:
                 cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, KafkaConfigs.MECHANISM_SCRAM_SHA512);
                 saslEnabled = true;

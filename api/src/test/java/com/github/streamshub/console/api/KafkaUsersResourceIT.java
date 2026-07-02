@@ -93,16 +93,9 @@ class KafkaUsersResourceIT {
     );
 
     static AclRuleBuilder initRuleBuilder(AclRuleType type, AclOperation... operations) {
-        var builder = new AclRuleBuilder()
-                .withType(type);
-
-        if (operations.length == 1) {
-            builder = builder.withOperation(operations[0]);
-        } else {
-            builder = builder.withOperations(operations);
-        }
-
-        return builder;
+        return new AclRuleBuilder()
+                .withType(type)
+                .withOperations(operations);
     }
 
     static AclRule clusterRule(AclRuleType type, AclOperation... operations) {
