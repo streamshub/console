@@ -11,11 +11,12 @@ rules:
       - kafka.strimzi.io
     resources:
       - kafkas
+      - kafkaconnectors
+      - kafkaconnects
+      - kafkamirrormaker2s
       - kafkanodepools
       - kafkarebalances
       - kafkatopics
-      - kafkaconnects
-      - kafkamirrormaker2s
       - kafkausers
   - verbs:
       - patch
@@ -24,6 +25,7 @@ rules:
     resources:
       - kafkas
       - kafkarebalances
+  # API must list pods to obtain the Kafka version annotation set by Strimzi
   - verbs:
       - get
       - list
@@ -31,6 +33,7 @@ rules:
       - ""
     resources:
       - pods
+  # API may read the ClusterVersion to fetch the OpenShift version for display
   - verbs:
       - get
     apiGroups:
