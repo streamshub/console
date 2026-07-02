@@ -209,7 +209,7 @@ rules:
   - nonResourceURLs: [ /metrics ]
     verbs: [ get ]
 
-  # Used directly by operator and granted to Console instances
+  # Used directly by operator and/or granted to Console instances
   - verbs:
       - get
       - watch
@@ -218,12 +218,13 @@ rules:
       - kafka.strimzi.io
     resources:
       - kafkas
+      - kafkaconnectors
+      - kafkaconnects
+      - kafkamirrormaker2s
       - kafkanodepools
       - kafkarebalances
       - kafkatopics
       - kafkausers
-      - kafkaconnects
-      - kafkamirrormaker2s
 
   # Granted to Console instances
   - verbs:

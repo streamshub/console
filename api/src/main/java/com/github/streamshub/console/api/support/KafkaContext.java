@@ -35,7 +35,6 @@ import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustom;
-import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuth;
 import io.strimzi.kafka.oauth.client.ClientConfig;
 
 public class KafkaContext implements Closeable {
@@ -277,7 +276,6 @@ public class KafkaContext implements Closeable {
         return configs(clientType).get(SaslConfigs.SASL_JAAS_CONFIG) instanceof String;
     }
 
-    @SuppressWarnings("deprecation")
     public Optional<String> tokenUrl() {
         return Optional.ofNullable(clusterConfig.getProperties().get(ClientConfig.OAUTH_TOKEN_ENDPOINT_URI))
             .or(() -> Optional.ofNullable(resource())
@@ -289,11 +287,9 @@ public class KafkaContext implements Closeable {
                     .filter(listener -> listener.getName().equals(clusterConfig.getListener()))
                     .findFirst()
                     .map(GenericKafkaListener::getAuth)
-                    .map(authn -> switch (authn) {
-                        case KafkaListenerAuthenticationCustom custom -> tokenUrlCustom(custom);
-                        case KafkaListenerAuthenticationOAuth oauth -> oauth.getTokenEndpointUri();
-                        default -> null;
-                    }));
+                    .filter(KafkaListenerAuthenticationCustom.class::isInstance)
+                    .map(KafkaListenerAuthenticationCustom.class::cast)
+                    .map(KafkaContext::tokenUrlCustom));
     }
 
     private static String tokenUrlCustom(KafkaListenerAuthenticationCustom custom) {

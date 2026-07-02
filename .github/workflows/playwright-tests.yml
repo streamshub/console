@@ -244,7 +244,7 @@ jobs:
           mkdir ./resources
           kubectl get all,catalogsources,operatorgroups -n olm -o yaml > ./resources/olm.yaml
           kubectl get all,subscriptions,csv,operatorgroups,installplans -n operators -o yaml > ./resources/operators.yaml
-          kubectl get all -n ${TARGET_NAMESPACE} -o yaml > ./resources/${TARGET_NAMESPACE}.yaml
+          kubectl get all,consoles,kafkas -n ${TARGET_NAMESPACE} -o yaml > ./resources/${TARGET_NAMESPACE}.yaml
 
       - name: Archive Resource Backup
         uses: actions/upload-artifact@v7
