@@ -36,10 +36,7 @@ import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.common.Condition;
-import io.strimzi.api.kafka.model.kafka.JbodStorageBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
-import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
@@ -325,10 +322,10 @@ public class KafkaST extends AbstractST {
         LOGGER.info("Cause Kafka status to display Warning state by setting DeprecatedFields");
         KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
             kafka -> {
-                KafkaClusterSpec spec = kafka.getSpec().getKafka();
-                spec.setStorage(new JbodStorageBuilder()
-                    .addToVolumes(new PersistentClaimStorageBuilder().withId(0).withSize("1Gi").withDeleteClaim(true).build())
-                    .build());
+                //KafkaClusterSpec spec = kafka.getSpec().getKafka();
+                //spec.setStorage(new JbodStorageBuilder()
+                //    .addToVolumes(new PersistentClaimStorageBuilder().withId(0).withSize("1Gi").withDeleteClaim(true).build())
+                //    .build());
             });
 
         WaitUtils.waitForKafkaCondition(tcc.namespace(), tcc.kafkaName(), k -> {
@@ -364,7 +361,7 @@ public class KafkaST extends AbstractST {
         LOGGER.info("Remove incorrect Kafka config to get rid off the warning from UI status");
         KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
             kafka -> {
-                kafka.getSpec().getKafka().setStorage(null);
+                //kafka.getSpec().getKafka().setStorage(null);
             }
         );
 
