@@ -47,6 +47,7 @@ import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.Operator;
 import io.strimzi.api.kafka.Crds;
+import io.strimzi.api.kafka.model.common.Constants;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
@@ -145,10 +146,20 @@ abstract class ConsoleReconcilerTestBase {
             .toList();
     }
 
+    static void apply(KubernetesClient k8s, CustomResourceDefinition crd) {
+        crd.getSpec().getVersions().forEach(v -> {
+            // Temporary work-around for https://github.com/strimzi/strimzi-kafka-operator/issues/12896 
+            if (Constants.V1.equals(v.getName())) {
+                v.setStorage(true);
+            }
+        });
+        k8s.resource(crd).serverSideApply();
+    }
+
     @BeforeEach
     void setUp(TestInfo testInfo) {
-        client.resource(Crds.kafka()).serverSideApply();
-        client.resource(Crds.kafkaUser()).serverSideApply();
+        apply(client, Crds.kafka());
+        apply(client, Crds.kafkaUser());
 
         if (testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
             createRouteCRD();
