@@ -3,13 +3,16 @@ package com.github.streamshub.console.api.security;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.jboss.logging.Logger;
 
+import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.TrustStoreSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
 
@@ -40,6 +43,10 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
 
     OidcTenantConfig oidcConfig;
 
+    @Inject
+    @Named(OidcDiscoveryResponseFilter.OIDC_END_SESSION_ENDPOINT)
+    Supplier<Holder<String>> endSessionEndpoint;
+
     @PostConstruct
     void initialize() {
         var oidc = consoleConfig.getSecurity().getOidc();
@@ -60,6 +67,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
                     // Do not redirect to the IdP for JavaScript requests. They are identified by
                     // requests from the React UI with header `X-Requested-With: JavaScript`.
                     .javaScriptAutoRedirect(false)
+                    .addOpenidScope(false)
                     .scopes(Optional
                             .ofNullable(oidc.getScopes())
                             .map(scopes -> scopes.split("\\s+"))
@@ -83,7 +91,27 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
     @Override
     public Uni<OidcTenantConfig> resolve(RoutingContext routingContext,
             OidcRequestContext<OidcTenantConfig> requestContext) {
-        return Uni.createFrom().item(oidcConfig);
+
+        OidcTenantConfig config;
+
+        if (endSessionEndpoint.get().isPresent()) {
+            /*
+             * When the provider supports RP-initiated logout, configure
+             * Quarkus OIDC to use it. Note, in this case our SessionResource logout
+             * endpoint is NOT used, although the URL path is the same. This makes
+             * the back-end logout functionality opaque to the front-end.
+             */
+            config = OidcTenantConfig.builder(oidcConfig)
+                .logout()
+                    .path("/api/session/logout")
+                    .postLogoutPath("/")
+                .end()
+                .build();
+        } else {
+            config = oidcConfig;
+        }
+
+        return Uni.createFrom().item(config);
     }
 
 }
