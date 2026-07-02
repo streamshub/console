@@ -5,6 +5,6 @@ metadata:
 spec:
   ports:
   - port: 80
-    targetPort: 3000
+    targetPort: 8080
   selector:
     app: console
