@@ -42,7 +42,6 @@ jobs:
         with:
           token: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
           workflow: systemtests.yml
-          ref: "${{ env.MERGE_COMMIT_SHA }}"
           inputs: >
             {
               "commit_sha": "${{ env.COMMIT_SHA }}",
