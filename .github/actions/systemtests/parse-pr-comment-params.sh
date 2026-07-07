@@ -32,3 +32,6 @@ echo "RETRY_COUNT=$retry_count" >> $GITHUB_ENV
 # Export current PR branch latest commit sha
 commit_sha=$(gh pr view $PR_NUMBER --json headRefOid -q '.headRefOid')
 echo "COMMIT_SHA=$commit_sha" >> $GITHUB_ENV
+
+merge_sha=$(gh api repos/$REPO/pulls/$PR_NUMBER --jq '.merge_commit_sha')
+echo "MERGE_COMMIT_SHA=$merge_sha" >> "$GITHUB_OUTPUT"
