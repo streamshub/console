@@ -614,7 +614,7 @@ export function ResourceListDataView<T extends Resource>({
                   key={`filter-${name}`}
                   filterId={name}
                   filter={filter as ResourceListToggleFilterConfig}
-                  isChecked={filters[name] === true}
+                  isChecked={String(filters[name]) === 'true'}
                   onChange={(checked) => onSetFilters({ [name]: checked })}
                 />
               ))}

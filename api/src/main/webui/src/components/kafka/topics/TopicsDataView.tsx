@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ThProps } from '@patternfly/react-table';
@@ -139,6 +139,11 @@ export function TopicsDataView({
     [t, handleSort]
   );
 
+  const colProvider = useMemo(() => ({
+      dependencies: [t, handleSort],
+      callback: colMapper,
+  }), [colMapper, t, handleSort]);
+
   const rowMapper: ResourceListDataViewRowMapper<Topic> = useCallback(
     (topic) => ({
       id: topic.id,
@@ -203,6 +208,11 @@ export function TopicsDataView({
     [kafkaId, t]
   );
 
+  const rowProvider = useMemo(() => ({
+    dependencies: [kafkaId, t],
+    callback: rowMapper,
+  }), [rowMapper, kafkaId, t]);
+
   return (
     <ResourceListDataView
       resourceResult={topicResult}
@@ -244,14 +254,8 @@ export function TopicsDataView({
           ),
         },
       }}
-      columnProvider={{
-        dependencies: [t, handleSort],
-        callback: colMapper,
-      }}
-      rowProvider={{
-        dependencies: [kafkaId, t],
-        callback: rowMapper,
-      }}
+      columnProvider={colProvider}
+      rowProvider={rowProvider}
     />
   );
 }

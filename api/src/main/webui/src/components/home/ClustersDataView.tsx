@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -116,6 +116,11 @@ export function ClustersDataView({
     [t, handleSort]
   );
 
+  const colProvider = useMemo(() => ({
+    dependencies: [t, handleSort],
+    callback: colMapper,
+  }), [colMapper, t, handleSort]);
+
   const rowMapper: ResourceListDataViewRowMapper<KafkaCluster> = useCallback(
     (cluster) => ({
       id: cluster.id,
@@ -187,6 +192,11 @@ export function ClustersDataView({
     [t, showLoginModal, navigate]
   );
 
+  const rowProvider = useMemo(() => ({
+    dependencies: [navigate, t],
+    callback: rowMapper,
+  }), [rowMapper, navigate, t]);
+
   return (
     <ResourceListDataView
       resourceResult={clusterResult}
@@ -200,14 +210,8 @@ export function ClustersDataView({
           placeholder: t('kafka.filterByName'),
         },
       }}
-      columnProvider={{
-        dependencies: [t, handleSort],
-        callback: colMapper,
-      }}
-      rowProvider={{
-        dependencies: [navigate, t],
-        callback: rowMapper,
-      }}
+      columnProvider={colProvider}
+      rowProvider={rowProvider}
       />
   );
 }

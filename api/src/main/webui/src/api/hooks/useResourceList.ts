@@ -80,6 +80,7 @@ export function useResourceList<T extends Resource>(
   return useQuery({
     queryKey: [
       resourceType + '-resource-list-query',
+      path,
       JSON.stringify(params),
     ],
     queryFn: async () => {
