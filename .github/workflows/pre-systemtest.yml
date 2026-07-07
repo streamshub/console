@@ -42,7 +42,7 @@ jobs:
         with:
           token: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
           workflow: systemtests.yml
-          ref: "${{ env.COMMIT_SHA }}"
+          ref: "${{ github.event.pull_request.merge_commit_sha }}"
           inputs: >
             {
               "commit_sha": "${{ env.COMMIT_SHA }}",
