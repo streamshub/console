@@ -501,7 +501,7 @@ public class WaitUtils {
 
     public static void waitForKafkaRebalanceProposalStatus(String namespace, String rebalanceName, KafkaRebalanceState kafkaRebalanceState) {
         Wait.until(String.format("KafkaRebalance %s/%s to be in state [%s]", namespace, rebalanceName, kafkaRebalanceState),
-            KubeTestConstants.GLOBAL_POLL_INTERVAL_MEDIUM, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
+            KubeTestConstants.GLOBAL_POLL_INTERVAL_LONG, KubeTestConstants.GLOBAL_TIMEOUT,
             () -> {
                 KafkaRebalance rebalance = ResourceUtils.getKubeResource(KafkaRebalance.class, namespace, rebalanceName);
 

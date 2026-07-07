@@ -183,9 +183,6 @@ public class KeycloakInstanceSetup {
             WaitUtils.waitForKeycloakRealmDeleted(httpsHostname(), userName, userPassword, realmName);
         }
 
-        if (KeycloakApiUtils.realmExists(httpsHostname(), userName, userPassword, realmName)) {
-
-        }
         JsonObject realmJson = KeycloakUtils.loadRealmTemplate(consoleUiUrl, DEFAULT_REALM_TEMPLATE_PATH, realmName, clientId, roleMapping, userMapping);
         KeycloakApiUtils.importRealm(httpsHostname(), userName, userPassword, realmJson.encode());
         WaitUtils.waitForKeycloakRealmReady(httpsHostname(), userName, userPassword, realmName);
