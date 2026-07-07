@@ -59,12 +59,12 @@ export function UserDropdown({ username, clusterId, anonymous, picture }: UserDr
               let sessionPath;
 
               if (clusterId) {
-                sessionPath = `/api/kafkas/${clusterId}/session`;
+                sessionPath = `/api/kafkas/${clusterId}/session/logout`;
               } else {
-                sessionPath = `/api/session`;
+                sessionPath = '/api/session/logout';
               }
 
-              window.location.href = `${sessionPath}/logout?redirect_uri=${encodeURIComponent('/')}`;
+              window.location.href = sessionPath;
             }}>
             {t('user.logout')}
           </DropdownItem>

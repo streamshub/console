@@ -203,6 +203,12 @@ public class TestHelper {
                 .withClientSecret("console-client-secret")
                 .withAuthServerUrl(config.getValue("console.test.oidc-url", String.class))
                 .withIssuer(config.getValue("console.test.oidc-issuer", String.class))
+                // PKCE adds a code_verifier that must be carried through the redirect
+                // chain; disable it in tests to simplify the auth-code flow helper.
+                .withPkceRequired(false)
+                // A stable secret prevents state-cookie verification failures when the
+                // OidcTenantConfig is re-initialised between the redirect and callback.
+                .withStateSecret("streamshub-console-test-state-secret-32b")
                 .withNewTrustStore()
                     .withType(TrustStoreConfig.Type.valueOf(config.getValue("console.test.oidc-trust-store.type", String.class)))
                     .withNewPassword()

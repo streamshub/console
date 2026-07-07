@@ -6,7 +6,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriBuilder;
@@ -17,6 +20,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
@@ -24,15 +28,16 @@ import com.github.streamshub.console.test.TestHelper;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static java.util.stream.Collectors.toMap;
+import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 
 @QuarkusTest
@@ -148,29 +153,66 @@ class SessionResourceIT {
 
     @Test
     @Tag(OIDC_TAG)
-    void testLogoutOIDC() {
+    void testLogoutOIDCWithRPInitiatedFlow() throws Exception {
         var authEndpoint = UriBuilder
                 .fromUri(URI.create(config.getValue("console.test.oidc-url", String.class)))
                 .port(8443)
                 .build()
                 .toString();
+        var expectedPostLogoutUri = UriBuilder.fromUri(testUri)
+                .replacePath("/")
+                .build()
+                .toString();
+
+        // Perform the full OIDC Authorization Code flow so that Quarkus sets a
+        // session cookie. The RP-initiated logout endpoint only works for
+        // session-authenticated users, not for stateless Bearer token callers.
+        var loginUri = UriBuilder.fromUri(testUri).replacePath("/api/session/login").build();
+        var sessionCookies = tokens.performOidcLogin(loginUri, "alice", "alice-password");
+
+        whenRequesting(req -> req
+                .cookies(sessionCookies)
+                .redirects().follow(false)
+                .get("logout"))
+            .assertThat()
+            .statusCode(is(Status.FOUND.getStatusCode()))
+            .header("Location", startsWith(authEndpoint))
+            .header("Location", this::queryParams, hasEntry(is("post_logout_redirect_uri"), is(expectedPostLogoutUri)))
+            // id_token_hint is included because we used the authorization code flow and
+            // Quarkus holds the id_token server-side in the session.
+            .header("Location", this::queryParams, hasKey("id_token_hint"));
+    }
+
+    @Test
+    @Tag(OIDC_TAG)
+    void testLogoutOIDCWithLocalOnlyFlow() throws Exception {
+        QuarkusMock.installMockForType(
+                Holder::empty,
+                new TypeLiteral<Supplier<Holder<String>>>() {
+                    // used for type signature
+                },
+                NamedLiteral.of(OidcDiscoveryResponseFilter.OIDC_END_SESSION_ENDPOINT));
+
+        // Perform the full OIDC Authorization Code flow so that Quarkus sets a
+        // session cookie. The RP-initiated logout endpoint only works for
+        // session-authenticated users, not for stateless Bearer token callers.
+        var loginUri = UriBuilder.fromUri(testUri).replacePath("/api/session/login").build();
+        var sessionCookies = tokens.performOidcLogin(loginUri, "alice", "alice-password");
+
+        // Logout is local only. Client is redirected to the root URL
         var expectedLocation = UriBuilder.fromUri(testUri)
-                .replacePath("/some/path")
+                .replacePath("/")
                 .build()
                 .toString();
 
         whenRequesting(req -> req
-                .queryParam("redirect_uri", "/some/path")
-                .auth().oauth2(tokens.getToken("alice"))
+                .cookies(sessionCookies)
                 .redirects().follow(false)
                 .get("logout"))
             .assertThat()
             .statusCode(is(Status.SEE_OTHER.getStatusCode()))
-            .header("Location", startsWith(authEndpoint))
-            .header("Location", this::queryParams, hasEntry(is("post_logout_redirect_uri"), is(expectedLocation)))
-            // hint is only available when OIDC authorization code flow is used,
-            // not when tokens retrieved directly by the client like is done in this test.
-            .header("Location", this::queryParams, not(hasKey("id_token_hint")));
+            .header("Location", is(expectedLocation))
+            .header("Location", this::queryParams, is(anEmptyMap()));
     }
 
     @Test

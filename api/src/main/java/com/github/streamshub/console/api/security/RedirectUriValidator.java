@@ -4,6 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
 
@@ -17,6 +19,28 @@ public class RedirectUriValidator {
 
     private static final Logger LOGGER = Logger.getLogger(RedirectUriValidator.class);
     private static final String DEFAULT_REDIRECT = "/";
+
+    /**
+     * Validates and sanitizes {@code redirectUri}, then combines the resulting safe
+     * path with the scheme, host, and port taken from {@code uriInfo} to produce a
+     * fully-qualified redirect {@link URI} that stays within the application.
+     *
+     * @param redirectUri the caller-supplied redirect path to validate; may be
+     *                    {@code null} or blank, in which case {@code "/"} is used
+     * @param uriInfo     the JAX-RS {@link UriInfo} of the current request, used to
+     *                    inherit scheme, host, and port for the returned URI
+     * @return a safe, fully-qualified {@link URI} suitable for use in a redirect
+     *         response
+     */
+    public URI safeRedirectUri(String redirectUri, UriInfo uriInfo) {
+        String safePath = validateAndSanitize(redirectUri);
+
+        return UriBuilder.fromUri(uriInfo.getRequestUri())
+            .replacePath(safePath)
+            .replaceQuery(null)
+            .fragment(null)
+            .build();
+    }
 
     /**
      * Validates that a redirect URI is safe to use.

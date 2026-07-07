@@ -133,12 +133,11 @@ class KafkaSessionResourceIT {
     @Tag(AUTHN_SCRAM_TAG)
     void testLogoutSCRAM() {
         var expectedLocation = UriBuilder.fromUri(testUri)
-                .replacePath("/some/path")
+                .replacePath("/")
                 .build()
                 .toString();
 
         whenRequesting(req -> req
-                .queryParam("redirect_uri", "/some/path")
                 .cookies(sessionCookies)
                 .redirects().follow(false)
                 .get("logout", clusterId))
