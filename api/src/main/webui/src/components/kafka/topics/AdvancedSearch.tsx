@@ -3,7 +3,7 @@
  * Provides filtering options for Kafka messages
  */
 
-import { useState, useCallback, useTransition, useRef, useEffect } from 'react';
+import { useState, useCallback, useTransition, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { toDatetimeLocal, toISOWithLocalOffset } from '@/utils/dateTime';
@@ -195,7 +195,7 @@ export function AdvancedSearch({
     }
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isExpanded) return;
     updatePanelPosition();
     window.addEventListener('scroll', updatePanelPosition, true);
