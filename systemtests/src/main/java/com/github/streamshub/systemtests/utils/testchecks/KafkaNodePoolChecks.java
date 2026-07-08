@@ -67,16 +67,12 @@ public class KafkaNodePoolChecks {
      * @param tcc          the test case configuration
      * @param nodeIds      the expected list of Kafka node IDs in the table
      * @param expectedRole the expected node role (e.g. Broker or Controller)
-     * @param knpName      the expected Kafka Node Pool name (nullable)
      */
-    public static void checkFilterTypeResults(TestCaseConfig tcc, List<Integer> nodeIds, String expectedRole, String knpName) {
-        LOGGER.info("Verify kafka node table results with nodeIds:{}, role: {} and knpName:{}", nodeIds.toString(), expectedRole, knpName);
+    public static void checkFilterTypeResults(TestCaseConfig tcc, List<Integer> nodeIds, String expectedRole) {
+        LOGGER.info("Verify kafka node table results with nodeIds:{}, role: {}", nodeIds.toString(), expectedRole);
         PwUtils.waitForLocatorCount(tcc, nodeIds.size(), NodesPageSelectors.NPS_TABLE_BODY, true);
         for (int row = 1; row < nodeIds.size(); row++) {
             checkKnpTableRow(tcc, row, nodeIds.get(row - 1), expectedRole);
-            if (knpName != null) {
-                PwUtils.waitForContainsText(tcc, NodesPageSelectors.getNodeTableRowItem(row, 7), knpName, false);
-            }
         }
     }
 

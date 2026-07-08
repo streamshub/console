@@ -262,12 +262,12 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Verify Nodes page is unavailable");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         // TODO: enable once fixed
         // LOGGER.info("Verify consumer groups page is unavailable");
         // PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""));
-        // PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
+        // PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
         //
         // Logout and check user is no longer logged in
         //PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
@@ -326,11 +326,11 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Verify Topics page is unavailable");
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify Nodes page is unavailable");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify groups page is available");
         PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));

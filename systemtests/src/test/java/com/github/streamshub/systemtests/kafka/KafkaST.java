@@ -333,12 +333,12 @@ public class KafkaST extends AbstractST {
 
         LOGGER.debug("Filtering Kafka nodes by role: {}", ProcessRoles.BROKER.toValue());
         KafkaTestUtils.filterKnpByRole(tcc, ProcessRoles.BROKER.toValue());
-        KafkaNodePoolChecks.checkFilterTypeResults(tcc, brokerIds, ProcessRoles.BROKER.toValue(), null);
+        KafkaNodePoolChecks.checkFilterTypeResults(tcc, brokerIds, ProcessRoles.BROKER.toValue());
         KafkaTestUtils.resetKnpFilters(tcc, totalNodeCount);
 
         LOGGER.debug("Filtering Kafka nodes by role: {}", ProcessRoles.CONTROLLER.toValue());
         KafkaTestUtils.filterKnpByRole(tcc, ProcessRoles.CONTROLLER.toValue());
-        KafkaNodePoolChecks.checkFilterTypeResults(tcc, defaultControllerIds, ProcessRoles.CONTROLLER.toValue(), null);
+        KafkaNodePoolChecks.checkFilterTypeResults(tcc, defaultControllerIds, ProcessRoles.CONTROLLER.toValue());
     }
 
     /**
