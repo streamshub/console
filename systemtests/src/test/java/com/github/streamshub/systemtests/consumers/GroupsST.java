@@ -72,11 +72,11 @@ public class GroupsST extends AbstractST {
     void testVariableConsumerGroupNames() {
         // TODO: enable once filter is fixed for chars like [* , or ?]
         List<Map.Entry<String, String>> scenarios = List.of(
-            // Map.entry("Special chars", "group$$$$$%^^&*"),
+            Map.entry("Special chars", "group$$$$$%^^&*"),
             Map.entry("Semicolon separated", "group;part;;1"),
             Map.entry("Dot separated", "group.1.3.5"),
             Map.entry("Colon separated", "group:12::3:"),
-            // Map.entry("Symbols", "group'@!\"#?"),
+            Map.entry("Symbols", "group'@!\"#?"),
             Map.entry("Underscores", "group_with__underscores_"),
             Map.entry("Hyphenated", "group-hyphen--name-"),
             Map.entry("With slash", "group/with//slash/"),
@@ -404,29 +404,29 @@ public class GroupsST extends AbstractST {
     @SetupTestBucket(RESET_OFFSET_BUCKET)
     public void setupConsumerGroupResetOffset() {
         LOGGER.info("Prepare consumer offset scenario by creating topic(s) and then producing and consuming messages");
-
-        List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), RESET_OFFSET_TOPIC_PREFIX, RESET_OFFSET_TOPIC_COUNT, 1, 1, 1)
-            .stream()
-            .map(kt -> kt.getMetadata().getName())
-            .toList();
-
-        for (String kafkaTopicName : kafkaTopicNames) {
-            KafkaClients clients = new KafkaClientsBuilder()
-                .withNamespaceName(tcc.namespace())
-                .withTopicName(kafkaTopicName)
-                .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
-                .withDelayMs(0)
-                .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
-                .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
-                .withConsumerGroup(RESET_OFFSET_CONSUMER_GROUP_NAME)
-                .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
-                .withUsername(tcc.kafkaUserName())
-                .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
-                .build();
-
-            KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-            WaitUtils.waitForClientsSuccess(clients);
-        }
+        //
+        // List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), RESET_OFFSET_TOPIC_PREFIX, RESET_OFFSET_TOPIC_COUNT, 1, 1, 1)
+        //     .stream()
+        //     .map(kt -> kt.getMetadata().getName())
+        //     .toList();
+        //
+        // for (String kafkaTopicName : kafkaTopicNames) {
+        //     KafkaClients clients = new KafkaClientsBuilder()
+        //         .withNamespaceName(tcc.namespace())
+        //         .withTopicName(kafkaTopicName)
+        //         .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
+        //         .withDelayMs(0)
+        //         .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
+        //         .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
+        //         .withConsumerGroup(RESET_OFFSET_CONSUMER_GROUP_NAME)
+        //         .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+        //         .withUsername(tcc.kafkaUserName())
+        //         .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+        //         .build();
+        //
+        //     KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        //     WaitUtils.waitForClientsSuccess(clients);
+        // }
 
         LOGGER.info("Reset consumer offset scenario ready");
     }
