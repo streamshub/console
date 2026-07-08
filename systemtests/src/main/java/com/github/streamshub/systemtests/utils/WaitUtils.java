@@ -2,10 +2,14 @@ package com.github.streamshub.systemtests.utils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Logger;
 
@@ -354,6 +358,25 @@ public class WaitUtils {
         LOGGER.info("Waiting for producer: {}/{} and consumer: {}/{} Jobs to finish successfully", namespace, producerName, namespace, consumerName);
         waitForClientSuccess(namespace, producerName, messageCount, deleteAfterSuccess);
         waitForClientSuccess(namespace, consumerName, messageCount, deleteAfterSuccess);
+    }
+
+    /**
+     * Waits for all producer/consumer Job pairs of the given clients to finish successfully.
+     * Each Job is polled concurrently on a virtual thread, so the total wait time is bound
+     * by the slowest Job instead of the sum of all of them.
+     *
+     * @param clientsList the list of KafkaClients whose producer/consumer Jobs to wait on
+     */
+    public static void waitForClientsSuccess(List<KafkaClients> clientsList) {
+        LOGGER.info("Waiting for {} producer/consumer Job pairs to finish successfully", clientsList.size());
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<CompletableFuture<Void>> waiters = clientsList.stream()
+                .flatMap(clients -> Stream.of(clients.getProducerName(), clients.getConsumerName())
+                    .map(jobName -> CompletableFuture.runAsync(
+                        () -> waitForClientSuccess(clients.getNamespaceName(), jobName, clients.getMessageCount(), true), executor)))
+                .toList();
+            CompletableFuture.allOf(waiters.toArray(new CompletableFuture[0])).join();
+        }
     }
 
     /**

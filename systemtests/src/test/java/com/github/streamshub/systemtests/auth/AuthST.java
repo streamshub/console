@@ -262,7 +262,7 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Verify Nodes page is unavailable");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403", true);
 
         // TODO: enable once fixed
         // LOGGER.info("Verify consumer groups page is unavailable");

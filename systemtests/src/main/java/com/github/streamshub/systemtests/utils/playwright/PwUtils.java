@@ -110,6 +110,7 @@ public class PwUtils {
     public static void waitForLocatorVisible(Locator locator, long timeout) {
         LOGGER.debug("Waiting for locator to be visible without reloading [{}]", locator);
         locator.waitFor(new Locator.WaitForOptions().setTimeout(timeout).setState(WaitForSelectorState.VISIBLE));
+        Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT);
     }
 
     // --------------------------
@@ -133,6 +134,7 @@ public class PwUtils {
     public static boolean click(Locator locator) {
         LOGGER.debug("Clicking on locator [{}]", locator);
         locator.click(new Locator.ClickOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
+        Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT);
         return true;
     }
 
@@ -158,6 +160,7 @@ public class PwUtils {
     public static boolean fill(Locator locator, String text) {
         LOGGER.debug("Fill locator [{}] with text [{}]", locator, text);
         locator.fill(text, new Locator.FillOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
+        Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT);
         return true;
     }
 
