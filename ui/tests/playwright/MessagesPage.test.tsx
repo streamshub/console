@@ -7,7 +7,7 @@ test.beforeEach(async ({ authenticatedPage }) => {
 test("Messages page with messages", async ({ page }) => {
   await test.step("Navigate to topic with data", async () => {
     page
-      .locator(`table[data-ouia-component-id="topics-listing"] tbody tr`)
+      .locator(`table[data-ouia-component-id="topics-table"] tbody tr`)
       .filter({ hasNotText: "0 B" })
       .first()
       .locator(`td[data-label="Name"] a`)
@@ -40,7 +40,7 @@ test("Messages page with messages", async ({ page }) => {
 test("Messages page without messages", async ({ page }) => {
   await test.step("Navigate to topic without data", async () => {
     page
-      .locator(`table[data-ouia-component-id="topics-listing"] tbody tr`)
+      .locator(`table[data-ouia-component-id="topics-table"] tbody tr`)
       .filter({ hasText: "0 B" })
       .first()
       .locator(`td[data-label="Name"] a`)

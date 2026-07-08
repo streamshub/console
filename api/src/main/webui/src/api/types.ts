@@ -10,13 +10,15 @@
 // All `meta` properties are generic records with can be extended with type-specific properties.
 export type AbstractMeta = Record<string, unknown>;
 
+export type PaginationMeta = {
+  total: number;
+  pageNumber: number;
+  rangeTruncated: boolean;
+};
+
 export interface ListResponse<T extends Resource> {
   meta?: AbstractMeta & {
-    page: {
-      total: number;
-      pageNumber: number;
-      rangeTruncated: boolean;
-    } & Record<string, unknown>;
+    page: PaginationMeta;
   };
   links?: {
     first?: string;
@@ -58,7 +60,7 @@ export interface ResourceIdentifier {
   id: string;
 }
 
-export interface MetaWithPrivileges {
+export interface MetaWithPrivileges extends AbstractMeta {
   privileges?: string[];
 }
 
@@ -66,7 +68,10 @@ export interface Resource {
   type: string;
   id: string;
   attributes?: Record<string, unknown>;
-  relationships?: Record<string, { data: ResourceIdentifier | ResourceIdentifier[] }>;
+  relationships?: Record<string, {
+    data?: ResourceIdentifier | ResourceIdentifier[] | unknown[];
+    meta?: Record<string, unknown>;
+  } | null>;
   meta?: AbstractMeta;
 }
 
@@ -108,15 +113,6 @@ export interface KafkaCluster extends Resource {
   };
 }
 
-export interface KafkaClustersResponse {
-  data: KafkaCluster[];
-  meta?: MetaWithPrivileges & {
-    page?: {
-      total?: number;
-    };
-  };
-}
-
 // Topic types
 export interface Partition {
   partition: number;
@@ -150,6 +146,22 @@ export interface ConfigValue {
   documentation?: string;
 }
 
+export type TopicStatusSummary = {
+  FullyReplicated?: number;
+  UnderReplicated?: number;
+  PartiallyOffline?: number;
+  Offline?: number;
+  Unknown?: number;
+};
+
+export interface TopicListMeta extends MetaWithPrivileges {
+  page: PaginationMeta;
+  summary: {
+    statuses: TopicStatusSummary;
+    totalPartitions: number;
+  };
+}
+
 export interface Topic {
   id: string;
   type: 'topics';
@@ -173,30 +185,6 @@ export interface Topic {
       };
       data?: unknown[];
     } | null;
-  };
-}
-
-export interface TopicsResponse {
-  data: Topic[];
-  meta: MetaWithPrivileges & {
-    page: {
-      total: number;
-      pageNumber: number;
-    };
-    summary: {
-      statuses: {
-        FullyReplicated?: number;
-        UnderReplicated?: number;
-        PartiallyOffline?: number;
-        Offline?: number;
-        Unknown?: number;
-      };
-      totalPartitions: number;
-    };
-  };
-  links: {
-    next?: string;
-    prev?: string;
   };
 }
 

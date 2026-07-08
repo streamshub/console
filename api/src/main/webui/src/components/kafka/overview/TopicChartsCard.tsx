@@ -57,14 +57,14 @@ export function TopicChartsCard({
   const [selectedDuration, setSelectedDuration] = useState<DurationOptions>(
     DurationOptions.Last5minutes
   );
-  const [hideInternal, setHideInternal] = useState(true);
+  const [showInternal, setShowInternal] = useState(false);
 
-  // Filter topics based on hideInternal setting
+  // Filter topics based on showInternal setting
   const filteredTopics = useMemo(() => {
-    return hideInternal
-      ? topics.filter((t) => !t.isInternal)
-      : topics;
-  }, [topics, hideInternal]);
+    return showInternal
+      ? topics
+      : topics.filter((t) => !t.isInternal);
+  }, [topics, showInternal]);
 
   // Selected topic that is actually present in the filtered list
   const [validSelectedTopic, validSelectedTopicName] = useMemo(() => {
@@ -165,15 +165,15 @@ export function TopicChartsCard({
                   <Switch
                     label={
                       <>
-                        {t('topics.hideInternalTopics')}
+                        {t('topics.showInternalTopics')}
                         &nbsp;
-                        <Tooltip content={t('topics.hideInternalTopicsTooltip')}>
+                        <Tooltip content={t('topics.showInternalTopicsTooltip')}>
                           <HelpIcon />
                         </Tooltip>
                       </>
                     }
-                    isChecked={hideInternal}
-                    onChange={(_event, checked) => setHideInternal(checked)}
+                    isChecked={showInternal}
+                    onChange={(_event, checked) => setShowInternal(checked)}
                   />
                 </FlexItem>
                 <FlexItem>
