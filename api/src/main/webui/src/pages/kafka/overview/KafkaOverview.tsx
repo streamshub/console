@@ -34,7 +34,8 @@ import { TopicChartsCard } from '@/components/kafka/overview/TopicChartsCard';
 import { ClusterConnectionProvider } from '@/components/kafka/overview/ClusterConnectionProvider';
 import { ClusterConnectionDrawer } from '@/components/kafka/overview/ClusterConnectionDrawer';
 import { useOpenClusterConnectionPanel } from '@/components/kafka/overview/ClusterConnectionContext';
-import type { Node, Topic, TopicsResponse } from '@/api/types';
+import type { Node, Topic, TopicListMeta } from '@/api/types';
+import { useMemo } from 'react';
 
 function KafkaOverviewContent() {
   const { t } = useTranslation();
@@ -50,16 +51,22 @@ function KafkaOverviewContent() {
 
   // Fetch topics summary for partition counts
   const { data: topicsSummaryData, isLoading: topicsSummaryLoading } = useTopics(kafkaId, {
-    pageSize: 1,
-    fields: ['status'],
+    fields: 'status',
+    page: {
+      size: 1,
+    },
   });
 
   // Fetch all topics for topic charts filter
   const { data: allTopicsData } = useTopics(kafkaId, {
-    includeHidden: true,
-    fields: ['name,visibility'],
-    sort: 'name',
-    pageSize: 100,
+    fields: 'name,visibility',
+    filters: {
+      visibility: [ 'internal', 'external' ],
+    },
+    page: {
+      sort: 'name',
+      size: 100,
+    },
   });
 
   // Fetch groups count
@@ -78,22 +85,28 @@ function KafkaOverviewContent() {
   });
 
   // Calculate broker counts
-  const brokersTotal = nodesData?.data?.filter(
-    (node: Node) => node.attributes.roles?.includes('broker')
-  ).length ?? 0;
+  const brokersTotal = useMemo(() => 
+    nodesData?.data?.filter(
+      (node: Node) => node.attributes.roles?.includes('broker')
+    ).length ?? 0,
+    [nodesData?.data]
+  );
 
   // Count online brokers (those with Running status)
-  const brokersOnline = nodesData?.data?.filter(
-    (node: Node) =>
-      node.attributes.roles?.includes('broker') &&
-      node.attributes.broker?.status === 'Running'
-  ).length ?? brokersTotal; // Default to total if status not available
+  const brokersOnline = useMemo(() =>
+    nodesData?.data?.filter(
+      (node: Node) =>
+        node.attributes.roles?.includes('broker') &&
+        node.attributes.broker?.status === 'Running'
+    ).length ?? brokersTotal, // Default to total if status not available
+    [nodesData?.data, brokersTotal]
+  );
 
   // Get groups count from meta
   const groupsCount = groupsData?.meta?.page?.total;
 
   // Get topic statistics from meta.summary (if available)
-  const topicsMeta: TopicsResponse['meta'] | undefined = topicsSummaryData?.meta;
+  const topicsMeta: TopicListMeta | undefined = topicsSummaryData?.meta as TopicListMeta;
   const totalTopics = topicsMeta?.page?.total ?? 0;
   
   // Calculate partition statistics
@@ -110,19 +123,25 @@ function KafkaOverviewContent() {
   const metricsAvailable = !isVirtualCluster;
 
   // Prepare nodes list for charts
-  const nodes = nodesData?.data
-    ?.filter((node: Node) => node.attributes.roles?.includes('broker'))
-    .map((node: Node) => ({
-      id: parseInt(node.id, 10),
-      name: `Node ${node.id}`,
-    })) ?? [];
+  const nodes = useMemo(() =>
+    nodesData?.data
+      ?.filter((node: Node) => node.attributes.roles?.includes('broker'))
+      .map((node: Node) => ({
+        id: parseInt(node.id, 10),
+        name: `Node ${node.id}`,
+      })) ?? [],
+    [nodesData?.data]
+  );
 
   // Prepare topics list for charts
-  const topics = allTopicsData?.data?.map((topic: Topic) => ({
-    id: topic.id,
-    name: topic.attributes.name,
-    isInternal: topic.attributes.visibility === 'internal',
-  })) ?? [];
+  const topics = useMemo(() =>
+    allTopicsData?.data?.map((topic: Topic) => ({
+      id: topic.id,
+      name: topic.attributes.name,
+      isInternal: topic.attributes.visibility === 'internal',
+    })) ?? [],
+    [allTopicsData?.data]
+  );
 
   const isLoading = clusterLoading || topicsSummaryLoading || groupsLoading;
 

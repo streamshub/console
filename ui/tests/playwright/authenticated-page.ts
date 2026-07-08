@@ -51,7 +51,7 @@ export class AuthenticatedPage {
 
   async goToFirstTopic(waitForLoaded = true) {
     await this.goToTopics(waitForLoaded);
-    await this.clickFirstLinkInTheTable("topics-listing");
+    await this.clickFirstLinkInTheTable("topics-table");
     if (waitForLoaded) {
       // wait for 'Topics' link to be in the breadcrumbs
       await expect(
