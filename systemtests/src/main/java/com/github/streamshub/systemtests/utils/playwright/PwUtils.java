@@ -136,10 +136,6 @@ public class PwUtils {
         return true;
     }
 
-    public static void pressEnter(TestCaseConfig tcc) {
-        tcc.page().keyboard().press("Enter");
-    }
-
     // --------------------------
     // Fill actions
     // --------------------------

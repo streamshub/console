@@ -105,8 +105,8 @@ public class AuthST extends AbstractST {
 
         LOGGER.debug("Verify topic name containing {} cannot be retrieved", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
         PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
-        PwUtils.pressEnter(tcc);
-        PwUtils.waitForLocatorCount(tcc, 0, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_NO_RESULTS_FOUND, "No results found", false);
 
         // TODO: enable once fixed
@@ -166,8 +166,8 @@ public class AuthST extends AbstractST {
 
         LOGGER.debug("Verify topic name containing {} cannot be retrieved", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
         PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
-        PwUtils.pressEnter(tcc);
-        PwUtils.waitForLocatorCount(tcc, 0, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_NO_RESULTS_FOUND, "No results found", false);
 
         LOGGER.info("Check Admin kafka");
@@ -187,13 +187,13 @@ public class AuthST extends AbstractST {
 
         LOGGER.debug("Verify topic name containing {} cannot be retrieved from Admin Kafka", AuthTestConstants.TEAM_DEV_TOPIC_PREFIX);
         PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
-        PwUtils.pressEnter(tcc);
-        PwUtils.waitForLocatorCount(tcc, 0, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_NO_RESULTS_FOUND, "No results found", false);
 
         LOGGER.debug("Verify topic name containing {} can be retrieved", AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX);
         PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
-        PwUtils.pressEnter(tcc);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
         // TODO: enable once fixed
@@ -220,7 +220,7 @@ public class AuthST extends AbstractST {
      *   <li>Checks that the user can see only the Kafka clusters they are authorized to access and verifies the total count.</li>
      *   <li>Validates topic overview and topics pages for the authorized Kafka cluster, including replicated topics count and visibility.</li>
      *   <li>Ensures that search and filtering on the Topics page work correctly.</li>
-     *   <li>Verifies that restricted pages such as Nodes and Groups display a "Not Authorized" message.</li>
+     *   <li>Verifies that restricted pages such as Nodes and Groups display a "403 Forbidden" message.</li>
      *   <li>Logs out and confirms the user can no longer access the console UI.</li>
      * </ul>
      *
@@ -257,17 +257,17 @@ public class AuthST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
         PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
-        PwUtils.pressEnter(tcc);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
         LOGGER.info("Verify Nodes page is unavailable");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
 
         // TODO: enable once fixed
         // LOGGER.info("Verify consumer groups page is unavailable");
         // PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""));
-        // PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
+        // PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
         //
         // Logout and check user is no longer logged in
         //PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
@@ -284,8 +284,8 @@ public class AuthST extends AbstractST {
      * <ul>
      *   <li>Logs in as a consumer-groups-only user and confirms the navbar displays the correct username.</li>
      *   <li>Checks that the user can see only the Kafka clusters they are authorized to access and verifies the total count.</li>
-     *   <li>Validates that the Topics overview and Topics page display "Not Authorized" for this user.</li>
-     *   <li>Ensures that the Nodes page is also restricted and shows "Not Authorized".</li>
+     *   <li>Validates that the Topics overview and Topics page display "403 Forbidden" for this user.</li>
+     *   <li>Ensures that the Nodes page is also restricted and shows "403 Forbidden".</li>
      *   <li>Verifies that the Groups page is accessible, even when no groups exist.</li>
      *   <li>Creates a Kafka topic and producer/consumer clients, then confirms the new consumer group appears in the UI.</li>
      *   <li>Waits for the producer/consumer clients to complete successfully.</li>
@@ -330,7 +330,7 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Verify Nodes page is unavailable");
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
 
         LOGGER.info("Verify groups page is available");
         PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
