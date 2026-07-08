@@ -9,6 +9,7 @@ import {
   PageSection,
   Drawer,
   DrawerContent,
+  DrawerContentBody,
   DrawerPanelContent,
   DrawerHead,
   DrawerActions,
@@ -24,9 +25,10 @@ import {
   ToolbarItem,
   Tooltip,
 } from '@patternfly/react-core';
-import { SearchIcon, ExclamationCircleIcon, ColumnsIcon } from '@patternfly/react-icons';
+import { ExclamationCircleIcon, ColumnsIcon } from '@patternfly/react-icons';
 import { useMessages } from '@/api/hooks/useMessages';
 import { useTopic } from '@/api/hooks/useTopics';
+import { ApiError } from '@/api/client';
 import { KafkaRecord, SearchParams } from '@/api/types';
 import { MessagesTable } from '@/components/kafka/topics/MessagesTable';
 import { MessageDetails } from '@/components/kafka/topics/MessageDetails';
@@ -97,25 +99,21 @@ export function TopicMessagesTab() {
   );
 
   const selectedMessageId = useMemo(() => searchParams.get('selected'), [searchParams]);
-  // Handle message selection from URL
-  const urlSelectedMessage = useMemo(() => {
-    if (selectedMessageId && messages.length > 0) {
-      const [partStr, offsetStr] = selectedMessageId.split(':');
-      const part = parseInt(partStr);
-      const off = parseInt(offsetStr);
-      return messages.find(
-        m => m.attributes.partition === part && m.attributes.offset === off
-      );
-    } else if (!selectedMessageId) {
-      return undefined;
-    }
+  // Derive selected message directly from URL + messages — no separate state needed.
+  const selectedMessage = useMemo(() => {
+    if (!selectedMessageId) return undefined;
+    const [partStr, offsetStr] = selectedMessageId.split(':');
+    const part = parseInt(partStr);
+    const off = parseInt(offsetStr);
+    return messages.find(
+      m => m.attributes.partition === part && m.attributes.offset === off
+    );
   }, [selectedMessageId, messages]);
-  const [selectedMessage, setSelectedMessage] = useState<KafkaRecord | undefined>(urlSelectedMessage);
 
   const handleSearch = useCallback((params: SearchParams) => {
     const newParams = new URLSearchParams();
     
-    if (params.query) {
+    if (params.query?.value) {
       newParams.set('query', params.query.value);
       if (params.query.where !== 'everywhere') {
         newParams.set('where', params.query.where);
@@ -141,21 +139,22 @@ export function TopicMessagesTab() {
     }
     
     setSearchParams(newParams, { replace: true });
-  }, [setSearchParams]);
+    // Always refetch explicitly — if the params haven't changed the query key
+    // is identical and TanStack Query won't issue a new request otherwise.
+    refetch();
+  }, [setSearchParams, refetch]);
 
   const handleSelectMessage = useCallback((message: KafkaRecord) => {
-    setSelectedMessage(message);
     const newParams = new URLSearchParams(searchParams);
     newParams.set('selected', `${message.attributes.partition}:${message.attributes.offset}`);
     setSearchParams(newParams, { replace: true });
-  }, [setSelectedMessage, searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams]);
 
   const handleDeselectMessage = useCallback(() => {
-    setSelectedMessage(undefined);
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('selected');
     setSearchParams(newParams, { replace: true });
-  }, [setSelectedMessage, searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams]);
 
   const handleReset = useCallback(() => {
     setSearchParams(new URLSearchParams());
@@ -203,116 +202,97 @@ export function TopicMessagesTab() {
     );
   }
 
-  // Error state
-  if (messagesError) {
-    return (
-      <PageSection isFilled>
-        <EmptyState>
-          <ExclamationCircleIcon />
-          <Title headingLevel="h2" size="lg">
-            {t('topics.messages.noDataTitle')}
-          </Title>
-          <EmptyStateBody>
-            {messagesError.title || t('common.error')}
-          </EmptyStateBody>
-          <Button variant="primary" onClick={() => refetch()}>
-            {t('common.retry')}
-          </Button>
-        </EmptyState>
-      </PageSection>
-    );
-  }
-
-  // No data state (no filters applied)
   const hasFilters = partition !== undefined || offset !== undefined ||
                      timestamp !== undefined || epoch !== undefined || query !== undefined;
-  
-  if (messages.length === 0 && !hasFilters) {
-    return (
-      <PageSection isFilled>
-        <EmptyState>
-          <SearchIcon />
-          <Title headingLevel="h2" size="lg">
-            {t('topics.messages.noDataTitle')}
-          </Title>
-          <EmptyStateBody>
-            {t('topics.messages.noDataBody')}
-          </EmptyStateBody>
-          <Button variant="primary" onClick={() => refetch()}>
-            {t('topics.messages.noDataRefresh')}
-          </Button>
-        </EmptyState>
-      </PageSection>
-    );
-  }
 
   return (
     <>
-    <PageSection isFilled>
-      <Drawer isExpanded={!!selectedMessage} isInline>
-        <DrawerContent
-          panelContent={
-            selectedMessage && (
-              <DrawerPanelContent isResizable minSize="400px">
-                <DrawerHead>
-                  <span>{t('topics.messages.message')}</span>
-                  <DrawerActions>
-                    <DrawerCloseButton onClick={handleDeselectMessage} />
-                  </DrawerActions>
-                </DrawerHead>
-                <MessageDetails message={selectedMessage} />
-              </DrawerPanelContent>
-            )
-          }
-        >
-            
-          {limit === 'continuously' && (
-            <Alert
-              variant="info"
-              isInline
-              title={t('topics.messages.continuousMode.title')}
-            />
-          )}
+    <Drawer isExpanded={!!selectedMessage}>
+      <DrawerContent
+        panelContent={
+          selectedMessage && (
+            <DrawerPanelContent isResizable minSize="400px">
+              <DrawerHead>
+                <span>{t('topics.messages.message')}</span>
+                <DrawerActions>
+                  <DrawerCloseButton onClick={handleDeselectMessage} />
+                </DrawerActions>
+              </DrawerHead>
+              <MessageDetails message={selectedMessage} />
+            </DrawerPanelContent>
+          )
+        }
+      >
+        <DrawerContentBody>
+          <PageSection isFilled>
+            {limit === 'continuously' && (
+              <Alert
+                variant="info"
+                isInline
+                title={t('topics.messages.continuousMode.title')}
+              />
+            )}
 
-          <Toolbar>
-            <ToolbarContent>
-              <ToolbarItem style={{ flex: 1, maxWidth: '700px' }}>
-                <AdvancedSearch
-                  partitions={partitions}
-                  filterQuery={query}
-                  filterWhere={where}
-                  filterPartition={partition}
-                  filterOffset={offset}
-                  filterTimestamp={timestamp}
-                  filterEpoch={epoch}
-                  filterLimit={limit}
-                  onSearch={handleSearch}
-                />
-              </ToolbarItem>
-              <ToolbarItem>
-                <Tooltip content={t('topics.messages.manage_columns')}>
-                  <Button
-                    variant="plain"
-                    icon={<ColumnsIcon />}
-                    onClick={() => setShowColumnsModal(true)}
-                    aria-label={t('topics.messages.manage_columns')}
+            <Toolbar>
+              <ToolbarContent>
+                <ToolbarItem style={{ flex: 1, maxWidth: '700px' }}>
+                  <AdvancedSearch
+                    partitions={partitions}
+                    filterQuery={query}
+                    filterWhere={where}
+                    filterPartition={partition}
+                    filterOffset={offset}
+                    filterTimestamp={timestamp}
+                    filterEpoch={epoch}
+                    filterLimit={limit}
+                    onSearch={handleSearch}
                   />
-                </Tooltip>
-              </ToolbarItem>
-            </ToolbarContent>
-          </Toolbar>
+                </ToolbarItem>
+                <ToolbarItem>
+                  <Tooltip content={t('topics.messages.manage_columns')}>
+                    <Button
+                      variant="plain"
+                      icon={<ColumnsIcon />}
+                      onClick={() => setShowColumnsModal(true)}
+                      aria-label={t('topics.messages.manage_columns')}
+                    />
+                  </Tooltip>
+                </ToolbarItem>
+              </ToolbarContent>
+            </Toolbar>
 
-          <MessagesTable
-            messages={messages}
-            selectedMessage={selectedMessage}
-            chosenColumns={chosenColumns}
-            onSelectMessage={handleSelectMessage}
-            onReset={handleReset}
-            topicName={topicData?.attributes?.name || topicId || ''}
-          />
-        </DrawerContent>
-      </Drawer>
-    </PageSection>
+            {messagesError ? (
+              <EmptyState>
+                <ExclamationCircleIcon />
+                <Title headingLevel="h2" size="lg">
+                  {messagesError instanceof ApiError && messagesError.errors?.[0]?.title
+                    ? messagesError.errors[0].title
+                    : t('topics.messages.noDataTitle')}
+                </Title>
+                <EmptyStateBody>
+                  {messagesError instanceof ApiError && messagesError.errors?.[0]?.detail
+                    ? messagesError.errors[0].detail
+                    : messagesError.message}
+                </EmptyStateBody>
+                <Button variant="primary" onClick={() => refetch()}>
+                  {t('common.retry')}
+                </Button>
+              </EmptyState>
+            ) : (
+              <MessagesTable
+                messages={messages}
+                selectedMessage={selectedMessage}
+                chosenColumns={chosenColumns}
+                hasFilters={hasFilters}
+                onSelectMessage={handleSelectMessage}
+                onReset={handleReset}
+                topicName={topicData?.attributes?.name || topicId || ''}
+              />
+            )}
+          </PageSection>
+        </DrawerContentBody>
+      </DrawerContent>
+    </Drawer>
 
     {showColumnsModal && (
       <ColumnsModal

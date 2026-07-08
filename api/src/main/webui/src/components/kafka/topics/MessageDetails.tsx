@@ -14,12 +14,14 @@ import {
   Tabs,
   Tab,
   TabTitleText,
-  CodeBlock,
-  CodeBlockCode,
+  ClipboardCopy,
   Title,
 } from '@patternfly/react-core';
+import { allExpanded, darkStyles, defaultStyles, JsonView } from 'react-json-view-lite';
+import 'react-json-view-lite/dist/index.css';
 import { KafkaRecord } from '@/api/types';
 import { formatDateTime } from '@/utils/dateTime';
+import { useTheme } from '@/components/app/ThemeProvider';
 
 interface MessageDetailsProps {
   message: KafkaRecord;
@@ -27,6 +29,8 @@ interface MessageDetailsProps {
 
 export function MessageDetails({ message }: MessageDetailsProps) {
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
+  const jsonStyles = isDarkMode ? darkStyles : defaultStyles;
   const [activeTabKey, setActiveTabKey] = useState<string | number>('value');
 
   const formatTimestampLocal = (timestamp: string): string => {
@@ -57,19 +61,22 @@ export function MessageDetails({ message }: MessageDetailsProps) {
     }
   };
 
-  const tryFormatJSON = (value: string | null): { formatted: string; isJSON: boolean } => {
-    if (!value) return { formatted: '-', isJSON: false };
+  const maybeJson = (value: string | null): { parsed: object; isJSON: boolean } => {
+    if (!value) return { parsed: {}, isJSON: false };
     try {
       const parsed = JSON.parse(value);
-      return { formatted: JSON.stringify(parsed, null, 2), isJSON: true };
+      if (typeof parsed === 'object' && parsed !== null) {
+        return { parsed, isJSON: true };
+      }
     } catch {
-      return { formatted: value, isJSON: false };
+      // not JSON
     }
+    return { parsed: {}, isJSON: false };
   };
 
-  const keyFormatted = tryFormatJSON(message.attributes.key);
-  const valueFormatted = tryFormatJSON(message.attributes.value);
-  const headersFormatted = JSON.stringify(message.attributes.headers, null, 2);
+  const keyJson = maybeJson(message.attributes.key);
+  const valueJson = maybeJson(message.attributes.value);
+  const headers = Object.entries(message.attributes.headers ?? {});
 
   return (
     <DrawerPanelBody>
@@ -141,9 +148,19 @@ export function MessageDetails({ message }: MessageDetailsProps) {
             title={<TabTitleText>{t('topics.messages.field.value')}</TabTitleText>}
           >
             <div style={{ padding: '1rem' }}>
-              <CodeBlock>
-                <CodeBlockCode>{valueFormatted.formatted}</CodeBlockCode>
-              </CodeBlock>
+              <ClipboardCopy
+                isCode
+                isReadOnly
+                hoverTip="Copy"
+                clickTip="Copied"
+                variant={valueJson.isJSON ? 'inline' : 'expansion'}
+                isExpanded={!valueJson.isJSON}
+              >
+                {message.attributes.value ?? '-'}
+              </ClipboardCopy>
+              {valueJson.isJSON && (
+                <JsonView data={valueJson.parsed} shouldExpandNode={allExpanded} style={jsonStyles} />
+              )}
               {message.relationships.valueSchema?.meta?.name && (
                 <div style={{ marginTop: '1rem' }}>
                   <Title headingLevel="h4" size="md">
@@ -160,9 +177,19 @@ export function MessageDetails({ message }: MessageDetailsProps) {
             title={<TabTitleText>{t('topics.messages.field.key')}</TabTitleText>}
           >
             <div style={{ padding: '1rem' }}>
-              <CodeBlock>
-                <CodeBlockCode>{keyFormatted.formatted}</CodeBlockCode>
-              </CodeBlock>
+              <ClipboardCopy
+                isCode
+                isReadOnly
+                hoverTip="Copy"
+                clickTip="Copied"
+                variant={keyJson.isJSON ? 'inline' : 'expansion'}
+                isExpanded={!keyJson.isJSON}
+              >
+                {message.attributes.key ?? '-'}
+              </ClipboardCopy>
+              {keyJson.isJSON && (
+                <JsonView data={keyJson.parsed} shouldExpandNode={allExpanded} style={jsonStyles} />
+              )}
               {message.relationships.keySchema?.meta?.name && (
                 <div style={{ marginTop: '1rem' }}>
                   <Title headingLevel="h4" size="md">
@@ -179,9 +206,18 @@ export function MessageDetails({ message }: MessageDetailsProps) {
             title={<TabTitleText>{t('topics.messages.field.headers')}</TabTitleText>}
           >
             <div style={{ padding: '1rem' }}>
-              <CodeBlock>
-                <CodeBlockCode>{headersFormatted}</CodeBlockCode>
-              </CodeBlock>
+              {headers.length === 0 ? (
+                <span>-</span>
+              ) : (
+                <DescriptionList isHorizontal isCompact>
+                  {headers.map(([k, v]) => (
+                    <DescriptionListGroup key={k}>
+                      <DescriptionListTerm>{k}</DescriptionListTerm>
+                      <DescriptionListDescription>{String(v)}</DescriptionListDescription>
+                    </DescriptionListGroup>
+                  ))}
+                </DescriptionList>
+              )}
             </div>
           </Tab>
         </Tabs>

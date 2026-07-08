@@ -3,12 +3,14 @@
  * Displays Kafka messages in a virtualized table
  */
 
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   EmptyState,
   EmptyStateBody,
   Button,
   Title,
+  Content,
 } from '@patternfly/react-core';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
 import { SearchIcon } from '@patternfly/react-icons';
@@ -20,6 +22,7 @@ interface MessagesTableProps {
   messages: KafkaRecord[];
   selectedMessage?: KafkaRecord;
   chosenColumns: Column[];
+  hasFilters: boolean;
   onSelectMessage: (message: KafkaRecord) => void;
   onReset: () => void;
   topicName: string;
@@ -29,23 +32,34 @@ export function MessagesTable({
   messages,
   selectedMessage,
   chosenColumns,
+  hasFilters,
   onSelectMessage,
   onReset,
 }: MessagesTableProps) {
   const { t } = useTranslation();
   const columnLabels = useColumnLabels();
 
-  const formatValue = (value: string | null, maxLength = 100): string => {
+  const truncate = (value: string | null): React.ReactNode => {
     if (!value) return '-';
-    if (value.length <= maxLength) return value;
-    return value.substring(0, maxLength) + '...';
+    return (
+      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {value}
+      </span>
+    );
   };
 
-  const formatHeaders = (headers: Record<string, unknown>): string => {
-    const keys = Object.keys(headers);
-    if (keys.length === 0) return '-';
-    if (keys.length === 1) return `${keys[0]}: ${headers[keys[0]]}`;
-    return `${keys.length} headers`;
+  const renderHeaders = (headers: Record<string, unknown>) => {
+    const entries = Object.entries(headers);
+    if (entries.length === 0) return '-';
+    return (
+      <div>
+        {entries.map(([k, v]) => (
+          <div key={k} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <strong>{k}</strong>: {String(v)}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const formatTimestampUTC = (timestamp: string): string => {
@@ -81,11 +95,17 @@ export function MessagesTable({
       <EmptyState>
         <SearchIcon />
         <Title headingLevel="h2" size="lg">
-          {t('topics.messages.noResultsTitle')}
+          {t('topics.messages.noDataTitle')}
         </Title>
-        <EmptyStateBody>{t('topics.messages.noResultsBody')}</EmptyStateBody>
+        <EmptyStateBody>
+          {hasFilters
+            ? t('topics.messages.noResultsBody')
+            : t('topics.messages.noDataBody')}
+        </EmptyStateBody>
         <Button variant="primary" onClick={onReset}>
-          {t('topics.messages.noResultsReset')}
+          {hasFilters
+            ? t('topics.messages.noResultsReset')
+            : t('topics.messages.noDataRefresh')}
         </Button>
       </EmptyState>
     );
@@ -97,9 +117,11 @@ export function MessagesTable({
         return (
           <div>
             <strong>{message.attributes.offset}</strong>
-            <div style={{ fontSize: '0.875rem', color: 'var(--pf-v5-global--Color--200)' }}>
-              Partition {message.attributes.partition}
-            </div>
+            <Content>
+              <Content component="small">
+                Partition {message.attributes.partition}
+              </Content>
+            </Content>
           </div>
         );
       case 'timestampUTC':
@@ -107,11 +129,11 @@ export function MessagesTable({
       case 'timestamp':
         return formatTimestampLocal(message.attributes.timestamp);
       case 'key':
-        return formatValue(message.attributes.key);
+        return truncate(message.attributes.key);
       case 'headers':
-        return formatHeaders(message.attributes.headers);
+        return renderHeaders(message.attributes.headers);
       case 'value':
-        return formatValue(message.attributes.value);
+        return truncate(message.attributes.value);
       case 'size':
         return formatBytes(message.attributes.size);
       default:
@@ -121,8 +143,8 @@ export function MessagesTable({
 
   return (
     <>
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        <Table aria-label={t('topics.messages.tableAriaLabel')} variant="compact">
+      <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+        <Table aria-label={t('topics.messages.tableAriaLabel')} variant="compact" style={{ tableLayout: 'fixed', width: '100%' }}>
           <Thead>
             <Tr>
               {chosenColumns.map((column) => {
@@ -163,7 +185,6 @@ export function MessagesTable({
                   <Td
                     key={column}
                     dataLabel={columnLabels[column]}
-                    modifier={column === 'key' || column === 'headers' || column === 'value' ? 'truncate' : undefined}
                   >
                     {renderCell(column, message)}
                   </Td>

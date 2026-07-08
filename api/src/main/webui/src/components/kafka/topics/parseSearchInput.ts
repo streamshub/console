@@ -7,17 +7,15 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
     },
     limit: 50,
     partition: undefined,
-    query: {
-      where: "everywhere",
-      value: "",
-    },
+    query: undefined,
   };
+  let queryWhere: ReturnType<typeof parseWhere> = "everywhere";
   const parts = value.split(" ");
   const queryParts: string[] = [];
   parts.forEach((p) => {
     if (p.indexOf(`where=`) === 0) {
       const [, where] = p.split("=");
-      sp.query!.where = parseWhere(where);
+      queryWhere = parseWhere(where);
     } else if (p.indexOf(`messages=`) === 0) {
       const [, from] = p.split("=");
       if (from === "latest") {
@@ -80,7 +78,7 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
   const query = queryParts.join(" ").trim();
 
   if (query.length > 0) {
-    sp.query!.value = query;
+    sp.query = { value: query, where: queryWhere };
   }
 
   return sp;

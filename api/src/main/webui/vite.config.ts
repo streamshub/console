@@ -34,6 +34,7 @@ export default defineConfig({
       '@patternfly/react-icons',
       '@patternfly/react-user-feedback',
       '@patternfly/react-data-view',
+      'react-json-view-lite',
     ]
   }
 });

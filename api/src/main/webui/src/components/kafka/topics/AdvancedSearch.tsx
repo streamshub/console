@@ -3,8 +3,10 @@
  * Provides filtering options for Kafka messages
  */
 
-import { useState, useCallback, useTransition } from 'react';
+import { useState, useCallback, useTransition, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { toDatetimeLocal, toISOWithLocalOffset } from '@/utils/dateTime';
 import {
   SearchInput,
   Button,
@@ -73,7 +75,9 @@ export function AdvancedSearch({
     filterEpoch !== undefined ? 'epoch' : 'latest'
   );
   const [fromOffset, setFromOffset] = useState<number | undefined>(filterOffset);
-  const [fromTimestamp, setFromTimestamp] = useState<string | undefined>(filterTimestamp);
+  const [fromTimestamp, setFromTimestamp] = useState<string | undefined>(
+    filterTimestamp ? toDatetimeLocal(filterTimestamp) : undefined
+  );
   const [fromEpoch, setFromEpoch] = useState<number | undefined>(filterEpoch);
   const [isFromOpen, setIsFromOpen] = useState(false);
   const [, startTransition] = useTransition();
@@ -101,7 +105,7 @@ export function AdvancedSearch({
       } else if (fromCategory === 'epoch' && fromEpoch !== undefined) {
         return { type: 'epoch', value: fromEpoch };
       } else if (fromCategory === 'timestamp' && fromTimestamp) {
-        return { type: 'timestamp', value: fromTimestamp };
+        return { type: 'timestamp', value: toISOWithLocalOffset(fromTimestamp) };
       }
       return { type: 'latest' };
     })();
@@ -172,8 +176,38 @@ export function AdvancedSearch({
   const searchString = buildSearchInputValue();
   const [searchInputValue, setSearchInputValue] = useState(searchString);
 
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
+
+  const updatePanelPosition = useCallback(() => {
+    if (anchorRef.current) {
+      const rect = anchorRef.current.getBoundingClientRect();
+      const top = rect.bottom + 8;
+      setPanelStyle({
+        position: 'fixed',
+        top,
+        left: rect.left,
+        width: rect.width,
+        maxHeight: `calc(100vh - ${top}px - 16px)`,
+        overflowY: 'auto',
+        zIndex: 9999,
+      });
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isExpanded) return;
+    updatePanelPosition();
+    window.addEventListener('scroll', updatePanelPosition, true);
+    window.addEventListener('resize', updatePanelPosition);
+    return () => {
+      window.removeEventListener('scroll', updatePanelPosition, true);
+      window.removeEventListener('resize', updatePanelPosition);
+    };
+  }, [isExpanded, updatePanelPosition]);
+
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
+    <div ref={anchorRef} style={{ position: 'relative', width: '100%' }}>
       <SearchInput
         placeholder={t('common.search')}
         value={searchInputValue}
@@ -191,16 +225,9 @@ export function AdvancedSearch({
         onToggleAdvancedSearch={() => setIsExpanded(!isExpanded)}
         isAdvancedSearchOpen={isExpanded}
       />
-      {isExpanded && <Panel
+      {isExpanded && createPortal(<Panel
         variant="raised"
-        style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          marginTop: '0.5rem',
-        }}
+        style={panelStyle}
       >
         <PanelMain>
           <PanelMainBody>
@@ -471,7 +498,7 @@ export function AdvancedSearch({
             </Form>
           </PanelMainBody>
         </PanelMain>
-      </Panel>}
+      </Panel>, document.body)}
     </div>
   );
 }
