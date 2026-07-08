@@ -71,7 +71,6 @@ public class GroupsST extends AbstractST {
 
     @Test
     void testVariableConsumerGroupNames() {
-        // TODO: enable once filter is fixed for chars like [* , or ?]
         List<Map.Entry<String, String>> scenarios = List.of(
             Map.entry("Special chars", "group$$$$$%^^&*"),
             Map.entry("Semicolon separated", "group;part;;1"),

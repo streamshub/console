@@ -62,9 +62,9 @@ public class TopicsPageSelectors {
     public static final String TPS_BOTTOM_PAGINATION_NAV_PREV_BUTTON = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(3) > div.pf-v6-c-toolbar > div.pf-v6-c-toolbar__content:nth-of-type(1) > div.pf-v6-c-toolbar__content-section > div.pf-v6-c-toolbar__item > div > div.pf-v6-c-pagination > nav.pf-v6-c-pagination__nav > div.pf-v6-c-pagination__nav-control:nth-of-type(1) button";
 
     public static final String TPS_BOTTOM_PAGINATION_NAV_NEXT_BUTTON = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(3) > div.pf-v6-c-toolbar > div.pf-v6-c-toolbar__content:nth-of-type(1) > div.pf-v6-c-toolbar__content-section > div.pf-v6-c-toolbar__item > div > div.pf-v6-c-pagination > nav.pf-v6-c-pagination__nav > div.pf-v6-c-pagination__nav-control:nth-of-type(2) button";
-    // TODO
+
     public static final String TPS_GROUPS_TABLE_FIRST_GROUP = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(4) > div.pf-v6-c-page__main-body > table.pf-v6-c-table > tbody.pf-v6-c-table__tbody > tr.pf-v6-c-table__tr > td.pf-v6-c-table__td:nth-of-type(1) > a";
-    // TODO
-    public static final String PAGES_NOT_AUTHORIZED_CONTENT = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-c-empty-state > div.pf-v6-c-empty-state__content > div.pf-v6-c-empty-state__body:nth-of-type(2)";
+
+    public static final String PAGES_NOT_AUTHORIZED_CONTENT = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(2) > table.pf-v6-c-table > tbody.pf-v6-c-table__tbody > tr.pf-v6-c-table__tr > td.pf-v6-c-table__td > div.pf-v6-c-empty-state > div.pf-v6-c-empty-state__content > div.pf-v6-c-empty-state__header:nth-of-type(1) > div.pf-v6-c-empty-state__title:nth-of-type(2) > h4.pf-v6-c-empty-state__title-text";
 
 }
