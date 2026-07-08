@@ -3,6 +3,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import escape from '../utils/escape';
 import { apiClient } from '../client';
 import { UsersResponse, UserResponse } from '../types';
 
@@ -57,7 +58,7 @@ export function useUsers(
       }
 
       if (params?.username) {
-        searchParams.set('filter[username]', `like,*${params.username}*`);
+        searchParams.set('filter[username]', `like,*${escape(params.username)}*`);
       }
 
       if (params?.fields) {
