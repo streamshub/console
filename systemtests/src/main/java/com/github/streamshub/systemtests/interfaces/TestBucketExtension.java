@@ -56,7 +56,7 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
         }
 
         String testBucketGroupName = testAnnotation.value();
-        LOGGER.info("Shared resources beforeTestExecution - @TestBucket({})", testBucketGroupName);
+        LOGGER.info("Shared resources setup - beforeTestExecution - @TestBucket({})", testBucketGroupName);
 
         // Init executed test count to 0
         EXECUTED_ANNOTATED_TEST_COUNT_MAP.putIfAbsent(testBucketGroupName, new AtomicInteger(0));
@@ -92,6 +92,7 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
                 }
             }
         }
+        LOGGER.info("Shared resources setup - beforeTestExecution - @TestBucket({}) FINISHED", testBucketGroupName);
     }
 
     /**
@@ -183,7 +184,7 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
         }
 
         String testBucketGroupName = testAnnotation.value();
-        LOGGER.info("Shared resources afterTestExecution - @TestBucket({})", testBucketGroupName);
+        LOGGER.info("Shared resources setup - afterTestExecution - @TestBucket({})", testBucketGroupName);
 
         int executedTestCount = EXECUTED_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName).incrementAndGet();
         int totalTestCount = TOTAL_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName);
@@ -197,5 +198,6 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
                 KubeResourceManager.get().deleteResources(false);
             }
         }
+        LOGGER.info("Shared resources setup afterTestExecution - @TestBucket({}) FINISHED", testBucketGroupName);
     }
 }
