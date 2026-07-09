@@ -112,7 +112,10 @@ public class KafkaST extends AbstractST {
         LOGGER.info("Verify ReconciliationPaused warning appears in UI");
 
         // Check the reconciliation paused warning is displayed in the warnings card
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+        if (tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_DROPDOWN_LIST).isHidden()) {
+            PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+        }
+
         PwUtils.waitForContainsText(tcc,
             ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS,
             "Cluster reconciliation paused. Changes to the Kafka resource will not be applied.",
