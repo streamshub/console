@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.consumers;
 
 import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.systemtests.AbstractST;
-import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
@@ -124,7 +123,7 @@ public class GroupsST extends AbstractST {
             // Verify row on groups page
             LOGGER.info("Verify group '{}' is present in groups table", displayName);
             PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
-            PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
+            PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, "Groups", true);
             PwUtils.fill(tcc, GroupsPageSelectors.GPS_GROUP_NAME_INPUT, consumerGroupName);
             PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_RESULT_FIRST_NAME, consumerGroupName, false);
 
@@ -137,7 +136,7 @@ public class GroupsST extends AbstractST {
             // Click through from groups page
             LOGGER.info("Navigate back to groups page and test click-through for '{}'", displayName);
             PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
-            PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, MessageStore.groupsTitle(), true);
+            PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, "Groups", true);
             PwUtils.fill(tcc, GroupsPageSelectors.GPS_GROUP_NAME_INPUT, consumerGroupName);
             PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_RESULT_FIRST_NAME, consumerGroupName, false);
             tcc.page().click(GroupsPageSelectors.GPS_RESULT_FIRST_NAME);

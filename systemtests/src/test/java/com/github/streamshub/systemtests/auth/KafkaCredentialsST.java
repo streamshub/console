@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.auth;
 
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaClusterBuilder;
 import com.github.streamshub.systemtests.AbstractST;
-import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
@@ -132,15 +131,15 @@ public class KafkaCredentialsST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Open pop-up modal for pause reconciliation");
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, MessageStore.pauseReconciliationButton(), false);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Pause Reconciliation", false);
         PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON);
 
         LOGGER.debug("Check pop-up modal for pause reconciliation");
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.PAGES_POPUP_MODAL);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_HEADER, MessageStore.pauseReconciliation(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_BODY, MessageStore.pauseReconciliationText(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, MessageStore.reconciliationCancel(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, MessageStore.reconciliationConfirm(), false);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_HEADER, "Pause cluster reconciliation?", false);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_BODY, "While paused, updates to the cluster are ignored until reconciliation is resumed.", false);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, "Cancel", false);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, "Confirm", false);
 
         LOGGER.debug("Confirm pause reconciliation");
         PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
@@ -148,23 +147,23 @@ public class KafkaCredentialsST extends AbstractST {
         // Check aftermath
         LOGGER.info("Verify UI state after pausing Kafka reconciliation");
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION, MessageStore.reconciliationPausedWarning(), false);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION, "Cluster reconciliation paused. Changes to the Kafka resource will not be applied.", false);
 
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
 
         LOGGER.info("Resume Kafka reconciliation using UI");
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, MessageStore.resumeReconciliation(), true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Resume Reconciliation", true);
         PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON);
 
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, MessageStore.reconciliationCancel(), false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, MessageStore.reconciliationConfirm(), false);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, "Cancel", false);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, "Confirm", false);
 
         LOGGER.debug("Confirm resume reconciliation");
         PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
 
         // Reconciliation is resumed and button should display Pause
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, MessageStore.pauseReconciliationButton(), true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Pause Reconciliation", true);
 
         // Check annotation
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set back to false");
