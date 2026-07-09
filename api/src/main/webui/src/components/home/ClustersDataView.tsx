@@ -128,7 +128,9 @@ export function ClustersDataView({
         {
           cell: (
             <>
-              <Truncate content={cluster.attributes.name} />
+              <Button variant="link" isInline onClick={() => handleViewCluster(cluster, showLoginModal, navigate)}>
+                <Truncate content={cluster.attributes.name} />
+              </Button>
               <KroxyliciousClusterLabel cluster={cluster} />
             </>
           ),
