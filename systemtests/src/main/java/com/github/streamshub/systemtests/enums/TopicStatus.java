@@ -4,8 +4,8 @@ public enum TopicStatus {
     FULLY_REPLICATED("Fully replicated", 1),
     UNDER_REPLICATED("Under replicated", 2),
     PARTIALLY_OFFLINE("Partially offline", 3),
-    OFFLINE("Offline", 4),
-    UNKNOWN("Unknown", 5);
+    UNKNOWN("Unknown", 4),
+    OFFLINE("Offline", 5);
 
 
     private final String name;

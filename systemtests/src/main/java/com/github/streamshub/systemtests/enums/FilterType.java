@@ -2,8 +2,8 @@ package com.github.streamshub.systemtests.enums;
 
 public enum FilterType {
     NAME("Name", 1),
-    TOPIC_ID("Topic ID", 2),
-    STATUS("Status", 3);
+    STATUS("Status", 2),
+    TOPIC_ID("Topic ID", 3);
 
     private final String name;
     private final int position;

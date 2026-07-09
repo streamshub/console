@@ -3,7 +3,7 @@ package com.github.streamshub.systemtests.locators;
 public class MessagesPageSelectors {
     private MessagesPageSelectors() {}
 
-    public static final String MPS_EMPTY_BODY_CONTENT = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(4) > div.pf-v6-c-page__main-body > div.pf-v6-c-empty-state > div.pf-v6-c-empty-state__content > h2.pf-v6-c-title";
+    public static final String MPS_EMPTY_BODY_CONTENT = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section > div.pf-v6-c-page__main-body > div.pf-v6-c-empty-state:nth-of-type(2) > div.pf-v6-c-empty-state__content > h2.pf-v6-c-title";
 
     public static final String MPS_SEARCH_TOOLBAR_QUERY_INPUT = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section > div.pf-v6-c-page__main-body > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content > div.pf-v6-c-toolbar > div.pf-v6-c-toolbar__content > div.pf-v6-c-toolbar__content-section > div.pf-v6-c-toolbar__item > div > div.pf-v6-c-input-group > div.pf-v6-c-input-group__item > div.pf-v6-c-text-input-group > div.pf-v6-c-text-input-group__main > span.pf-v6-c-text-input-group__text > input.pf-v6-c-text-input-group__text-input";
 

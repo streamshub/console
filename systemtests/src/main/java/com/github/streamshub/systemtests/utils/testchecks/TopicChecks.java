@@ -177,7 +177,7 @@ public class TopicChecks {
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
         for (String topicName : topicNames) {
             LOGGER.info("Verify topic name {}", topicName);
-            PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, topicName);
+            PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, topicName);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
             PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
         }
@@ -199,7 +199,7 @@ public class TopicChecks {
         for (String topicName : topicNames) {
             String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
             LOGGER.debug("Verify topic {} with id {}", topicName, topicId);
-            PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, topicId);
+            PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, topicId);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
             PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
         }
