@@ -23,7 +23,8 @@ public class TimeConstants {
     public static final long COMPONENT_LOAD_TIMEOUT = secondsInMilis(30);
     public static final long COMPONENT_LOAD_TIMEOUT_MEDIUM = secondsInMilis(45);
     public static final long COMPONENT_LOAD_TIMEOUT_LONG = secondsInMilis(80);
-    public static final long COMPONENT_LOAD_TIMEOUT_SHORT = secondsInMilis(5);
+    public static final long COMPONENT_LOAD_TIMEOUT_SHORT = secondsInMilis(6);
+    public static final long COMPONENT_LOAD_TIMEOUT_VERY_SHORT = secondsInMilis(3);
     public static final long GLOBAL_STATUS_TIMEOUT = minutesInMilis(3);
     public static final int GLOBAL_STABILITY_OFFSET_TIME = 10;
     // HTML elements

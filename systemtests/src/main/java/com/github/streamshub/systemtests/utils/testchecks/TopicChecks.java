@@ -66,9 +66,9 @@ public class TopicChecks {
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, kafkaName));
 
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_TOTAL_TOPICS_BADGE, total + " total", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_SUCCESS, Integer.toString(fullyReplicated), false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_WARNING, Integer.toString(underReplicated), false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_ERROR, Integer.toString(unavailable), false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_SUCCESS, Integer.toString(fullyReplicated), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_WARNING, Integer.toString(underReplicated), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_ERROR, Integer.toString(unavailable), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
     }
 
     /**
