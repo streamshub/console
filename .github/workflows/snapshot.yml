@@ -19,7 +19,7 @@ jobs:
     steps:
       # ==================== Setup ====================
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Retrieve Project Metadata
         uses: smallrye/project-metadata-action@62527b4a896343d4c0c6b2a61eff07f6b59fcbd8
