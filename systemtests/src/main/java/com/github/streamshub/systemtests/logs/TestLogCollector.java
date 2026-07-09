@@ -18,6 +18,8 @@ import io.skodjob.kubetest4j.LogCollectorBuilder;
 import io.skodjob.kubetest4j.clients.KubeClient;
 import io.skodjob.kubetest4j.clients.cmdClient.Kubectl;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.strimzi.api.kafka.model.connect.KafkaConnect;
+import io.strimzi.api.kafka.model.connector.KafkaConnector;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
@@ -63,6 +65,8 @@ public class TestLogCollector {
             HasMetadata.getKind(Deployment.class),
             HasMetadata.getKind(Console.class),
             Kafka.RESOURCE_KIND,
+            KafkaConnect.RESOURCE_KIND,
+            KafkaConnector.RESOURCE_KIND,
             KafkaNodePool.RESOURCE_KIND,
             KafkaTopic.RESOURCE_KIND,
             KafkaUser.RESOURCE_KIND
