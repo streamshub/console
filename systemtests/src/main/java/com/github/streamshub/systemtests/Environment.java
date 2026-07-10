@@ -51,8 +51,11 @@ public class Environment {
     public static final String TEST_LOG_DIR = ENVS.getOrDefault("TEST_LOG_DIR",  USER_PATH + "/target/logs/");
     public static final String TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL", "DEBUG");
     public static final String TEST_CONSOLE_LOG_LEVEL = ENVS.getOrDefault("TEST_CONSOLE_LOG_LEVEL", "INFO");
-    public static final String SCREENSHOTS_BASE_DIR_PATH = ENVS.getOrDefault("SCREENSHOTS_DIR_PATH", USER_PATH + "/target/screenshots");
-    public static final String TRACING_BASE_DIR_PATH = ENVS.getOrDefault("TRACING_DIR_PATH", USER_PATH + "/target/tracing");
+    // Must match the "Archive systemtest artifacts" step's glob paths in the CI workflow
+    // (systemtests/screenshot/** and systemtests/tracing/**) - these live outside target/,
+    // unlike TEST_LOG_DIR, so CI actually picks them up.
+    public static final String SCREENSHOTS_BASE_DIR_PATH = ENVS.getOrDefault("SCREENSHOTS_DIR_PATH", USER_PATH + "/screenshots");
+    public static final String TRACING_BASE_DIR_PATH = ENVS.getOrDefault("TRACING_DIR_PATH", USER_PATH + "/tracing");
     // Each test run gets its own timestamped subfolder under the base dirs above, so consecutive
     // local re-runs never overwrite a previous run's screenshots/traces.
     public static final String TEST_RUN_ID = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss"));
