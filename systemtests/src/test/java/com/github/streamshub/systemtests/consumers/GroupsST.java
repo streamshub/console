@@ -8,6 +8,7 @@ import com.github.streamshub.systemtests.annotations.TestBucket;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
@@ -30,6 +31,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUt
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testutils.GroupsTestUtils;
+import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
@@ -138,8 +140,8 @@ public class GroupsST extends AbstractST {
             KafkaClients clients = new KafkaClientsBuilder()
                 .withNamespaceName(tcc.namespace())
                 .withTopicName(topicName)
-                .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
-                .withDelayMs(1000)
+                .withMessageCount(Constants.MESSAGE_COUNT)
+                .withDelayMs(0)
                 .withProducerName(KafkaNamingUtils.producerName(topicName))
                 .withConsumerName(KafkaNamingUtils.consumerName(topicName))
                 .withConsumerGroup(k8sFriendlyName)
@@ -149,6 +151,15 @@ public class GroupsST extends AbstractST {
                 .build();
 
             KubeResourceManager.get().createResourceAsyncWait(clients.producer(), clients.consumer());
+
+            // Job readiness is a no-op in fabric8 (Job is not a "Readiness-applicable" kind), so the wait above only
+            // confirms the Job was accepted by the API - it does not wait for the pod to be scheduled, its image
+            // pulled, or the consumer to actually join the group. Wait for the consumer pod itself to be running so
+            // that pod startup latency (which varies a lot between clusters) doesn't eat into the UI's retry budget.
+            LOGGER.info("Wait for consumer '{}' to be running before checking the Groups UI", clients.getConsumerName());
+            WaitUtils.waitForPodsReady(tcc.namespace(),
+                new LabelSelectorBuilder().withMatchLabels(Labels.getClientsLabels(clients.getConsumerName())).build(),
+                1, true, () -> { });
 
             LOGGER.info("Verifying group name '{}' is correctly encoded, displayed and linked across pages", consumerGroupName);
             String consumerGroupEncodedName = Identifiers.encode(consumerGroupName);
@@ -192,6 +203,9 @@ public class GroupsST extends AbstractST {
             PwUtils.waitForUrl(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), true);
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);
             PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_HEADER_BREADCRUMB_GROUP_NAME, consumerGroupName, true);
+
+            // Confirm the producer/consumer didn't error during the scenario, and clean up the Jobs before the next one
+            WaitUtils.waitForClientsSuccess(clients);
         }
     }
 

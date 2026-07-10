@@ -130,11 +130,11 @@ public class WaitUtils {
                         return true;
                     }
                 } else {
-                    LOGGER.debug("Pod replicas matching selector {} in namespace {} are not yet stable, resetting stability counter to 0", selector, namespaceName);
+                    LOGGER.trace("Pod replicas matching selector {} in namespace {} are not yet stable, resetting stability counter to 0", selector, namespaceName);
                     stableCounter[0] = 0;
                     return false;
                 }
-                LOGGER.debug("Pod replicas matching selector {} stable for {}/{} consecutive polls, will be assumed stable in {} more poll(s)",
+                LOGGER.trace("Pod replicas matching selector {} stable for {}/{} consecutive polls, will be assumed stable in {} more poll(s)",
                     selector, stableCounter[0], TimeConstants.GLOBAL_STABILITY_OFFSET_TIME, TimeConstants.GLOBAL_STABILITY_OFFSET_TIME - stableCounter[0]);
                 return false;
             });
@@ -160,7 +160,7 @@ public class WaitUtils {
     private static boolean arePodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean checkContainers) {
         List<Pod> pods = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, selector);
         if (pods.isEmpty() && pods.size() != expectPods) {
-            LOGGER.debug("Found 0 Pods matching selector {} in namespace {}, expected {}", selector, namespaceName, expectPods);
+            LOGGER.trace("Found 0 Pods matching selector {} in namespace {}, expected {}", selector, namespaceName, expectPods);
             return false;
         }
 
@@ -354,7 +354,7 @@ public class WaitUtils {
                     return kafka.getStatus().getConditions().isEmpty() ||
                         !ResourceConditions.checkMatchingConditions(kafka, ResourceStatus.WARNING, ConditionStatus.TRUE);
                 }
-                LOGGER.debug("Kafka {}/{} has no status yet", namespaceName, clusterName);
+                LOGGER.trace("Kafka {}/{} has no status yet", namespaceName, clusterName);
                 return false;
             });
     }
@@ -444,7 +444,7 @@ public class WaitUtils {
     public static String waitForKafkaTopicToHaveIdAndReturn(String namespace, String topicName) {
         LOGGER.info("Waiting for KafkaTopic {}/{} to have a Topic ID assigned", namespace, topicName);
         Wait.until(String.format("KafkaTopic %s/%s to have an ID", namespace, topicName),
-            TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TimeConstants.GLOBAL_STATUS_TIMEOUT,
+            TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, KubeTestConstants.GLOBAL_TIMEOUT,
             () -> {
                 KafkaTopic topic = ResourceUtils.getKubeResource(KafkaTopic.class, namespace, topicName);
                 return topic != null && topic.getStatus() != null && topic.getStatus().getTopicId() != null;
@@ -477,7 +477,7 @@ public class WaitUtils {
                 List<Deployment> deployments = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, namespace, deploymentPrefix);
 
                 if (deployments.isEmpty()) {
-                    LOGGER.debug("No Deployment with prefix '{}' found yet in namespace {}", deploymentPrefix, namespace);
+                    LOGGER.trace("No Deployment with prefix '{}' found yet in namespace {}", deploymentPrefix, namespace);
                     return false;
                 }
 

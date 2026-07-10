@@ -5,6 +5,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
+import com.github.streamshub.systemtests.enums.TopicsPerPage;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
@@ -83,19 +84,19 @@ public class TopicChecks {
      *
      * @param tcc                     the test case configuration with page context
      * @param topicsCount             the total number of topics present
-     * @param topicsPerPageList       list of integers specifying topics per page options to test
+     * @param topicsPerPageList       list of topics per page options to test
      * @param dropdownButtonSelector  CSS selector for the dropdown button controlling topics per page
      * @param dropdownItemsSelector   CSS selector for the dropdown items in the topics per page selector
      * @param paginationTextSelector  CSS selector for the pagination summary text (e.g., "1-10 of 57")
      * @param previousButtonSelector  CSS selector for the pagination "previous page" button
      * @param nextButtonSelector      CSS selector for the pagination "next page" button
      */
-    public static void checkPaginationPage(TestCaseConfig tcc, int topicsCount, List<Integer> topicsPerPageList,
+    public static void checkPaginationPage(TestCaseConfig tcc, int topicsCount, List<TopicsPerPage> topicsPerPageList,
         String dropdownButtonSelector, String dropdownItemsSelector, String paginationTextSelector, String previousButtonSelector, String nextButtonSelector) {
-        for (Integer topicsPerPage : topicsPerPageList) {
+        for (TopicsPerPage topicsPerPageOption : topicsPerPageList) {
             int lowBoundary;
             int highBoundary;
-            int perPageItemIndex = topicsPerPageList.indexOf(topicsPerPage);
+            int topicsPerPage = topicsPerPageOption.getValue();
             int topicsOnPage;
 
             LOGGER.info("Checking pagination for {} topics using {} topics per page", topicsCount, topicsPerPage);
@@ -106,8 +107,8 @@ public class TopicChecks {
             LOGGER.debug("Opening topics-per-page dropdown selector");
             PwUtils.waitForLocatorAndClick(tcc, dropdownButtonSelector);
 
-            LOGGER.debug("Selecting topics-per-page dropdown item [{}] for value {}", perPageItemIndex + 1, topicsPerPage);
-            PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(dropdownItemsSelector).nth(perPageItemIndex + 1).build());
+            LOGGER.debug("Selecting topics-per-page dropdown item [{}] for value {}", topicsPerPageOption.getDropdownPosition(), topicsPerPage);
+            PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(dropdownItemsSelector).nth(topicsPerPageOption.getDropdownPosition()).build());
 
             // Check pages
             int pageOverflow = topicsCount % topicsPerPage;

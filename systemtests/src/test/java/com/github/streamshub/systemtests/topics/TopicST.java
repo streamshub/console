@@ -10,6 +10,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
+import com.github.streamshub.systemtests.enums.TopicsPerPage;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
@@ -73,7 +74,7 @@ public class TopicST extends AbstractST {
      * <p>It then exercises the pagination controls in the UI, verifying that both the top
      * and bottom pagination components function correctly. The following checks are included:</p>
      * <ul>
-     *   <li>Page size options for 5,10, 20, 50, and 100 topics per page are available and work as expected.</li>
+     *   <li>Page size options for 10, 50, and 100 topics per page are available and work as expected.</li>
      *   <li>Navigation buttons (previous/next) perform correct page transitions.</li>
      *   <li>The pagination toggle text displays the correct topic range summary (e.g. "1 - 10 of 150") for the current page.</li>
      *   <li>Topics displayed on each page match the expected counts.</li>
@@ -90,7 +91,7 @@ public class TopicST extends AbstractST {
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         LOGGER.info("Verify pagination on topics page for {} total topics", TOTAL_TOPICS_COUNT);
-        List<Integer> topicsPerPageList = List.of(5, 10, 20, 50, 100);
+        List<TopicsPerPage> topicsPerPageList = List.of(TopicsPerPage.TEN, TopicsPerPage.FIFTY, TopicsPerPage.HUNDRED);
 
         LOGGER.info("Verify top pagination navigation using page sizes {}", topicsPerPageList);
         TopicChecks.checkPaginationPage(tcc, TOTAL_TOPICS_COUNT, topicsPerPageList,

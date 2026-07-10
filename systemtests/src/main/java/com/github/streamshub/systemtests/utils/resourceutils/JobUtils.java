@@ -33,10 +33,10 @@ public class JobUtils {
     public static boolean checkSucceededJobStatus(String namespaceName, String jobName, int expectedSucceededPods) {
         Job job = ResourceUtils.getKubeResource(Job.class, namespaceName, jobName);
         if (job == null) {
-            LOGGER.debug("Job {}/{} not found while checking succeeded pod count", namespaceName, jobName);
+            LOGGER.trace("Job {}/{} not found while checking succeeded pod count", namespaceName, jobName);
             return false;
         }
-        LOGGER.debug("Job {}/{} status: succeeded={}, expected={}", namespaceName, jobName,
+        LOGGER.trace("Job {}/{} status: succeeded={}, expected={}", namespaceName, jobName,
             job.getStatus() != null ? job.getStatus().getSucceeded() : null, expectedSucceededPods);
         return job.getStatus() != null && job.getStatus().getSucceeded() != null && job.getStatus().getSucceeded().equals(expectedSucceededPods);
     }

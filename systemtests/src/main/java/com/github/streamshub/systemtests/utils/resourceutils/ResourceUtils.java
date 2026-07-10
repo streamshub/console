@@ -24,12 +24,12 @@ public class ResourceUtils {
     }
 
     public static <T extends HasMetadata> T getKubeResource(Class<T> resourceClass, String namespaceName, String resourceName) {
-        LOGGER.debug("Fetching {} {}/{}", resourceClass.getSimpleName(), namespaceName, resourceName);
+        LOGGER.trace("Fetching {} {}/{}", resourceClass.getSimpleName(), namespaceName, resourceName);
         return getKubeResourceClient(resourceClass).inNamespace(namespaceName).withName(resourceName).get();
     }
 
     public static <T extends HasMetadata> T getKubeResource(Class<T> resourceClass, String resourceName) {
-        LOGGER.debug("Fetching cluster-scoped {} {}", resourceClass.getSimpleName(), resourceName);
+        LOGGER.trace("Fetching cluster-scoped {} {}", resourceClass.getSimpleName(), resourceName);
         return getKubeResourceClient(resourceClass).withName(resourceName).get();
     }
 
@@ -37,17 +37,17 @@ public class ResourceUtils {
     // List
     // ------
     public static <T extends HasMetadata> List<T> listKubeResources(Class<T> resourceClass, String namespaceName) {
-        LOGGER.debug("Listing {} resources in namespace {}", resourceClass.getSimpleName(), namespaceName);
+        LOGGER.trace("Listing {} resources in namespace {}", resourceClass.getSimpleName(), namespaceName);
         return getKubeResourceClient(resourceClass).inNamespace(namespaceName).list().getItems();
     }
 
     public static <T extends HasMetadata> List<T> listKubeResourcesByPrefix(Class<T> resourceClass, String namespaceName, String prefix) {
-        LOGGER.debug("Listing {} resources in namespace {} with name prefix '{}'", resourceClass.getSimpleName(), namespaceName, prefix);
+        LOGGER.trace("Listing {} resources in namespace {} with name prefix '{}'", resourceClass.getSimpleName(), namespaceName, prefix);
         return listKubeResources(resourceClass, namespaceName).stream().filter(it -> it.getMetadata().getName().startsWith(prefix)).toList();
     }
 
     public static <T extends HasMetadata> List<T> listKubeResourcesByLabelSelector(Class<T> resourceClass, String namespaceName, LabelSelector labelSelector) {
-        LOGGER.debug("Listing {} resources in namespace {} with label selector {}", resourceClass.getSimpleName(), namespaceName, labelSelector);
+        LOGGER.trace("Listing {} resources in namespace {} with label selector {}", resourceClass.getSimpleName(), namespaceName, labelSelector);
         return getKubeResourceClient(resourceClass).inNamespace(namespaceName).withLabelSelector(labelSelector).list().getItems();
     }
 }
