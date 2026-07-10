@@ -8,7 +8,8 @@ import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
-import com.github.streamshub.systemtests.locators.CssBuilder;
+import com.github.streamshub.systemtests.enums.MessagesParameterType;
+import com.github.streamshub.systemtests.enums.MessagesWhereFilter;
 import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
@@ -23,6 +24,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUt
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.MessagesChecks;
+import com.github.streamshub.systemtests.utils.testutils.MessagesTestUtils;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -220,8 +222,8 @@ public class MessagesST extends AbstractST {
 
         // Formatters
         final DateTimeFormatter timestampFormatterQuery = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        final DateTimeFormatter dateFormatterForm = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        final DateTimeFormatter timeFormatterForm = DateTimeFormatter.ofPattern("HH:mm");
+        // Matches the native datetime-local input's value format used by the popover filter form
+        final DateTimeFormatter dateTimeFormatterForm = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
         String testTopic = KafkaTopicUtils
                 .setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, TOPIC_COUNT, 1, 1, 1)
@@ -233,8 +235,7 @@ public class MessagesST extends AbstractST {
         final OffsetDateTime earlierUtcTime = Instant.now().atOffset(ZoneOffset.UTC);
         final String earlierTimeQuery = earlierUtcTime.format(timestampFormatterQuery);
         final String earlierDateTimeUnix = String.valueOf(earlierUtcTime.toEpochSecond());
-        final String earlierDateForm = earlierUtcTime.format(dateFormatterForm);
-        final String earlierTimeForm = earlierUtcTime.atZoneSameInstant(ZoneId.systemDefault()).format(timeFormatterForm);
+        final String earlierDateTimeForm = earlierUtcTime.atZoneSameInstant(ZoneId.systemDefault()).format(dateTimeFormatterForm);
 
         LOGGER.info("Earlier ISO: {}, Earlier Unix: {}", earlierTimeQuery, earlierDateTimeUnix);
 
@@ -270,8 +271,7 @@ public class MessagesST extends AbstractST {
         final OffsetDateTime currentUtcTime = Instant.now().atOffset(ZoneOffset.UTC);
         final String currentDateTimeQuery = currentUtcTime.format(timestampFormatterQuery);
         final String currentDateTimeUnix = String.valueOf(currentUtcTime.toEpochSecond());
-        final String currentDateForm = currentUtcTime.format(dateFormatterForm);
-        final String currentTimeForm = currentUtcTime.atZoneSameInstant(ZoneId.systemDefault()).format(timeFormatterForm);
+        final String currentDateTimeForm = currentUtcTime.atZoneSameInstant(ZoneId.systemDefault()).format(dateTimeFormatterForm);
 
         LOGGER.info("Current ISO: {}, Current Unix: {}", currentDateTimeQuery, currentDateTimeUnix);
         LOGGER.info("Producing {} new messages with text '{}'", newMessageCount, newMessageText);
@@ -303,10 +303,10 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
         LOGGER.info("Verifying timestamp filtering using UI popover (ISO mode) (current)");
-        MessagesChecks.checkPopoverIsoFilter(tcc, currentDateForm, currentTimeForm, newMessageCount, newMessageText);
+        MessagesChecks.checkPopoverIsoFilter(tcc, currentDateTimeForm, newMessageCount, newMessageText);
 
         LOGGER.info("Verifying timestamp filtering using UI popover (ISO mode) (earlier)");
-        MessagesChecks.checkPopoverIsoFilter(tcc, earlierDateForm, earlierTimeForm, oldMessageCount, oldMessageText);
+        MessagesChecks.checkPopoverIsoFilter(tcc, earlierDateTimeForm, oldMessageCount, oldMessageText);
 
         // Verify via UI popover (Unix mode)
         LOGGER.info("Verifying timestamp filtering using UI popover (Unix mode) (current)");
@@ -364,97 +364,68 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
         LOGGER.info("Verifying default state: latest 50 messages shown, row 1 = offset 299, query = 'messages=latest retrieve=50'");
-        PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true, true);
-        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE,
-             "messages=latest retrieve=50", true));
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
 
         LOGGER.info("Filtering messages by key [{}] with no offset specified - expecting 'No messages data'", KEY_FILTER);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_ITEMS).nth(2).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, KEY_FILTER);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_FILTER_SEARCH_CONTENT, "No messages data", true);
+        MessagesTestUtils.openFilterForm(tcc);
+        MessagesTestUtils.selectWhere(tcc, MessagesWhereFilter.KEY);
+        MessagesTestUtils.fillHasWords(tcc, KEY_FILTER);
+        MessagesTestUtils.search(tcc);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_NO_DATA, "No messages data", true);
 
-        LOGGER.info("Setting offset to 95 and reapplying key filter [{}] - expecting 5 matching messages", KEY_FILTER);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
         // Take last messages of the first set and let it overlap with second set to see if it filters them out
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, "95");
-
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:95", Constants.VALUE_ATTRIBUTE, true, true);
-        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=offset:95 retrieve=50 orderID where=key", true));
+        LOGGER.info("Setting offset to 95 and reapplying key filter [{}] - expecting 5 matching messages", KEY_FILTER);
+        MessagesTestUtils.openFilterForm(tcc);
+        MessagesTestUtils.selectMessagesParameter(tcc, MessagesParameterType.FROM_OFFSET, "95");
+        MessagesTestUtils.search(tcc);
 
         // Order is ASC
         LOGGER.debug("Verifying key-filtered messages: expecting 5 rows (offsets 95-99, ascending) matching key [{}]", KEY_FILTER);
-        PwUtils.waitForLocatorCount(tcc, 5, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "95", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 3), KEY_FILTER, true);
+        MessagesChecks.checkFilterResults(tcc, "messages=offset:95 retrieve=50 orderID where=key", 5, Map.of(
+            MessagesPageSelectors.getTableRowItem(1, 1), "95",
+            MessagesPageSelectors.getTableRowItem(1, 3), KEY_FILTER));
 
         LOGGER.debug("Resetting key filter - expecting fallback to default latest-50 view");
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_RESET_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true, true);
-        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=latest retrieve=50", true));
-
+        MessagesTestUtils.openFilterForm(tcc);
+        MessagesTestUtils.resetFilters(tcc);
         // Order is DESC
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
 
         LOGGER.info("Filtering messages by Headers lookup [{}] at offset 95 - expecting 45 matching messages", HEADER_FILTER_LOOK_UP_TEXT);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_ITEMS).nth(3).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, HEADER_FILTER_LOOK_UP_TEXT);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, "95");
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:95", Constants.VALUE_ATTRIBUTE, true, true);
-        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE,
-            "messages=offset:95 retrieve=50 " + HEADER_FILTER_LOOK_UP_TEXT + " where=headers", true));
+        MessagesTestUtils.openFilterForm(tcc);
+        MessagesTestUtils.selectWhere(tcc, MessagesWhereFilter.HEADERS);
+        MessagesTestUtils.fillHasWords(tcc, HEADER_FILTER_LOOK_UP_TEXT);
+        MessagesTestUtils.selectMessagesParameter(tcc, MessagesParameterType.FROM_OFFSET, "95");
+        MessagesTestUtils.search(tcc);
 
         // Because filter retrieve overlaps 5 messages from previous set, there should be only 45 with correct header
         // Order is ASC
         LOGGER.debug("Verifying header-filtered messages: expecting 45 rows (offsets 100-144, ascending) starting with value [{} - 0]", HEADER_FILTER_MESSAGE);
-        PwUtils.waitForLocatorCount(tcc, 45, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "100", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 4), HEADER_FILTER_LOOK_UP_TEXT, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 0", true);
+        MessagesChecks.checkFilterResults(tcc, "messages=offset:95 retrieve=50 " + HEADER_FILTER_LOOK_UP_TEXT + " where=headers", 45, Map.of(
+            MessagesPageSelectors.getTableRowItem(1, 1), "100",
+            MessagesPageSelectors.getTableRowItem(1, 4), HEADER_FILTER_LOOK_UP_TEXT,
+            MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 0"));
 
         LOGGER.debug("Resetting header filter - expecting fallback to default latest-50 view");
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_RESET_BUTTON);
+        MessagesTestUtils.openFilterForm(tcc);
+        MessagesTestUtils.resetFilters(tcc);
         // Order is DESC
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true, true);
-        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=latest retrieve=50", true));
-
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
 
         LOGGER.info("Filtering messages by Value [{}] at offset 195 - expecting 45 matching messages", VALUE_FILTER);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
-
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_ITEMS).nth(4).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, VALUE_FILTER);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, "195");
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:195", Constants.VALUE_ATTRIBUTE, true, true);
-        assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=offset:195 retrieve=50 " + VALUE_FILTER + " where=value", true));
+        MessagesTestUtils.openFilterForm(tcc);
+        MessagesTestUtils.selectWhere(tcc, MessagesWhereFilter.VALUE);
+        MessagesTestUtils.fillHasWords(tcc, VALUE_FILTER);
+        MessagesTestUtils.selectMessagesParameter(tcc, MessagesParameterType.FROM_OFFSET, "195");
+        MessagesTestUtils.search(tcc);
 
         // Because filter retrieve overlaps 5 messages from previous set, there should be only 45 with correct message value
         // Order is ASC
         LOGGER.debug("Verifying value-filtered messages: expecting 45 rows (offsets 200-244, ascending) starting with value [{} - 0]", VALUE_FILTER);
-        PwUtils.waitForLocatorCount(tcc, 45, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "200", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0", true);
+        MessagesChecks.checkFilterResults(tcc, "messages=offset:195 retrieve=50 " + VALUE_FILTER + " where=value", 45, Map.of(
+            MessagesPageSelectors.getTableRowItem(1, 1), "200",
+            MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0"));
 
         LOGGER.info("Completed popover filter-form scenarios (key, headers, value) on topic '{}'", kafkaTopicName);
     }
