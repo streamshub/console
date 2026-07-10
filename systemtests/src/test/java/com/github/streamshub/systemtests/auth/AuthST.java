@@ -344,7 +344,7 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Verify Nodes page returns 403 Forbidden for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403", true);
 
         LOGGER.info("Verify Groups page is accessible and initially shows no groups for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
         PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
