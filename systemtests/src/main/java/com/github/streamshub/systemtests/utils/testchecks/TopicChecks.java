@@ -36,7 +36,7 @@ public class TopicChecks {
      * @param unavailable   the expected count of unavailable partitions
      */
     public static void checkOverviewPageTopicState(TestCaseConfig tcc, String kafkaName, int total, int partitions, int fullyReplicated, int underReplicated, int unavailable) {
-        LOGGER.info("Verify Overview Page topic status [{} total topics] [{} Partitions]", total, partitions);
+        LOGGER.info("Checking overview page topic status: {} total topics, {} partitions, {} fully replicated, {} under-replicated, {} unavailable", total, partitions, fullyReplicated, underReplicated, unavailable);
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName));
 
         // Status
@@ -61,7 +61,7 @@ public class TopicChecks {
      * @param unavailable    the expected count of unavailable partitions
      */
     public static void checkTopicsPageTopicState(TestCaseConfig tcc, String kafkaName, int total, int fullyReplicated, int underReplicated, int unavailable) {
-        LOGGER.info("Verify Overview Page topic status [{} total topics] [FullyReplicated: {}] [UnderReplicated: {}] [Unavailabe: {}]", total, fullyReplicated, underReplicated, unavailable);
+        LOGGER.info("Checking topics page topic status: {} total topics, {} fully replicated, {} under-replicated, {} unavailable", total, fullyReplicated, underReplicated, unavailable);
         // Total topic count
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, kafkaName));
 
@@ -98,13 +98,15 @@ public class TopicChecks {
             int perPageItemIndex = topicsPerPageList.indexOf(topicsPerPage);
             int topicsOnPage;
 
+            LOGGER.info("Checking pagination for {} topics using {} topics per page", topicsCount, topicsPerPage);
+
             // Go to topics page
             PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()));
 
-            LOGGER.debug("Click on topics per page selection");
+            LOGGER.debug("Opening topics-per-page dropdown selector");
             PwUtils.waitForLocatorAndClick(tcc, dropdownButtonSelector);
 
-            LOGGER.debug("Select topics per page dropdown item");
+            LOGGER.debug("Selecting topics-per-page dropdown item [{}] for value {}", perPageItemIndex + 1, topicsPerPage);
             PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(dropdownItemsSelector).nth(perPageItemIndex + 1).build());
 
             // Check pages
@@ -145,21 +147,21 @@ public class TopicChecks {
      * @param moveButtonSelector    CSS selector for the button used to navigate to the next/previous page
      */
     private static void checkPaginationContent(TestCaseConfig tcc, int pageNum, int numOfFinalPage, int topicsOnPage, int lowBoundary, int highBoundary, int topicsCount, String paginationTextSelector, String moveButtonSelector) {
-        LOGGER.debug("Checking page {}/{}", pageNum, numOfFinalPage);
+        LOGGER.debug("Checking pagination page {}, expecting {} topics displayed", pageNum, topicsOnPage);
         // Check that correct number of topics is displayed
         PwUtils.waitForLocatorCount(tcc, topicsOnPage, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Check pagination details
         String paginationOf = String.format("%s - %s of %s", lowBoundary, highBoundary, topicsCount);
-        LOGGER.debug("Checking pagination to contain {}", paginationOf);
+        LOGGER.debug("Verifying pagination summary text shows [{}]", paginationOf);
         PwUtils.waitForContainsText(tcc, paginationTextSelector, paginationOf, false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
 
         // Click to move to next page
         if (pageNum == numOfFinalPage) {
-            LOGGER.debug("Pagination check completed");
+            LOGGER.debug("Reached final page {} of pagination sequence", pageNum);
             return;
         }
 
-        LOGGER.debug("Checking page");
+        LOGGER.debug("Navigating to next pagination page via selector [{}]", moveButtonSelector);
         PwUtils.waitForLocatorAndClick(tcc, moveButtonSelector);
     }
 
@@ -173,10 +175,10 @@ public class TopicChecks {
      * @param topicNames  a list of topic names to filter and verify
      */
     public static void checkTopicsFilterByName(TestCaseConfig tcc, List<String> topicNames) {
-        LOGGER.info("Filter topics by name");
+        LOGGER.info("Checking topics filter by name for {} topic(s): {}", topicNames.size(), topicNames);
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
         for (String topicName : topicNames) {
-            LOGGER.info("Verify topic name {}", topicName);
+            LOGGER.debug("Verifying filtered result shows topic name [{}]", topicName);
             PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, topicName);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
             PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
@@ -194,11 +196,11 @@ public class TopicChecks {
      * @param topicNames  a list of topic names whose IDs will be used for filtering and verification
      */
     public static void checkTopicsFilterById(TestCaseConfig tcc, List<String> topicNames) {
-        LOGGER.info("Filter topics by id");
+        LOGGER.info("Checking topics filter by ID for {} topic(s): {}", topicNames.size(), topicNames);
         TopicsTestUtils.selectFilter(tcc, FilterType.TOPIC_ID);
         for (String topicName : topicNames) {
             String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
-            LOGGER.debug("Verify topic {} with id {}", topicName, topicId);
+            LOGGER.debug("Verifying filtered result shows topic [{}] for id [{}]", topicName, topicId);
             PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, topicId);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
             PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
@@ -217,14 +219,14 @@ public class TopicChecks {
      * @param status      the {@link TopicStatus} to filter topics by
      */
     public static void checkTopicsFilterByStatus(TestCaseConfig tcc, List<String> topicNames, TopicStatus status) {
-        LOGGER.info("Filter topics by status");
+        LOGGER.info("Checking topics filter by status [{}] returns {} topic(s): {}", status.getName(), topicNames.size(), topicNames);
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);
         TopicsTestUtils.selectTopicStatus(tcc, status);
         // Use default max results per page or actual topic count if it's less than the maximum per page
         PwUtils.waitForLocatorCount(tcc, Math.min(topicNames.size(), Constants.DEFAULT_TOPICS_PER_PAGE), TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
         for (String topicName : topicNames) {
-            LOGGER.debug("Verify topic {} status {}", topicName, status.getName());
+            LOGGER.debug("Verifying topic [{}] is present in results filtered by status [{}]", topicName, status.getName());
             PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_TABLE_ROWS, topicName, true);
         }
 

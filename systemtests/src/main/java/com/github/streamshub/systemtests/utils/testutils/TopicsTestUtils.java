@@ -30,7 +30,7 @@ public class TopicsTestUtils {
      * @param expectedAttr          the desired value of the 'aria-sort' attribute to confirm selection
      */
     public static void selectSortBy(TestCaseConfig tcc, String selectorWithAttribute, String selectorSortButton, String expectedAttr) {
-        LOGGER.info("Select sort by with value {}", expectedAttr);
+        LOGGER.info("Sorting topics table using button [{}] until aria-sort={}", selectorSortButton, expectedAttr);
         Utils.retryAction("Ensure topics table is sorted correctly", () -> {
             Locator locator = tcc.page().locator(selectorWithAttribute);
 
@@ -42,11 +42,11 @@ public class TopicsTestUtils {
             String currentAttr = locator.getAttribute("aria-sort");
             if (!expectedAttr.equals(currentAttr)) {
                 PwUtils.waitForLocatorAndClick(tcc, selectorSortButton);
-                LOGGER.warn("Locator had incorrect aria-sort={}, expected={}", currentAttr, expectedAttr);
+                LOGGER.warn("Locator had incorrect aria-sort={}, expected={}, clicking sort button again", currentAttr, expectedAttr);
                 return false;
             }
 
-            LOGGER.info("Locator attribute matched expected value: {}", expectedAttr);
+            LOGGER.debug("Locator attribute matched expected value: {}", expectedAttr);
             return true;
 
         }, Constants.SELECTOR_RETRIES);
@@ -65,7 +65,7 @@ public class TopicsTestUtils {
      * @param filterType  the {@link FilterType} to select from the filter dropdown
      */
     public static void selectFilter(TestCaseConfig tcc, FilterType filterType) {
-        LOGGER.debug("Selecting topic filter type [{}]", filterType.getName());
+        LOGGER.info("Selecting topic filter type [{}]", filterType.getName());
         PwUtils.waitForLocatorVisible(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME);
         String filterTypeSelector = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN).build();
         // if status is selected and both are present
@@ -103,7 +103,7 @@ public class TopicsTestUtils {
      * @param topicStatus  the {@link TopicStatus} enum value representing the desired status to filter by
      */
     public static void selectTopicStatus(TestCaseConfig tcc, TopicStatus topicStatus) {
-        LOGGER.debug("Selecting topic status [{}]", topicStatus.getName());
+        LOGGER.info("Selecting topic status filter [{}]", topicStatus.getName());
         // Try selecting it
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
         String dropdownItemInput = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN_ITEMS)

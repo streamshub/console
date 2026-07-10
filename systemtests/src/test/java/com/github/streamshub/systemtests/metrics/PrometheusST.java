@@ -43,25 +43,56 @@ public class PrometheusST extends AbstractST {
     protected PrometheusOperatorSetup prometheusOperator;
     protected PrometheusInstanceSetup prometheusInstance;
 
+    /**
+     * Tests that the console uses an externally provided (standalone) Prometheus instance for metrics
+     * instead of deploying its own embedded one.
+     *
+     * <p>The console instance under test is configured, as part of the class setup, with a
+     * {@code STANDALONE} metrics source pointing at a Prometheus instance that was deployed ahead of time
+     * via the Prometheus Operator ({@link PrometheusOperatorSetup} and {@link PrometheusInstanceSetup}).
+     * The test first verifies that no embedded console Prometheus pod (matching the prefix
+     * {@code <CONSOLE_INSTANCE>-<namespace-hash>-prometheus-deployment}) has been deployed, confirming the
+     * console did not fall back to bundling its own metrics stack.</p>
+     *
+     * <p>It then navigates to the Kafka Cluster Overview page and verifies that the metrics charts are
+     * populated with real data sourced from the standalone Prometheus instance:</p>
+     * <ul>
+     *   <li>The disk space usage chart contains per-node series for the cluster's 6 nodes (3 broker
+     *       replicas plus 3 controller replicas), checked via the presence of "Node 0" and "Node 5" labels.</li>
+     *   <li>The CPU usage chart likewise contains "Node 0" and "Node 5" series.</li>
+     *   <li>The memory usage chart likewise contains "Node 0" and "Node 5" series.</li>
+     *   <li>The topic bytes chart contains both "Incoming bytes" and "Outgoing bytes" series, populated from
+     *       traffic previously produced and consumed against the {@code replicated} topic.</li>
+     * </ul>
+     *
+     * <p>This ensures the console correctly integrates with an externally managed Prometheus instance as a
+     * metrics source, rather than silently deploying a redundant embedded Prometheus.</p>
+     */
     @Test
     void testCustomPrometheus() {
-        LOGGER.info("Verify that the default prometheus is not deployed");
+        LOGGER.info("Verifying no embedded console Prometheus pod exists with prefix '{}'", Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(tcc.namespace()) + "-prometheus-deployment");
         assertTrue(ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(tcc.namespace()) + "-prometheus-deployment").isEmpty());
+        LOGGER.debug("Confirmed no embedded Prometheus pod is deployed in namespace '{}'", tcc.namespace());
 
+        LOGGER.info("Navigating to Kafka Cluster Overview page for cluster '{}'", tcc.kafkaName());
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-        LOGGER.info("Verify charts are present and contain data");
+
+        LOGGER.info("Verifying disk space usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // Disk
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
+        LOGGER.info("Verifying CPU usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // CPU
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
+        LOGGER.info("Verifying memory usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // Memory
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
+        LOGGER.info("Verifying topic bytes chart contains incoming and outgoing bytes series for topic '{}'", Constants.REPLICATED_TOPICS_PREFIX);
         // Topics
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Incoming bytes", true);
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Outgoing bytes", true);

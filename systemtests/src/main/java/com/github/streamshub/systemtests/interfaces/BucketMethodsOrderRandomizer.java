@@ -1,6 +1,8 @@
 package com.github.streamshub.systemtests.interfaces;
 
 import com.github.streamshub.systemtests.annotations.TestBucket;
+import com.github.streamshub.systemtests.logs.LogWrapper;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodDescriptor;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.MethodOrdererContext;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class BucketMethodsOrderRandomizer implements MethodOrderer {
+    private static final Logger LOGGER = LogWrapper.getLogger(BucketMethodsOrderRandomizer.class);
 
     /**
      * Randomizes the execution order of test methods, with support for grouping
@@ -57,6 +60,9 @@ public class BucketMethodsOrderRandomizer implements MethodOrderer {
             }
         }
 
+        LOGGER.debug("Ordering {} test method(s) in class [{}]: {} bucket(s) [{}], {} ungrouped method(s)",
+            methods.size(), context.getTestClass().getSimpleName(), grouped.size(), grouped.keySet(), ungrouped.size());
+
         // Shuffle within each group
         grouped.values().forEach(Collections::shuffle);
         Collections.shuffle(ungrouped);
@@ -73,5 +79,7 @@ public class BucketMethodsOrderRandomizer implements MethodOrderer {
         }
 
         context.getMethodDescriptors().sort(Comparator.comparingInt(finalOrder::indexOf));
+        LOGGER.debug("Randomized execution order for class [{}]: {}", context.getTestClass().getSimpleName(),
+            finalOrder.stream().map(MethodDescriptor::getMethod).map(Method::getName).toList());
     }
 }

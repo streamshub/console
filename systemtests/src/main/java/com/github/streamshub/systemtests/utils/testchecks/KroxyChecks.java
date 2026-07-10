@@ -2,11 +2,15 @@ package com.github.streamshub.systemtests.utils.testchecks;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 public class KroxyChecks {
+    private static final Logger LOGGER = LogWrapper.getLogger(KroxyChecks.class);
+
     private KroxyChecks() {}
 
     /**
@@ -20,12 +24,15 @@ public class KroxyChecks {
      * @throws AssertionError if any expected Kafka cluster name is not found in the dropdown
      */
     public static void checkKafkaClusterDropdownContains(TestCaseConfig tcc, List<String> expectedKafkaNames) {
+        LOGGER.info("Checking Kafka cluster dropdown contains expected clusters: {}", expectedKafkaNames);
 
         List<String> visibleKafkaClusters = tcc.page().locator(CssSelectors.PAGES_NAV_KAFKA_CLUSTERS_LIST_ITEMS)
             .all()
             .stream()
             .map(locator -> PwUtils.getTrimmedText(locator.allInnerTexts().toString()))
             .toList();
+
+        LOGGER.debug("Kafka cluster dropdown currently shows {} cluster(s): {}", visibleKafkaClusters.size(), visibleKafkaClusters);
 
         for (String expectedKafka : expectedKafkaNames) {
             if (visibleKafkaClusters.stream().noneMatch(clusterName -> clusterName.contains(expectedKafka))) {

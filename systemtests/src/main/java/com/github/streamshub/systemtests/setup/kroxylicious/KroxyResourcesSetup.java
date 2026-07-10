@@ -34,24 +34,28 @@ public class KroxyResourcesSetup {
 
 
         if (ResourceUtils.getKubeResource(KafkaProxy.class, namespace, kafkaProxyName) != null) {
-            LOGGER.warn("Skipping kroxy resources deployment, already present");
+            LOGGER.info("KafkaProxy '{}' already exists in namespace '{}', skipping kroxy resources deployment", kafkaProxyName, namespace);
             return;
         }
-        LOGGER.info("Setup test kroxy resource components");
+        LOGGER.info("Setting up default kroxy proxy resources for Kafka '{}' in namespace '{}'", kafkaName, namespace);
 
         // Must be deployed in this order for kroxy to work
         String aclConfigMapName = KroxyNamingUtils.aclConfigMapName(namespace);
+        LOGGER.debug("Creating kroxy ACL ConfigMap '{}' for Kafka user '{}'", aclConfigMapName, kafkaUser);
         KubeResourceManager.get().createResourceWithWait(getAclConfigMap(namespace, aclConfigMapName, kafkaUser).build());
         KubeResourceManager.get().createResourceWithWait(getSaslInspectorFilter(namespace, kafkaProtocolFilterName).build());
         KubeResourceManager.get().createResourceWithWait(getAuthorizationFilter(namespace, aclConfigMapName, kafkaProtocolFilterName).build());
 
+        LOGGER.debug("Creating KafkaProxy '{}' with {} replica(s)", kafkaProxyName, Constants.REGULAR_KAFKA_PROXY_REPLICAS);
         KubeResourceManager.get().createResourceWithWait(getDefaultKafkaProxy(namespace, kafkaProxyName, Constants.REGULAR_KAFKA_PROXY_REPLICAS).build());
         KubeResourceManager.get().createResourceWithWait(getDefaultKafkaProxyIngress(namespace, kafkaProxyIngressName, kafkaProxyName).build());
         KubeResourceManager.get().createResourceWithWait(getDefaultKafkaService(namespace, kafkaServiceName, kafkaName).build());
         KubeResourceManager.get().createResourceWithWait(getDefaultVirtualKafkaCluster(namespace, virtualClusterName, kafkaServiceName, kafkaProxyName, kafkaProxyIngressName, kafkaProtocolFilterName).build());
 
         // Wait for KafkaProxy pod to be stable
+        LOGGER.debug("Waiting for KafkaProxy '{}' pods to become ready and stable in namespace '{}'", kafkaProxyName, namespace);
         WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getkafkaProxyPodLabelSelector(kafkaProxyName), Constants.REGULAR_KAFKA_PROXY_REPLICAS, true);
+        LOGGER.info("Kroxy proxy resources for Kafka '{}' are ready in namespace '{}'", kafkaName, namespace);
     }
 
     public static VirtualKafkaClusterBuilder getDefaultVirtualKafkaCluster(

@@ -73,6 +73,7 @@ public class SetupUtils {
      * </ul>
      */
     public static void initializeSystemTests() {
+        LOGGER.info("Initializing system tests: registering resource types, callbacks and logging configuration");
         KubeResourceManager.get().setResourceTypes(
             new CustomResourceDefinitionType(),
             new ClusterRoleBindingType(),
@@ -115,14 +116,17 @@ public class SetupUtils {
         try {
             Environment.logConfigAndSaveToFile();
         } catch (IOException e) {
-            LOGGER.error("Saving of config env file failed");
+            LOGGER.error("Saving of config env file failed: {}", e.getMessage(), e);
         }
     }
 
     public static void cleanupIfNeeded() {
         if (Environment.CLEANUP_ENVIRONMENT) {
+            LOGGER.info("Cleaning up test environment resources");
             KubeResourceManager.get().printCurrentResources(Level.DEBUG);
             KubeResourceManager.get().deleteResources(false);
+        } else {
+            LOGGER.debug("Skipping environment cleanup, CLEANUP_ENVIRONMENT is disabled");
         }
     }
 

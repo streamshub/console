@@ -23,6 +23,7 @@ public class KafkaTestUtils {
      * @param roleName the node role to filter by
      */
     public static void filterKnpByRole(TestCaseConfig tcc, String roleName) {
+        LOGGER.info("Filtering Kafka Node Pool table by role {}", roleName);
         PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_TYPE_ROLE_DROPDOWN_BUTTON);
         List<Locator> knpItems = tcc.page().locator(NodesPageSelectors.NPS_FILTER_BY_NODEPOOL_ITEMS).all();
         for (Locator knpItem : knpItems) {
@@ -42,7 +43,7 @@ public class KafkaTestUtils {
      * @param defaultNodeCount  the expected total number of nodes after clearing filters
      */
     public static void resetKnpFilters(TestCaseConfig tcc, int defaultNodeCount) {
-        LOGGER.debug("Resetting filters after default broker validation");
+        LOGGER.info("Clearing all Kafka Node Pool filters, expecting {} nodes to be listed", defaultNodeCount);
         PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_CLEAR_ALL_FILTERS_BUTTON);
         PwUtils.waitForLocatorCount(tcc, defaultNodeCount, NodesPageSelectors.NPS_TABLE_BODY, true);
         PwUtils.reload(tcc);

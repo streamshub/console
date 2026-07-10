@@ -47,58 +47,73 @@ public class YamlUpgradeST extends AbstractUpgradeST {
     private static final int TOTAL_TOPICS_COUNT = TOTAL_REPLICATED_TOPICS_COUNT + UNDER_REPLICATED_TOPICS_COUNT + UNAVAILABLE_TOPICS_COUNT;
 
     /**
-     * Verifies that upgrading the Console Operator deployed from YAML manifests
-     * correctly transitions to the new version while preserving the existing Console instance
-     * and maintaining full UI functionality.
+     * Verifies that upgrading the Console Operator installed from plain YAML manifests
+     * (as opposed to OLM) correctly transitions from the old to the new operator version,
+     * defined in {@code src/test/resources/upgrade/YamlUpgrade.yaml} (currently version
+     * {@code 0.11.0} to {@code 0.12.3}), while preserving the existing Console instance
+     * and keeping the UI fully functional throughout.
      *
      * <p>This test performs the following steps:</p>
      * <ul>
-     *   <li>Installs the Console Operator from the <b>old YAML manifest URL</b>.</li>
-     *   <li>Deploys a default Console instance linked to a Kafka cluster.</li>
-     *   <li>Validates that the deployed operator version matches the expected old version.</li>
-     *   <li>Captures the Console deployment UID as a snapshot for later comparison.</li>
-     *   <li>Performs UI verification to ensure the Console is functioning correctly before the upgrade.</li>
-     *   <li>Upgrades the Console Operator using the <b>new YAML manifest URL</b> without deleting existing resources.</li>
-     *   <li>Waits for the Console instance to roll and redeploy under the new operator version.</li>
-     *   <li>Confirms that the operator has upgraded to the expected new version.</li>
-     *   <li>Repeats UI checks to validate that the Console remains fully operational post-upgrade.</li>
+     *   <li>Installs the Console Operator into the {@code co-namespace} namespace from the
+     *       <b>old operator YAML manifest URL</b> ({@code yamlVersionData.getOldOperatorCrdsUrl()}).</li>
+     *   <li>Deploys a default Console instance linked to the test Kafka cluster.</li>
+     *   <li>Validates that the deployed operator's {@code app.kubernetes.io/version} label matches
+     *       the expected old operator version.</li>
+     *   <li>Performs UI verification (overview and topics pages) to ensure the Console correctly
+     *       reports all 17 pre-created topics (12 replicated, 3 under-replicated, 2 unavailable)
+     *       before the upgrade.</li>
+     *   <li>Upgrades the Console Operator in place using the <b>new operator YAML manifest URL</b>
+     *       ({@code yamlVersionData.getNewOperatorCrdsUrl()}), without deleting existing resources.</li>
+     *   <li>Waits for the Console operator deployment to roll and report the new operator version.</li>
+     *   <li>Repeats the same UI checks to confirm the Console remains fully operational, still
+     *       reporting all 17 topics correctly, after the upgrade.</li>
      * </ul>
+     *
+     * <p>This ensures that Console Operator upgrades performed via raw YAML manifests do not
+     * disrupt an already-running Console instance or its topic-reporting UI.</p>
      */
     @Test
     void testUpgradeYamlOperator() {
         // Setup
-        LOGGER.info("Setup console operator from specified URL: {}", yamlVersionData.getOldOperatorCrdsUrl());
+        LOGGER.info("Installing old Console Operator version '{}' from YAML manifest URL: {}", yamlVersionData.getOldOperatorVersion(), yamlVersionData.getOldOperatorCrdsUrl());
         YamlConfig yamlConfig = new YamlConfig(Constants.CO_NAMESPACE, yamlVersionData.getOldOperatorCrdsUrl());
 
         consoleOperatorSetup.setInstallConfig(yamlConfig);
         consoleOperatorSetup.install(false);
 
-        LOGGER.info("Setup console instance");
+        LOGGER.info("Setting up Console instance '{}' in namespace '{}' for Kafka cluster '{}'", tcc.consoleInstanceName(), tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
 
-        LOGGER.info("Verify console operator version");
+        LOGGER.debug("Reading '{}' label from Console operator Deployment '{}' in namespace '{}'", Labels.K8S_VERSION_LABEL, Environment.CONSOLE_DEPLOYMENT_NAME, Constants.CO_NAMESPACE);
         String currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_DEPLOYMENT_NAME)
             .getFirst().getMetadata().getLabels().get(Labels.K8S_VERSION_LABEL);
 
+        LOGGER.info("Verifying Console operator version label reports old version, expected '{}', actual '{}'", yamlVersionData.getOldOperatorVersion(), currentOperatorVersion);
         assertEquals(yamlVersionData.getOldOperatorVersion(), currentOperatorVersion);
 
-        LOGGER.info("Perform basic checks to validate UI is working");
+        LOGGER.info("Performing pre-upgrade UI checks, expecting {} topics in total ({} replicated, {} under-replicated, {} unavailable)",
+            TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         PwUtils.login(tcc);
 
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         // Upgrade
-        LOGGER.info("Perform console operator upgrade from URL: {}", yamlVersionData.getNewOperatorCrdsUrl());
+        LOGGER.info("Triggering in-place Console Operator upgrade from version '{}' to '{}' using YAML manifest URL: {}",
+            yamlVersionData.getOldOperatorVersion(), yamlVersionData.getNewOperatorVersion(), yamlVersionData.getNewOperatorCrdsUrl());
         yamlConfig = new YamlConfig(Constants.CO_NAMESPACE, yamlVersionData.getNewOperatorCrdsUrl());
         consoleOperatorSetup.setInstallConfig(yamlConfig);
         // Do not delete resources to verify instance upgrades
+        LOGGER.debug("Re-applying YAML manifests without deleting existing resources, to verify the Console instance survives the upgrade");
         consoleOperatorSetup.install(false);
 
+        LOGGER.info("Waiting for Console operator Deployment '{}' to roll and report new version label '{}'", Environment.CONSOLE_DEPLOYMENT_NAME, yamlVersionData.getNewOperatorVersion());
         WaitUtils.waitForConsoleDeploymentToReachVersion(Constants.CO_NAMESPACE, Environment.CONSOLE_DEPLOYMENT_NAME, yamlVersionData.getNewOperatorVersion(),
             deployment -> deployment.getMetadata().getLabels().get(Labels.K8S_VERSION_LABEL));
 
-        LOGGER.info("Perform basic checks after upgrade to validate UI is still working");
+        LOGGER.info("Performing post-upgrade UI checks, verifying all {} topics are still correctly reported after upgrading to version '{}'",
+            TOTAL_TOPICS_COUNT, yamlVersionData.getNewOperatorVersion());
         PwUtils.login(tcc);
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);

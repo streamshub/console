@@ -25,8 +25,10 @@ public class PodUtils {
      * @return a map of pod names to their UIDs
      */
     public static Map<String, String> getPodSnapshotBySelector(String namespace, LabelSelector podSelector) {
-        return ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, podSelector)
+        Map<String, String> snapshot = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, podSelector)
             .stream().collect(Collectors.toMap(pod -> pod.getMetadata().getName(), pod -> pod.getMetadata().getUid()));
+        LOGGER.debug("Pod snapshot in namespace {} with selector {} contains {} pod(s)", namespace, podSelector, snapshot.size());
+        return snapshot;
     }
 
     /**

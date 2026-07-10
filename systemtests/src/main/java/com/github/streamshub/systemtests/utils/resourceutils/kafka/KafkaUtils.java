@@ -154,6 +154,8 @@ public class KafkaUtils {
         // Example: newlyAdded = how many replicas to add (e.g. 4 new nodes)
         int newlyAdded = desiredReplicas - existingReplicas;
 
+        LOGGER.debug("Existing node IDs for cluster {}: {}, current max ID {}, allocating {} new ID(s)", kafkaName, nodeIds, maxId, newlyAdded);
+
         // Compute new IDs continuing after the current max
         return IntStream.rangeClosed(maxId + 1, maxId + newlyAdded)
             .boxed()
@@ -176,11 +178,11 @@ public class KafkaUtils {
      * @param scaledBrokersCount the desired number of broker replicas
      */
     public static void scaleBrokerReplicas(String namespace, String kafkaName, int scaledBrokersCount) {
-        LOGGER.info("Scale Kafka broker replicas to {}", scaledBrokersCount);
+        LOGGER.info("Scaling Kafka {}/{} broker replicas to {}", namespace, kafkaName, scaledBrokersCount);
 
         int existingBrokerReplicas = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, Labels.getKnpBrokerLabelSelector(kafkaName)).size();
         if (existingBrokerReplicas == scaledBrokersCount) {
-            LOGGER.debug("Scaling skipped, brokers already have a replica count of: {}", scaledBrokersCount);
+            LOGGER.debug("Skipping broker scale, cluster {} already has {} replicas", kafkaName, scaledBrokersCount);
             return;
         }
 
@@ -239,7 +241,7 @@ public class KafkaUtils {
                 .endSpec()
                 .build());
 
-        LOGGER.info("Kafka broker replicas scaled to {}", scaledBrokersCount);
+        LOGGER.info("Kafka {}/{} broker replicas scaled to {}", namespace, kafkaName, scaledBrokersCount);
     }
 
     public static void scaleBrokerReplicasWithWait(String namespace, String kafkaName, int scaledBrokersCount) {

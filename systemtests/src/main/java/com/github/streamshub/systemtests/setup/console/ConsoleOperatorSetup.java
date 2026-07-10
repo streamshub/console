@@ -13,6 +13,7 @@ public class ConsoleOperatorSetup {
     private InstallConfig installConfig;
 
     public ConsoleOperatorSetup(String namespace) {
+        LOGGER.debug("Configuring Console Operator install type '{}' for namespace '{}'", Environment.CONSOLE_INSTALL_TYPE, namespace);
         switch (Environment.CONSOLE_INSTALL_TYPE) {
             case Yaml -> installConfig = new YamlConfig(namespace, Environment.CONSOLE_OPERATOR_BUNDLE_URL);
             case Olm -> installConfig = new OlmConfig(namespace);
@@ -54,8 +55,13 @@ public class ConsoleOperatorSetup {
 
             LOGGER.info("Clean up currently deployed operator to ensure correct operator is deployed");
             installConfig.delete();
+        } else {
+            LOGGER.debug("Skipping operator cleanup before install: deleteBeforeInstall={}, deleteBeforeInstallEnv={}",
+                deleteBeforeInstall, Environment.DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL);
         }
 
         installConfig.install();
+        LOGGER.info("Console Operator install finished for deployment '{}' in namespace '{}'",
+            installConfig.getDeploymentName(), installConfig.getDeploymentNamespace());
     }
 }

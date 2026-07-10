@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 public class Utils {
@@ -59,8 +60,38 @@ public class Utils {
             LOGGER.info("Init TestCaseConfig instance and store it to a test context with unique testContext ID: {}", key);
             tcc = new TestCaseConfig(testContext);
             store.put(key, tcc);
+        } else {
+            LOGGER.debug("Reusing existing TestCaseConfig for test context with unique testContext ID: {}", key);
         }
         return tcc;
+    }
+
+    /**
+     * Finds the {@link TestCaseConfig} associated with the given test execution context, without
+     * creating one if none exists yet.
+     *
+     * <p>Checks the current {@link ExtensionContext}'s unique id first (covers per-test-method
+     * {@code TestCaseConfig} instances), then falls back to the parent context's unique id (covers
+     * {@code TestCaseConfig} instances created once for the whole test class in {@code @BeforeAll}).</p>
+     *
+     * @param extensionContext the test execution context to look up
+     * @return the {@code TestCaseConfig} for this test, or empty if none has been created yet
+     */
+    public static Optional<TestCaseConfig> findTestCaseConfig(ExtensionContext extensionContext) {
+        final ExtensionContext.Store store = KubeResourceManager.get().getTestContext()
+            .getStore(ExtensionContext.Namespace.GLOBAL);
+
+        TestCaseConfig tcc = store.get(extensionContext.getUniqueId(), TestCaseConfig.class);
+
+        if (tcc == null) {
+            LOGGER.debug("No TestCaseConfig found for testContext ID: {}, checking parent context", extensionContext.getUniqueId());
+            tcc = extensionContext.getParent()
+                .map(parent -> store.get(parent.getUniqueId(), TestCaseConfig.class))
+                .orElse(null);
+        }
+
+        LOGGER.debug("TestCaseConfig lookup for testContext ID: {} resolved to: {}", extensionContext.getUniqueId(), tcc != null);
+        return Optional.ofNullable(tcc);
     }
 
     /**
@@ -92,6 +123,7 @@ public class Utils {
             }
 
             if (attempt == maxRetries) {
+                LOGGER.error("Action '{}' failed after {} attempts, giving up", actionName, maxRetries);
                 throw new PlaywrightActionExecutionException(String.format("Action '%s' failed after %d attempts", actionName, maxRetries));
             }
 
@@ -108,7 +140,7 @@ public class Utils {
     }
 
     public static void sleepWait(long timeInMilis) {
-        LOGGER.debug("Giving component time to stabilize");
+        LOGGER.debug("Sleeping for {} ms to give component time to stabilize", timeInMilis);
         try {
             Thread.sleep(timeInMilis);
         } catch (InterruptedException e) {

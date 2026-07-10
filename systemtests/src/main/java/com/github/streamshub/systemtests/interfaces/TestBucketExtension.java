@@ -56,14 +56,14 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
         }
 
         String testBucketGroupName = testAnnotation.value();
-        LOGGER.info("Shared resources setup - beforeTestExecution - @TestBucket({})", testBucketGroupName);
+        LOGGER.debug("Entering beforeTestExecution for @TestBucket({}), test method [{}]", testBucketGroupName, testMethodContext.getRequiredTestMethod().getName());
 
         // Init executed test count to 0
         EXECUTED_ANNOTATED_TEST_COUNT_MAP.putIfAbsent(testBucketGroupName, new AtomicInteger(0));
 
         // First test = setup shared resources
         if (EXECUTED_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName).get() == 0) {
-            LOGGER.info("Setup shared resources for TestBucket [{}]", testBucketGroupName);
+            LOGGER.info("First test in TestBucket [{}] - provisioning shared resources", testBucketGroupName);
             // Gather count of ALL the tests annotated with the same @TestBucket within the same class that are about to be executed in this run
             List<Method> methodsInSameClassWithCurrentAnno = Arrays.stream(testMethodContext.getRequiredTestClass().getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(TestBucket.class))
@@ -77,6 +77,8 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
                 .sum();
 
             TOTAL_ANNOTATED_TEST_COUNT_MAP.putIfAbsent(testBucketGroupName, totalTestRuns);
+            LOGGER.debug("TestBucket [{}] expects {} total test run(s) across {} method(s): {}", testBucketGroupName, totalTestRuns,
+                methodsInSameClassWithCurrentAnno.size(), methodsInSameClassWithCurrentAnno.stream().map(Method::getName).toList());
 
             // Store a new context directed towards setup method for a cleanup later
             TestBucketExtensionContext setupMethodContext = new TestBucketExtensionContext(testMethodContext, testBucketGroupName);
@@ -88,11 +90,15 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
                 if (method.isAnnotationPresent(SetupTestBucket.class) &&
                     method.getAnnotation(SetupTestBucket.class).value().equals(testBucketGroupName)) {
                     // Called method needs to be either explicitly public or needs to be -> `method.setAccessible(true)`
+                    LOGGER.info("Invoking @SetupTestBucket method [{}] for TestBucket [{}]", method.getName(), testBucketGroupName);
                     method.invoke(testMethodContext.getRequiredTestInstance());
                 }
             }
+        } else {
+            LOGGER.debug("TestBucket [{}] already set up - reusing shared resources (execution {} of {})", testBucketGroupName,
+                EXECUTED_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName).get() + 1, TOTAL_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName));
         }
-        LOGGER.info("Shared resources setup - beforeTestExecution - @TestBucket({}) FINISHED", testBucketGroupName);
+        LOGGER.debug("Finished beforeTestExecution for @TestBucket({})", testBucketGroupName);
     }
 
     /**
@@ -137,8 +143,11 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
                     Object value = sourceMethod.invoke(testMethodContext.getRequiredTestInstance());
 
                     if (value instanceof Stream<?> stream) {
-                        return (int) stream.count();
+                        int count = (int) stream.count();
+                        LOGGER.debug("MethodSource [{}] on test [{}] provides {} argument(s)", sourceName, testMethod.getName(), count);
+                        return count;
                     } else if (value instanceof Collection<?> collection) {
+                        LOGGER.debug("MethodSource [{}] on test [{}] provides {} argument(s)", sourceName, testMethod.getName(), collection.size());
                         return collection.size();
                     } else {
                         throw new IllegalStateException("Unsupported MethodSource return type: " + value);
@@ -184,20 +193,23 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
         }
 
         String testBucketGroupName = testAnnotation.value();
-        LOGGER.info("Shared resources setup - afterTestExecution - @TestBucket({})", testBucketGroupName);
+        LOGGER.debug("Entering afterTestExecution for @TestBucket({}), test method [{}]", testBucketGroupName, context.getRequiredTestMethod().getName());
 
         int executedTestCount = EXECUTED_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName).incrementAndGet();
         int totalTestCount = TOTAL_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName);
+        LOGGER.debug("TestBucket [{}] completed {} of {} test run(s)", testBucketGroupName, executedTestCount, totalTestCount);
 
         if (executedTestCount == totalTestCount) {
-            LOGGER.info("Teardown shared resources for TestBucket [{}]", testBucketGroupName);
+            LOGGER.info("Last test finished in TestBucket [{}] - tearing down shared resources", testBucketGroupName);
             ExtensionContext setupContext = TEST_BUCKET_SETUP_CONTEXT_MAP.get(testBucketGroupName);
 
             if (setupContext != null) {
                 KubeResourceManager.get().setTestContext(setupContext);
                 KubeResourceManager.get().deleteResources(false);
+            } else {
+                LOGGER.warn("No setup context recorded for TestBucket [{}] - skipping shared resource teardown", testBucketGroupName);
             }
         }
-        LOGGER.info("Shared resources setup afterTestExecution - @TestBucket({}) FINISHED", testBucketGroupName);
+        LOGGER.debug("Finished afterTestExecution for @TestBucket({})", testBucketGroupName);
     }
 }

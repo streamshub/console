@@ -30,9 +30,10 @@ public class ApicurioRegistry3Setup {
     public static void setupMemIfNeeded(String namespace, String registryName) {
         LOGGER.info("----------- Deploy Apicurio Registry Instance (mem) -----------");
         if (ResourceUtils.getKubeResource(ApicurioRegistry3.class, namespace, registryName) != null) {
-            LOGGER.warn("Skipping Apicurio Registry deployment, already present");
+            LOGGER.info("Apicurio Registry '{}' already exists in namespace '{}', skipping deployment", registryName, namespace);
             return;
         }
+        LOGGER.debug("Creating Apicurio Registry (mem) '{}' in namespace '{}'", registryName, namespace);
         KubeResourceManager.get().createResourceWithWait(getDefaultApicurioRegistryMem(namespace, registryName));
         LOGGER.info("Apicurio Registry (mem) '{}' deployed in namespace '{}'", registryName, namespace);
     }

@@ -52,6 +52,7 @@ public class KeycloakUtils {
     public static JsonObject loadRealmTemplate(String consoleURL, String realmPath, String realmName, String clientId,
         List<KeycloakTestConfig.GroupRoleMapping> mapping, List<KeycloakTestConfig.User> users
     ) {
+        LOGGER.info("Loading Keycloak realm template {} for realm {} with client {}", realmPath, realmName, clientId);
         JsonObject realm = new JsonObject(FileUtils.readFile(realmPath));
 
         // Realm name
@@ -99,6 +100,7 @@ public class KeycloakUtils {
         JsonObject rolesClient = realm.getJsonObject("roles").getJsonObject("client");
         rolesClient.put(clientId, new JsonArray());
 
+        LOGGER.debug("Realm template {} patched with {} role/group mapping(s) and {} user(s)", realmName, mapping.size(), users.size());
         return realm;
     }
 
@@ -113,7 +115,7 @@ public class KeycloakUtils {
         if (!Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
             return;
         }
-        LOGGER.info("Apply NetworkPolicy with Ingress to accept all connections to the Pods matching labels: {}", matchLabels);
+        LOGGER.info("Applying NetworkPolicy '{}' in namespace {} allowing all ingress traffic to pods matching labels {}", policyName, namespaceName, matchLabels);
 
         KubeResourceManager.get().createOrUpdateResourceWithWait(new NetworkPolicyBuilder()
             .withNewMetadata()
@@ -140,7 +142,7 @@ public class KeycloakUtils {
         if (!Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
             return;
         }
-        LOGGER.info("Applying NetworkPolicy: Keycloak → Postgres");
+        LOGGER.info("Applying NetworkPolicy '{}' in namespace {} allowing Keycloak to reach Postgres pods matching labels {}", policyName, namespace, postgresLabel);
 
         KubeResourceManager.get().createOrUpdateResourceWithWait(new NetworkPolicyBuilder()
             .withNewMetadata()
@@ -201,7 +203,7 @@ public class KeycloakUtils {
             return;
         }
 
-        LOGGER.info("Non-OCP cluster detected — patching Keycloak Ingress with TLS");
+        LOGGER.info("Non-OCP cluster detected, patching Keycloak Ingress {} in namespace {} with TLS secret {}", ingressName, namespace, tlsSecretName);
         WaitUtils.waitForIngressToBePresent(namespace, ingressName);
 
         KubeResourceManager.get().createOrUpdateResourceWithWait(ResourceUtils.getKubeResource(Ingress.class, namespace, ingressName)
@@ -229,6 +231,7 @@ public class KeycloakUtils {
      * @param trustStorePassword password protecting the truststore
      */
     public static void importCertificatesIntoTruststore(String httpHostname, String trustStorePassword) {
+        LOGGER.info("Importing Keycloak certificate from {}:443 into truststore {}", httpHostname, Environment.KEYCLOAK_TRUST_STORE_FILE_PATH);
         try {
             Certificates.importCertificateIntoTrustStore(httpHostname, 443,
                 Path.of(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH), trustStorePassword, "keycloak-ca");
@@ -246,7 +249,7 @@ public class KeycloakUtils {
      * @param trustStorePasswordData  encoded truststore password data
      */
     public static void createTrustStorePasswordAndConfigmap(String namespace, String secretName, String configMapName, Map<String, String> trustStorePasswordData) {
-        LOGGER.info("Create secret with trust store password for console");
+        LOGGER.info("Creating secret {} with trust store password for console in namespace {}", secretName, namespace);
         KubeResourceManager.get().createOrUpdateResourceWithWait(new SecretBuilder()
             .withNewMetadata()
                 .withName(secretName)
@@ -257,10 +260,10 @@ public class KeycloakUtils {
             .build());
 
         // Configmap with truststore
-        LOGGER.info("Create configmap with trust store");
+        LOGGER.info("Creating configmap {} with trust store in namespace {}", configMapName, namespace);
         String encodedTrustStore = Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH));
 
-        LOGGER.info("Encoded TrustStore: {}", encodedTrustStore);
+        LOGGER.debug("Encoded truststore length: {} chars", encodedTrustStore.length());
 
         KubeResourceManager.get().createOrUpdateResourceWithWait(new ConfigMapBuilder()
             .withNewMetadata()

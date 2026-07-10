@@ -56,6 +56,7 @@ public class WaitUtils {
      * @param deploymentNamePrefix the prefix of the Deployment name to match
      */
     public static void waitForDeploymentWithPrefixIsReady(String namespaceName, String deploymentNamePrefix) {
+        LOGGER.info("Waiting for Deployment with prefix '{}' in namespace {} to become ready", deploymentNamePrefix, namespaceName);
         Wait.until(String.format("creation of Deployment with prefix: %s in Namespace: %s", deploymentNamePrefix, namespaceName),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_1_SEC, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
@@ -74,6 +75,7 @@ public class WaitUtils {
      * @param secretName    the name of the Secret this method is waiting for
      */
     public static void waitForSecretReady(String namespace, String secretName) {
+        LOGGER.info("Waiting for Secret {}/{} to be created with non-empty data", namespace, secretName);
         Wait.until(String.format("creation of Secret %s/%s", namespace, secretName),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_1_SEC, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
@@ -124,15 +126,16 @@ public class WaitUtils {
                     arePodsReady(namespaceName, selector, expectedPods, true)) {
                     stableCounter[0]++;
                     if (stableCounter[0] == TimeConstants.GLOBAL_STABILITY_OFFSET_TIME) {
-                        LOGGER.info("Pod replicas are stable for {} poll intervals", stableCounter[0]);
+                        LOGGER.info("Pod replicas matching selector {} in namespace {} are stable for {} poll intervals", selector, namespaceName, stableCounter[0]);
                         return true;
                     }
                 } else {
-                    LOGGER.info("Pod replicas are not stable. Resetting counter to zero");
+                    LOGGER.debug("Pod replicas matching selector {} in namespace {} are not yet stable, resetting stability counter to 0", selector, namespaceName);
                     stableCounter[0] = 0;
                     return false;
                 }
-                LOGGER.info("Pod replicas will be assumed stable in {} polls", TimeConstants.GLOBAL_STABILITY_OFFSET_TIME - stableCounter[0]);
+                LOGGER.debug("Pod replicas matching selector {} stable for {}/{} consecutive polls, will be assumed stable in {} more poll(s)",
+                    selector, stableCounter[0], TimeConstants.GLOBAL_STABILITY_OFFSET_TIME, TimeConstants.GLOBAL_STABILITY_OFFSET_TIME - stableCounter[0]);
                 return false;
             });
     }
@@ -157,7 +160,7 @@ public class WaitUtils {
     private static boolean arePodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean checkContainers) {
         List<Pod> pods = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, selector);
         if (pods.isEmpty() && pods.size() != expectPods) {
-            LOGGER.debug("Expected pods: {}/{} are not ready", namespaceName, selector);
+            LOGGER.debug("Found 0 Pods matching selector {} in namespace {}, expected {}", selector, namespaceName, expectPods);
             return false;
         }
 
@@ -211,6 +214,7 @@ public class WaitUtils {
      * @return {@code true} if the Kafka resource reached the desired state; {@code false} otherwise
      */
     public static boolean waitForKafkaStatus(String namespaceName, String clusterName, ResourceStatus status, ConditionStatus condition) {
+        LOGGER.info("Waiting for Kafka {}/{} to reach status={}, condition={}", namespaceName, clusterName, status, condition);
         return KubeResourceManager.get().waitResourceCondition(ResourceUtils.getKubeResource(Kafka.class, namespaceName, clusterName),
             ResourceConditions.resourceHasDesiredState(status, condition));
     }
@@ -234,11 +238,16 @@ public class WaitUtils {
      * @param replicas         the expected number of replicas
      */
     public static void waitForKafkaBrokerNodePoolReplicasInSpec(String namespace, String kafkaClusterName, int replicas) {
+        LOGGER.info("Waiting for KafkaNodePool broker of Kafka {}/{} to have replica count: {}", namespace, kafkaClusterName, replicas);
         Wait.until("KafkaNodePool Broker to contain replica count: " + replicas,
             TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TimeConstants.GLOBAL_STATUS_TIMEOUT,
-            () -> replicas == ResourceUtils.getKubeResource(KafkaNodePool.class, namespace,
-                    KafkaNamingUtils.brokerPoolName(kafkaClusterName)).getSpec().getReplicas(),
-            () -> LOGGER.error("Kafka config did not reflect proper replica count"));
+            () -> {
+                int currentReplicas = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace,
+                    KafkaNamingUtils.brokerPoolName(kafkaClusterName)).getSpec().getReplicas();
+                LOGGER.debug("KafkaNodePool broker of Kafka {}/{} current replica count: {}, expected: {}", namespace, kafkaClusterName, currentReplicas, replicas);
+                return replicas == currentReplicas;
+            },
+            () -> LOGGER.error("KafkaNodePool broker of Kafka {}/{} did not reflect proper replica count of {} within timeout", namespace, kafkaClusterName, replicas));
     }
 
     /**
@@ -250,12 +259,15 @@ public class WaitUtils {
      * @param annotationValue the expected value for the annotation key
      */
     public static void waitForKafkaHasAnnotationWithValue(String namespaceName, String clusterName, String annotationKey, String annotationValue) {
+        LOGGER.info("Waiting for Kafka {}/{} to have annotation '{}' set to '{}'", namespaceName, clusterName, annotationKey, annotationValue);
         Wait.until(String.format("Kafka %s/%s has annotation %s : %s", namespaceName, clusterName, annotationKey, annotationValue),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
                 Map<String, String> anno = ResourceUtils.getKubeResource(Kafka.class, namespaceName, clusterName).getMetadata().getAnnotations();
                 if (!annotationKey.isEmpty()) {
-                    return anno.getOrDefault(annotationKey, "nonexistent").equals(annotationValue);
+                    String currentValue = anno.getOrDefault(annotationKey, "nonexistent");
+                    LOGGER.debug("Kafka {}/{} annotation '{}' current value: '{}', expected: '{}'", namespaceName, clusterName, annotationKey, currentValue, annotationValue);
+                    return currentValue.equals(annotationValue);
                 }
                 return false;
             });
@@ -276,6 +288,7 @@ public class WaitUtils {
      * @throws AssertionError if the annotation key still exists after the timeout
      */
     public static void waitForKafkaHasNoAnnotationWithKey(String namespaceName, String clusterName, String annotationKey) {
+        LOGGER.info("Waiting for Kafka {}/{} to no longer have annotation '{}'", namespaceName, clusterName, annotationKey);
         Wait.until(String.format("Kafka %s/%s has annotation %s", namespaceName, clusterName, annotationKey),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
@@ -283,7 +296,9 @@ public class WaitUtils {
                 if (anno.isEmpty()) {
                     return true;
                 }
-                return !anno.containsKey(annotationKey);
+                boolean stillPresent = anno.containsKey(annotationKey);
+                LOGGER.debug("Kafka {}/{} annotation '{}' still present: {}", namespaceName, clusterName, annotationKey, stillPresent);
+                return !stillPresent;
             });
     }
 
@@ -298,12 +313,13 @@ public class WaitUtils {
      * @return the new snapshot after the pods have rolled
      */
     public static Map<String, String> waitForComponentPodsToRoll(String namespaceName, LabelSelector selector, Map<String, String> snapshot) {
+        LOGGER.info("Waiting for {} Pod(s) matching selector {} in namespace {} to roll from previous snapshot", snapshot.size(), selector, namespaceName);
         Wait.until("rolling update of component with selector: " + selector.toString(),
             TimeConstants.ROLLING_UPDATE_POLL_INTERVAL, PodUtils.getTimeoutForPodOperations(snapshot.size()), () -> {
                 try {
                     return PodUtils.componentPodsHaveRolled(namespaceName, selector, snapshot);
                 } catch (Exception e) {
-                    LOGGER.error("An error has occurred during rolling update: {}", e.getMessage());
+                    LOGGER.warn("Check for rolling update of component with selector {} failed, will retry: {}", selector, e.getMessage());
                     return false;
                 }
             });
@@ -329,6 +345,7 @@ public class WaitUtils {
      * @param clusterName   the name of the Kafka cluster
      */
     public static void waitForKafkaHasNoWarningStatus(String namespaceName, String clusterName) {
+        LOGGER.info("Waiting for Kafka {}/{} to have no WARNING/TRUE status conditions", namespaceName, clusterName);
         Wait.until("Kafka has no warnings",
             TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TimeConstants.GLOBAL_STATUS_TIMEOUT,
             () -> {
@@ -337,11 +354,13 @@ public class WaitUtils {
                     return kafka.getStatus().getConditions().isEmpty() ||
                         !ResourceConditions.checkMatchingConditions(kafka, ResourceStatus.WARNING, ConditionStatus.TRUE);
                 }
+                LOGGER.debug("Kafka {}/{} has no status yet", namespaceName, clusterName);
                 return false;
             });
     }
 
     public static void waitForKafkaCondition(String namespace, String kafkaName, Predicate<Kafka> condition) {
+        LOGGER.info("Waiting for Kafka {}/{} to match custom condition (timeout {} ms)", namespace, kafkaName, TimeConstants.GLOBAL_STATUS_TIMEOUT);
         KubeResourceManager.get().kubeClient()
             .getClient()
             .resources(Kafka.class)
@@ -400,8 +419,10 @@ public class WaitUtils {
         Wait.until("client Job to finish successfully", KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.timeoutForClientFinishJob(messageCount),
             () -> JobUtils.checkSucceededJobStatus(namespaceName, jobName, 1),
             () -> JobUtils.logCurrentJobStatus(namespaceName, jobName));
+        LOGGER.info("Client Job: {}/{} finished successfully", namespaceName, jobName);
 
         if (deleteAfterSuccess) {
+            LOGGER.debug("Deleting client Job: {}/{} after successful completion", namespaceName, jobName);
             KubeResourceManager.get().deleteResourceWithWait(ResourceUtils.getKubeResource(Job.class, namespaceName, jobName));
         }
     }
@@ -421,6 +442,7 @@ public class WaitUtils {
      * @throws AssertionError if the topic ID is not available within the configured timeout
      */
     public static String waitForKafkaTopicToHaveIdAndReturn(String namespace, String topicName) {
+        LOGGER.info("Waiting for KafkaTopic {}/{} to have a Topic ID assigned", namespace, topicName);
         Wait.until(String.format("KafkaTopic %s/%s to have an ID", namespace, topicName),
             TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TimeConstants.GLOBAL_STATUS_TIMEOUT,
             () -> {
@@ -428,7 +450,9 @@ public class WaitUtils {
                 return topic != null && topic.getStatus() != null && topic.getStatus().getTopicId() != null;
             });
 
-        return ResourceUtils.getKubeResource(KafkaTopic.class, namespace, topicName).getStatus().getTopicId();
+        String topicId = ResourceUtils.getKubeResource(KafkaTopic.class, namespace, topicName).getStatus().getTopicId();
+        LOGGER.debug("KafkaTopic {}/{} has Topic ID: {}", namespace, topicName, topicId);
+        return topicId;
     }
 
     /**
@@ -446,17 +470,19 @@ public class WaitUtils {
      * @return the version value once the expected version is reached
      */
     public static void waitForConsoleDeploymentToReachVersion(String namespace, String deploymentPrefix, String expectedVersion, Function<Deployment, String> versionGetter) {
+        LOGGER.info("Waiting for Deployment with prefix '{}' in namespace {} to reach version: {}", deploymentPrefix, namespace, expectedVersion);
         Wait.until(String.format("Deployment to reach version %s", expectedVersion),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_MEDIUM, KubeTestConstants.GLOBAL_TIMEOUT,
             () -> {
                 List<Deployment> deployments = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, namespace, deploymentPrefix);
 
                 if (deployments.isEmpty()) {
+                    LOGGER.debug("No Deployment with prefix '{}' found yet in namespace {}", deploymentPrefix, namespace);
                     return false;
                 }
 
                 String currentVersion = versionGetter.apply(deployments.getFirst());
-                LOGGER.info("Deployment {}/{} current version: {}, expected: {}", namespace, deploymentPrefix, currentVersion, expectedVersion);
+                LOGGER.debug("Deployment {}/{} current version: {}, expected: {}", namespace, deploymentPrefix, currentVersion, expectedVersion);
                 return expectedVersion.equals(currentVersion);
             });
     }
@@ -470,6 +496,7 @@ public class WaitUtils {
      * <p>This ensures that the StatefulSet has all its replicas ready before proceeding with further test steps.</p>
      */
     public static void waitForStatefulSetReady(String namespaceName, String statefulSetName) {
+        LOGGER.info("Waiting for StatefulSet {}/{} to become ready", namespaceName, statefulSetName);
         Wait.until(String.format("StatefulSet %s/%s to be ready", namespaceName, statefulSetName), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> Readiness.isStatefulSetReady(ResourceUtils.getKubeResource(StatefulSet.class, namespaceName, statefulSetName))
         );
@@ -491,6 +518,7 @@ public class WaitUtils {
      * @param ingressName the name of the Ingress resource to wait for
      */
     public static void waitForIngressToBePresent(String namespace, String ingressName) {
+        LOGGER.info("Waiting for Ingress {}/{} to be present", namespace, ingressName);
         Wait.until(String.format("Ingress %s/%s to be present", namespace, ingressName),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
@@ -515,6 +543,7 @@ public class WaitUtils {
      * @param expectedLog  the log message to wait for within the Pod's log output
      */
     public static void waitForLogInPod(String namespace, String podName, String expectedLog) {
+        LOGGER.info("Waiting for Pod {}/{} logs to contain: [{}]", namespace, podName, expectedLog);
         Wait.until(String.format("Pod %s/%s to contain log [%s]", namespace, podName, expectedLog),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
@@ -562,12 +591,14 @@ public class WaitUtils {
     }
 
     public static void waitForKeycloakRealmReady(String httpsHostname, String userName, String password, String realmName) {
+        LOGGER.info("Waiting for Keycloak realm '{}' to be present at {}", realmName, httpsHostname);
         Wait.until(String.format("Keycloak realm '%s' to be present at %s", realmName, httpsHostname),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_1_SEC, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> KeycloakApiUtils.realmExists(httpsHostname, userName, password, realmName));
     }
 
     public static void waitForKeycloakRealmDeleted(String httpsHostname, String userName, String password, String realmName) {
+        LOGGER.info("Waiting for Keycloak realm '{}' to be deleted at {}", realmName, httpsHostname);
         Wait.until(String.format("Keycloak realm '%s' to be deleted at %s", realmName, httpsHostname),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_1_SEC, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> !KeycloakApiUtils.realmExists(httpsHostname, userName, password, realmName));

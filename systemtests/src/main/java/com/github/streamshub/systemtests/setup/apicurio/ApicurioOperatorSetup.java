@@ -42,6 +42,7 @@ public class ApicurioOperatorSetup {
 
         InputStream installYaml = null;
         try {
+            LOGGER.debug("Downloading Apicurio Registry operator bundle from '{}'", APICURIO_BUNDLE_URL);
             extractedArchive = FileUtils.downloadAndExtractTarGz(APICURIO_BUNDLE_URL, APICURIO_TEMP_FILE_PREFIX);
             installYaml = FileUtils.loadYamlsFromPath(extractedArchive.resolve(APICURIO_INSTALL_DIR_NAME).resolve(APICURIO_INSTALL_FILE_NAME));
         } catch (IOException e) {
@@ -106,6 +107,7 @@ public class ApicurioOperatorSetup {
         LOGGER.info("Installing Apicurio Registry operator from: {}", APICURIO_BUNDLE_URL);
         allResources.forEach(resource -> KubeResourceManager.get().createOrUpdateResourceWithoutWait(resource));
 
+        LOGGER.debug("Waiting for Apicurio Registry operator deployment '{}' to become ready in namespace '{}'", APICURIO_OPERATOR_NAME, operatorNamespace);
         WaitUtils.waitForDeploymentWithPrefixIsReady(operatorNamespace, APICURIO_OPERATOR_NAME);
         // Allow resource manager to clean up on test teardown
         KubeResourceManager.get().pushToStack(new ResourceItem<>(this::teardown));
@@ -114,6 +116,7 @@ public class ApicurioOperatorSetup {
 
     public void teardown() {
         LOGGER.info("----------- Uninstall Apicurio Registry Operator -----------");
+        LOGGER.debug("Deleting {} Apicurio Registry operator resources from namespace '{}'", allResources.size(), operatorNamespace);
         allResources.forEach(resource -> KubeResourceManager.get().deleteResourceWithoutWait(resource));
     }
 }

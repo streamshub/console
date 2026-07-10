@@ -4,9 +4,12 @@ import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import org.apache.logging.log4j.Logger;
 
 public class MessagesChecks {
+    private static final Logger LOGGER = LogWrapper.getLogger(MessagesChecks.class);
 
     /**
      * Applies a Unix timestamp filter using the Messages page popover
@@ -30,6 +33,7 @@ public class MessagesChecks {
      *                        may be {@code null} if content validation is not required
      */
     public static void checkPopoverUnixFilter(TestCaseConfig tcc, String unixTimestamp, int expectedCount, String expectedContent) {
+        LOGGER.info("Checking popover Unix timestamp filter [{}] returns {} message(s)", unixTimestamp, expectedCount);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(3).build());
@@ -37,6 +41,7 @@ public class MessagesChecks {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         if (expectedContent != null) {
+            LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
             PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
         }
     }
@@ -64,6 +69,7 @@ public class MessagesChecks {
      *                        may be {@code null} if content validation is not required
      */
     public static void checkPopoverIsoFilter(TestCaseConfig tcc, String dateForm, String timeForm, int expectedCount, String expectedContent) {
+        LOGGER.info("Checking popover ISO date/time filter [date={}, time={}] returns {} message(s)", dateForm, timeForm, expectedCount);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
@@ -71,6 +77,7 @@ public class MessagesChecks {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         if (expectedContent != null) {
+            LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
             PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
         }
     }
@@ -99,12 +106,14 @@ public class MessagesChecks {
      *                        may be {@code null} if content validation is not required
      */
     public static void checkQueryBarFilter(TestCaseConfig tcc, String filterPrefix, String timestampValue, int expectedCount, String expectedContent) {
+        LOGGER.info("Checking query bar filter [{}{}] returns {} message(s)", filterPrefix, timestampValue, expectedCount);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, filterPrefix + timestampValue);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, timestampValue, Constants.VALUE_ATTRIBUTE, true, true);
         PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         if (expectedContent != null) {
+            LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
             PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
         }
     }

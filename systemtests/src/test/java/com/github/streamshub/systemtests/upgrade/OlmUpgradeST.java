@@ -48,54 +48,67 @@ public class OlmUpgradeST extends AbstractUpgradeST {
      * Verifies that upgrading the Console Operator through OLM (Operator Lifecycle Manager)
      * successfully transitions to the new version without disrupting the Console instance or UI functionality.
      *
+     * <p>The old and new channel/version values are loaded from
+     * {@code src/test/resources/upgrade/OlmUpgrade.yaml}; at the time of writing this test upgrades
+     * from OLM channel <b>0.12.x</b> (operator version <b>0.12.3</b>) to channel <b>0.13.x</b>
+     * (operator version <b>0.13.0-snapshot</b>).</p>
+     *
      * <p>This test performs the following steps:</p>
      * <ul>
-     *   <li>Installs the Console Operator using the <b>old OLM channel</b>.</li>
+     *   <li>Installs the Console Operator via OLM into the {@code co-namespace} namespace, subscribed to the <b>old OLM channel</b>.</li>
      *   <li>Deploys a default Console instance connected to an existing Kafka cluster.</li>
-     *   <li>Validates that the operator is running with the expected old version.</li>
-     *   <li>Performs basic UI checks to confirm that the Console is functional before the upgrade.</li>
-     *   <li>Upgrades the Console Operator to the <b>new OLM channel</b>.</li>
-     *   <li>Waits for the Console instance to roll and ensures it redeploys properly.</li>
-     *   <li>Verifies that the operator version matches the expected upgraded version.</li>
-     *   <li>Performs the same UI validation checks to confirm that the Console remains functional after the upgrade.</li>
+     *   <li>Validates that the deployed operator name reports the expected old version.</li>
+     *   <li>Performs basic UI checks (overview and topics pages) confirming the 17 pre-created topics
+     *       (12 fully replicated, 3 under-replicated, 2 unavailable) are displayed correctly, verifying the
+     *       Console is functional before the upgrade.</li>
+     *   <li>Upgrades the Console Operator subscription to the <b>new OLM channel</b>.</li>
+     *   <li>Waits for the Console Operator deployment to roll and report the new operator version.</li>
+     *   <li>Repeats the same overview/topics page checks to confirm the Console and its topic data
+     *       remain correctly displayed after the upgrade.</li>
      * </ul>
+     *
+     * <p>This ensures that an OLM-based upgrade of the Console Operator completes cleanly and that the
+     * Console UI keeps reflecting the underlying Kafka topic state both before and after the upgrade.</p>
      */
     @Test
     void testUpgradeOlmOperator() {
         // Setup
-        LOGGER.info("Setup console operator with specified channel: {}", olmVersionData.getOldOlmChannel());
+        LOGGER.info("Setting up Console Operator subscription on old OLM channel '{}' (expected version '{}')", olmVersionData.getOldOlmChannel(), olmVersionData.getOldOperatorVersion());
         OlmConfig olmConfig = new OlmConfig(Constants.CO_NAMESPACE);
 
         olmConfig.setChannelName(olmVersionData.getOldOlmChannel());
         consoleOperatorSetup.setInstallConfig(olmConfig);
+        LOGGER.info("Installing Console Operator via OLM into namespace '{}'", Constants.CO_NAMESPACE);
         consoleOperatorSetup.install(false);
 
-        LOGGER.info("Setup console instance");
+        LOGGER.info("Setting up Console instance '{}' in namespace '{}' for Kafka cluster '{}'", tcc.consoleInstanceName(), tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
 
-        LOGGER.info("Verify console operator version");
+        LOGGER.info("Verifying Console Operator deployment reports the expected old version '{}'", olmVersionData.getOldOperatorVersion());
 
         String currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_OLM_PACKAGE_NAME)
             .getFirst().getMetadata().getName().replace(Environment.CONSOLE_OLM_PACKAGE_NAME + "-v", "");
 
+        LOGGER.debug("Detected deployed Console Operator version: '{}'", currentOperatorVersion);
         assertEquals(olmVersionData.getOldOperatorVersion(), currentOperatorVersion);
 
-        LOGGER.info("Perform basic checks to validate UI is working");
+        LOGGER.info("Performing basic UI checks before upgrade to confirm Console displays all {} pre-created topics correctly", TOTAL_TOPICS_COUNT);
         PwUtils.login(tcc);
 
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         // Upgrade
-        LOGGER.info("Perform console operator upgrade to channel {}", olmVersionData.getNewOlmChannel());
+        LOGGER.info("Triggering Console Operator OLM upgrade: switching subscription from channel '{}' to channel '{}'", olmVersionData.getOldOlmChannel(), olmVersionData.getNewOlmChannel());
         olmConfig.setChannelName(olmVersionData.getNewOlmChannel());
         consoleOperatorSetup.setInstallConfig(olmConfig);
         consoleOperatorSetup.install(false);
 
+        LOGGER.info("Waiting for Console Operator deployment to roll and report the new version '{}'", olmVersionData.getNewOperatorVersion());
         WaitUtils.waitForConsoleDeploymentToReachVersion(Constants.CO_NAMESPACE, Environment.CONSOLE_OLM_PACKAGE_NAME, olmVersionData.getNewOperatorVersion(),
             deployment -> deployment.getMetadata().getName().replace(Environment.CONSOLE_OLM_PACKAGE_NAME + "-v", ""));
 
-        LOGGER.info("Perform basic checks after upgrade to validate UI is still working");
+        LOGGER.info("Performing basic UI checks after upgrade to confirm all {} topics survived and Console UI is still functional", TOTAL_TOPICS_COUNT);
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
     }

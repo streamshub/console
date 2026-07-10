@@ -57,16 +57,17 @@ public class KafkaTopicUtils {
 
         if (clearTopicsBefore) {
             List<KafkaTopic> existingTopics = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, namespace, topicNamePrefix);
-            LOGGER.info("Replace {} topics with prefix {}", existingTopics.size(), topicNamePrefix);
+            LOGGER.info("Deleting {} existing topic(s) with prefix {} before recreation", existingTopics.size(), topicNamePrefix);
             KubeResourceManager.get().deleteResourceWithWait(existingTopics.toArray(new KafkaTopic[0]));
         }
 
         if (ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, namespace, topicNamePrefix).isEmpty()) {
+            LOGGER.debug("Creating {} KafkaTopic resource(s) with prefix {} in namespace {}", topics.size(), topicNamePrefix, namespace);
             KubeResourceManager.get().createResourceAsyncWait(topics.toArray(new KafkaTopic[0]));
             return topics;
         }
 
-        LOGGER.info("Topics are already present");
+        LOGGER.info("Topics with prefix {} are already present, skipping creation", topicNamePrefix);
         return ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, namespace, topicNamePrefix);
     }
 
@@ -161,6 +162,7 @@ public class KafkaTopicUtils {
         /*
          * Unavailable Kafka Topic is a topic that has its only existing partition reassigned to a Broker that gets deleted
          */
+        LOGGER.info("Create {} unavailable topics for cluster {} with topic name prefix {}", numberToCreate, kafkaName, topicNamePrefix);
 
         // Scale up brokers
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
@@ -189,6 +191,7 @@ public class KafkaTopicUtils {
                 .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT))
                 .build();
 
+            LOGGER.debug("Reassigning topic {} onto broker {} that will subsequently be scaled down", kt.getMetadata().getName(), lastBrokerId);
             KafkaCmdUtils.reassignTopicPartitionToAnotherBroker(namespace, kafkaName, ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace,
                 KafkaNamingUtils.brokerPodNamePrefix(kafkaName)).getFirst().getMetadata().getName(), kt.getMetadata().getName(), lastBrokerId, clients);
 
@@ -252,6 +255,7 @@ public class KafkaTopicUtils {
      * @return a list of topic names that were created and used, but not managed by the Topic Operator
      */
     public static List<String> setupUnmanagedTopicsAndReturnNames(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
+        LOGGER.info("Create {} unmanaged topics for cluster {} with topic name prefix {}", numberToCreate, kafkaName, topicNamePrefix);
         List<KafkaTopic> topics = IntStream.range(0, numberToCreate)
             .mapToObj(i -> defaultTopic(namespace, kafkaName, topicNamePrefix + "-" + i, partitions, replicas, minIsr).build())
             .toList();
@@ -313,6 +317,7 @@ public class KafkaTopicUtils {
         // Scale brokers up once in the background - shared by the under-replicated and unavailable scenarios
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
         int scaledUpBrokersCount = knp.getSpec().getReplicas() + 1;
+        LOGGER.debug("Starting asynchronous broker scale-up of cluster {} to {} replicas", kafkaName, scaledUpBrokersCount);
         CompletableFuture<Void> brokerScaleUp = CompletableFuture.runAsync(() -> KafkaUtils.scaleBrokerReplicasWithWait(namespace, kafkaName, scaledUpBrokersCount));
 
         // Meanwhile, create unmanaged topics (no broker dependency) and kick off their clients
@@ -344,6 +349,7 @@ public class KafkaTopicUtils {
 
         allClients.addAll(createClientsAsync(unavailableClients));
 
+        LOGGER.debug("Waiting for {} client pair(s) across unmanaged, under-replicated, and unavailable topics to finish", allClients.size());
         // Wait for all producer/consumer clients across all three topic groups at once
         WaitUtils.waitForClientsSuccess(allClients);
 

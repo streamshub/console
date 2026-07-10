@@ -112,19 +112,41 @@ public class MessagesST extends AbstractST {
     }
 
     /**
-     * Executes parameterized search scenarios on the Messages page.
+     * Verifies the Messages page search toolbar handles a variety of query strings correctly.
      *
-     * <p>For each query, the test:</p>
+     * <p>The test runs against the {@code VariousMessageTypes} bucket's shared topic
+     * ({@code kafkaTopicName}), which holds 300 messages (offsets 0-299) produced in three
+     * batches of {@code MESSAGE_COUNT} (100) messages each: offsets 0-99 carry the
+     * {@code orderID} key with message {@code my-order - <n>}, offsets 100-199 carry the
+     * {@code traceID=abc123} header with message {@code abc123 - <n>}, and offsets 200-299
+     * contain {@code package=sent - <n>} as the message value.</p>
+     *
+     * <p>For each of the six {@link #searchUsingQueryScenarios()} scenarios, the test navigates
+     * to the topic's Messages page, applies the given search query via the search toolbar, and:</p>
      * <ul>
-     *   <li>Navigates to the topic's Messages page.</li>
-     *   <li>Applies the provided search query via the search toolbar.</li>
-     *   <li>Validates the number of results displayed matches the expected count.</li>
-     *   <li>Performs additional content checks to confirm message keys, values, headers,
-     *       and ordering are correctly filtered or displayed.</li>
+     *   <li>Validates the number of rows displayed matches the expected count.</li>
+     *   <li>Checks specific table cells (offset, key, header, or value columns) contain the
+     *       expected text.</li>
      * </ul>
      *
-     * <p>This ensures that the Messages page search input correctly supports latest retrieval,
-     * offset-based queries, message content filtering, and gracefully handles invalid inputs.</p>
+     * <p>Scenarios covered:</p>
+     * <ul>
+     *   <li>An empty query, which falls back to the latest 50 messages (row 1 = offset 299,
+     *       value {@code package=sent - 99}).</li>
+     *   <li>{@code messages=latest retrieve=2}, returning only the 2 newest messages
+     *       (offsets 299 and 298).</li>
+     *   <li>{@code messages=offset:150 retrieve=20}, returning 20 messages starting at offset 150
+     *       (value {@code abc123 - 50}).</li>
+     *   <li>{@code messages=offset:10 retrieve=100 my-order - 42}, narrowing the result down to the
+     *       single message at offset 42 whose value contains {@code my-order - 42}.</li>
+     *   <li>{@code messages=latest retrieve=40 my-order - 42}, which finds no match because offset 42
+     *       falls outside the latest 40 messages, resulting in "No messages data".</li>
+     *   <li>An invalid query ({@code messages=totalyNotOkay retrieve=-9}), which falls back to the
+     *       default latest-50 behavior.</li>
+     * </ul>
+     *
+     * <p>This confirms that the Messages page search input correctly supports latest retrieval,
+     * offset-based queries, message content filtering, and gracefully falls back on invalid input.</p>
      *
      * @param expectedResults number of results expected to be displayed in the table
      * @param searchQuery the search query string to apply
@@ -134,20 +156,22 @@ public class MessagesST extends AbstractST {
     @MethodSource("searchUsingQueryScenarios")
     @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
     void testMessageSearchUsingQueries(int expectedResults, String searchQuery, Map<String, String> checks) {
+        LOGGER.info("Running message search scenario on topic '{}' with query [{}], expecting {} result row(s)", kafkaTopicName, searchQuery, expectedResults);
         final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
-        LOGGER.info("Wait for message search page toolbar to be fully there before filtering messages");
+        LOGGER.debug("Waiting for message search page toolbar to be fully loaded before filtering messages");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
-        LOGGER.info("Search query [{}] expecting results count of {}", searchQuery, expectedResults);
+        LOGGER.info("Filling search query [{}] and awaiting {} result row(s)", searchQuery, expectedResults);
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, searchQuery);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, expectedResults, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
 
-        LOGGER.info("Run checks on results");
+        LOGGER.info("Validating {} result check(s) for query [{}]", checks.size(), searchQuery);
         checks.forEach((selector, expectedValue) -> {
+            LOGGER.debug("Checking selector [{}] contains expected value [{}]", selector, expectedValue);
             PwUtils.waitForContainsText(tcc, selector, expectedValue, true);
             assertTrue(tcc.page().locator(selector).allInnerTexts().toString().contains(expectedValue));
         });
@@ -293,38 +317,53 @@ public class MessagesST extends AbstractST {
     }
 
     /**
-     * Verifies message filtering functionality using the form-based UI filter panel on the Messages page.
+     * Verifies message filtering through the popover-based filter form on the Messages page.
      *
-     * <p>The test covers filtering by message key, header, and value, ensuring that only the
-     * expected subset of messages is displayed after each filter is applied. It also validates
-     * filter reset behavior between steps.</p>
+     * <p>The test runs against the {@code VariousMessageTypes} bucket's shared topic
+     * ({@code kafkaTopicName}), which holds 300 messages (offsets 0-299) produced in three
+     * consecutive batches of 100: offsets 0-99 carry the {@code orderID} key, offsets 100-199
+     * carry the {@code traceID=abc123} header, and offsets 200-299 contain {@code package=sent}
+     * in their value.</p>
      *
      * <p>The test performs the following steps:</p>
      * <ul>
-     *   <li>Create a Kafka topic and send three distinct sets of messages with different keys, headers, and values.</li>
-     *   <li>Verify the default state of the Messages page (latest messages displayed, correct attributes in query input).</li>
-     *   <li>Apply a <b>key-based filter</b> without an offset and confirm "No messages data" is shown.</li>
-     *   <li>Set an offset, reapply the key filter, and verify only messages with the matching key are displayed.</li>
-     *   <li>Reset filters and confirm the table shows the default latest messages again.</li>
-     *   <li>Apply a <b>header-based filter</b> with offset and confirm only matching messages appear in ascending order.</li>
-     *   <li>Reset filters and re-verify default state.</li>
-     *   <li>Apply a <b>value-based filter</b> with offset and confirm the correct subset of messages is shown.</li>
+     *   <li>Verifies the default state: the latest 50 messages are shown (row 1 = offset 299,
+     *       value {@code package=sent - 99}) and the query input reflects
+     *       {@code messages=latest retrieve=50}.</li>
+     *   <li>Opens the filter form, selects the <b>Key</b> filter with value {@code orderID} but no
+     *       offset, and confirms "No messages data" is shown because the key only exists outside
+     *       the latest window.</li>
+     *   <li>Sets the offset to {@code 95} and reapplies the key filter, confirming the query becomes
+     *       {@code messages=offset:95 retrieve=50 orderID where=key} and exactly 5 matching messages
+     *       (offsets 95-99, ascending) are returned.</li>
+     *   <li>Resets the filters and confirms the table returns to the default latest-messages view.</li>
+     *   <li>Selects the <b>Headers</b> filter with lookup text {@code traceID} and offset {@code 95},
+     *       confirming the query becomes {@code messages=offset:95 retrieve=50 traceID where=headers}
+     *       and that only the 45 messages carrying the header (offsets 100-144) are shown, ascending,
+     *       starting with value {@code abc123 - 0}.</li>
+     *   <li>Resets the filters again and re-verifies the default latest-messages view.</li>
+     *   <li>Selects the <b>Value</b> filter with text {@code package=sent} and offset {@code 195},
+     *       confirming the query becomes {@code messages=offset:195 retrieve=50 package=sent where=value}
+     *       and that only the 45 messages with the matching value (offsets 200-244) are shown, ascending,
+     *       starting with value {@code package=sent - 0}.</li>
      * </ul>
      *
-     * <p>Throughout the test, assertions are made on message offsets, keys, headers, values,
-     * and table counts to ensure filtering logic and UI behavior work as expected.</p>
+     * <p>Throughout the test, assertions are made on message offsets, keys, headers, values, table
+     * row counts, and the resulting search-query attribute to ensure filtering logic and UI behavior
+     * work as expected.</p>
      */
     @Test
     @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
     void testFilterMessagesUsingUIForm() {
+        LOGGER.info("Running popover filter-form scenario on topic '{}' (key, headers, and value filters)", kafkaTopicName);
         final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
-        LOGGER.info("Wait for page toolbar to be fully loaded before filtering");
+        LOGGER.debug("Waiting for page toolbar to be fully loaded before filtering");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
-        LOGGER.info("Verify default state of displayed messages");
+        LOGGER.info("Verifying default state: latest 50 messages shown, row 1 = offset 299, query = 'messages=latest retrieve=50'");
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
@@ -332,7 +371,7 @@ public class MessagesST extends AbstractST {
         assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE,
              "messages=latest retrieve=50", true));
 
-        LOGGER.info("Filter messages by key - because no offset is specified, first `No message data` should appear");
+        LOGGER.info("Filtering messages by key [{}] with no offset specified - expecting 'No messages data'", KEY_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
@@ -340,7 +379,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_FILTER_SEARCH_CONTENT, "No messages data", true);
 
-        LOGGER.info("Set correct offset to display messages");
+        LOGGER.info("Setting offset to 95 and reapplying key filter [{}] - expecting 5 matching messages", KEY_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
@@ -352,12 +391,12 @@ public class MessagesST extends AbstractST {
         assertTrue(PwUtils.attributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, Constants.VALUE_ATTRIBUTE, "messages=offset:95 retrieve=50 orderID where=key", true));
 
         // Order is ASC
-        LOGGER.debug("Verify filtered messages with specific key");
+        LOGGER.debug("Verifying key-filtered messages: expecting 5 rows (offsets 95-99, ascending) matching key [{}]", KEY_FILTER);
         PwUtils.waitForLocatorCount(tcc, 5, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "95", true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 3), KEY_FILTER, true);
 
-        LOGGER.debug("Reset messages filter");
+        LOGGER.debug("Resetting key filter - expecting fallback to default latest-50 view");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_RESET_BUTTON);
         PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest", Constants.VALUE_ATTRIBUTE, true, true);
@@ -366,7 +405,7 @@ public class MessagesST extends AbstractST {
         // Order is DESC
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
 
-        LOGGER.info("Filter messages by Headers");
+        LOGGER.info("Filtering messages by Headers lookup [{}] at offset 95 - expecting 45 matching messages", HEADER_FILTER_LOOK_UP_TEXT);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(3).build());
@@ -381,13 +420,13 @@ public class MessagesST extends AbstractST {
 
         // Because filter retrieve overlaps 5 messages from previous set, there should be only 45 with correct header
         // Order is ASC
-        LOGGER.debug("Verify filtered messages with specific header");
+        LOGGER.debug("Verifying header-filtered messages: expecting 45 rows (offsets 100-144, ascending) starting with value [{} - 0]", HEADER_FILTER_MESSAGE);
         PwUtils.waitForLocatorCount(tcc, 45, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "100", true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 4), HEADER_FILTER_LOOK_UP_TEXT, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 0", true);
 
-        LOGGER.debug("Reset messages filter");
+        LOGGER.debug("Resetting header filter - expecting fallback to default latest-50 view");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_RESET_BUTTON);
         // Order is DESC
@@ -396,7 +435,7 @@ public class MessagesST extends AbstractST {
 
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
 
-        LOGGER.info("Filter messages by setting MessageValue");
+        LOGGER.info("Filtering messages by Value [{}] at offset 195 - expecting 45 matching messages", VALUE_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
 
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
@@ -412,38 +451,38 @@ public class MessagesST extends AbstractST {
 
         // Because filter retrieve overlaps 5 messages from previous set, there should be only 45 with correct message value
         // Order is ASC
-        LOGGER.debug("Verify filtered messages with specific message value");
+        LOGGER.debug("Verifying value-filtered messages: expecting 45 rows (offsets 200-244, ascending) starting with value [{} - 0]", VALUE_FILTER);
         PwUtils.waitForLocatorCount(tcc, 45, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "200", true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0", true);
+
+        LOGGER.info("Completed popover filter-form scenarios (key, headers, value) on topic '{}'", kafkaTopicName);
     }
 
     /**
-     * Prepares a Kafka topic and produces a diverse set of messages for message filtering tests.
+     * Prepares the {@code VariousMessageTypes} shared bucket by creating a single Kafka topic
+     * (name prefix {@code filter-messages}) and producing 300 messages in three consecutive
+     * batches of {@code MESSAGE_COUNT} (100) messages each, so that subsequent tests can filter
+     * by key, header, and value:
      *
-     * <p>This scenario sets up a single-topic environment with multiple batches of messages
-     * containing variations in keys, headers, and values to support different filter queries.</p>
-     *
-     * <p>The preparation includes:</p>
      * <ul>
-     *   <li>Creating a Kafka topic for testing.</li>
-     *   <li>Producing the first batch of messages with a specific key and message content.</li>
-     *   <li>Producing a second batch of messages with distinct headers and message values.</li>
-     *   <li>Producing a third batch of messages with alternative values and headers.</li>
+     *   <li>Offsets 0-99: key {@code orderID}, message {@code my-order - <n>}.</li>
+     *   <li>Offsets 100-199: key {@code NoDataInKey-True}, header {@code traceID=abc123},
+     *       message {@code abc123 - <n>}.</li>
+     *   <li>Offsets 200-299: header {@code NoDataInHeader=true}, message {@code package=sent - <n>}.</li>
      * </ul>
      *
-     * <p>Each producer/consumer pair is executed and verified for success before continuing,
-     * ensuring that messages are reliably available for filtering tests.</p>
-     *
-     * <p>At the end, the topic contains a mixture of messages with variations in keys, headers,
-     * and payloads, allowing subsequent tests to validate filtering by key, header, or value.</p>
+     * <p>Each producer is executed and its message count is verified to succeed before continuing,
+     * ensuring that all 300 messages are reliably available before the search/filter tests that
+     * share this bucket run.</p>
      */
     @SetupTestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
     public void prepareVariousMessageTypes() {
-        LOGGER.info("Prepare filter messages scenario by creating topic and producing various messages");
+        LOGGER.info("Preparing '{}' bucket: creating topic '{}*' and producing 3 batches of {} messages", VARIOUS_MESSAGE_TYPES_BUCKET, TOPIC_PREFIX, MESSAGE_COUNT);
 
         kafkaTopicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, 1, 1, 1)
             .getFirst().getMetadata().getName();
+        LOGGER.debug("Created topic '{}' for message filtering scenarios", kafkaTopicName);
 
         // Setup UI form filtering
         // First set clients to send messages with KEY
@@ -462,23 +501,29 @@ public class MessagesST extends AbstractST {
             .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
             .build();
 
+        LOGGER.info("Producing batch 1/3: {} messages on offsets 0-99 with key '{}' and value '{}'", MESSAGE_COUNT, KEY_FILTER, KEY_FILTER_MESSAGE);
         KubeResourceManager.get().createResourceWithWait(clients.producer());
         WaitUtils.waitForClientSuccess(clients.getNamespaceName(), clients.getProducerName(), clients.getMessageCount(), true);
+        LOGGER.debug("Batch 1/3 produced and consumed successfully");
 
         // create second set of messages with different HEADER and MESSAGE
         clients.setMessageKey("NoDataInKey-True");
         clients.setHeaders(HEADER_FILTER);
         clients.setMessage(HEADER_FILTER_MESSAGE);
 
+        LOGGER.info("Producing batch 2/3: {} messages on offsets 100-199 with header '{}' and value '{}'", MESSAGE_COUNT, HEADER_FILTER, HEADER_FILTER_MESSAGE);
         KubeResourceManager.get().createResourceWithWait(clients.producer());
         WaitUtils.waitForClientSuccess(clients.getNamespaceName(), clients.getProducerName(), clients.getMessageCount(), true);
+        LOGGER.debug("Batch 2/3 produced and consumed successfully");
         // create third set of messages with different MESSAGE
         clients.setHeaders("NoDataInHeader=true");
         clients.setMessage(VALUE_FILTER);
 
+        LOGGER.info("Producing batch 3/3: {} messages on offsets 200-299 with value '{}'", MESSAGE_COUNT, VALUE_FILTER);
         KubeResourceManager.get().createResourceWithWait(clients.producer());
         WaitUtils.waitForClientSuccess(clients.getNamespaceName(), clients.getProducerName(), clients.getMessageCount(), true);
-        LOGGER.info("Filtering scenario prepared");
+        LOGGER.debug("Batch 3/3 produced and consumed successfully");
+        LOGGER.info("Filtering scenario prepared: topic '{}' now holds {} messages", kafkaTopicName, MESSAGE_COUNT * 3);
     }
 
     @BeforeAll

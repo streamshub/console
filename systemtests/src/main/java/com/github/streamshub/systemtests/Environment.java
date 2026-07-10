@@ -3,17 +3,22 @@ package com.github.streamshub.systemtests;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import io.fabric8.kubernetes.api.model.Service;
 import io.skodjob.kubetest4j.enums.InstallType;
 import io.skodjob.kubetest4j.environment.TestEnvironmentVariables;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import static io.skodjob.kubetest4j.KubeTestEnv.USER_PATH;
 
 public class Environment {
+    private static final Logger LOGGER = LogWrapper.getLogger(Environment.class);
     private static final TestEnvironmentVariables ENVS = new TestEnvironmentVariables();
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -44,13 +49,20 @@ public class Environment {
     public static final boolean CLEANUP_ENVIRONMENT = ENVS.getOrDefault("CLEANUP_ENVIRONMENT", Boolean::parseBoolean, true);
     public static final String BUILD_ID = ENVS.getOrDefault("BUILD_ID", "0");
     public static final String TEST_LOG_DIR = ENVS.getOrDefault("TEST_LOG_DIR",  USER_PATH + "/target/logs/");
-    public static final String TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL", "INFO");
+    public static final String TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL", "DEBUG");
     public static final String TEST_CONSOLE_LOG_LEVEL = ENVS.getOrDefault("TEST_CONSOLE_LOG_LEVEL", "INFO");
-    public static final String SCREENSHOTS_DIR_PATH = ENVS.getOrDefault("SCREENSHOTS_DIR_PATH", USER_PATH + "/screenshots");
-    public static final String TRACING_DIR_PATH = ENVS.getOrDefault("TRACING_DIR_PATH", USER_PATH + "/tracing");
+    public static final String SCREENSHOTS_BASE_DIR_PATH = ENVS.getOrDefault("SCREENSHOTS_DIR_PATH", USER_PATH + "/target/screenshots");
+    public static final String TRACING_BASE_DIR_PATH = ENVS.getOrDefault("TRACING_DIR_PATH", USER_PATH + "/target/tracing");
+    // Each test run gets its own timestamped subfolder under the base dirs above, so consecutive
+    // local re-runs never overwrite a previous run's screenshots/traces.
+    public static final String TEST_RUN_ID = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss"));
+    public static final String SCREENSHOTS_DIR_PATH = SCREENSHOTS_BASE_DIR_PATH + "/" + TEST_RUN_ID;
+    public static final String TRACING_DIR_PATH = TRACING_BASE_DIR_PATH + "/" + TEST_RUN_ID;
     // Playwright
     public static final String BROWSER_TYPE = ENVS.getOrDefault("BROWSER_TYPE", BrowserTypes.CHROMIUM.toString());
     public static final boolean RUN_HEADLESS = ENVS.getOrDefault("RUN_HEADLESS", Boolean::parseBoolean, true);
+    public static final int BROWSER_VIEWPORT_WIDTH = ENVS.getOrDefault("BROWSER_VIEWPORT_WIDTH", Integer::parseInt, 1920);
+    public static final int BROWSER_VIEWPORT_HEIGHT = ENVS.getOrDefault("BROWSER_VIEWPORT_HEIGHT", Integer::parseInt, 1080);
 
     // Kafka
     public static final String TEST_CLIENTS_IMAGE = ENVS.getOrDefault("TEST_CLIENTS_IMAGE", "");
@@ -89,6 +101,7 @@ public class Environment {
     private Environment() {}
 
     public static void logConfigAndSaveToFile() throws IOException {
+        LOGGER.info("Logging resolved environment configuration and saving it to [{}]", TEST_LOG_DIR);
         ENVS.logEnvironmentVariables();
         ENVS.saveConfigurationFile(TEST_LOG_DIR);
     }
@@ -125,9 +138,13 @@ public class Environment {
      */
     public static String getConnectImageOutputRegistry(String namespaceName, String imageName, String tag) {
         if (Environment.CONNECT_BUILD_IMAGE_PATH.isEmpty()) {
-            return getConnectImageOutputRegistry() + "/" + namespaceName + "/" + imageName + ":" + tag;
+            String imageRef = getConnectImageOutputRegistry() + "/" + namespaceName + "/" + imageName + ":" + tag;
+            LOGGER.debug("Resolved Connect build output image [{}] using default internal registry", imageRef);
+            return imageRef;
         }
-        return Environment.CONNECT_BUILD_IMAGE_PATH + ":" + tag;
+        String imageRef = Environment.CONNECT_BUILD_IMAGE_PATH + ":" + tag;
+        LOGGER.debug("Resolved Connect build output image [{}] using configured CONNECT_BUILD_IMAGE_PATH", imageRef);
+        return imageRef;
     }
 
     /**
@@ -163,17 +180,22 @@ public class Environment {
      */
     public static String getConnectImageOutputRegistry() {
         if (ClusterUtils.isOcp()) {
+            LOGGER.debug("Detected OpenShift cluster, using internal OpenShift image registry");
             return "image-registry.openshift-image-registry.svc:5000";
         }
 
         // Note: For minikube clusters you have to deploy internal registry using
         // `minikube start --insecure-registry '10.0.0.0/24'` and `minikube addons enable registry`
+        LOGGER.debug("Non-OpenShift cluster detected, looking up 'registry' Service in namespace 'kube-system'");
         Service service = KubeResourceManager.get().kubeClient().getClient().services().inNamespace("kube-system").withName("registry").get();
 
         if (service == null)    {
+            LOGGER.error("Internal registry Service 'registry' not found in namespace 'kube-system'");
             throw new SetupException("Internal registry Service for pushing newly build images not present.");
         } else {
-            return service.getSpec().getClusterIP() + ":" + service.getSpec().getPorts().stream().filter(servicePort -> servicePort.getName().equals("http")).findFirst().orElseThrow().getPort();
+            String registryAddress = service.getSpec().getClusterIP() + ":" + service.getSpec().getPorts().stream().filter(servicePort -> servicePort.getName().equals("http")).findFirst().orElseThrow().getPort();
+            LOGGER.debug("Resolved internal registry address [{}]", registryAddress);
+            return registryAddress;
         }
     }
 }

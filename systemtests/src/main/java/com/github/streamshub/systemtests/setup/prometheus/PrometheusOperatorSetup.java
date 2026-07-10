@@ -33,6 +33,7 @@ public class PrometheusOperatorSetup {
 
         InputStream multiYaml = null;
         try {
+            LOGGER.debug("Downloading Prometheus operator bundle from '{}'", PROMETHEUS_BUNDLE_URL);
             multiYaml = FileUtils.getYamlFileFromURL(PROMETHEUS_BUNDLE_URL);
         } catch (IOException e) {
             throw new SetupException("Unable to load prometheus CRs: " + e.getMessage());
@@ -43,6 +44,7 @@ public class PrometheusOperatorSetup {
     }
 
     private void preparePrometheusCrs() {
+        LOGGER.debug("Setting namespace '{}' on {} Prometheus operator resources", deploymentNamespace, allResources.size());
         allResources.forEach(resource -> {
             SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);
             SetupUtils.removeSecurityContexts(resource);
@@ -54,10 +56,11 @@ public class PrometheusOperatorSetup {
     public void setup() {
         LOGGER.info("----------- Install Prometheus Cluster Operator -----------");
 
-        LOGGER.info("Install Prometheus Using YAML");
+        LOGGER.debug("Applying {} Prometheus operator resources to namespace '{}'", allResources.size(), deploymentNamespace);
         allResources.forEach(resource -> KubeResourceManager.get().createOrUpdateResourceWithoutWait(resource));
 
         //Additional check that Prometheus deployment was installed
+        LOGGER.debug("Waiting for Prometheus operator deployment '{}' to become ready in namespace '{}'", deploymentName, deploymentNamespace);
         WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, deploymentName);
 
         // Allow resource manager delete
@@ -67,6 +70,7 @@ public class PrometheusOperatorSetup {
 
     public void teardown() {
         LOGGER.info("----------- Uninstall Prometheus Cluster Operator -----------");
+        LOGGER.debug("Deleting {} Prometheus operator resources from namespace '{}'", allResources.size(), deploymentNamespace);
         allResources.forEach(resource -> KubeResourceManager.get().deleteResourceWithoutWait(resource));
     }
 }

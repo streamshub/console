@@ -89,6 +89,7 @@ public class ConnectST extends AbstractST {
     @Test
     @TestBucket(CONNECT_CLUSTERS_WITH_SINK_SOURCE_CONNECTORS_BUCKET)
     void testFilterKafkaConnectClustersAndConnectors() {
+        LOGGER.info("Verifying Kafka Connect connector and cluster name-based filtering for Kafka '{}'", tcc.kafkaName());
         PwUtils.navigate(tcc, PwPageUrls.getKafkaConnectPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Verifying Kafka Connect page header is visible");
@@ -102,7 +103,7 @@ public class ConnectST extends AbstractST {
         LOGGER.info("Filtering connectors by source connector name: {}", SOURCE_CONNECTOR_NAME);
         PwUtils.waitForLocatorAndFill(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT, SOURCE_CONNECTOR_NAME);
 
-        LOGGER.debug("Verifying filtered connectors");
+        LOGGER.debug("Verifying exactly 1 connector remains, named '{}', on cluster '{}', with type 'Source'", SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME);
         PwUtils.waitForLocatorCount(tcc, 1, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, false);
         PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 1), SOURCE_CONNECTOR_NAME, true);
         PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 2), KAFKA_CONNECT_SRC_NAME, true);
@@ -112,14 +113,14 @@ public class ConnectST extends AbstractST {
         LOGGER.info("Filtering connectors by sink connector name: {}", SINK_CONNECTOR_NAME);
         PwUtils.waitForLocatorAndFill(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT, SINK_CONNECTOR_NAME);
 
-        LOGGER.debug("Verifying filtered connectors");
+        LOGGER.debug("Verifying exactly 1 connector remains, named '{}', on cluster '{}', with type 'Sink'", SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME);
         PwUtils.waitForLocatorCount(tcc, 1, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, false);
         PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 1), SINK_CONNECTOR_NAME, true);
         PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 2), KAFKA_CONNECT_SINK_NAME, true);
         PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 3), "Sink", true);
 
         // Filter connect clusters
-        LOGGER.info("Navigating to, Kafka Connect clusters page");
+        LOGGER.info("Navigating to Kafka Connect clusters page");
         PwUtils.navigate(tcc, PwPageUrls.getKafkaConnectClusterPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Verifying Kafka Connect clusters page header");
@@ -133,7 +134,7 @@ public class ConnectST extends AbstractST {
         LOGGER.info("Filtering Kafka Connect clusters by source cluster name: {}", KAFKA_CONNECT_SRC_NAME);
         PwUtils.waitForLocatorAndFill(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT, KAFKA_CONNECT_SRC_NAME);
 
-        LOGGER.debug("Verifying filtered cluster results");
+        LOGGER.debug("Verifying exactly 1 Kafka Connect cluster remains, named '{}'", KAFKA_CONNECT_SRC_NAME);
         PwUtils.waitForLocatorCount(tcc, 1, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, false);
         PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 1), KAFKA_CONNECT_SRC_NAME, true);
 
@@ -141,11 +142,11 @@ public class ConnectST extends AbstractST {
         LOGGER.info("Filtering Kafka Connect clusters by sink cluster name: {}", KAFKA_CONNECT_SINK_NAME);
         PwUtils.waitForLocatorAndFill(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT, KAFKA_CONNECT_SINK_NAME);
 
-        LOGGER.debug("Verifying filtered cluster results");
+        LOGGER.debug("Verifying exactly 1 Kafka Connect cluster remains, named '{}'", KAFKA_CONNECT_SINK_NAME);
         PwUtils.waitForLocatorCount(tcc, 1, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, false);
         PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 1), KAFKA_CONNECT_SINK_NAME, true);
 
-        LOGGER.info("Kafka Connect filtering test finished successfully");
+        LOGGER.info("Kafka Connect connector and cluster filtering test finished successfully");
     }
 
     /**
@@ -159,21 +160,25 @@ public class ConnectST extends AbstractST {
      *
      * <p>The method performs the following steps:</p>
      * <ul>
-     *     <li>Takes a snapshot of existing Console pods to detect rollout after configuration changes.</li>
-     *     <li>Deploys two Kafka Connect clusters (source and sink) with the file plugin enabled.</li>
-     *     <li>Updates the Console custom resource to register both Kafka Connect clusters,
-     *     including their namespace, associated Kafka cluster, and REST API URL.</li>
-     *     <li>Waits for the Console deployment to roll and stabilize after the configuration update.</li>
-     *     <li>Creates a dedicated Kafka topic for connector data exchange.</li>
+     *     <li>Deploys two {@code KafkaConnect} clusters with the file plugin enabled:
+     *     {@code k-cnct-source} and {@code k-cnct-sink}.</li>
+     *     <li>Deploys the default Console instance (if not already present), with its spec
+     *     already configured to register both Kafka Connect clusters, including their
+     *     namespace, associated Kafka cluster, and REST API URL.</li>
+     *     <li>Creates a single Kafka topic named {@code my-connector-topic-0} (1 partition,
+     *     1 replica, min ISR 1) for connector data exchange.</li>
      *     <li>Deploys:
      *         <ul>
-     *             <li>A file source connector attached to the source Kafka Connect cluster.</li>
-     *             <li>A file sink connector attached to the sink Kafka Connect cluster.</li>
+     *             <li>A {@code license-source} file source connector (2 max tasks) attached
+     *             to the source Kafka Connect cluster.</li>
+     *             <li>A {@code text-sink} file sink connector (2 max tasks) attached to the
+     *             sink Kafka Connect cluster.</li>
      *         </ul>
      *     </li>
-     *     <li>Produces and consumes test messages to populate the connector topic,
-     *     using SCRAM-SHA authenticated Kafka clients.</li>
+     *     <li>Produces and consumes 100 test messages ({@code "Hello connector!"}) to populate
+     *     the connector topic, using SCRAM-SHA authenticated Kafka clients.</li>
      *     <li>Waits until both connectors are available via the Kafka Connect REST API.</li>
+     *     <li>Logs into the Console UI.</li>
      * </ul>
      *
      * <p>This setup ensures that subsequent UI tests can validate:</p>
@@ -193,10 +198,14 @@ public class ConnectST extends AbstractST {
     @SetupTestBucket(CONNECT_CLUSTERS_WITH_SINK_SOURCE_CONNECTORS_BUCKET)
     public void prepareKafkaConnectClustersWithSinkSourceConnectors() {
         // Deploy two kafka connect clusters
+        LOGGER.info("Deploying source Kafka Connect cluster '{}' with file plugin for Kafka '{}'", KAFKA_CONNECT_SRC_NAME, tcc.kafkaName());
         KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(tcc.namespace(), KAFKA_CONNECT_SRC_NAME, tcc.kafkaName(), tcc.kafkaUserName(), tcc.consoleInstanceName());
+
+        LOGGER.info("Deploying sink Kafka Connect cluster '{}' with file plugin for Kafka '{}'", KAFKA_CONNECT_SINK_NAME, tcc.kafkaName());
         KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(tcc.namespace(), KAFKA_CONNECT_SINK_NAME, tcc.kafkaName(), tcc.kafkaUserName(), tcc.consoleInstanceName());
 
         // Deploy console
+        LOGGER.info("Deploying Console instance '{}' registered with Kafka Connect clusters '{}' and '{}'", tcc.consoleInstanceName(), KAFKA_CONNECT_SRC_NAME, KAFKA_CONNECT_SINK_NAME);
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName())
             .editSpec()
                 .addNewKafkaConnectCluster()
@@ -214,11 +223,14 @@ public class ConnectST extends AbstractST {
             .endSpec()
             .build());
 
+        LOGGER.debug("Creating connector topic '{}' with 1 partition, 1 replica, min ISR 1", CONNECTOR_TOPIC);
         String topicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), CONNECTOR_TOPIC, 1, 1, 1, 1)
             .getFirst()
             .getMetadata()
             .getName();
 
+        LOGGER.info("Creating source connector '{}' on cluster '{}' and sink connector '{}' on cluster '{}' for topic '{}'",
+            SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME, SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME, topicName);
         KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultFileSourceConnector(tcc.namespace(), SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME, topicName, 2).build());
         KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultFileSinkConnector(tcc.namespace(), SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME, topicName, 2).build());
 
@@ -236,12 +248,16 @@ public class ConnectST extends AbstractST {
             .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
             .build();
 
+        LOGGER.info("Producing and consuming {} messages on topic '{}' to populate connector data", Constants.MESSAGE_COUNT, topicName);
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
 
+        LOGGER.info("Waiting for connector '{}' to be available via Kafka Connect REST API on cluster '{}'", SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME);
         KafkaCmdUtils.waitForConnectorInServiceApi(tcc.namespace(), KAFKA_CONNECT_SRC_NAME, SOURCE_CONNECTOR_NAME);
+        LOGGER.info("Waiting for connector '{}' to be available via Kafka Connect REST API on cluster '{}'", SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME);
         KafkaCmdUtils.waitForConnectorInServiceApi(tcc.namespace(), KAFKA_CONNECT_SINK_NAME, SINK_CONNECTOR_NAME);
 
+        LOGGER.info("Logging into Console UI to verify Kafka Connect setup in namespace '{}'", tcc.namespace());
         PwUtils.login(tcc);
     }
 

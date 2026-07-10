@@ -35,6 +35,7 @@ public class KroxyliciousOperatorSetup {
 
         InputStream multiYaml = null;
         try {
+            LOGGER.debug("Downloading Kroxylicious operator bundle from '{}'", KROXYLICIOUS_BUNDLE_URL);
             Path extractedArchive = FileUtils.downloadAndExtractTarGz(KROXYLICIOUS_BUNDLE_URL, KROXY_TEMP_FILE_PREFIX);
             multiYaml = FileUtils.loadYamlsFromPath(extractedArchive.resolve(KROXY_INSTALL_DIR_NAME));
         } catch (IOException e) {
@@ -47,6 +48,7 @@ public class KroxyliciousOperatorSetup {
     }
 
     private void prepareKroxyliciousCrs() {
+        LOGGER.debug("Setting namespace '{}' on {} Kroxylicious operator resources", deploymentNamespace, allResources.size());
         allResources.forEach(resource -> {
             SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);
             SetupUtils.removeSecurityContexts(resource);
@@ -57,10 +59,11 @@ public class KroxyliciousOperatorSetup {
     public void setup() {
         LOGGER.info("----------- Install Kroxylicious Cluster Operator -----------");
 
-        LOGGER.info("Install Kroxylicious Using YAML");
+        LOGGER.debug("Applying {} Kroxylicious operator resources to namespace '{}'", allResources.size(), deploymentNamespace);
         allResources.forEach(resource -> KubeResourceManager.get().createOrUpdateResourceWithoutWait(resource));
 
         //Additional check that Kroxy deployment was installed
+        LOGGER.debug("Waiting for Kroxylicious operator deployment '{}' to become ready in namespace '{}'", deploymentName, deploymentNamespace);
         WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, deploymentName);
 
         // Allow resource manager delete
@@ -70,6 +73,7 @@ public class KroxyliciousOperatorSetup {
 
     public void teardown() {
         LOGGER.info("----------- Uninstall Kroxylicious Cluster Operator -----------");
+        LOGGER.debug("Deleting {} Kroxylicious operator resources from namespace '{}'", allResources.size(), deploymentNamespace);
         allResources.forEach(resource -> KubeResourceManager.get().deleteResourceWithoutWait(resource));
     }
 }

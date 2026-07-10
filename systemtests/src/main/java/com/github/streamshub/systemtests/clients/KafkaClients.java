@@ -2,10 +2,12 @@ package com.github.streamshub.systemtests.clients;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.sundr.builder.annotations.Buildable;
+import org.apache.logging.log4j.Logger;
 
 import java.security.InvalidParameterException;
 import java.util.Collections;
@@ -15,6 +17,7 @@ import java.util.Map;
 
 @Buildable(editableEnabled = false)
 public class KafkaClients {
+    private static final Logger LOGGER = LogWrapper.getLogger(KafkaClients.class);
 
     private String producerName;
     private String consumerName;
@@ -173,6 +176,9 @@ public class KafkaClients {
             throw new InvalidParameterException("Producer name is not set.");
         }
 
+        LOGGER.debug("Building producer Job [{}] to send {} message(s) to topic [{}] via bootstrap [{}]",
+            producerName, messageCount, topicName, bootstrapAddress);
+
         Map<String, String> producerLabels = new HashMap<>();
         producerLabels.put(Labels.APP, producerName);
         producerLabels.put(Labels.KAFKA_CLIENTS_LABEL_KEY, Labels.KAFKA_CLIENTS_LABEL_VALUE);
@@ -271,6 +277,9 @@ public class KafkaClients {
         if (consumerName == null || consumerName.isEmpty()) {
             throw new InvalidParameterException("Consumer name is not set.");
         }
+
+        LOGGER.debug("Building consumer Job [{}] to consume {} message(s) from topic [{}] as group [{}] via bootstrap [{}]",
+            consumerName, messageCount, topicName, consumerGroup, bootstrapAddress);
 
         return new JobBuilder()
             .withNewMetadata()

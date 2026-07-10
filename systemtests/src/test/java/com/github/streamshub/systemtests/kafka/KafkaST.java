@@ -63,11 +63,15 @@ public class KafkaST extends AbstractST {
      * Tests the pause and resume functionality of Kafka reconciliation via the UI, and warning display.
      *
      * <p>The test verifies the initial state where reconciliation is not paused, then pauses reconciliation using the UI modal.</p>
-     * <p>It checks that the pause notification appears and that the Kafka resource annotation reflects the paused state.</p>
-     * <p>It also verifies that pausing reconciliation triggers a warning condition that is displayed in the UI.</p>
-     * <p>After pausing, it attempts to scale Kafka brokers, which should not apply until reconciliation is resumed.</p>
-     * <p>After that the test resumes reconciliation through the UI and verifies that the annotation is cleared and scaling proceeds as expected.</p>
-     * <p>Finally, the test tries pausing reconciliation again and this time checks only for Kafka annotation. Later Kafka is resumed by another Resume button on top of the page.</p>
+     * <p>It checks that the pause notification appears and that the Kafka resource annotation
+     * {@code strimzi.io/pause-reconciliation} is set to {@code true}.</p>
+     * <p>It also verifies that pausing reconciliation triggers a warning condition that is displayed in the warnings dropdown.</p>
+     * <p>After pausing, it attempts to scale Kafka brokers from the default 3 replicas up to 6. The {@code KafkaNodePool}
+     * spec is updated to 6, but the actual broker node IDs and running pods remain at 3 while reconciliation stays paused.</p>
+     * <p>The test then resumes reconciliation through the UI and verifies that the annotation is cleared back to
+     * {@code false} and that the brokers are finally scaled to 6, with the UI reflecting the updated broker count.</p>
+     * <p>Finally, the test pauses reconciliation again and this time checks only the Kafka annotation. Reconciliation
+     * is then resumed via the Resume button on the top notification banner, and the annotation is verified back to {@code false}.</p>
      *
      * <p>This ensures that reconciliation pause/resume works correctly, blocking changes when paused and applying them upon resuming,
      * and that warnings are properly displayed in the UI.</p>
@@ -113,6 +117,7 @@ public class KafkaST extends AbstractST {
 
         // Check the reconciliation paused warning is displayed in the warnings card
         if (tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_DROPDOWN_LIST).isHidden()) {
+            LOGGER.debug("Warnings dropdown list is hidden, opening it to reveal warning messages");
             PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
         }
 
@@ -122,18 +127,19 @@ public class KafkaST extends AbstractST {
             false);
 
         // Scale brokers (without wait) and expect nothing happens because of paused reconciliation
-        LOGGER.info("Trying to fail scaling Kafka brokers count to {}", scaledBrokersCount);
+        LOGGER.info("Scaling Kafka brokers from {} to {} while reconciliation is paused, expecting no effect on running pods", Constants.REGULAR_BROKER_REPLICAS, scaledBrokersCount);
 
         KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         // Check replicas are changed, but actual count stayed the same
+        LOGGER.debug("Verify KafkaNodePool spec replicas were updated to {} while node ID count still reports {}", scaledBrokersCount, Constants.REGULAR_BROKER_REPLICAS);
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         assertEquals(scaledBrokersCount, knp.getSpec().getReplicas());
         // Node IDs should remain the same
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, knp.getStatus().getNodeIds().size());
 
         // Kafka should have original Broker Pod count, but in spec there should be the new count
-        LOGGER.debug("Verify UI displays old broker count of {}", Constants.REGULAR_BROKER_REPLICAS);
+        LOGGER.debug("Verify KafkaNodePool spec reports {} replicas while broker pods remain stable at {}", scaledBrokersCount, Constants.REGULAR_BROKER_REPLICAS);
         WaitUtils.waitForKafkaBrokerNodePoolReplicasInSpec(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
         WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
 
@@ -154,7 +160,7 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set back to false");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
         // Resuming reconciliation should trigger scaling
-        LOGGER.debug("Verify Kafka finally scaled brokers");
+        LOGGER.debug("Verify Kafka brokers finally scaled to {}", scaledBrokersCount);
         WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
 
         // Check UI displays the broker count change
@@ -188,9 +194,14 @@ public class KafkaST extends AbstractST {
     /**
      * Tests scaling Kafka broker and controller node pools and verifies the changes via the UI.
      *
-     * <p>The test starts by verifying the default number of broker and controller nodes on both the Overview and Nodes pages.</p>
-     * <p>It then scales the Kafka brokers up and verifies that the updated count appears correctly in the UI, including the header, info box, and table.</p>
-     * <p>Finally, the test scales brokers back to their default replica counts and confirms that the UI reflects the original state.</p>
+     * <p>The test starts by verifying the default counts of 3 broker nodes and 3 controller nodes on both the
+     * Overview page (broker count badge) and the Nodes page (header total/working/warning badges, overview
+     * info box items, and node table row count).</p>
+     * <p>It then scales the Kafka brokers up to 7 and verifies that the updated count appears correctly in the UI,
+     * including the header, info box, and table on the Nodes page, and the broker count badge on the Overview page.
+     * The controller count remains unchanged at 3.</p>
+     * <p>Finally, the test scales brokers back down to the default 3 replicas and confirms that both the Overview
+     * and Nodes pages reflect the original state.</p>
      *
      * <p>This ensures that Kafka node scaling is correctly reflected in the UI and that related components react appropriately to changes.</p>
      */
@@ -210,6 +221,7 @@ public class KafkaST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
 
         // Header
+        LOGGER.debug("Verify Nodes page header shows total={}, working={}, warning=0", Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
@@ -221,10 +233,11 @@ public class KafkaST extends AbstractST {
         // with broker role
         PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(Constants.REGULAR_BROKER_REPLICAS), true);
         // Node table
+        LOGGER.debug("Verify Nodes page table row count equals {}", Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS);
         assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
 
         // Scale brokers
-        LOGGER.debug("Scale Kafka brokers to {}", scaledBrokersCount);
+        LOGGER.info("Scaling Kafka brokers up from {} to {}", Constants.REGULAR_BROKER_REPLICAS, scaledBrokersCount);
 
         // Need to edit kafka bootstrap
         KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
@@ -241,6 +254,7 @@ public class KafkaST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
 
         // Header
+        LOGGER.debug("Verify Nodes page header shows total={}, working={}, warning=0", scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS, scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
@@ -252,10 +266,12 @@ public class KafkaST extends AbstractST {
         // with broker role
         PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(scaledBrokersCount), true);
         // Node table
+        LOGGER.debug("Verify Nodes page table row count equals {}", scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS);
         assertEquals(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
 
         // Scale brokers down
         // Note: It is not possible to scale controllers down due to inability to change dynamically quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
+        LOGGER.info("Scaling Kafka brokers down from {} to default count {}", scaledBrokersCount, Constants.REGULAR_BROKER_REPLICAS);
         KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS);
 
         LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
@@ -267,6 +283,7 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
         // Header
+        LOGGER.debug("Verify Nodes page header shows total={}, working={}, warning=0", Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
@@ -278,35 +295,33 @@ public class KafkaST extends AbstractST {
         // with broker role
         PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(Constants.REGULAR_BROKER_REPLICAS), true);
         // Node table
+        LOGGER.debug("Verify Nodes page table row count equals {}", Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS);
         assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
     }
 
     /**
-     * Verifies filtering of Kafka Node Pools by name and by role in the UI.
+     * Verifies filtering of Kafka Node Pools by role in the UI.
      *
-     * <p>This test validates that both default and additional Kafka Node Pools (broker and controller)
-     * are correctly displayed and filtered in the Console using different filter types.</p>
+     * <p>This test validates that both the default Kafka Node Pools (3 brokers, 3 controllers) and an
+     * additional broker node pool ({@code additional-brk} with 2 extra broker nodes) are correctly
+     * displayed and filtered in the Console.</p>
      *
      * <p>The test performs the following steps:</p>
      * <ul>
-     *     <li>Sets up an additional broker node pool for testing filters</li>
-     *     <li>Retrieves broker and controller node IDs from all node pools</li>
+     *     <li>Sets up the additional broker node pool for testing filters</li>
+     *     <li>Retrieves broker node IDs (default + additional) and controller node IDs from the node pools</li>
      *     <li>Verifies the default node state contains all expected nodes</li>
-     *     <li><b>Filters by node pool name:</b>
-     *         <ul>
-     *             <li>Default broker pool - displays only default broker nodes</li>
-     *             <li>Additional broker pool - displays only additional broker nodes</li>
-     *             <li>Default controller pool - displays only controller nodes</li>
-     *         </ul>
-     *     </li>
      *     <li><b>Filters by role:</b>
      *         <ul>
      *             <li>Broker role - displays all broker nodes (default + additional)</li>
-     *             <li>Controller role - displays all controller nodes</li>
+     *             <li>Controller role - displays all default controller nodes</li>
      *         </ul>
      *     </li>
-     *     <li>Resets filters after each validation and verifies the total node count is restored</li>
+     *     <li>Resets the filter between the two role checks and verifies the total node count is restored</li>
      * </ul>
+     *
+     * <p>This ensures that Kafka Node Pool filtering by role correctly reflects the combined state of
+     * multiple node pools in the UI.</p>
      */
     @Test
     @Order(Integer.MAX_VALUE)
@@ -328,19 +343,23 @@ public class KafkaST extends AbstractST {
         List<Integer> brokerIds = Stream.of(defaultBrokerIds, addedBrokerIds).flatMap(List::stream).toList();
         int totalNodeCount = brokerIds.size() + defaultControllerIds.size();
 
+        LOGGER.debug("Verifying default node state with {} broker node(s) and {} controller node(s), total {}", brokerIds.size(), defaultControllerIds.size(), totalNodeCount);
         KafkaNodePoolChecks.checkDefaultNodeState(tcc, brokerIds, defaultControllerIds);
 
         // Test filtering by role
-        LOGGER.info("Testing filter by role");
+        LOGGER.info("Testing Kafka node pool filtering by role for {} broker node(s) and {} controller node(s)", brokerIds.size(), defaultControllerIds.size());
 
         LOGGER.debug("Filtering Kafka nodes by role: {}", ProcessRoles.BROKER.toValue());
         KafkaTestUtils.filterKnpByRole(tcc, ProcessRoles.BROKER.toValue());
         KafkaNodePoolChecks.checkFilterTypeResults(tcc, brokerIds, ProcessRoles.BROKER.toValue());
+
+        LOGGER.debug("Resetting Kafka node pool filters, expecting total node count {}", totalNodeCount);
         KafkaTestUtils.resetKnpFilters(tcc, totalNodeCount);
 
         LOGGER.debug("Filtering Kafka nodes by role: {}", ProcessRoles.CONTROLLER.toValue());
         KafkaTestUtils.filterKnpByRole(tcc, ProcessRoles.CONTROLLER.toValue());
         KafkaNodePoolChecks.checkFilterTypeResults(tcc, defaultControllerIds, ProcessRoles.CONTROLLER.toValue());
+        LOGGER.info("Kafka node pool role-based filtering by broker and controller roles verified successfully");
     }
 
     /**

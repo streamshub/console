@@ -30,7 +30,7 @@ public class GroupsTestUtils {
      * @param value      the value to fill in, used only for {@code CUSTOM_OFFSET} (and reused elsewhere for consistency)
      */
     public static void selectResetOffsetType(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
-        LOGGER.debug("Select reset offset type");
+        LOGGER.info("Selecting reset offset type {}", offsetType);
         PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON);
 
         switch (offsetType) {
@@ -67,7 +67,7 @@ public class GroupsTestUtils {
      * @param value        the datetime value to enter into the input field
      */
     public static void fillResetOffsetDatetime(TestCaseConfig tcc, ResetOffsetDateTimeType dateTimeType, String value) {
-        LOGGER.debug("Select reset offset datetime type and fill value");
+        LOGGER.debug("Selecting reset offset datetime type {} and filling value {}", dateTimeType, value);
         switch (dateTimeType) {
             case UNIX_EPOCH:
                 PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_UNIX, value);
@@ -132,6 +132,7 @@ public class GroupsTestUtils {
      * @throws AssertionError if the consumer group is not found in the table
      */
     public static void waitForGroupInTable(TestCaseConfig tcc, String consumerGroupName) {
+        LOGGER.info("Verifying consumer group {} is present in Groups table", consumerGroupName);
         List<String> visibleGroups = tcc.page().locator(GroupsPageSelectors.GPS_TABLE_ITEMS)
             .all()
             .stream()
@@ -139,6 +140,7 @@ public class GroupsTestUtils {
             .toList();
 
         if (visibleGroups.stream().noneMatch(group -> group.contains(consumerGroupName))) {
+            LOGGER.error("Consumer group {} not found in Groups table, visible groups: {}", consumerGroupName, visibleGroups);
             throw new AssertionError("Consumer group not found in UI, expected: " + consumerGroupName +
                 " - Visible groups: " + visibleGroups);
         }
@@ -151,6 +153,7 @@ public class GroupsTestUtils {
      * @param consumerGroupName name of the consumer group to open
      */
     public static void clickGroupInTable(TestCaseConfig tcc, String consumerGroupName) {
+        LOGGER.info("Opening consumer group {} from Groups table", consumerGroupName);
         PwUtils.waitForLocatorAndClick(tcc.page().locator(GroupsPageSelectors.GPS_TABLE_ITEMS)
             .filter(new Locator.FilterOptions().setHasText(consumerGroupName))
             .locator("a")

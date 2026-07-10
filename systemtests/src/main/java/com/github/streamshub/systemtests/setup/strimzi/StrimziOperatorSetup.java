@@ -19,17 +19,20 @@ public class StrimziOperatorSetup {
     public StrimziOperatorSetup(String deploymentNamespace) {
         this.deploymentNamespace = deploymentNamespace;
         this.deploymentName = Environment.STRIMZI_OPERATOR_NAME;
+        LOGGER.debug("Prepared Strimzi Operator setup for deployment [{}] in namespace [{}]", deploymentName, deploymentNamespace);
     }
 
     public void install() {
         LOGGER.info("----------- Install Strimzi Cluster Operator -----------");
         if (Environment.SKIP_STRIMZI_INSTALLATION ||
             ResourceUtils.getKubeResource(Deployment.class, deploymentNamespace, deploymentName) != null) {
-            LOGGER.warn("Strimzi Operator is already installed or it's installation was skipped with SKIP_STRIMZI_INSTALLATION");
+            LOGGER.warn("Strimzi Operator [{}] in namespace [{}] is already installed, or installation was skipped via SKIP_STRIMZI_INSTALLATION={}",
+                deploymentName, deploymentNamespace, Environment.SKIP_STRIMZI_INSTALLATION);
             return;
         }
 
-        LOGGER.info("Install Strimzi Using Helm charts");
+        LOGGER.info("Installing Strimzi Operator [{}] version [{}] via Helm chart [{}] into namespace [{}]",
+            deploymentName, Environment.STRIMZI_OPERATOR_VERSION, CHART, deploymentNamespace);
         Helm.install(CHART)
             .withName(deploymentName)
             .withNamespace(deploymentNamespace)
@@ -39,15 +42,17 @@ public class StrimziOperatorSetup {
             .call();
 
         // Additional check that Strimzi deployment was installed
+        LOGGER.debug("Waiting for Strimzi Operator deployment [{}] in namespace [{}] to become ready", deploymentName, deploymentNamespace);
         WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, deploymentName);
 
         // Allow resource manager delete
         KubeResourceManager.get().pushToStack(new ResourceItem<>(this::uninstall));
-        LOGGER.info("Installation of Strimzi completed");
+        LOGGER.info("Strimzi Operator [{}] installation completed in namespace [{}]", deploymentName, deploymentNamespace);
     }
 
     public void uninstall() {
         LOGGER.info("----------- Uninstall Strimzi Cluster Operator -----------");
+        LOGGER.info("Uninstalling Strimzi Operator [{}] from namespace [{}]", deploymentName, deploymentNamespace);
         // In case namespace is deleted before operator, ignore error that the release is not present (it's uninstalled)
         Helm.uninstall(deploymentName).ignoreNotFound().call();
     }

@@ -81,11 +81,15 @@ public class SystemTestExecutionListener implements TestExecutionListener {
 
     @Override
     public void executionStarted(TestIdentifier testIdentifier) {
-        // Do nothing
+        if (testIdentifier.isTest()) {
+            LOGGER.debug("Test execution started: {}", testIdentifier.getDisplayName());
+        }
     }
 
     @Override
     public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
-        // Do nothing
+        if (testIdentifier.isTest()) {
+            LOGGER.debug("Test execution finished: {} - status [{}]", testIdentifier.getDisplayName(), result.getStatus());
+        }
     }
 }
