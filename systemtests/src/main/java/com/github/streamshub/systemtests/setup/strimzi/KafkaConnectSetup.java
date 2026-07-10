@@ -186,11 +186,22 @@ public class KafkaConnectSetup {
      * The resulting {@link DockerOutput} can be used in the {@code build} section
      * of a {@link KafkaConnectBuilder} to push a custom image to a container registry.
      *
+     * <p>Since Strimzi 1.0, the {@code UseConnectBuildWithBuildah} feature gate is enabled by
+     * default on Kubernetes clusters (OpenShift is unaffected - it always uses the OpenShift
+     * Build API), switching the Connect build's push step from Kaniko to Buildah. Buildah
+     * verifies TLS on push by default, which fails against the plain-HTTP internal registry
+     * used on non-OpenShift clusters (e.g. minikube's {@code registry} addon). {@code --tls-verify=false}
+     * is passed via {@code additionalPushOptions} to skip that verification; per the Strimzi docs
+     * this option is only consulted on Kubernetes and is ignored on OpenShift, so it's safe to
+     * always set.
+     *
      * @param imageName the full image name including registry, namespace, image name, and tag
      * @return a {@link DockerOutput} object configured with the image and optional push secret
      */
     private static DockerOutput dockerOutput(String imageName) {
-        DockerOutputBuilder dockerOutputBuilder = new DockerOutputBuilder().withImage(imageName);
+        DockerOutputBuilder dockerOutputBuilder = new DockerOutputBuilder()
+            .withImage(imageName)
+            .withAdditionalPushOptions("--tls-verify=false");
         if (Environment.CONNECT_BUILD_REGISTRY_SECRET != null && !Environment.CONNECT_BUILD_REGISTRY_SECRET.isEmpty()) {
             LOGGER.debug("Using push secret [{}] for Kafka Connect build image [{}]", Environment.CONNECT_BUILD_REGISTRY_SECRET, imageName);
             dockerOutputBuilder.withPushSecret(Environment.CONNECT_BUILD_REGISTRY_SECRET);
