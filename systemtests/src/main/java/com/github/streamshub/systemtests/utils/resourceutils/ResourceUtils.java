@@ -50,4 +50,9 @@ public class ResourceUtils {
         LOGGER.trace("Listing {} resources in namespace {} with label selector {}", resourceClass.getSimpleName(), namespaceName, labelSelector);
         return getKubeResourceClient(resourceClass).inNamespace(namespaceName).withLabelSelector(labelSelector).list().getItems();
     }
+
+    public static <T extends HasMetadata> List<T> listKubeResourcesByLabelSelector(Class<T> resourceClass, LabelSelector labelSelector) {
+        LOGGER.trace("Listing cluster-scoped {} resources with label selector {}", resourceClass.getSimpleName(), labelSelector);
+        return getKubeResourceClient(resourceClass).withLabelSelector(labelSelector).list().getItems();
+    }
 }

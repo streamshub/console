@@ -42,10 +42,9 @@ public class AbstractUpgradeST {
 
         KubeResourceManager.get().setTestContext(extensionContext);
         NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
-
-        strimziOperatorSetup.install();
+        // V1 not compatible with 0.12 console
+        strimziOperatorSetup.install("0.51.0");
     }
-
 
     @BeforeEach
     void setupTestCase(ExtensionContext extensionContext) {

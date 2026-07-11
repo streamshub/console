@@ -87,6 +87,25 @@ public class OlmConfig extends InstallConfig {
         this.channelName = channelName;
     }
 
+    /**
+     * Bumps the Subscription's channel to trigger an in-place OLM upgrade of the Console Operator,
+     * without going through {@link #install()}'s "already installed, skip" guard.
+     *
+     * <p>{@link #install()} intentionally no-ops when a Deployment already exists and
+     * {@link Environment#DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL} is {@code false} - that guard exists
+     * purely as a debugging convenience (skip redeploying between local runs) and has nothing to do
+     * with a deliberate upgrade test switching channels on an existing Subscription. Patching the
+     * Subscription directly here sidesteps that guard entirely: OLM picks up the channel change,
+     * resolves the new CSV and rolls the Deployment on its own.
+     *
+     * @param channelName the OLM channel to switch the Subscription to
+     */
+    public void updateChannel(String channelName) {
+        this.channelName = channelName;
+        LOGGER.info("Bumping Console Operator Subscription '{}' to channel '{}' in namespace '{}'", subscriptionName, channelName, deploymentNamespace);
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmSubscription());
+    }
+
     private Subscription getOlmSubscription() {
         return new SubscriptionBuilder()
             .editMetadata()
