@@ -1,7 +1,23 @@
 #!/usr/bin/env bash
 # Shared config for kind/*.sh. Source, don't execute.
 
-CONTAINER_ENGINE="${CONTAINER_ENGINE:-podman}"
+OS_NAME="$(uname -s)"
+
+# Auto-detect the container engine if not explicitly set: prefer podman,
+# fall back to docker, so this works out of the box on machines that only
+# have one of the two installed (common on Linux, where docker is often
+# the default with no podman in sight).
+if [ -z "${CONTAINER_ENGINE:-}" ]; then
+  if command -v podman >/dev/null 2>&1; then
+    CONTAINER_ENGINE="podman"
+  elif command -v docker >/dev/null 2>&1; then
+    CONTAINER_ENGINE="docker"
+  else
+    echo "Neither podman nor docker found in PATH. Install one, or set CONTAINER_ENGINE explicitly." >&2
+    exit 1
+  fi
+fi
+
 CLUSTER_NAME="${CLUSTER_NAME:-console-local}"
 INGRESS_HTTP_PORT="${INGRESS_HTTP_PORT:-80}"
 INGRESS_HTTPS_PORT="${INGRESS_HTTPS_PORT:-443}"
@@ -19,12 +35,19 @@ esac
 KIND_CONTEXT="kind-${CLUSTER_NAME}"
 CLUSTER_ENV_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.cluster-env"
 
-# Podman machine sizing (only relevant when CONTAINER_ENGINE=podman). Defaults
-# to (host CPUs - 1) and (host memory - 4GB headroom) so macOS itself isn't
+# Podman machine sizing (only relevant on macOS, where podman needs a VM to
+# run containers at all — native Linux podman doesn't). Defaults to (host
+# CPUs - 1) and (host memory - 4GB headroom) so the host itself isn't
 # starved; override with PODMAN_MACHINE_CPUS/PODMAN_MACHINE_MEMORY (MB).
+# Portable: prefers Linux-native tools (nproc, /proc/meminfo), falls back
+# to macOS's sysctl.
 detect_default_cpus() {
   local total
-  total=$(sysctl -n hw.ncpu)
+  if command -v nproc >/dev/null 2>&1; then
+    total=$(nproc)
+  else
+    total=$(sysctl -n hw.ncpu)
+  fi
   if [ "${total}" -gt 1 ]; then
     echo $(( total - 1 ))
   else
@@ -34,7 +57,11 @@ detect_default_cpus() {
 
 detect_default_memory_mb() {
   local total_mb headroom_mb=4096
-  total_mb=$(( $(sysctl -n hw.memsize) / 1024 / 1024 ))
+  if [ -r /proc/meminfo ]; then
+    total_mb=$(( $(awk '/^MemTotal:/ {print $2}' /proc/meminfo) / 1024 ))
+  else
+    total_mb=$(( $(sysctl -n hw.memsize) / 1024 / 1024 ))
+  fi
   if [ "${total_mb}" -gt "${headroom_mb}" ]; then
     echo $(( total_mb - headroom_mb ))
   else
@@ -45,11 +72,18 @@ detect_default_memory_mb() {
 PODMAN_MACHINE_CPUS="${PODMAN_MACHINE_CPUS:-$(detect_default_cpus)}"
 PODMAN_MACHINE_MEMORY="${PODMAN_MACHINE_MEMORY:-$(detect_default_memory_mb)}"
 
-# Ensures a podman machine exists and is running. Only sizes it (via
-# PODMAN_MACHINE_CPUS/PODMAN_MACHINE_MEMORY) on first-time init — an existing
-# machine is never resized automatically, since that requires stopping it
-# (killing anything running inside, including the kind cluster).
+# Ensures a podman machine exists and is running — but only on macOS.
+# Native Linux podman talks to the local system directly; there's no VM to
+# create or manage, so this is a no-op there regardless of CONTAINER_ENGINE.
+# Only sizes the machine (via PODMAN_MACHINE_CPUS/PODMAN_MACHINE_MEMORY) on
+# first-time init — an existing machine is never resized automatically,
+# since that requires stopping it (killing anything running inside,
+# including the kind cluster).
 ensure_podman_machine() {
+  if [ "${OS_NAME}" != "Darwin" ]; then
+    return 0
+  fi
+
   local name state cpus mem
 
   name=$(podman machine list --format json | jq -r '.[0].Name // empty')

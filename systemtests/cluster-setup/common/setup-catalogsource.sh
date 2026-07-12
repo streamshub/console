@@ -106,7 +106,14 @@ else
   echo "Installing OLM ${OLM_VERSION}..."
   curl --proto "=https" -o "${OLM_INSTALL_SCRIPT}" -sL \
     "https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh"
-  ACTUAL_SHA256=$(shasum -a 256 "${OLM_INSTALL_SCRIPT}" | awk '{print $1}')
+  # Prefer sha256sum (GNU coreutils, native on Linux); fall back to shasum
+  # (macOS's default, not guaranteed present on every Linux distro). Both
+  # print "<hash>  <filename>", so the awk extraction is the same either way.
+  if command -v sha256sum >/dev/null 2>&1; then
+    ACTUAL_SHA256=$(sha256sum "${OLM_INSTALL_SCRIPT}" | awk '{print $1}')
+  else
+    ACTUAL_SHA256=$(shasum -a 256 "${OLM_INSTALL_SCRIPT}" | awk '{print $1}')
+  fi
   [ "${ACTUAL_SHA256}" = "${OLM_SCRIPT_SHA256}" ] \
     || { echo "OLM install script hash verification failed (got ${ACTUAL_SHA256})" >&2; exit 1; }
   chmod +x "${OLM_INSTALL_SCRIPT}"
