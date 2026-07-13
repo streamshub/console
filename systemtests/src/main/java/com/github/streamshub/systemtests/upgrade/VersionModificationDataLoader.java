@@ -22,6 +22,7 @@ public class VersionModificationDataLoader {
     private YamlVersionModificationData yamlUpgradeData;
 
     public VersionModificationDataLoader(InstallType upgradeType) {
+        LOGGER.info("Creating VersionModificationDataLoader for install type {}", upgradeType);
         if (upgradeType == InstallType.OLM) {
             loadOlmData();
         } else if (upgradeType == InstallType.YAML) {
@@ -30,21 +31,28 @@ public class VersionModificationDataLoader {
     }
 
     private void loadYamlUpgradeData() {
+        LOGGER.info("Loading Yaml upgrade data from file {}", YAML_UPGRADE_FILE);
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
             this.yamlUpgradeData = mapper.readValue(new File(YAML_UPGRADE_FILE), YamlVersionModificationData.class);
+            LOGGER.info("Loaded Yaml upgrade data: operator version {} -> {}",
+                yamlUpgradeData.getOldOperatorVersion(), yamlUpgradeData.getNewOperatorVersion());
         } catch (IOException e) {
-            LOGGER.error("Error while parsing Yaml upgrade data from Yaml");
+            LOGGER.error("Failed to parse Yaml upgrade data from file {}: {}", YAML_UPGRADE_FILE, e.getMessage());
             throw new RuntimeException(e);
         }
     }
 
     public void loadOlmData() {
+        LOGGER.info("Loading OLM upgrade data from file {}", OLM_UPGRADE_FILE);
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
             this.olmUpgradeData = mapper.readValue(new File(OLM_UPGRADE_FILE), OlmVersionModificationData.class);
+            LOGGER.info("Loaded OLM upgrade data: operator version {} -> {}, channel {} -> {}",
+                olmUpgradeData.getOldOperatorVersion(), olmUpgradeData.getNewOperatorVersion(),
+                olmUpgradeData.getOldOlmChannel(), olmUpgradeData.getNewOlmChannel());
         } catch (IOException e) {
-            LOGGER.error("Error while parsing OLM upgrade data from Yaml");
+            LOGGER.error("Failed to parse OLM upgrade data from file {}: {}", OLM_UPGRADE_FILE, e.getMessage());
             throw new RuntimeException(e);
         }
     }

@@ -46,6 +46,8 @@ public class KafkaSetup {
     private KafkaSetup() {}
 
     public static void setupDefaultKafkaIfNeeded(String namespaceName, String clusterName) {
+        LOGGER.debug("Preparing default Kafka cluster [{}/{}] with {} broker replica(s), version [{}]",
+            namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS, Environment.ST_KAFKA_VERSION);
         setupKafkaIfNeeded(
             getDefaultKafkaConfigMap(namespaceName, clusterName).build(),
             getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS).build(),
@@ -56,6 +58,8 @@ public class KafkaSetup {
     }
 
     public static void setupKafkaWithCcIfNeeded(String namespaceName, String clusterName) {
+        LOGGER.debug("Preparing Kafka cluster [{}/{}] with Cruise Control enabled, {} broker replica(s), version [{}]",
+            namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS, Environment.ST_KAFKA_VERSION);
         setupKafkaIfNeeded(
             getDefaultKafkaConfigMap(namespaceName, clusterName).build(),
             getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS).build(),
@@ -82,16 +86,20 @@ public class KafkaSetup {
      * @param kafka the Kafka custom resource representing the Kafka cluster
      */
     public static void setupKafkaIfNeeded(ConfigMap configMap, KafkaNodePool brokerNodePools, KafkaNodePool controllerNodePools, KafkaUser kafkaUser, Kafka kafka) {
-        LOGGER.info("Setup test Kafka {}/{}  and it's components", kafka.getMetadata().getNamespace(), kafka.getMetadata().getName());
+        LOGGER.info("Setting up Kafka cluster [{}/{}] and its components", kafka.getMetadata().getNamespace(), kafka.getMetadata().getName());
         if (ResourceUtils.getKubeResource(Kafka.class, kafka.getMetadata().getNamespace(), kafka.getMetadata().getName()) == null) {
+            LOGGER.info("Kafka cluster [{}/{}] not found, creating it with {} broker(s) and {} controller(s)",
+                kafka.getMetadata().getNamespace(), kafka.getMetadata().getName(), brokerNodePools.getSpec().getReplicas(), controllerNodePools.getSpec().getReplicas());
             KubeResourceManager.get().createResourceWithWait(configMap);
             KubeResourceManager.get().createResourceWithWait(brokerNodePools);
             KubeResourceManager.get().createResourceWithWait(controllerNodePools);
             KubeResourceManager.get().createResourceWithWait(kafka);
             KubeResourceManager.get().createResourceWithWait(kafkaUser);
+            LOGGER.debug("Waiting for KafkaUser [{}/{}] secret to become ready", kafkaUser.getMetadata().getNamespace(), kafkaUser.getMetadata().getName());
             WaitUtils.waitForSecretReady(kafkaUser.getMetadata().getNamespace(), kafkaUser.getMetadata().getName());
+            LOGGER.info("Kafka cluster [{}/{}] is ready", kafka.getMetadata().getNamespace(), kafka.getMetadata().getName());
         }  else {
-            LOGGER.warn("Skipping Kafka deployment, there already is a Kafka cluster");
+            LOGGER.info("Kafka cluster [{}/{}] already exists, skipping deployment", kafka.getMetadata().getNamespace(), kafka.getMetadata().getName());
         }
     }
 
@@ -140,7 +148,7 @@ public class KafkaSetup {
                     .addNewPersistentClaimStorageVolume()
                         .withId(0)
                         .withDeleteClaim(true)
-                        .withSize("1Gi")
+                        .withSize("256Mi")
                     .endPersistentClaimStorageVolume()
                 .endJbodStorage()
             .endSpec();
@@ -150,7 +158,7 @@ public class KafkaSetup {
      * Creates the default {@link KafkaNodePoolBuilder} for Kafka controllers with the specified configuration.
      *
      * <p>The node pool is configured with the given namespace, cluster name, number of replicas,
-     * controller role, and JBOD persistent storage of 1Gi per controller with claim deletion enabled.
+     * controller role, and JBOD persistent storage of 256Mi per controller with claim deletion enabled.
      *
      * @param namespaceName the Kubernetes namespace for the KafkaNodePool resource
      * @param clusterName the name of the Kafka cluster
@@ -172,7 +180,7 @@ public class KafkaSetup {
                     .addNewPersistentClaimStorageVolume()
                         .withId(0)
                         .withDeleteClaim(true)
-                        .withSize("1Gi")
+                        .withSize("256Mi")
                     .endPersistentClaimStorageVolume()
                 .endJbodStorage()
             .endSpec();

@@ -45,12 +45,14 @@ public class YamlConfig extends InstallConfig {
             SetupUtils.fixClusterRoleBindingNamespace(resource, this.deploymentNamespace);
             if (resource instanceof Deployment deployment) {
                 deployment.getMetadata().setName(deploymentName);
+                LOGGER.debug("Renamed Console Operator Deployment resource to '{}'", deploymentName);
             }
 
         });
 
         // Remove service monitor on non-openshift clusters if it does not have the CRDs
         if (!ServiceMonitorType.isAvailable() && !ClusterUtils.isOcp()) {
+            LOGGER.info("ServiceMonitor CRD not available on non-OpenShift cluster, removing ServiceMonitor resources from Console Operator bundle");
             allResources = allResources.stream()
                 .filter(resource -> !(resource instanceof ServiceMonitor))
                 .toList();
@@ -59,11 +61,13 @@ public class YamlConfig extends InstallConfig {
 
     @Override
     public void install() {
+        LOGGER.info("Applying {} Console Operator resources in namespace '{}'", allResources.size(), deploymentNamespace);
         allResources.forEach(r -> KubeResourceManager.get().createOrUpdateResourceWithWait(r));
     }
 
     @Override
     public void delete() {
         // ResourceManager handles this step and clears operator once the test leaves the scope of installation
+        LOGGER.debug("YAML install delete is a no-op; KubeResourceManager clears operator resources when test scope ends");
     }
 }

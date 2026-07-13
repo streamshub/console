@@ -18,10 +18,6 @@ public class PwPageUrls {
         return getConsoleUrl(tcc) + "/kafka/" + kafkaName;
     }
 
-    public static String getKafkaLoginPage(TestCaseConfig tcc, String kafkaName) {
-        return getKafkaBaseUrl(tcc, kafkaName) + "/login";
-    }
-
     public static String getOverviewPage(TestCaseConfig tcc, String kafkaName) {
         return getKafkaBaseUrl(tcc, kafkaName) + "/overview";
     }
@@ -54,23 +50,16 @@ public class PwPageUrls {
         return getKafkaBaseUrl(tcc, kafkaName) + "/groups";
     }
 
-    public static String getGroupsResetOffsetPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
-        return getGroupsPage(tcc, kafkaName) + "/" + consumerGroupName + "/reset-offset";
-    }
-
-    /** This name might be unintuitive, but connector page is linked as Kafka Connect in the sidebar.
-    /* From this page you can get to the list of connect clusters by switching tab or using {@code getKafkaConnectPage()}
-    **/
-    public static String getKafkaConnectorPage(TestCaseConfig tcc, String kafkaName) {
-        return getKafkaBaseUrl(tcc, kafkaName) + "/kafka-connect";
+    public static String getKafkaConnectPage(TestCaseConfig tcc, String kafkaName) {
+        return getKafkaBaseUrl(tcc, kafkaName) + "/connect";
     }
 
     public static String getKafkaConnectClusterPage(TestCaseConfig tcc, String kafkaName) {
-        return getKafkaConnectorPage(tcc, kafkaName) + "/connect-clusters";
+        return getKafkaConnectPage(tcc, kafkaName) + "/clusters";
     }
 
     public static String getKafkaConnectClusterPage(TestCaseConfig tcc, String kafkaName, String namespace, String connectName) {
-        return getKafkaConnectorPage(tcc, kafkaName) + "/connect-clusters/" +
+        return getKafkaConnectClusterPage(tcc, kafkaName) + "/" +
             Base64.getEncoder().encodeToString(namespace.getBytes(StandardCharsets.UTF_8)) +
             "/" +
             Base64.getEncoder().encodeToString(connectName.getBytes(StandardCharsets.UTF_8));
@@ -80,12 +69,8 @@ public class PwPageUrls {
         return getNodesPage(tcc, kafkaName) + "/rebalances";
     }
 
-    public static String getKafkaUsersPage(TestCaseConfig tcc, String kafkaName) {
-        return getKafkaBaseUrl(tcc, kafkaName) + "/kafka-users";
-    }
-
     public static String getSingleKafkaUserPage(TestCaseConfig tcc, String kafkaName, String namespace, String kafkaUser) {
-        return getKafkaBaseUrl(tcc, kafkaName) + "/kafka-users/" +
+        return getKafkaBaseUrl(tcc, kafkaName) + "/users/" +
             Base64.getEncoder().encodeToString(namespace.getBytes(StandardCharsets.UTF_8)) +
             "," +
             Base64.getEncoder().encodeToString(kafkaUser.getBytes(StandardCharsets.UTF_8));

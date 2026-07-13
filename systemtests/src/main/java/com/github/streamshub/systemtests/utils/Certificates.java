@@ -102,7 +102,7 @@ public class Certificates {
             return out.toString(StandardCharsets.UTF_8).trim();
 
         } catch (Exception e) {
-            LOGGER.info("Failed to retrieve certificate from {}:{} — {}", host, port, e.getMessage());
+            LOGGER.warn("Failed to retrieve certificate from {}:{}: {}", host, port, e.getMessage());
             return null;
         }
     }
@@ -115,6 +115,7 @@ public class Certificates {
      * @return a KeyPair and X509Certificate pair
      */
     public static Map.Entry<KeyPair, X509Certificate> generateSelfSignedCertificate(String hostname, String organization) throws Exception {
+        LOGGER.debug("Generating self-signed RSA-4096 certificate for hostname '{}', organization '{}'", hostname, organization);
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(4096, new SecureRandom());
         KeyPair keyPair = keyGen.generateKeyPair();
@@ -177,6 +178,7 @@ public class Certificates {
                 trustStore.load(fis, password.toCharArray());
             }
         } else {
+            LOGGER.debug("Truststore '{}' does not exist yet, creating a new one", trustStorePath);
             trustStore.load(null, password.toCharArray());
             Files.createDirectories(trustStorePath.getParent());
         }

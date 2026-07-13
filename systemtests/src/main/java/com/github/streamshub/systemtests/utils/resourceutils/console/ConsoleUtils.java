@@ -32,8 +32,10 @@ public class ConsoleUtils {
 
     public static void removeConsoleInstancesFinalizers(String namespace) {
         List<Console> consoleInstances = ResourceUtils.getKubeResourceClient(Console.class).inNamespace(namespace).list().getItems();
+        LOGGER.info("Removing finalizers from {} Console instance(s) in namespace {}", consoleInstances.size(), namespace);
 
         for (Console instance: consoleInstances) {
+            LOGGER.debug("Removing finalizers from Console instance {}", instance.getMetadata().getName());
             instance.getMetadata().setFinalizers(null);
             KubeResourceManager.get().createOrUpdateResourceWithWait(instance);
         }
@@ -44,7 +46,7 @@ public class ConsoleUtils {
             return;
         }
 
-        LOGGER.info("Edit console ingress, annotate for bigger buffer");
+        LOGGER.info("Patching Console ingress {} in namespace {} with bigger nginx buffer annotations", consoleInstance + "-" + ConsoleIngress.NAME, namespace);
         WaitUtils.waitForIngressToBePresent(namespace, consoleInstance + "-" + ConsoleIngress.NAME);
         Ingress consoleIngress = ResourceUtils.getKubeResource(Ingress.class, namespace, consoleInstance + "-" + ConsoleIngress.NAME);
         // Add nginx ingress annotation to increase buffer

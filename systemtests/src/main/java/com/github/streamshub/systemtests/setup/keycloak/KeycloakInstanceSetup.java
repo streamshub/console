@@ -15,6 +15,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakAp
 import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.skodjob.kubetest4j.KubeTestEnv;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.vertx.core.json.JsonObject;
@@ -76,10 +77,12 @@ public class KeycloakInstanceSetup {
 
         InputStream tempYaml = null;
         try {
+            LOGGER.debug("Loading postgres resources from '{}'", POSTGRES_RESOURCES);
             tempYaml = FileUtils.loadYamlsFromPath(Path.of(POSTGRES_RESOURCES));
             postgresResources = ResourceOrder.sort(KubeResourceManager.get().kubeClient().getClient().load(tempYaml).items());
 
             // Keycloak does not have CRDs API so we are forced to modify CRD custom fields
+            LOGGER.debug("Loading Keycloak instance template from '{}' for hostname '{}'", KEYCLOAK_INSTANCE_FILE_PATH, httpsHostname());
             tempYaml = new ByteArrayInputStream(FileUtils.readFile(KEYCLOAK_INSTANCE_FILE_PATH)
                     .replace("${NAME}", keycloakName)
                     .replace("${HOSTNAME}", httpsHostname())
@@ -117,6 +120,16 @@ public class KeycloakInstanceSetup {
      */
     public void setup() {
         LOGGER.info("----------- Install Keycloak Instance -----------");
+        if (ResourceUtils.getKubeResource(Deployment.class, namespace, Constants.POSTGRES) != null &&
+            ResourceUtils.getKubeResource(Secret.class, namespace, keycloakSecretName) != null) {
+
+            LOGGER.info("Keycloak instance '{}' already deployed in namespace '{}', reusing existing admin credentials", keycloakName, namespace);
+            Secret adminSecret = ResourceUtils.getKubeResource(Secret.class, namespace, keycloakSecretName);
+            userName = new String(Base64.getDecoder().decode(adminSecret.getData().get("username")), StandardCharsets.UTF_8);
+            userPassword = new String(Base64.getDecoder().decode(adminSecret.getData().get("password")), StandardCharsets.UTF_8);
+            return;
+        }
+
         KeycloakUtils.createTlsSecret(namespace, keycloakTlsSecretName, httpHostname());
 
         // Deploy postgres
@@ -127,10 +140,12 @@ public class KeycloakInstanceSetup {
             namespace, Constants.KEYCLOAK + "-" + Constants.POSTGRES + "-allow", Labels.getPostgresLabelSelector());
 
         // Deploy keycloak instance
-        LOGGER.info("Deploying Keycloak instance into namespace {}", namespace);
+        LOGGER.info("Deploying Keycloak instance '{}' into namespace '{}' with hostname '{}'", keycloakName, namespace, httpsHostname());
         KubeResourceManager.get().createOrUpdateResourceWithWait(keycloakInstance);
 
+        LOGGER.info("Waiting for Keycloak StatefulSet '{}' to become ready", keycloakName);
         WaitUtils.waitForStatefulSetReady(namespace, keycloakName);
+        LOGGER.debug("Waiting for Keycloak admin secret '{}' to be populated", keycloakSecretName);
         WaitUtils.waitForSecretReady(namespace, keycloakSecretName);
 
         KeycloakUtils.allowNetworkPolicyAllIngressForMatchingLabel(
@@ -139,17 +154,20 @@ public class KeycloakInstanceSetup {
         KeycloakUtils.patchIngressTls(namespace, httpHostname(), keycloakIngressName, keycloakTlsSecretName);
 
         // After keycloak instance is present
-        LOGGER.info("Reading Keycloak admin secret '{}'", keycloakSecretName);
+        LOGGER.debug("Reading Keycloak admin secret '{}'", keycloakSecretName);
         Secret adminSecret = ResourceUtils.getKubeResource(Secret.class, namespace, keycloakSecretName);
 
         userName = new String(Base64.getDecoder().decode(adminSecret.getData().get("username")), StandardCharsets.UTF_8);
         userPassword = new String(Base64.getDecoder().decode(adminSecret.getData().get("password")), StandardCharsets.UTF_8);
+        LOGGER.debug("Retrieved Keycloak admin username '{}' from secret '{}'", userName, keycloakSecretName);
 
         LOGGER.info("Preparing truststore for HTTPS communication with Keycloak");
         KeycloakUtils.importCertificatesIntoTruststore(httpHostname(), trustStorePassword);
 
         KeycloakUtils.createTrustStorePasswordAndConfigmap(namespace, trustStoreSecretName, trustStoreConfigMap,
             Map.of(Constants.PASSWORD_KEY_NAME, Base64.getEncoder().encodeToString(trustStorePassword.getBytes())));
+
+        LOGGER.info("Installation of Keycloak instance '{}' completed", keycloakName);
     }
 
     /**
@@ -167,16 +185,21 @@ public class KeycloakInstanceSetup {
      */
     public void importConsoleRealm(String consoleUiUrl, boolean deleteRealmBefore, List<KeycloakTestConfig.GroupRoleMapping> roleMapping, List<KeycloakTestConfig.User> userMapping) {
         if (deleteRealmBefore && KeycloakApiUtils.realmExists(httpsHostname(), userName, userPassword, realmName)) {
-            LOGGER.info("Realm {} already exists, deleting before reimport", realmName);
+            LOGGER.info("Realm '{}' already exists, deleting before reimport", realmName);
             KeycloakApiUtils.deleteRealm(httpsHostname(), userName, userPassword, realmName);
             WaitUtils.waitForKeycloakRealmDeleted(httpsHostname(), userName, userPassword, realmName);
+            LOGGER.debug("Realm '{}' successfully deleted", realmName);
         }
+
+        LOGGER.info("Importing realm '{}' with client '{}', {} role mapping(s) and {} user(s)", realmName, clientId, roleMapping.size(), userMapping.size());
         JsonObject realmJson = KeycloakUtils.loadRealmTemplate(consoleUiUrl, DEFAULT_REALM_TEMPLATE_PATH, realmName, clientId, roleMapping, userMapping);
         KeycloakApiUtils.importRealm(httpsHostname(), userName, userPassword, realmJson.encode());
         WaitUtils.waitForKeycloakRealmReady(httpsHostname(), userName, userPassword, realmName);
+        LOGGER.info("Realm '{}' is ready", realmName);
 
         // Once realm is ready, client can get it's ID assigned
         clientSecret = KeycloakApiUtils.getClientSecret(httpsHostname(), userName, userPassword, realmName, clientId);
+        LOGGER.debug("Retrieved client secret for client '{}' in realm '{}'", clientId, realmName);
     }
 
     public String httpHostname() {

@@ -25,12 +25,15 @@ public class NamespaceUtils {
      */
     public static void prepareNamespace(String namespaceName) {
         if (ResourceUtils.getKubeResource(Namespace.class, namespaceName) == null) {
+            LOGGER.info("Creating Namespace: {}", namespaceName);
             KubeResourceManager.get().createResourceWithWait(
                 new NamespaceBuilder()
                     .withNewMetadata()
                         .withName(namespaceName)
                     .endMetadata()
                 .build());
+        } else {
+            LOGGER.debug("Namespace: {} already exists", namespaceName);
         }
 
         copyTestClientsImagePullSecret(namespaceName);
@@ -43,7 +46,7 @@ public class NamespaceUtils {
      */
     public static void copyTestClientsImagePullSecret(String namespace) {
         if (Environment.isTestClientsPullSecretPresent()) {
-            LOGGER.info("Checking if Secret: {} is in the default Namespace", Environment.TEST_CLIENTS_PULL_SECRET);
+            LOGGER.debug("Checking whether pull Secret: {} exists in the default Namespace", Environment.TEST_CLIENTS_PULL_SECRET);
             if (ResourceUtils.getKubeResource(Secret.class, "default", Environment.TEST_CLIENTS_PULL_SECRET) == null) {
                 throw new SetupException(Environment.TEST_CLIENTS_PULL_SECRET + " secret is not in the default Namespace!");
             }
@@ -52,7 +55,7 @@ public class NamespaceUtils {
             Secret pullSecretToCopy = ResourceUtils.getKubeResource(Secret.class, "default", Environment.TEST_CLIENTS_PULL_SECRET);
 
             if (ResourceUtils.getKubeResource(Secret.class, namespace, Environment.TEST_CLIENTS_PULL_SECRET) != null) {
-                LOGGER.warn("Pull secret {} is already present in namespace {}", Environment.TEST_CLIENTS_PULL_SECRET, namespace);
+                LOGGER.debug("Pull Secret {} is already present in Namespace {}, skipping copy", Environment.TEST_CLIENTS_PULL_SECRET, namespace);
                 return;
             }
 

@@ -36,6 +36,7 @@ public class PrometheusInstanceSetup {
 
         try {
             Path directory = Paths.get(PROMETHEUS_INSTANCE_EXAMPLES);
+            LOGGER.debug("Scanning Prometheus instance example YAMLs in '{}'", directory);
             try (Stream<Path> paths = Files.list(directory)) {
                 paths.filter(Files::isRegularFile)
                      .filter(path -> path.toString().endsWith(".yaml") || path.toString().endsWith(".yml"))
@@ -57,11 +58,12 @@ public class PrometheusInstanceSetup {
         }
 
         allResources = ResourceOrder.sort(allResources);
-        LOGGER.info("Loaded {} resources from Prometheus operator YAML", allResources.size());
+        LOGGER.info("Loaded {} resources from Prometheus instance example YAMLs", allResources.size());
         preparePrometheusCrs();
     }
 
     private void preparePrometheusCrs() {
+        LOGGER.debug("Setting namespace '{}' on {} Prometheus instance resources", deploymentNamespace, allResources.size());
         allResources.forEach(resource -> {
             SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);
             SetupUtils.fixClusterRoleBindingNamespace(resource, deploymentNamespace);
@@ -69,9 +71,12 @@ public class PrometheusInstanceSetup {
     }
 
     public void setup() {
+        LOGGER.info("Deploying Prometheus instance '{}' in namespace '{}'", deploymentName, deploymentNamespace);
         allResources.forEach(resource -> KubeResourceManager.get().createOrUpdateResourceWithoutWait(resource));
         // Additional check that Prometheus pod is running
+        LOGGER.debug("Waiting for Prometheus instance pod to become ready and stable in namespace '{}'", deploymentNamespace);
         WaitUtils.waitForPodsReadyAndStable(deploymentNamespace, Labels.getPrometheusInstanceLabel(deploymentName), 1, true);
+        LOGGER.info("Prometheus instance '{}' is ready in namespace '{}'", deploymentName, deploymentNamespace);
     }
 
     public String getName() {

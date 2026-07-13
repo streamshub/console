@@ -185,7 +185,7 @@ jobs:
           path: |
             systemtests/target/**/TEST-*.xml
             systemtests/target/logs/**
-            systemtests/screenshot/**
+            systemtests/screenshots/**
             systemtests/tracing/**
 
   aggregate-results:

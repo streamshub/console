@@ -51,6 +51,7 @@ public class PwUtils {
     public static Browser createBrowser(Playwright playwright) {
         BrowserType.LaunchOptions options = new BrowserType.LaunchOptions().setHeadless(Environment.RUN_HEADLESS);
         BrowserTypes browserType = BrowserTypes.valueOf(Environment.BROWSER_TYPE.toUpperCase(Locale.ENGLISH));
+        LOGGER.info("Creating '{}' browser instance, headless={}", browserType, Environment.RUN_HEADLESS);
 
         return switch (browserType) {
             case CHROMIUM -> playwright.chromium().launch(options);
@@ -64,22 +65,19 @@ public class PwUtils {
     /**
      * Performs login to the Console UI for the specified test case configuration.
      *
-     * <p>Navigates to the Kafka login page, waits for UI readiness, logs in,
-     * and waits until redirected to the overview page.
+     * <p>In the new UI, there is no dedicated login page. This method navigates directly to the
+     * overview page. If authentication is required, the UI will show a login modal automatically
+     * on 401 responses.
      *
      * @param tcc the test case configuration containing page and Kafka cluster information
+     * @param kafkaName the name of the Kafka cluster to access
      */
     public static void login(TestCaseConfig tcc, String kafkaName) {
-        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, kafkaName);
-        LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
-        waitForConsoleUiAnonymousLoginToBecomeReady(tcc);
-        // Anonymous login
-        navigate(tcc, loginUrl);
-        waitForUrl(tcc, loginUrl, false);
-        // Go to login
-        waitForLocatorAndClick(tcc, CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
-        waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName), true);
-        LOGGER.info("Successfully logged into Console");
+        LOGGER.info("Logging in to Console overview page for Kafka cluster '{}'", kafkaName);
+        // Navigate directly to overview page and wait for it to load
+        navigate(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName), true, false);
+        LOGGER.info("Successfully accessed Console overview page");
+        screenshot(tcc, kafkaName, "login-success");
     }
 
     public static void login(TestCaseConfig tcc) {
@@ -115,6 +113,7 @@ public class PwUtils {
     public static void waitForLocatorVisible(Locator locator, long timeout) {
         LOGGER.debug("Waiting for locator to be visible without reloading [{}]", locator);
         locator.waitFor(new Locator.WaitForOptions().setTimeout(timeout).setState(WaitForSelectorState.VISIBLE));
+        Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_VERY_SHORT);
     }
 
     // --------------------------
@@ -137,10 +136,15 @@ public class PwUtils {
 
     public static boolean click(Locator locator) {
         LOGGER.debug("Clicking on locator [{}]", locator);
-        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        locator.click(new Locator.ClickOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
-        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        return true;
+        try {
+            locator.click(new Locator.ClickOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
+            Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_VERY_SHORT);
+            screenshot(locator.page(), "click-success");
+            return true;
+        } catch (RuntimeException e) {
+            screenshot(locator.page(), "click-failed");
+            throw e;
+        }
     }
 
     // --------------------------
@@ -159,27 +163,35 @@ public class PwUtils {
         Utils.retryAction("fill locator", () -> fill(locator, text), Constants.DEFAULT_ACTION_RETRIES);
     }
 
+    public static boolean fill(TestCaseConfig tcc, String selector, String text) {
+        return fill(tcc.page().locator(selector), text);
+    }
     public static boolean fill(Locator locator, String text) {
-        LOGGER.debug("Fill locator [{}] with text [{}]", locator, text);
-        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        locator.fill(text, new Locator.FillOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
-        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        return true;
+        LOGGER.debug("Filling locator [{}] with text [{}]", locator, text);
+        try {
+            locator.fill(text, new Locator.FillOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
+            Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT);
+            screenshot(locator.page(), "fill-success");
+            return true;
+        } catch (RuntimeException e) {
+            screenshot(locator.page(), "fill-failed");
+            throw e;
+        }
     }
 
     // --------------------------
     // Wait for text
     // --------------------------
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload) {
-        waitForContainsText(tcc, selector, text, reload, true, TimeConstants.COMPONENT_LOAD_TIMEOUT, Constants.SELECTOR_RETRIES);
+        waitForContainsText(tcc, selector, text, reload, true, TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT, Constants.DEFAULT_ACTION_RETRIES);
     }
 
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload, boolean exactCase) {
-        waitForContainsText(tcc, selector, text, reload, exactCase, TimeConstants.COMPONENT_LOAD_TIMEOUT, Constants.SELECTOR_RETRIES);
+        waitForContainsText(tcc, selector, text, reload, exactCase, TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT, Constants.DEFAULT_ACTION_RETRIES);
     }
 
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, long waitTime) {
-        waitForContainsText(tcc, selector, text, true, true, waitTime, Constants.SELECTOR_RETRIES);
+        waitForContainsText(tcc, selector, text, true, true, waitTime, Constants.DEFAULT_ACTION_RETRIES);
     }
 
     /**
@@ -203,10 +215,12 @@ public class PwUtils {
         Utils.retryAction("waitForContainsText: " + text,
             () -> {
                 if (locatorContainsText(tcc.page().locator(selector), text, exactCase)) {
+                    screenshot(tcc, tcc.kafkaName(), "wait-text-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator did not contain text [{}]", text);
+                screenshot(tcc, tcc.kafkaName(), "wait-text-retry");
 
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
@@ -236,7 +250,7 @@ public class PwUtils {
     public static boolean locatorContainsText(Locator locator, String expectedText, boolean exactCase) {
         // Text might be either inner or a content text
         String allInnerTexts = locator.allInnerTexts().toString();
-        String innerText = getTrimmedText(allInnerTexts.isEmpty() || allInnerTexts.equals("[null]") ?
+        String innerText = getTrimmedText(allInnerTexts.isEmpty() || allInnerTexts.contains("null") ?
             locator.allTextContents().toString() : allInnerTexts);
 
         LOGGER.debug("Checking locator text [{}], expected [{}], exact case - {}", innerText, expectedText, exactCase);
@@ -294,10 +308,12 @@ public class PwUtils {
                 waitForLocatorVisible(tcc, selector);
 
                 if (attributeContainsText(tcc.page().locator(selector), attribute, text, exactCase)) {
+                    screenshot(tcc, tcc.kafkaName(), "wait-attribute-success");
                     return true;
                 }
 
-                LOGGER.warn("Locator atribute did not contain text [{}]", text);
+                LOGGER.warn("Locator attribute did not contain text [{}]", text);
+                screenshot(tcc, tcc.kafkaName(), "wait-attribute-retry");
 
                 if (reload) {
                     reload(tcc);
@@ -367,17 +383,19 @@ public class PwUtils {
                 int locatorCount = tcc.page().locator(selector).all().size();
                 if (locatorCount == count) {
                     LOGGER.debug("Locator has correct item count {}", count);
+                    screenshot(tcc, tcc.kafkaName(), "wait-count-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator has incorrect item count {}, need {}", locatorCount, count);
+                screenshot(tcc, tcc.kafkaName(), "wait-count-retry");
 
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
                 }
 
                 return false;
-            }
+            }, Constants.DEFAULT_ACTION_RETRIES, TimeConstants.ACTION_WAIT_SHORT
         );
     }
 
@@ -398,50 +416,22 @@ public class PwUtils {
      * @param reload          if {@code true}, the page is reloaded between retry attempts
      */
     public static void waitForElementEnabledState(TestCaseConfig tcc, String selector, boolean shouldBeEnabled, boolean reload) {
+        LOGGER.debug("Waiting for locator [{}] to reach enabled state [{}]", selector, shouldBeEnabled);
         Utils.retryAction("waitForElementEnabledState enabled=" + shouldBeEnabled,
             () -> {
                 Locator locator = tcc.page().locator(selector);
 
                 if (locator.isEnabled() == shouldBeEnabled) {
                     LOGGER.debug("Locator has correct state enabled={}", locator.isEnabled());
+                    screenshot(tcc, tcc.kafkaName(), "wait-enabled-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled);
+                screenshot(tcc, tcc.kafkaName(), "wait-enabled-retry");
 
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
-                }
-
-                return false;
-            }
-        );
-    }
-
-    /**
-     * Waits for the Console UI to become ready by repeatedly checking the login page availability.
-     * It navigates to the Kafka login page and verifies if the application is up and login elements are visible.
-     *
-     * @param tcc the {@link TestCaseConfig} containing the Playwright page instance used to perform the checks
-     */
-    public static void waitForConsoleUiAnonymousLoginToBecomeReady(TestCaseConfig tcc) {
-        LOGGER.info("============= Waiting for Console Website to be online =============");
-        Utils.retryAction("waitForConsoleUiAnonymousLoginToBecomeReady",
-            () -> {
-                LOGGER.debug("Try to reach out to the console web");
-
-                // First test if application is fully running
-                navigate(tcc, PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName()));
-                Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-                if (tcc.page().locator("body").innerText().contains("Application is not available")) {
-                    LOGGER.info("Application is not available yet");
-                    return false;
-                }
-
-                // Second test if login page is able to display a login button
-                if (tcc.page().locator(CssSelectors.LOGIN_ANONYMOUSLY_BUTTON).isVisible()) {
-                    LOGGER.info("Console website is ready");
-                    return true;
                 }
 
                 return false;
@@ -455,18 +445,19 @@ public class PwUtils {
             () -> {
                 LOGGER.debug("Console website reach-out try");
 
-                // First test if application is fully running
-                navigate(tcc, PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName()));
-                Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+                // Navigate to base Kafka URL - will trigger Keycloak redirect if needed
+                navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, tcc.kafkaName()));
 
                 if (tcc.page().locator("body").innerText().contains("Error")) {
-                    LOGGER.info("Console website contains Error display");
+                    LOGGER.warn("Console website displayed an Error, retrying...");
+                    screenshot(tcc, tcc.kafkaName(), "keycloak-error");
                     return false;
                 }
 
-                // Second test if login page is able to display a login button
+                // Check if Keycloak login page is displayed
                 if (tcc.page().locator(CssSelectors.LOGIN_KEYCLOAK_PAGE_TITLE).isVisible()) {
                     LOGGER.info("Console website is ready");
+                    screenshot(tcc, tcc.kafkaName(), "keycloak-ready");
                     return true;
                 }
 
@@ -530,7 +521,7 @@ public class PwUtils {
      * @param additionalSuffix optional suffix appended to the screenshot filename
      */
     public static void screenshot(TestCaseConfig tcc, String kafkaName, String additionalSuffix) {
-        // e.g. screenshots/testFilterTopics/topicst-33aaa/topics/screenshotname-2025-04-21__18-05-33.png
+        // e.g. screenshots/testFilterTopics/topicst-33aaa/topics/screenshotname-2025-04-21__18-05-33-123.png
         String pageUrl = tcc.page().url().replace(PwPageUrls.getKafkaBaseUrl(tcc, kafkaName), "");
 
         String screenshotName = java.lang.String.join("/",
@@ -540,12 +531,32 @@ public class PwUtils {
             pageUrl.contains("?") ? pageUrl.split("\\?")[0] : pageUrl,
             additionalSuffix +
             (additionalSuffix.isEmpty() ? "" : "-") +
-            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss")) +
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss-SSS")) +
             ".png")
             .replaceAll("//+", "/");
 
         LOGGER.debug("Taking a screenshot: {}", screenshotName);
         tcc.page().screenshot(new Page.ScreenshotOptions().setPath(Path.of(Environment.SCREENSHOTS_DIR_PATH, screenshotName)));
+    }
+
+    /**
+     * Takes a screenshot from a bare {@link Page} reference (e.g. from a {@link Locator} that has no
+     * accompanying {@link TestCaseConfig}), stored under the system test screenshots directory.
+     *
+     * @param page             the Playwright page instance to screenshot
+     * @param additionalSuffix suffix appended to the screenshot filename
+     */
+    public static void screenshot(Page page, String additionalSuffix) {
+        String screenshotName = java.lang.String.join("/",
+            KubeResourceManager.get().getTestContext().getDisplayName().replace("()", ""),
+            additionalSuffix +
+            (additionalSuffix.isEmpty() ? "" : "-") +
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss-SSS")) +
+            ".png")
+            .replaceAll("//+", "/");
+
+        LOGGER.debug("Taking a screenshot: {}", screenshotName);
+        page.screenshot(new Page.ScreenshotOptions().setPath(Path.of(Environment.SCREENSHOTS_DIR_PATH, screenshotName)));
     }
 
     /**
@@ -574,9 +585,8 @@ public class PwUtils {
      * @param tcc the {@link TestCaseConfig} containing the page instance to remove focus
      */
     public static void removeFocus(TestCaseConfig tcc) {
-        LOGGER.info("Remove focus by moving mouse to X,Y = [0;0]");
+        LOGGER.debug("Removing focus by moving mouse to X,Y = [0;0]");
         tcc.page().mouse().move(0, 0);
-
     }
 
     /**
@@ -585,7 +595,7 @@ public class PwUtils {
      * <p>This method performs the following steps:</p>
      * <ul>
      *   <li>Waits for the Console UI to become ready when integrated with Keycloak.</li>
-     *   <li>Navigates to the Kafka login page.</li>
+     *   <li>Navigates to the Kafka base URL (which triggers Keycloak redirect).</li>
      *   <li>Fills in the Keycloak username and password fields and submits the login form.</li>
      *   <li>Waits for the Console overview page to load after successful login.</li>
      * </ul>
@@ -595,17 +605,18 @@ public class PwUtils {
      * @param password the OIDC password to log in with
      */
     public static void loginWithOidcUser(TestCaseConfig tcc, String username, String password) {
-        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
-        LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
+        final String baseUrl = PwPageUrls.getConsoleUrl(tcc);
+        LOGGER.info("Logging in to the Console with URL: {}", baseUrl);
         waitForConsoleUiWithKeycloakToBecomeReady(tcc);
-        navigate(tcc, loginUrl);
+        navigate(tcc, baseUrl);
         // Login with user
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_USERNAME_INPUT, username);
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.LOGIN_KEYCLOAK_SIGN_IN_BUTTON);
-        // Go to overview page
-        waitForUrl(tcc, ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true), true);
+        // Wait for redirect to overview page
+        waitForUrl(tcc, baseUrl, true);
         LOGGER.info("Successfully logged into Console");
+        screenshot(tcc, tcc.kafkaName(), "login-oidc-success");
     }
 
     /**
@@ -620,6 +631,7 @@ public class PwUtils {
      * @param https whether to use HTTPS for constructing the console URL
      */
     public static void logoutUser(TestCaseConfig tcc, String userName, boolean https) {
+        LOGGER.info("Logging out user '{}'", userName);
         Utils.retryAction("Log-out user " + userName, () -> {
             String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), https) + "/";
 
@@ -636,9 +648,12 @@ public class PwUtils {
             if (tcc.page().url().equals(dashboardUrl) ||
                 tcc.page().locator(KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON).allInnerTexts().contains(userName)) {
                 LOGGER.warn("User '{}' has not been logged out", userName);
+                screenshot(tcc, tcc.kafkaName(), "logout-retry");
                 return false;
             }
 
+            LOGGER.info("Successfully logged out user '{}'", userName);
+            screenshot(tcc, tcc.kafkaName(), "logout-success");
             return true;
         }, Constants.LOGOUT_RETRIES);
     }
@@ -650,8 +665,8 @@ public class PwUtils {
      * <ul>
      *   <li>Waits for the Kubernetes Secret containing the Kafka user's password to be ready.</li>
      *   <li>Decodes the password from the Secret.</li>
-     *   <li>Navigates to the Kafka login page.</li>
-     *   <li>Fills in the username and password fields and submits the login form.</li>
+     *   <li>Navigates to the Kafka base URL (will show login modal if auth required).</li>
+     *   <li>Fills in the username and password fields in the modal and submits the login form.</li>
      *   <li>Waits for the overview page to be loaded after successful login.</li>
      * </ul>
      *
@@ -660,19 +675,26 @@ public class PwUtils {
      * @param kafkaUser the Kafka username to log in with
      */
     public static void loginWithKafkaCredentials(TestCaseConfig tcc, String namespace, String kafkaUser) {
-        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
-        LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
+        final String baseUrl = PwPageUrls.getKafkaBaseUrl(tcc, tcc.kafkaName());
+        LOGGER.info("Logging in to the Console with URL: {}", baseUrl);
+
         WaitUtils.waitForSecretReady(namespace, kafkaUser);
         String password = Utils.decodeFromBase64(ResourceUtils.getKubeResource(Secret.class, namespace, kafkaUser).getData().get("password"));
+        LOGGER.debug("Logging in with Kafka user '{}'", kafkaUser);
 
-        tcc.page().navigate(loginUrl);
+        tcc.page().navigate(baseUrl);
 
-        // Login with user
+        // Login with user in the modal (note: these selectors might need updating for modal-based login)
         waitForLocatorAndFill(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_NAME_INPUT, kafkaUser);
         waitForLocatorAndFill(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON);
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        // TODO: remove once fixed
+        PwUtils.reload(tcc);
         // Wait for overview page
         waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), true);
+        LOGGER.info("Successfully logged into Console with Kafka credentials");
+        screenshot(tcc, tcc.kafkaName(), "login-kafka-creds-success");
     }
 
     public static void navigate(TestCaseConfig tcc, String url) {
@@ -698,9 +720,11 @@ public class PwUtils {
             () -> {
                 try {
                     tcc.page().navigate(url, getDefaultNavigateOpts(TimeConstants.ELEMENT_VISIBILITY_TIMEOUT));
+                    screenshot(tcc, tcc.kafkaName(), "navigate-success");
                     return true;
                 } catch (TimeoutError e) {
                     LOGGER.warn("Navigation to '{}' timed out, retrying...", url);
+                    screenshot(tcc, tcc.kafkaName(), "navigate-timeout-retry");
                     // Force reload to reset broken HTTP/2 connection state
                     Utils.sleepWait(TimeConstants.ACTION_WAIT_SHORT);
                     tcc.page().reload();
@@ -726,6 +750,7 @@ public class PwUtils {
     public static void reload(TestCaseConfig tcc) {
         LOGGER.info("Reloading page with current url '{}'", tcc.page().url());
         tcc.page().reload(getDefaultReloadOpts());
+        screenshot(tcc, tcc.kafkaName(), "reload");
     }
 
     /**

@@ -7,6 +7,7 @@ public enum TopicStatus {
     UNKNOWN("Unknown", 4),
     OFFLINE("Offline", 5);
 
+
     private final String name;
     private final int position;
 

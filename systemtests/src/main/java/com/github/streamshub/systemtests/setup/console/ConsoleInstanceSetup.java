@@ -32,15 +32,19 @@ public class ConsoleInstanceSetup {
 
     public static void setupIfNeeded(Console console) {
         LOGGER.info("----------- Deploy Console Instance -----------");
-        if (ResourceUtils.getKubeResource(Console.class, console.getMetadata().getNamespace(), console.getMetadata().getName()) != null) {
-            LOGGER.warn("Skipping Console Instance deployment. It is already deployed");
+        String namespace = console.getMetadata().getNamespace();
+        String name = console.getMetadata().getName();
+        if (ResourceUtils.getKubeResource(Console.class, namespace, name) != null) {
+            LOGGER.info("Skipping Console Instance '{}' deployment in namespace '{}', it is already deployed", name, namespace);
             return;
         }
+        LOGGER.info("Deploying Console Instance '{}' in namespace '{}'", name, namespace);
         KubeResourceManager.get().createResourceWithWait(console);
         LOGGER.info("Console deployed and available at {}", ConsoleUtils.getConsoleUiUrl(console.getMetadata().getName(), true));
     }
 
     public static ConsoleBuilder getDefaultConsoleInstance(String namespaceName, String instanceName, String kafkaName, String kafkaUserName) {
+        LOGGER.debug("Building default Console instance '{}' in namespace '{}' for Kafka cluster '{}' with user '{}'", instanceName, namespaceName, kafkaName, kafkaUserName);
         ConsoleBuilder builder = new ConsoleBuilder()
             .withMetadata(new ObjectMetaBuilder()
                 .withName(instanceName)
@@ -64,6 +68,7 @@ public class ConsoleInstanceSetup {
                 .build());
 
         if (!Environment.CONSOLE_API_IMAGE.isEmpty()) {
+            LOGGER.info("Using custom Console API image: {}", Environment.CONSOLE_API_IMAGE);
             builder = builder.editSpec()
                 .editOrNewContainers()
                     .editOrNewApi()
@@ -75,24 +80,14 @@ public class ConsoleInstanceSetup {
             .endSpec();
         }
 
-        if (!Environment.CONSOLE_UI_IMAGE.isEmpty()) {
-            builder = builder.editSpec()
-                .editOrNewContainers()
-                    .editOrNewUi()
-                        .editOrNewSpec()
-                            .withImage(Environment.CONSOLE_UI_IMAGE)
-                        .endSpec()
-                    .endUi()
-                .endContainers()
-            .endSpec();
-        }
-
         return builder;
     }
 
     public static ConsoleBuilder getOidcConsoleInstance(String namespace, String consoleInstanceName, KeycloakInstanceSetup keycloak,
         List<KeycloakTestConfig.GroupRoleMapping> roleMapping, List<KeycloakTestConfig.KafkaConfig> kafkaConfig
     ) {
+        LOGGER.debug("Building OIDC Console instance '{}' in namespace '{}' using Keycloak realm '{}' with {} Kafka cluster(s)",
+            consoleInstanceName, namespace, keycloak.realmName(), kafkaConfig.size());
         ConsoleBuilder builder = new ConsoleBuilder()
             .withMetadata(new ObjectMetaBuilder()
                 .withName(consoleInstanceName)
@@ -127,7 +122,7 @@ public class ConsoleInstanceSetup {
                 .endSecurity()
             .endSpec();
 
-        return forceNodeJsToAcceptSelfSignedCerts(builder);
+        return builder;
     }
 
     public static List<KafkaCluster> getOidcKafkaClusters(String namespace, List<KeycloakTestConfig.KafkaConfig> kafkaConfig) {
@@ -166,6 +161,7 @@ public class ConsoleInstanceSetup {
             return builder;
         }
 
+        LOGGER.debug("Cluster is OpenShift, forcing Console UI Node.js container to accept self-signed certificates");
         // Force NextJS to accept self signed certs
         return builder
             .editSpec()

@@ -6,26 +6,24 @@
 CLEANUP_ENVIRONMENT: true
 # This allows re-deployment of console operator if it already exists
 DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL: true
-# Log level used in file output
-TEST_FILE_LOG_LEVEL: DEBUG
 # Log level used in console output
 TEST_CONSOLE_LOG_LEVEL: INFO
-# Path for log output
-TEST_LOG_DIR: target/logs
 # Run Playwright tests in headless mode without browser popping up
 RUN_HEADLESS: true
-# Directory to store screenshots from tests. Relative to systemtests dir ["screenshots"]
-SCREENSHOTS_DIR_PATH: screenshots
+# -------------------------------------------
+# Strimzi
+# -------------------------------------------
 # Skip Strimzi installation if it's installed externally. Otherwise, system tests will install strimzi
 SKIP_STRIMZI_INSTALLATION: false
 # Deployment name of the Strimzi Operator. Need to set this when Strimzi is installed externally
 STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
+# -------------------------------------------
+# Console
+# -------------------------------------------
 # Deployment name of the Console instance
 CONSOLE_DEPLOYMENT_NAME: streamshub-console
 # Install type for Console Operator [OLM; YAML]
 CONSOLE_INSTALL_TYPE: olm
-# Kubernetes client type used to execute cmd [oc, kubectl]
-CLIENT_TYPE: kubectl
 # Cluster domain required for k8s clusters except OpenShift.
 CONSOLE_CLUSTER_DOMAIN: "192.168.49.2.nip.io"
 # -------------------------------------------
@@ -49,20 +47,11 @@ STRIMZI_OPERATOR_VERSION: 1.0.0
 # 2. Local path that is relative to the root project dir
 # 3. Local path that is absolute
 CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.12.4/streamshub-console-operator.yaml
-# Custom Console Operator image. Overrides default image used in bundle yaml
-CONSOLE_OPERATOR_IMAGE:
-# -------------------------------------------
-# Console instance images
-# -------------------------------------------
-# Custom Console API image. Overrides default image installed automatically by Operator
-CONSOLE_API_IMAGE:
-# Custom Console UI image. Overrides default image installed automatically by Operator
-CONSOLE_UI_IMAGE:
 # -------------------------------------------
 # Kroxy
 # -------------------------------------------
 # Kroxy released yaml manifests version
-KROXYLICIOUS_VERSION: 0.20.0
+KROXYLICIOUS_VERSION: 0.21.0
 # -------------------------------------------
 # Apicurio
 # -------------------------------------------

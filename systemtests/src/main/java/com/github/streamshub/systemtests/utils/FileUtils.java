@@ -65,6 +65,7 @@ public class FileUtils {
         try {
             return Files.readString(Paths.get(filePath));
         } catch (IOException e) {
+            LOGGER.error("Failed to read file '{}': {}", filePath, e.getMessage());
             throw new SetupException("Unable to read file", e);
         }
     }
@@ -73,6 +74,7 @@ public class FileUtils {
         try {
             return Files.readAllBytes(Paths.get(filePath));
         } catch (IOException e) {
+            LOGGER.error("Failed to read file '{}': {}", filePath, e.getMessage());
             throw new SetupException("Unable to read file", e);
         }
     }
@@ -90,6 +92,7 @@ public class FileUtils {
                 5000,
                 10000);
         yamlFile.deleteOnExit();
+        LOGGER.debug("Downloaded YAML from {} into temporary file: {}", url, yamlFile.getAbsolutePath());
 
         return new FileInputStream(yamlFile);
     }
@@ -117,6 +120,7 @@ public class FileUtils {
             tempArchive,
             5000,
             30000);
+        LOGGER.debug("Downloaded tar archive to temporary file: {}", tempArchive.getAbsolutePath());
 
         Path extractDir = Files.createTempDirectory(tempFileprefix + "_extracted", getDefaultPosixFilePermissions());
         extractDir.toFile().deleteOnExit();

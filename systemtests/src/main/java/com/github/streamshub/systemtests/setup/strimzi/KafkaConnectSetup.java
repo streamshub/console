@@ -58,14 +58,17 @@ public class KafkaConnectSetup {
      * @param consoleInstanceName the name of the Console instance requiring network access
      */
     public static void setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(String namespace, String connectName, String kafkaName, String kafkaUserName, String consoleInstanceName) {
-        LOGGER.info("Setup test Kafka {}/{}  and it's components", namespace, connectName);
+        LOGGER.info("Setting up Kafka Connect cluster [{}/{}] and its components", namespace, connectName);
         if (ResourceUtils.getKubeResource(KafkaConnect.class, namespace, connectName) == null) {
+            LOGGER.info("Kafka Connect cluster [{}/{}] not found, creating it with {} replica(s), backed by Kafka [{}] and user [{}]",
+                namespace, connectName, Constants.REGULAR_KAFKA_CONNECT_REPLICAS, kafkaName, kafkaUserName);
             KubeResourceManager.get().createResourceWithWait(
                 kafkaDefaultConnectWithFilePlugin(namespace, connectName, kafkaName, kafkaUserName, Constants.REGULAR_KAFKA_CONNECT_REPLICAS)
                 .build());
             KafkaConnectSetup.allowConnectConsoleNetworkPolicy(namespace, consoleInstanceName, connectName);
+            LOGGER.info("Kafka Connect cluster [{}/{}] is ready", namespace, connectName);
         }  else {
-            LOGGER.warn("Skipping Kafka deployment, there already is a Kafka cluster");
+            LOGGER.info("Kafka Connect cluster [{}/{}] already exists, skipping deployment", namespace, connectName);
         }
     }
 
@@ -146,6 +149,7 @@ public class KafkaConnectSetup {
      */
     public static KafkaConnectBuilder addFilePluginOrImage(String namespace, KafkaConnectBuilder kafkaConnectBuilder) {
         if (Environment.CONNECT_IMAGE_WITH_FILE_PLUGIN.isEmpty()) {
+            LOGGER.debug("Building file-plugin artifact from URL [{}]", Environment.ST_FILE_PLUGIN_URL);
             Plugin filePlugin = new PluginBuilder()
                 .withName("file-plugin")
                 .withArtifacts(new JarArtifactBuilder()
@@ -156,7 +160,7 @@ public class KafkaConnectSetup {
             // Sonarcube safe image tag with positive uuid
             String tag = String.valueOf(UUID.randomUUID().hashCode() & 0x7fffffff);
             String imageFullPath = Environment.getConnectImageOutputRegistry(namespace, Constants.CONNECT_BUILD_IMAGE_NAME, tag);
-            LOGGER.info("Kafka connect build image [{}]", imageFullPath);
+            LOGGER.info("Building Kafka Connect image with File plugin, target image [{}]", imageFullPath);
 
             return kafkaConnectBuilder
                 .editOrNewSpec()
@@ -166,7 +170,7 @@ public class KafkaConnectSetup {
                     .endBuild()
                 .endSpec();
         } else {
-            LOGGER.info("Using {} image from {} env variable", Environment.CONNECT_IMAGE_WITH_FILE_PLUGIN, Environment.CONNECT_IMAGE_WITH_FILE_PLUGIN);
+            LOGGER.info("Using prebuilt Kafka Connect image [{}] from CONNECT_IMAGE_WITH_FILE_PLUGIN env variable", Environment.CONNECT_IMAGE_WITH_FILE_PLUGIN);
             return kafkaConnectBuilder
                 .editOrNewSpec()
                     .withImage(Environment.CONNECT_IMAGE_WITH_FILE_PLUGIN)
@@ -182,12 +186,24 @@ public class KafkaConnectSetup {
      * The resulting {@link DockerOutput} can be used in the {@code build} section
      * of a {@link KafkaConnectBuilder} to push a custom image to a container registry.
      *
+     * <p>Since Strimzi 1.0, the {@code UseConnectBuildWithBuildah} feature gate is enabled by
+     * default on Kubernetes clusters (OpenShift is unaffected - it always uses the OpenShift
+     * Build API), switching the Connect build's push step from Kaniko to Buildah. Buildah
+     * verifies TLS on push by default, which fails against the plain-HTTP internal registry
+     * used on non-OpenShift clusters (e.g. minikube's {@code registry} addon). {@code --tls-verify=false}
+     * is passed via {@code additionalPushOptions} to skip that verification; per the Strimzi docs
+     * this option is only consulted on Kubernetes and is ignored on OpenShift, so it's safe to
+     * always set.
+     *
      * @param imageName the full image name including registry, namespace, image name, and tag
      * @return a {@link DockerOutput} object configured with the image and optional push secret
      */
     private static DockerOutput dockerOutput(String imageName) {
-        DockerOutputBuilder dockerOutputBuilder = new DockerOutputBuilder().withImage(imageName);
+        DockerOutputBuilder dockerOutputBuilder = new DockerOutputBuilder()
+            .withImage(imageName)
+            .withAdditionalPushOptions("--tls-verify=false");
         if (Environment.CONNECT_BUILD_REGISTRY_SECRET != null && !Environment.CONNECT_BUILD_REGISTRY_SECRET.isEmpty()) {
+            LOGGER.debug("Using push secret [{}] for Kafka Connect build image [{}]", Environment.CONNECT_BUILD_REGISTRY_SECRET, imageName);
             dockerOutputBuilder.withPushSecret(Environment.CONNECT_BUILD_REGISTRY_SECRET);
         }
 
@@ -241,7 +257,8 @@ public class KafkaConnectSetup {
      * @param connectName the name of the Kafka Connect cluster to which access should be allowed
      */
     public static void allowConnectConsoleNetworkPolicy(String namespace, String consoleInstanceName, String connectName) {
-        LOGGER.info("Apply NetworkPolicy for connect as it's disabled by default");
+        LOGGER.info("Applying NetworkPolicy to allow Console [{}] to access Kafka Connect [{}/{}] on port [{}], since it's blocked by default",
+            consoleInstanceName, namespace, connectName, Constants.CONNECT_SERVICE_PORT);
 
         NetworkPolicy networkPolicy = new NetworkPolicyBuilder()
             .withNewMetadata()

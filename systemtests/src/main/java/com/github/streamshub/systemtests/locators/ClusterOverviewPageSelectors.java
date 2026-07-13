@@ -20,204 +20,38 @@ public class ClusterOverviewPageSelectors {
         .withElementSpan().withComponentButton().withSubComponentText()
         .build();
 
-    public static final String COPS_CLUSTER_CARDS = new CssBuilder(CssSelectors.PAGES_CONTENT)
-        .withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withLayoutGrid().withChild()
-        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
-        .withElementDiv().withLayoutFlex()
-        .build();
+    public static final String COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex:nth-of-type(1) > div:nth-of-type(2) > button.pf-v6-c-button";
+    public static final String COPS_CLUSTER_CARD_KAFKA_NAME = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex:nth-of-type(2) > div.pf-v6-l-flex:nth-of-type(1) > div.pf-v6-l-flex:nth-of-type(1) > div > h2.pf-v6-c-title";
 
-    public static final String COPS_CLUSTER_CARD_KAFKA_INFO = new CssBuilder(COPS_CLUSTER_CARDS)
-        .withChild()
-        .withElementDiv().nth(1).withChild()
-        .withElementDiv().withComponentCard().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody()
-        .build();
+    public static final String COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex:nth-of-type(2) > div.pf-v6-l-flex > div.pf-v6-l-flex:nth-of-type(2) > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > a";
 
-    public static final String COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_INFO)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(1).withChild()
-        .withElementDiv().nth(2).withChild()
-        .withElementButton().withComponentButton()
-        .build();
+    public static final String COPS_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex:nth-of-type(2) > div.pf-v6-l-flex:nth-of-type(1) > div.pf-v6-l-flex:nth-of-type(2) > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(3) > div:nth-of-type(1)";
 
-    public static final String COPS_CLUSTER_CARD_KAFKA_NAME = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_INFO)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(2).withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withLayoutFlex().nth(1).withChild()
-        .withElementDiv().withChild()
-        .withElementH2().withComponentTitle()
-        .build();
+    public static final String COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item > div.pf-v6-l-flex > div > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex > div > div.pf-v6-c-expandable-section > div.pf-v6-c-expandable-section__toggle > button";
 
-    public static final String COPS_CLUSTER_CARD_KAFKA_WARNINGS = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_INFO)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(2).withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withComponentExpandableSection()
-        .build();
-
-    public static final String COPS_CLUSTER_CARD_KAFKA_DATA_ITEMS = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_INFO)
-        .withElementDiv().withLayoutFlex().nth(2).withChild()
-        .withElementDiv().withLayoutGrid().withChild()
-        .withElementDiv().withLayoutGrid().withSubComponentItem()
-        .build();
-
-    public static final String COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_DATA_ITEMS)
-        .nth(1).withChild()
-        .withElementA()
-        .build();
-
-    public static final String COPS_CLUSTER_CARD_KAFKA_DATA_CONSUMER_COUNT = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_DATA_ITEMS)
-        .nth(2).withChild()
-        .withElementA()
-        .build();
-
-    public static final String COPS_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_DATA_ITEMS)
-        .nth(3).withChild()
-        .withElementDiv().nth(1)
-        .build();
-
-    public static final String COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_WARNINGS)
-        .withElementDiv().withComponentExpandableSection().withSubComponentToggle().withChild()
-        .withElementButton()
-        .build();
-
-    public static final String COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS = new CssBuilder(COPS_CLUSTER_CARD_KAFKA_WARNINGS)
-        .withElementDiv().withComponentExpandableSection().withSubComponentContent().withChild()
-        .withElementUl().withComponentDataList().withChild()
-        .withElementLi().withComponentDataList().withSubComponentItem()
-        .build();
-
-    public static final String COPS_TOPIC_COLUMN_CARD_ITEMS = new CssBuilder(CssSelectors.PAGES_CONTENT)
-        .withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withLayoutGrid().withChild()
-        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(2).withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv()
-        .build();
-
-    public static final String COPS_RECENT_TOPICS_CARD = new CssBuilder(COPS_TOPIC_COLUMN_CARD_ITEMS)
-        .nth(1)
-        .withElementDiv().withComponentCard()
-        .build();
-
-    public static final String COPS_RECENT_TOPICS_CARD_HEADER = new CssBuilder(COPS_RECENT_TOPICS_CARD)
-        .nth(1)
-        .withElementDiv().withComponentCard().withSubComponentHeader().withChild()
-        .withElementDiv().withComponentCard().withSubComponentHeaderMain().withChild()
-        .withElementDiv().withComponentContent()
-        .build();
-
-    public static final String COPS_RECENT_TOPICS_CARD_BODY = new CssBuilder(COPS_RECENT_TOPICS_CARD)
-        .withChild()
-        .withElementDiv().withComponentCard().withSubComponentExpandableContent().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody()
-        .build();
-
-    public static final String COPS_RECENT_TOPICS_CARD_TABLE_ITEMS = new CssBuilder(COPS_RECENT_TOPICS_CARD_BODY)
-        .withChild()
-        .withElementTable().withComponentTable().withChild()
-        .withElementTbody().withComponentTable().withSubComponentTbody()
-        .build();
+    public static final String COPS_CLUSTER_CARD_KAFKA_WARNING_DROPDOWN_LIST = "body > div:nth-of-type(1) > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer:nth-of-type(2) > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex:nth-of-type(2) > div:nth-of-type(2) > div.pf-v6-c-expandable-section > div.pf-v6-c-expandable-section__content:nth-of-type(2) > ul.pf-v6-c-data-list";
+    public static final String COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS = COPS_CLUSTER_CARD_KAFKA_WARNING_DROPDOWN_LIST + " > li.pf-v6-c-data-list__item > div.pf-v6-c-data-list__item-row > div.pf-v6-c-data-list__item-content > div.pf-v6-c-data-list__cell:nth-of-type(2) > div:nth-of-type(1) > span.pf-v6-c-truncate > span.pf-v6-c-truncate__start";
+    public static final String COPS_RECENT_TOPICS_CARD_TABLE_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(2) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__expandable-content:nth-of-type(2) > div.pf-v6-c-card__body > ul.pf-v6-c-list > li";
 
     public static String getTableRowItemLink(int nth) {
-        return CssBuilder.joinLocators(new CssBuilder(COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS_LINK);
+        return new CssBuilder(COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(nth).build();
     }
 
-    public static final String COPS_TOPICS_CARD = new CssBuilder(COPS_TOPIC_COLUMN_CARD_ITEMS)
-        .nth(2)
-        .withElementDiv().withComponentCard()
-        .build();
+    public static final String COPS_TOPICS_CARD_TOTAL_TOPICS = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(2) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-flex > div.pf-v6-l-flex:nth-of-type(1) > div > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-content > small.pf-v6-c-content--small > a";
 
-    public static final String COPS_TOPICS_CARD_TOP_BODY_ITEMS = new CssBuilder(COPS_TOPICS_CARD)
-        .withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv()
-        .build();
+    public static final String COPS_TOPICS_CARD_TOTAL_PARTITIONS = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(2) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-flex > div.pf-v6-l-flex:nth-of-type(1) > div > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-content > small.pf-v6-c-content--small";
 
-    public static final String COPS_TOPICS_CARD_TOTAL_TOPICS = new CssBuilder(COPS_TOPICS_CARD_TOP_BODY_ITEMS)
-        .nth(1)
-        .build();
+    public static final String COPS_TOPICS_CARD_FULLY_REPLICATED = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(2) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-flex > div.pf-v6-l-flex:nth-of-type(2) > div:nth-of-type(1)";
 
-    public static final String COPS_TOPICS_CARD_TOTAL_PARTITIONS = new CssBuilder(COPS_TOPICS_CARD_TOP_BODY_ITEMS)
-        .nth(2)
-        .build();
+    public static final String COPS_TOPICS_CARD_UNDER_REPLICATED = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(2) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-flex > div.pf-v6-l-flex:nth-of-type(2) > div:nth-of-type(2)";
 
-    public static final String COPS_TOPICS_CARD_BODY_ITEMS = new CssBuilder(COPS_TOPICS_CARD)
-        .withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withLayoutFlex().nth(2).withChild()
-        .withElementDiv()
-        .build();
+    public static final String COPS_TOPICS_CARD_UNAVAILABLE = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(2) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-flex > div.pf-v6-l-flex:nth-of-type(2) > div:nth-of-type(3)";
 
-    public static final String COPS_TOPICS_CARD_FULLY_REPLICATED = new CssBuilder(COPS_TOPICS_CARD_BODY_ITEMS)
-        .nth(1)
-        .build();
+    public static final String COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(4) > div > div.pf-v6-c-chart > svg > g:nth-of-type(4) > text > tspan";
 
-    public static final String COPS_TOPICS_CARD_UNDER_REPLICATED = new CssBuilder(COPS_TOPICS_CARD_BODY_ITEMS)
-        .nth(2)
-        .build();
+    public static final String COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(7) > div > div.pf-v6-c-chart > svg > g:nth-of-type(4) > text > tspan";
 
-    public static final String COPS_TOPICS_CARD_UNAVAILABLE = new CssBuilder(COPS_TOPICS_CARD_BODY_ITEMS)
-        .nth(3)
-        .build();
+    public static final String COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(10) > div > div.pf-v6-c-chart > svg > g:nth-of-type(4) > text > tspan";
 
-    public static final String COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS = new CssBuilder(COPS_CLUSTER_CARDS)
-        .withChild()
-        .withElementDiv().nth(2).withChild()
-        .withElementDiv().withComponentCard().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().nth(2).withChild()
-        .withElementDiv().withComponentChart().withChild()
-        .withElementSvg().withChild()
-        .withElementG().nth(4).withChild()
-        .withElementText()
-        .build();
-
-    public static final String COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS = new CssBuilder(COPS_CLUSTER_CARDS)
-        .withChild()
-        .withElementDiv().nth(2).withChild()
-        .withElementDiv().withComponentCard().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().nth(4).withChild()
-        .withElementDiv().withComponentChart().withChild()
-        .withElementSvg().withChild()
-        .withElementG().nth(4).withChild()
-        .withElementText()
-        .build();
-
-    public static final String COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS = new CssBuilder(COPS_CLUSTER_CARDS)
-        .withChild()
-        .withElementDiv().nth(2).withChild()
-        .withElementDiv().withComponentCard().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().nth(6).withChild()
-        .withElementDiv().withComponentChart().withChild()
-        .withElementSvg().withChild()
-        .withElementG().nth(4).withChild()
-        .withElementText()
-        .build();
-
-    public static final String COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS = new CssBuilder(COPS_TOPIC_COLUMN_CARD_ITEMS)
-        .withChild()
-        .withElementDiv().withComponentCard().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withComponentChart().withChild()
-        .withElementSvg().withChild()
-        .withElementG().nth(4).withChild()
-        .withElementText()
-        .build();
+    public static final String COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(2) > div.pf-v6-l-flex > div:nth-of-type(3) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(3) > div > div > svg > g:nth-of-type(4) > text > tspan";
 }

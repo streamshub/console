@@ -50,9 +50,9 @@ public class KafkaCmdUtils {
         String getOffsetCommand = String.format("./bin/kafka-console-consumer.sh --bootstrap-server=%s --consumer.config=%s --topic=%s --offset=%s --partition=%d --max-messages=%d --property=print.timestamp=true 2>/dev/null" +
                                                 " | awk -F'[:\\t]' '/CreateTime:/ {print $2}'", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, topicName, offset, partition, maxMessages);
 
-        LOGGER.debug("Execute get offset command");
+        LOGGER.debug("Fetching CreateTime for topic {} partition {} offset {} via pod {}/{}", topicName, partition, offset, namespaceName, podName);
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", getOffsetCommand).out().trim();
-        LOGGER.debug("Execution resulted in => [{}]", output);
+        LOGGER.debug("Get offset command resulted in => [{}]", output);
         return output;
     }
 
@@ -84,7 +84,7 @@ public class KafkaCmdUtils {
     public static void reassignTopicPartitionToAnotherBroker(String namespaceName, String kafkaName, String podName, String topicName, int newBrokerId, KafkaClients clients) {
         String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
 
-        LOGGER.debug("Reassigning KafkaTopic {} ", topicName);
+        LOGGER.info("Reassigning partition of topic {} to broker {} via pod {}/{}", topicName, newBrokerId, namespaceName, podName);
         String reassignJsonPath = String.format("/tmp/reassign-%s.json", topicName);
 
         insertClientProperties(namespaceName, podName, clients.getAdditionalConfig());
@@ -131,14 +131,14 @@ public class KafkaCmdUtils {
     public static String getConsumerGroupOffset(String namespaceName, String kafkaName, String podName, String consumerGroupName, String topicName, String clientsConfig) {
         String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
 
-        LOGGER.info("Retrieve consumer group {} offset", consumerGroupName);
+        LOGGER.info("Retrieving offset for consumer group {} on topic {}", consumerGroupName, topicName);
 
         insertClientProperties(namespaceName, podName, clientsConfig);
 
         String getOffsetCommand = String.format("./bin/kafka-consumer-groups.sh --bootstrap-server=%s --command-config=%s --group=%s --describe 2>/dev/null \\\n" +
             "  | awk -v topic=%s '$2 == topic { print $4 }' \\\n" +
             "  | grep -E '^[0-9]+$'", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, consumerGroupName, topicName);
-        LOGGER.debug("Run get consumergroup offset command");
+        LOGGER.debug("Executing describe command for consumer group {} on topic {}", consumerGroupName, topicName);
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", getOffsetCommand).out().trim();
         LOGGER.debug("Get offset command resulted in => [{}]", output);
 
@@ -171,14 +171,14 @@ public class KafkaCmdUtils {
         // Verify that the topic is present
         assertTrue(listKafkaTopicsByPrefix(namespaceName, kafkaName, podName, clientsConfig, topicName).contains(topicName));
 
-        LOGGER.info("Retrieve consumer group {} offset", consumerGroupName);
+        LOGGER.info("Verifying consumer group {} has no committed offsets for topic {}", consumerGroupName, topicName);
         insertClientProperties(namespaceName, podName, clientsConfig);
 
         // Verify that the topic offset is not listed in describe
         String getOffsetCommand = String.format("./bin/kafka-consumer-groups.sh --bootstrap-server=%s --command-config=%s --group=%s --describe 2>/dev/null \\\n" +
             "  | awk -v topic=%s '$2 == topic { print $4 }' \\\n" +
             "  | grep -E '^[0-9]+$'", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, consumerGroupName, topicName);
-        LOGGER.debug("Run get consumergroup offset command");
+        LOGGER.debug("Executing describe command for consumer group {} on topic {}", consumerGroupName, topicName);
 
         // Set throw to false as it returns an empty output
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(false, podName, Constants.BASH_CMD, "-c", getOffsetCommand).out().trim();
@@ -210,14 +210,14 @@ public class KafkaCmdUtils {
     public static void setConsumerGroupOffset(String namespaceName, String kafkaName, String podName, String consumerGroupName, String topicName, String offset, String clientsConfig) {
         String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
 
-        LOGGER.info("Set consumer group {} offset to {}", consumerGroupName, offset);
+        LOGGER.info("Setting consumer group {} offset for topic {} to {}", consumerGroupName, topicName, offset);
 
         insertClientProperties(namespaceName, podName, clientsConfig);
 
         String setOffsetCmd = String.format("./bin/kafka-consumer-groups.sh --bootstrap-server=%s --command-config=%s " +
             "--group=%s --topic=%s --reset-offsets --to-offset=%s --execute", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, consumerGroupName, topicName, offset);
 
-        LOGGER.debug("Run consumer groups command to set the offset");
+        LOGGER.debug("Executing reset-offsets command for consumer group {} on topic {}", consumerGroupName, topicName);
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", setOffsetCmd).out().trim();
         LOGGER.debug("Set offset command resulted in => [{}]", output);
     }
@@ -245,11 +245,11 @@ public class KafkaCmdUtils {
 
         String listTopicsCmd = String.format("./bin/kafka-topics.sh --bootstrap-server=%s --command-config=%s --list 2>/dev/null | grep '^%s'", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, topicPrefix);
 
-        LOGGER.debug("Execute list topics command");
+        LOGGER.debug("Listing topics on Kafka {}/{} matching prefix {}", namespaceName, kafkaName, topicPrefix);
         List<String> output = Arrays.stream(KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", listTopicsCmd)
             .out().trim().split("\\r?\\n")).toList();
 
-        LOGGER.debug("Listing topics resulted in => {}", output.toString());
+        LOGGER.debug("Listing topics with prefix {} resulted in => {}", topicPrefix, output.toString());
         return output;
     }
 
@@ -269,7 +269,7 @@ public class KafkaCmdUtils {
      * @param clientsConfig the Kafka client configuration content to write into the file
      */
     public static void insertClientProperties(String namespaceName, String podName, String clientsConfig) {
-        LOGGER.info("Insert client config");
+        LOGGER.debug("Inserting client properties into pod {}/{} at path {}", namespaceName, podName, CLIENTS_CONFIG_FILE_PATH);
         String insertConfigCommand = String.format("echo '%s' > %s", clientsConfig, CLIENTS_CONFIG_FILE_PATH);
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertConfigCommand).out().trim();
         LOGGER.debug("Insert client config resulted in => [{}]", output);
@@ -299,6 +299,7 @@ public class KafkaCmdUtils {
         String service = KafkaConnectResources.url(connectName, namespace, Constants.CONNECT_SERVICE_PORT);
         String expectedLog = "\"connector\":\"" + connectorName + "\"";
 
+        LOGGER.info("Waiting for connector {} to be registered in Kafka Connect {} REST API in namespace {}", connectorName, connectName, namespace);
         Wait.until(String.format("Pod %s/%s to contain log [%s]", namespace, podName, expectedLog),
             KubeTestConstants.GLOBAL_POLL_INTERVAL_SHORT, KubeTestConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {

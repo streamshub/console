@@ -27,6 +27,7 @@ public class ApicurioUtils {
      * @return full registry API URL
      */
     public static String getApicurioRegistryUrl(String namespace, String registryName) {
+        LOGGER.debug("Resolving Apicurio registry URL from Ingress {} in namespace {}", registryName + APICURIO_APP_INGRESS_SUFFIX, namespace);
         return "http://" + ResourceUtils.getKubeResource(Ingress.class, namespace, registryName + APICURIO_APP_INGRESS_SUFFIX)
             .getSpec()
             .getRules()
@@ -49,7 +50,7 @@ public class ApicurioUtils {
      * @param contentType  the content type of the artifact (e.g. application/json)
      */
     public static void createArtifact(RegistryClient client, String groupId, String artifactId, String artifactType, String schema, String contentType) {
-        LOGGER.info("Creating artifact {}  of type {} in Apicurio Registry", artifactId, artifactType);
+        LOGGER.info("Creating artifact {} of type {} in group {} of Apicurio Registry", artifactId, artifactType, groupId);
         CreateArtifact createArtifact = new CreateArtifact();
         createArtifact.setArtifactId(artifactId);
         createArtifact.setArtifactType(artifactType);

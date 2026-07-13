@@ -1,6 +1,8 @@
 package com.github.streamshub.systemtests.interfaces;
 
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExecutableInvoker;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -49,6 +51,7 @@ import java.util.function.Function;
  * tests or lifecycle contexts.</p>
  */
 public class TestBucketExtensionContext implements ExtensionContext {
+    private static final Logger LOGGER = LogWrapper.getLogger(TestBucketExtensionContext.class);
 
     private final ExtensionContext delegate;
     private final String displayNameOverride;
@@ -56,6 +59,7 @@ public class TestBucketExtensionContext implements ExtensionContext {
     public TestBucketExtensionContext(ExtensionContext delegate, String displayNameOverride) {
         this.delegate = delegate;
         this.displayNameOverride = displayNameOverride;
+        LOGGER.debug("Created bucket-scoped extension context [{}] delegating to unique id [{}]", displayNameOverride, delegate.getUniqueId());
     }
 
     @Override

@@ -32,6 +32,8 @@ public class OlmConfig extends InstallConfig {
     public OlmConfig(String namespace) {
         super(namespace);
         LOGGER.info("Console Operator will be installed using OLM");
+        LOGGER.debug("OLM config: package='{}', channel='{}', catalogSource='{}/{}', namespace='{}'",
+            packageName, channelName, catalogSourceNamespace, catalogSourceName, namespace);
         if (!ClusterUtils.isOcp() &&
             ResourceUtils.getKubeResource(CustomResourceDefinition.class, "subscriptions.operators.coreos.com") == null) {
             throw new OperatorSdkNotInstalledException("Operator SDK is not installed on the current cluster. Cannot install Console Operator using subscriptions");
@@ -40,9 +42,18 @@ public class OlmConfig extends InstallConfig {
 
     @Override
     public void install() {
+
+        if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, deploymentName).isEmpty() &&
+            !Environment.DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL) {
+            LOGGER.info("Console Operator deployment '{}' already exists in namespace '{}', skipping OLM install", deploymentName, deploymentNamespace);
+            return;
+        }
+
+        LOGGER.info("Creating OLM OperatorGroup and Subscription '{}' for package '{}' in namespace '{}'", subscriptionName, packageName, deploymentNamespace);
         KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmOperatorGroup());
         KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmSubscription());
 
+        LOGGER.info("Waiting for Console Operator deployment with prefix '{}' to become ready in namespace '{}'", olmAppBundlePrefix, deploymentNamespace);
         WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, olmAppBundlePrefix);
 
         // Get and set the deployment full name from known OLM bundle prefix
@@ -50,24 +61,49 @@ public class OlmConfig extends InstallConfig {
             .getFirst()
             .getMetadata()
             .getName();
+        LOGGER.debug("Resolved Console Operator deployment name to '{}'", deploymentName);
     }
 
     @Override
     public void delete() {
+        LOGGER.info("Deleting OLM OperatorGroup and Subscription '{}' in namespace '{}'", subscriptionName, deploymentNamespace);
         KubeResourceManager.get().deleteResourceWithWait(getOlmOperatorGroup());
         KubeResourceManager.get().deleteResourceWithWait(getOlmSubscription());
         List<Deployment> deploymentList = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, deploymentName);
         if (!deploymentList.isEmpty()) {
             // delete csv
             String csvFullName = ResourceUtils.listKubeResourcesByPrefix(ClusterServiceVersion.class, deploymentNamespace, packageName).getFirst().getMetadata().getName();
+            LOGGER.debug("Deleting ClusterServiceVersion '{}' in namespace '{}'", csvFullName, deploymentNamespace);
             ClusterServiceVersion csv = ResourceUtils.getKubeResource(ClusterServiceVersion.class, deploymentNamespace, csvFullName);
             KubeResourceManager.get().deleteResourceWithWait(csv);
+            LOGGER.info("Deleting Console Operator deployment '{}' in namespace '{}'", deploymentList.getFirst().getMetadata().getName(), deploymentNamespace);
             KubeResourceManager.get().deleteResourceWithWait(deploymentList.getFirst());
+        } else {
+            LOGGER.debug("No Console Operator deployment found with prefix '{}' in namespace '{}', nothing to delete", deploymentName, deploymentNamespace);
         }
     }
 
     public void setChannelName(String channelName) {
         this.channelName = channelName;
+    }
+
+    /**
+     * Bumps the Subscription's channel to trigger an in-place OLM upgrade of the Console Operator,
+     * without going through {@link #install()}'s "already installed, skip" guard.
+     *
+     * <p>{@link #install()} intentionally no-ops when a Deployment already exists and
+     * {@link Environment#DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL} is {@code false} - that guard exists
+     * purely as a debugging convenience (skip redeploying between local runs) and has nothing to do
+     * with a deliberate upgrade test switching channels on an existing Subscription. Patching the
+     * Subscription directly here sidesteps that guard entirely: OLM picks up the channel change,
+     * resolves the new CSV and rolls the Deployment on its own.
+     *
+     * @param channelName the OLM channel to switch the Subscription to
+     */
+    public void updateChannel(String channelName) {
+        this.channelName = channelName;
+        LOGGER.info("Bumping Console Operator Subscription '{}' to channel '{}' in namespace '{}'", subscriptionName, channelName, deploymentNamespace);
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmSubscription());
     }
 
     private Subscription getOlmSubscription() {

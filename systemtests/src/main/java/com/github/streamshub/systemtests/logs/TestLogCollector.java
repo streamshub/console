@@ -18,6 +18,8 @@ import io.skodjob.kubetest4j.LogCollectorBuilder;
 import io.skodjob.kubetest4j.clients.KubeClient;
 import io.skodjob.kubetest4j.clients.cmdClient.Kubectl;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.strimzi.api.kafka.model.connect.KafkaConnect;
+import io.strimzi.api.kafka.model.connector.KafkaConnector;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
@@ -46,6 +48,7 @@ public class TestLogCollector {
         dateTimeFormatter = dateTimeFormatter.withZone(ZoneId.of("GMT"));
         currentDate = dateTimeFormatter.format(LocalDateTime.now());
         this.logCollector = defaultLogCollector();
+        LOGGER.debug("Test log collector initialized, root log directory set to {}", Path.of(Environment.TEST_LOG_DIR, currentDate));
     }
 
     public static TestLogCollector getInstance() {
@@ -63,6 +66,8 @@ public class TestLogCollector {
             HasMetadata.getKind(Deployment.class),
             HasMetadata.getKind(Console.class),
             Kafka.RESOURCE_KIND,
+            KafkaConnect.RESOURCE_KIND,
+            KafkaConnector.RESOURCE_KIND,
             KafkaNodePool.RESOURCE_KIND,
             KafkaTopic.RESOURCE_KIND,
             KafkaUser.RESOURCE_KIND
@@ -75,7 +80,10 @@ public class TestLogCollector {
                 HasMetadata.getKind(InstallPlan.class),
                 HasMetadata.getKind(ClusterServiceVersion.class)
             ));
+            LOGGER.debug("OLM install detected, added OLM resource kinds to log collection scope");
         }
+
+        LOGGER.debug("Configured log collector to track {} resource kinds: {}", resources.size(), resources);
 
         return new LogCollectorBuilder()
             .withKubeClient(new KubeClient())
@@ -108,6 +116,7 @@ public class TestLogCollector {
                         .toList()
                         .get(filesInLogsDir.length - 1)
                 ) + 1;
+                LOGGER.debug("Existing log directory found at {}, using next index folder {}", rootPathToLogsForTestCase, index);
             }
         }
 
@@ -136,15 +145,22 @@ public class TestLogCollector {
     }
 
     public void collectLogs(String testClass, String testCase) {
-        LOGGER.debug("Collecting logs from {}#{}", testClass, testCase);
+        LOGGER.info("Starting log collection for test '{}#{}'", testClass, testCase);
         Path rootPathToLogsForTestCase = buildFullPathToLogs(testClass, testCase);
+        LOGGER.debug("Resolved log collection output directory: {}", rootPathToLogsForTestCase);
 
         final LogCollector testCaseCollector = new LogCollectorBuilder(logCollector)
             .withRootFolderPath(rootPathToLogsForTestCase.toString())
             .build();
 
-        testCaseCollector.collectFromNamespacesWithLabels(new LabelSelectorBuilder()
-            .withMatchLabels(Collections.singletonMap(Labels.COLLECT_ST_LOGS, "true"))
-            .build());
+        try {
+            testCaseCollector.collectFromNamespacesWithLabels(new LabelSelectorBuilder()
+                .withMatchLabels(Collections.singletonMap(Labels.COLLECT_ST_LOGS, "true"))
+                .build());
+            LOGGER.info("Finished log collection for test '{}#{}', logs stored in {}", testClass, testCase, rootPathToLogsForTestCase);
+        } catch (RuntimeException e) {
+            LOGGER.warn("Failed to collect logs for test '{}#{}': {}", testClass, testCase, e.getMessage());
+            throw e;
+        }
     }
 }

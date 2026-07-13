@@ -25,8 +25,10 @@ public class PodUtils {
      * @return a map of pod names to their UIDs
      */
     public static Map<String, String> getPodSnapshotBySelector(String namespace, LabelSelector podSelector) {
-        return ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, podSelector)
+        Map<String, String> snapshot = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, podSelector)
             .stream().collect(Collectors.toMap(pod -> pod.getMetadata().getName(), pod -> pod.getMetadata().getUid()));
+        LOGGER.trace("Pod snapshot in namespace {} with selector {} contains {} pod(s)", namespace, podSelector, snapshot.size());
+        return snapshot;
     }
 
     /**
@@ -42,21 +44,21 @@ public class PodUtils {
      * @return {@code true} if all relevant pods have rolled, {@code false} otherwise
      */
     public static boolean componentPodsHaveRolled(String namespace, LabelSelector selector, Map<String, String> previousSnapshot) {
-        LOGGER.debug("Previous snapshot: {}", new TreeMap<>(previousSnapshot));
+        LOGGER.trace("Previous snapshot: {}", new TreeMap<>(previousSnapshot));
         Map<String, String> currentSnapshot = PodUtils.getPodSnapshotBySelector(namespace, selector);
-        LOGGER.debug("Current snapshot: {}", new TreeMap<>(currentSnapshot));
+        LOGGER.trace("Current snapshot: {}", new TreeMap<>(currentSnapshot));
 
         // Filter only currently available for roll
         currentSnapshot.keySet().retainAll(previousSnapshot.keySet());
-        LOGGER.debug("Pod snapshots to verify: {}", new TreeMap<>(currentSnapshot));
+        LOGGER.trace("Pod snapshots to verify: {}", new TreeMap<>(currentSnapshot));
 
         for (Map.Entry<String, String> currentPodSnapshot : currentSnapshot.entrySet()) {
             if (previousSnapshot.get(currentPodSnapshot.getKey()).equals(currentPodSnapshot.getValue())) {
-                LOGGER.debug("Pod {}/{} has not been rolled yet", namespace, currentPodSnapshot.getKey());
+                LOGGER.trace("Pod {}/{} has not been rolled yet", namespace, currentPodSnapshot.getKey());
                 return false;
             }
         }
-        LOGGER.debug("All Pods have rolled");
+        LOGGER.trace("All Pods have rolled");
         return true;
     }
 

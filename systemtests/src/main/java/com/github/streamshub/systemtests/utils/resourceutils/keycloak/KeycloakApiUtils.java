@@ -36,9 +36,12 @@ public class KeycloakApiUtils {
      * @return {@code true} if the realm exists, {@code false} otherwise
      */
     public static boolean realmExists(String httpsHostname, String userName, String password, String realmName) {
+        LOGGER.debug("Checking whether Keycloak realm {} exists on {}", realmName, httpsHostname);
         String result = executeRequestAndReturnData(request(
             "GET", httpsHostname, ADMIN_REALMS_PATH + realmName, userName, password, null));
-        return !result.contains("Realm not found") && !result.isEmpty();
+        boolean exists = !result.contains("Realm not found") && !result.isEmpty();
+        LOGGER.debug("Keycloak realm {} exists: {}", realmName, exists);
+        return exists;
     }
 
     /**
@@ -52,6 +55,7 @@ public class KeycloakApiUtils {
      * @throws SetupException if the realm deletion request fails
      */
     public static void deleteRealm(String httpsHostname, String userName, String password, String realmName) {
+        LOGGER.info("Deleting Keycloak realm {} on {}", realmName, httpsHostname);
         String result = executeRequestAndReturnData(request(
             "DELETE", httpsHostname, ADMIN_REALMS_PATH + realmName, userName, password, null));
 
@@ -73,6 +77,7 @@ public class KeycloakApiUtils {
      * @throws SetupException if the realm import request fails
      */
     public static void importRealm(String httpsHostname, String userName, String password, String realmData) {
+        LOGGER.info("Importing Keycloak realm into {}", httpsHostname);
 
         String result = executeRequestAndReturnData(request(
             "POST", httpsHostname, ADMIN_REALMS_PATH,  userName, password, realmData));
@@ -102,6 +107,7 @@ public class KeycloakApiUtils {
      */
     public static String getClientSecret(String httpsHostname, String userName, String password, String realm, String clientName) {
         String clientUuid = getClientUuid(httpsHostname, userName, password, realm, clientName);
+        LOGGER.debug("Fetching client secret for client {} (uuid {}) in realm {}", clientName, clientUuid, realm);
 
         String result = new JsonObject(executeRequestAndReturnData(request(
             "GET", httpsHostname, ADMIN_REALMS_PATH + realm + "/clients/" + clientUuid + "/client-secret",  userName, password, null)))
@@ -111,7 +117,7 @@ public class KeycloakApiUtils {
             throw new SetupException("Cannot get client secret from keycloak api");
         }
 
-        LOGGER.info("Client secret from keycloak api {}", result);
+        LOGGER.info("Retrieved client secret for client {} in realm {}", clientName, realm);
         return result;
     }
 
@@ -133,10 +139,11 @@ public class KeycloakApiUtils {
      * @throws SetupException if the client cannot be found or the response cannot be parsed
      */
     public static String getClientUuid(String httpsHostname, String userName, String password, String realm, String clientName) {
+        LOGGER.debug("Looking up Keycloak client uuid for client {} in realm {}", clientName, realm);
         String response = executeRequestAndReturnData(request(
             "GET", httpsHostname, ADMIN_REALMS_PATH + realm + "/clients/", userName, password, null));
 
-        LOGGER.info("ClientId response keycloak api {}", response);
+        LOGGER.debug("Keycloak clients list response for realm {}: {}", realm, response);
 
         try {
             JsonNode clientsArray = new ObjectMapper().readTree(response);
@@ -148,7 +155,7 @@ public class KeycloakApiUtils {
                 .map(client -> client.get("id").textValue())
                 .findFirst()
                 .map(uuid -> {
-                    LOGGER.info("ClientId from keycloak api {}", uuid);
+                    LOGGER.debug("Resolved Keycloak client {} to uuid {}", clientName, uuid);
                     return uuid;
                 })
                 .orElseThrow(() -> new SetupException("Cannot get clientId from keycloak api response"));
@@ -175,6 +182,7 @@ public class KeycloakApiUtils {
      * @return the curl command as an array of strings ready for execution
      */
     private static String[] request(String method, String httpsHostname, String endpoint, String userName, String password, String body) {
+        LOGGER.debug("Building Keycloak API request: {} {}{}", method, httpsHostname, endpoint);
         List<String> cmd = new ArrayList<>(List.of("curl", "--insecure", "-X", method));
         String token = getToken(httpsHostname, userName, password);
 
@@ -204,6 +212,7 @@ public class KeycloakApiUtils {
      * @throws SetupException if the token cannot be retrieved
      */
     public static String getToken(String httpsHostname, String userName, String password) {
+        LOGGER.debug("Requesting Keycloak access token for user {} from {}", userName, httpsHostname);
         String token = new JsonObject(
             executeRequestAndReturnData(
                 new String[]{"curl", "-v", "--insecure", "-X", "POST",
@@ -242,7 +251,7 @@ public class KeycloakApiUtils {
 
                 return false;
             } catch (Exception e) {
-                LOGGER.warn("Exception occurred during doing request on Keycloak API: {}", e.getMessage());
+                LOGGER.warn("Keycloak API request failed, will retry: {}", e.getMessage());
                 return false;
             }
         });
