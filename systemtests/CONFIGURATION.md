@@ -46,12 +46,12 @@ mvn -pl systemtests verify -DskipSTs=false
 
 ## OLM Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CONSOLE_OLM_CATALOG_SOURCE_NAME` | `console-source` | CatalogSource name for the Console Operator. |
-| `CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE` | `openshift-marketplace` | Namespace of the CatalogSource. Only correct on real OpenShift. On minikube/kind, OLM's catalog namespace is `olm` (e.g. after `minikube addons enable olm`) — CI overrides this variable to `olm` for those runs. |
+| Variable | Default                       | Description |
+|----------|-------------------------------|-------------|
+| `CONSOLE_OLM_CATALOG_SOURCE_NAME` | `console-source`              | CatalogSource name for the Console Operator. |
+| `CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE` | `olm`                         | Namespace of the CatalogSource. |
 | `CONSOLE_OLM_PACKAGE_NAME` | `streamshub-console-operator` | Package name in the operator catalog. |
-| `CONSOLE_OLM_CHANNEL_NAME` | `alpha` | Subscription channel. |
+| `CONSOLE_OLM_CHANNEL_NAME` | `alpha`                       | Subscription channel. |
 
 Use OLM when testing on OpenShift or validating the operator bundle/catalog.
 

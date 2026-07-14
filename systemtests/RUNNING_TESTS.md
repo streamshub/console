@@ -28,8 +28,6 @@ Executes all tests in `src/test/java/**/*ST.java` via maven-failsafe-plugin.
 mvn -pl systemtests verify -DskipSTs=false -Dit.test=MessagesST
 ```
 
-**Available test classes:** `MessagesST`, `AuthST`, `KafkaCredentialsST`, `ApicurioST`, `KroxyST`, `GroupsST`, `KafkaST`, `PrometheusST`, `OlmUpgradeST`, `YamlUpgradeST`.
-
 ### Run a Specific Test Method
 
 ```bash
@@ -140,7 +138,7 @@ This must be set **before** running tests — the image is used when tests deplo
 
 **Use case:** testing on OpenShift, or validating the operator bundle/catalog.
 
-A CatalogSource can be deplyed in the cluster manually using commands below, but STs can handle the creation when you set env `CONSOLE_OLM_CATALOG_SOURCE_IMAGE`. 
+A CatalogSource can be deplyed in the cluster manually using commands below.
 
 **On OpenShift**, the marketplace namespace already exists:
 
