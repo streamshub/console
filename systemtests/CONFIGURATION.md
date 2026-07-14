@@ -52,6 +52,7 @@ mvn -pl systemtests verify -DskipSTs=false
 | `CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE` | `olm`                         | Namespace of the CatalogSource. |
 | `CONSOLE_OLM_PACKAGE_NAME` | `streamshub-console-operator` | Package name in the operator catalog. |
 | `CONSOLE_OLM_CHANNEL_NAME` | `alpha`                       | Subscription channel. |
+| `CONSOLE_OLM_CATALOG_SOURCE_IMAGE` | _(empty)_                     | When set, tests create the CatalogSource automatically using this image before installing the operator, instead of requiring it to be deployed manually. |
 
 Use OLM when testing on OpenShift or validating the operator bundle/catalog.
 
