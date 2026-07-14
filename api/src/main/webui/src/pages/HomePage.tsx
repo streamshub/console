@@ -20,6 +20,8 @@ import {
   Label,
   Content,
   Divider,
+  Flex,
+  FlexItem,
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useKafkaClusters } from '../api/hooks/useKafkaClusters';
@@ -72,16 +74,24 @@ export function HomePage() {
           >
             <CardHeader onExpand={() => setIsLearningExpanded(!isLearningExpanded)}>
               <Content>
-                <CardTitle>
-                  {t('home.recommendedLearningResources')}
-                </CardTitle>
-                {!isLearningExpanded && (
-                  <Content component="small">
-                    <Label color="orange" isCompact>
-                      {t('home.documentation')}
-                    </Label>
-                  </Content>
-                )}
+                <Flex
+                  direction={{ default: 'column' }}
+                  alignItems={{ default: 'alignItemsFlexStart' }}
+                  spaceItems={{ default: 'spaceItemsXs' }}
+                >
+                  <FlexItem>
+                    <CardTitle>
+                      {t('home.recommendedLearningResources')}
+                    </CardTitle>
+                  </FlexItem>
+                  {!isLearningExpanded && (
+                    <FlexItem>
+                      <Label color="orange" isCompact>
+                        {t('home.documentation')}
+                      </Label>
+                    </FlexItem>
+                  )}
+                </Flex>
               </Content>
             </CardHeader>
             <CardExpandableContent>
