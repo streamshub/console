@@ -44,6 +44,7 @@ public class Environment {
     public static final String CONSOLE_OLM_PACKAGE_NAME = ENVS.getOrDefault("CONSOLE_OLM_PACKAGE_NAME", "streamshub-console-operator");
     public static final String CONSOLE_OLM_CHANNEL_NAME = ENVS.getOrDefault("CONSOLE_OLM_CHANNEL_NAME", "alpha");
     public static final String CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE", Constants.OPENSHIFT_MARKETPLACE_NAMESPACE);
+    public static final String CONSOLE_OLM_CATALOG_SOURCE_IMAGE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_IMAGE", "");
 
     // Logs and debug
     public static final boolean CLEANUP_ENVIRONMENT = ENVS.getOrDefault("CLEANUP_ENVIRONMENT", Boolean::parseBoolean, true);

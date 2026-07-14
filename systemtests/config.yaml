@@ -33,6 +33,10 @@ CONSOLE_CLUSTER_DOMAIN: "192.168.49.2.nip.io"
 CONSOLE_OLM_CATALOG_SOURCE_NAME: console-source
 # Namespace where lies the CatalogSource for Console Operator
 CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE: openshift-marketplace
+# Image of the CatalogSource to deploy for Console Operator. If empty (default), STs assume a CatalogSource
+# with the name/namespace above already exists on the cluster. If set, STs will create one from this image
+# (unless a CatalogSource with that name/namespace already exists).
+CONSOLE_OLM_CATALOG_SOURCE_IMAGE: ""
 # Package name of the console operator
 CONSOLE_OLM_PACKAGE_NAME: streamshub-console-operator
 # OLM channel for selecting the Operator version
