@@ -138,7 +138,14 @@ This must be set **before** running tests — the image is used when tests deplo
 
 **Use case:** testing on OpenShift, or validating the operator bundle/catalog.
 
-A CatalogSource can be deplyed in the cluster manually using commands below.
+A CatalogSource can be deployed in the cluster manually using commands below, but STs can handle the creation when you set env `CONSOLE_OLM_CATALOG_SOURCE_IMAGE`.
+
+**Let tests create it automatically by using:**
+
+```yaml
+# config.yaml
+CONSOLE_OLM_CATALOG_SOURCE_IMAGE: quay.io/streamshub/console-operator-catalog:latest
+```
 
 **On OpenShift**, the marketplace namespace already exists:
 

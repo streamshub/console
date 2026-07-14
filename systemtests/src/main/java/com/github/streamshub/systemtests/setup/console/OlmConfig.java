@@ -11,6 +11,8 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.CatalogSource;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.CatalogSourceBuilder;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.ClusterServiceVersion;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionBuilder;
@@ -26,6 +28,7 @@ public class OlmConfig extends InstallConfig {
     private String packageName = Environment.CONSOLE_OLM_PACKAGE_NAME;
     private String catalogSourceName = Environment.CONSOLE_OLM_CATALOG_SOURCE_NAME;
     private String catalogSourceNamespace = Environment.CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE;
+    private String catalogSourceImage = Environment.CONSOLE_OLM_CATALOG_SOURCE_IMAGE;
     private String channelName = Environment.CONSOLE_OLM_CHANNEL_NAME;
     private String subscriptionName = Constants.CONSOLE_OLM_SUBSCRIPTION_NAME;
 
@@ -47,6 +50,12 @@ public class OlmConfig extends InstallConfig {
             !Environment.DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL) {
             LOGGER.info("Console Operator deployment '{}' already exists in namespace '{}', skipping OLM install", deploymentName, deploymentNamespace);
             return;
+        }
+
+        if (!catalogSourceImage.isEmpty() &&
+            ResourceUtils.getKubeResource(CatalogSource.class, catalogSourceNamespace, catalogSourceName) == null) {
+            LOGGER.info("Creating CatalogSource '{}' in namespace '{}' using image '{}'", catalogSourceName, catalogSourceNamespace, catalogSourceImage);
+            KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmCatalogSource());
         }
 
         LOGGER.info("Creating OLM OperatorGroup and Subscription '{}' for package '{}' in namespace '{}'", subscriptionName, packageName, deploymentNamespace);
@@ -104,6 +113,21 @@ public class OlmConfig extends InstallConfig {
         this.channelName = channelName;
         LOGGER.info("Bumping Console Operator Subscription '{}' to channel '{}' in namespace '{}'", subscriptionName, channelName, deploymentNamespace);
         KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmSubscription());
+    }
+
+    private CatalogSource getOlmCatalogSource() {
+        return new CatalogSourceBuilder()
+            .withNewMetadata()
+                .withName(catalogSourceName)
+                .withNamespace(catalogSourceNamespace)
+            .endMetadata()
+            .withNewSpec()
+                .withDisplayName("StreamsHub")
+                .withImage(catalogSourceImage)
+                .withPublisher("StreamsHub")
+                .withSourceType("grpc")
+            .endSpec()
+            .build();
     }
 
     private Subscription getOlmSubscription() {
