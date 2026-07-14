@@ -1,7 +1,5 @@
 # Troubleshooting System Tests
 
-This guide covers understanding test output, debugging failures, and resolving common issues.
-
 ## Table of Contents
 
 - [Understanding Test Output](#understanding-test-output)
@@ -9,239 +7,100 @@ This guide covers understanding test output, debugging failures, and resolving c
 
 ## Understanding Test Output
 
-### Log Directory Structure
+### Output Directory Structure
 
-**Default location:** `TEST_LOG_DIR` (configured as `target/logs/` in config.yaml)
-
-**Contents:**
+Test output is split across three directories under `systemtests/` — only `target/` is removed by `mvn clean`, so screenshots and traces survive a clean build for comparing across runs:
 
 ```
-target/logs/
-├── config.yaml                    # Configuration snapshot from this test run
-├── 2026-06-24-14-30-00/          # Timestamped test run directory
-│   ├── test-execution.log        # Detailed test execution logs
-│   ├── pod-logs/                 # Collected pod logs (on failure)
-│   │   ├── console-operator-*.log
-│   │   ├── strimzi-operator-*.log
-│   │   ├── kafka-broker-*.log
-│   │   └── console-api-*.log
-│   └── yaml-dumps/               # Kubernetes resource YAMLs
-│       ├── kafka-cluster.yaml
-│       ├── console-instance.yaml
-│       ├── configmaps/
-│       ├── secrets/
-│       └── deployments/
-└── screenshots/                   # Playwright failure screenshots
-    └── test-name-failure.png
+systemtests/
+├── target/logs/                    # TEST_LOG_DIR — wiped by `mvn clean`
+│   ├── config.yaml                 # configuration snapshot for this run
+│   └── 2026-06-24-14-30-00/        # timestamped test run
+│       ├── test-execution.log
+│       ├── pod-logs/               # console-operator-*.log, kafka-broker-*.log, ...
+│       └── yaml-dumps/             # kafka-cluster.yaml, console-instance.yaml, ...
+├── screenshots/                    # SCREENSHOTS_DIR_PATH — survives `mvn clean`
+│   └── 2026-06-24__14-30-00/
+│       └── test-name-failure.png
+└── tracing/                        # TRACING_DIR_PATH — survives `mvn clean`
+    └── 2026-06-24__14-30-00/
+        └── trace-<test-name>.zip
 ```
 
-### Log Levels and Output
+### Log Levels
 
-**File logging** (`TEST_FILE_LOG_LEVEL`):
-- `TRACE` - Most verbose, includes method entry/exit
-- `DEBUG` - Detailed diagnostic information (default)
-- `INFO` - General informational messages
-- `WARN` - Warning messages
-- `ERROR` - Error messages only
+**File logging** (`TEST_FILE_LOG_LEVEL`): `TRACE` > `DEBUG` (default) > `INFO` > `WARN` > `ERROR`.
 
-**Console logging** (`TEST_CONSOLE_LOG_LEVEL`):
-- Default: `INFO` - Keeps console output clean
-- Recommendation: Keep at `INFO`, rely on file logs for details
+**Console logging** (`TEST_CONSOLE_LOG_LEVEL`): default `INFO` — keep it there and rely on file logs for detail.
 
 ### Playwright Trace Files
 
-**Location:** `tracing/` directory (relative to systemtests root)
+**Location:** `systemtests/tracing/<run-timestamp>/`, generated automatically when a UI test fails.
 
-**When generated:** Automatically when UI tests fail
+Each trace includes a step-by-step timeline of browser actions, before/after screenshots per action, network requests/responses, browser console logs, element selectors, and timing — optionally video, if enabled.
 
-**What's included:**
-- Step-by-step timeline of browser actions
-- Screenshots at each interaction
-- Network requests and responses
-- Browser console logs and errors
-- Element selectors used
-- Timing information
-- Test video recording (if enabled)
+**Viewing a trace:**
+1. `ls systemtests/tracing/` to find `trace-<test-name>-<timestamp>.zip`
+2. Drag it onto https://trace.playwright.dev/ (runs entirely in-browser, nothing is uploaded)
+3. Use the Timeline tab to find the red (failed) action, then check Network and Console tabs for the underlying cause
 
-#### Viewing Playwright Traces
-
-**Step-by-step debugging process:**
-
-1. **Locate trace file**
-   ```bash
-   cd systemtests
-   ls -la tracing/
-   # Find: trace-<test-name>-<timestamp>.zip
-   ```
-
-2. **Open Playwright Trace Viewer**
-   - Navigate to https://trace.playwright.dev/
-   - Drag and drop the ZIP file onto the page
-   - No upload to external servers - runs entirely in browser
-
-3. **Analyze the trace**
-   
-   **Timeline view:**
-   - See every action in chronological order
-   - Click any action to see page state at that moment
-   - Red highlighted actions indicate failures
-   
-   **Screenshots:**
-   - Before/after screenshots for each action
-   - Highlight elements being interacted with
-   - Zoom and inspect page details
-   
-   **Network tab:**
-   - See all API calls made during test
-   - Request/response headers and bodies
-   - Timing information for each request
-   
-   **Console tab:**
-   - Browser console logs and errors
-   - JavaScript errors that occurred
-   - Console.log output from application
-   
-   **Source tab:**
-   - Test source code
-   - See which line of test code corresponds to each action
-
-4. **Find the failure point**
-   - Look for red highlighted action in timeline
-   - Review screenshot at failure moment
-   - Check console for JavaScript errors
-   - Verify network requests completed successfully
-
-**Example usage:**
-
-> Test fails with "Element not found" error. Trace shows:
-> 1. Navigation to page succeeded
-> 2. Click on "Topics" tab succeeded
-> 3. Wait for "Create Topic" button failed
-> 4. Screenshot shows button didn't load due to API error
-> 5. Network tab shows 500 error from /api/topics endpoint
-> 6. Root cause: Backend API issue, not UI test problem
+**Example:** a test fails with "Element not found". The trace shows navigation succeeded, the "Topics" tab click succeeded, but waiting for "Create Topic" timed out — the Network tab shows a 500 from `/api/topics`. Root cause: a backend error, not a broken selector.
 
 ## Finding Root Cause of Test Failures
 
-**Systematic debugging process:**
+1. **Read the failure message**
+   ```
+   [ERROR] MessagesST.testSendMessage:123 Expected element not found
+   ```
+   Note the exception type, line number, and message.
 
-### Step 1: Check Test Failure Message
+2. **UI failures — check the Playwright trace** (see above) for the timeline, screenshot, network, and console state at the point of failure.
 
-```bash
-# Maven output shows:
-[ERROR] MessagesST.testSendMessage:123 Expected element not found
-```
+3. **Check the failure screenshot directly**
+   ```bash
+   ls systemtests/screenshots/<run-timestamp>/
+   open systemtests/screenshots/<run-timestamp>/test-name-failure.png
+   ```
+   Look for missing elements, on-page error messages, or unexpected UI state.
 
-**What to look for:**
-- Exception type (AssertionError, TimeoutException, etc.)
-- Line number in test code
-- Error message details
+4. **Review application logs**
+   ```bash
+   cd systemtests/target/logs/<timestamp>/pod-logs/
+   grep ERROR console-api-*.log kafka-broker-*.log
+   ```
 
-### Step 2: For UI Failures - Check Playwright Trace
+5. **Examine the resource YAML dumps**
+   ```bash
+   cd systemtests/target/logs/<timestamp>/yaml-dumps/
+   cat kafka-cluster.yaml console-instance.yaml
+   ```
+   Confirm images, versions, and env vars are as expected.
 
-```bash
-ls -la systemtests/tracing/
-# Open trace file at https://trace.playwright.dev/
-```
+6. **Verify the test configuration**
+   ```bash
+   cat systemtests/target/logs/config.yaml
+   ```
 
-**What to analyze:**
-- Timeline of actions leading to failure
-- Screenshot at failure point
-- Network requests (check for API errors)
-- Console errors (JavaScript issues)
-- Element selectors (correct selector?)
-
-### Step 3: Check Screenshots
-
-```bash
-ls -la systemtests/target/logs/screenshots/
-open systemtests/target/logs/screenshots/test-name-failure.png
-```
-
-**What to look for:**
-- Visual state at failure time
-- Expected elements missing?
-- Error messages displayed on page?
-- Unexpected UI state?
-
-### Step 4: Review Application Logs
-
-```bash
-cd systemtests/target/logs/<timestamp>/pod-logs/
-cat console-api-*.log | grep ERROR
-cat kafka-broker-*.log | grep ERROR
-```
-
-**What to check:**
-- Application exceptions
-- Backend API errors
-- Database connection issues
-- Kafka broker errors
-
-### Step 5: Examine Resource YAML Files
-
-```bash
-cd systemtests/target/logs/<timestamp>/yaml-dumps/
-cat kafka-cluster.yaml
-cat console-instance.yaml
-```
-
-**What to verify:**
-- Resource configurations are correct
-- All required fields present
-- Image names and versions correct
-- Environment variables set properly
-
-### Step 6: Verify Test Configuration
-
-```bash
-cat systemtests/target/logs/config.yaml
-```
-
-**What to confirm:**
-- Test ran with expected configuration
-- Environment overrides applied correctly
-- Component versions match expectations
-
-### Step 7: Inspect Live Cluster State
-
-**If `CLEANUP_ENVIRONMENT: false`:**
-
-```bash
-# List all resources in test namespace
-kubectl get all -n <test-namespace>
-
-# Check pod status
-kubectl describe pod <pod-name> -n <test-namespace>
-
-# View live logs
-kubectl logs <pod-name> -n <test-namespace>
-
-# Check events
-kubectl get events -n <test-namespace> --sort-by='.lastTimestamp'
-```
-
-**Common issues revealed:**
-- Pods stuck in Pending (resource constraints)
-- ImagePullBackOff (image not found)
-- CrashLoopBackOff (application error)
-- Resource conflicts
+7. **Inspect the live cluster**, if `CLEANUP_ENVIRONMENT: false`:
+   ```bash
+   kubectl get all -n <test-namespace>
+   kubectl describe pod <pod-name> -n <test-namespace>
+   kubectl logs <pod-name> -n <test-namespace>
+   kubectl get events -n <test-namespace> --sort-by='.lastTimestamp'
+   ```
 
 ### Common Failure Patterns
 
 | Symptom | Likely Cause | Where to Look |
 |---------|-------------|---------------|
-| Timeout waiting for element | UI slow to load, API error, incorrect selector | Playwright trace (network tab, screenshots, DOM), console logs |
-| Element not found | Incorrect selector, page structure changed | Playwright trace (screenshots, DOM) |
-| Test timeout | Resource not becoming ready | Pod logs, kubectl describe pod |
-| ImagePullBackOff | Wrong image name, registry auth | kubectl describe pod, config.yaml |
+| Timeout waiting for element | UI slow to load, API error, wrong selector | Trace (network, screenshots, DOM), console logs |
+| Element not found | Wrong selector, changed page structure | Trace (screenshots, DOM) |
+| Test timeout | Resource not becoming ready | Pod logs, `kubectl describe pod` |
+| ImagePullBackOff | Wrong image name, registry auth | `kubectl describe pod`, `config.yaml` |
 | 500 API errors | Backend application error | Console API logs, Kafka logs |
 | Authentication failures | Keycloak config, credentials | Keycloak logs, Console API logs |
 | Kafka connection errors | Kafka not ready, network issue | Kafka broker logs, Strimzi logs |
 
 ---
 
-**See also:**
-- [README.md](README.md) - Getting started guide
-- [CONFIGURATION.md](CONFIGURATION.md) - Configuration reference
-- [RUNNING_TESTS.md](RUNNING_TESTS.md) - How to run tests
+**See also:** [README.md](README.md) · [CONFIGURATION.md](CONFIGURATION.md) · [RUNNING_TESTS.md](RUNNING_TESTS.md)

@@ -1,7 +1,5 @@
 # Test Framework Architecture
 
-Understanding the testing infrastructure helps debug failures and develop new tests.
-
 ## Table of Contents
 
 - [AbstractST - Base Class for All Tests](#abstractst---base-class-for-all-tests)
@@ -12,167 +10,79 @@ Understanding the testing infrastructure helps debug failures and develop new te
 
 ## AbstractST - Base Class for All Tests
 
-Every system test class extends `AbstractST`, which provides common setup and teardown functionality.
+Every test class extends `AbstractST` (`src/test/java/com/github/streamshub/systemtests/AbstractST.java`), which uses JUnit 5's `@BeforeAll`/`@AfterAll` to set up operators and namespaces before tests run and tear them down afterward (unless `CLEANUP_ENVIRONMENT: false`). Test classes just implement the scenarios.
 
-**What AbstractST does for you:**
-
-When you write a test class that extends `AbstractST`, it automatically:
-- Sets up the test environment before any tests run (operators, namespaces)
-- Initializes the test framework and resource tracking
-- Cleans up resources after tests complete (unless `CLEANUP_ENVIRONMENT: false`)
-
-**How it works:**
-
-`AbstractST` uses JUnit 5 lifecycle hooks (`@BeforeAll`, `@AfterAll`) to handle the heavy lifting of environment setup and teardown. Your test class just focuses on the actual test scenarios.
-
-**Location:** `src/test/java/com/github/streamshub/systemtests/AbstractST.java`
-
-**Test classes that extend AbstractST:**
-- `MessagesST` - Message production/consumption tests
-- `AuthST` - Authentication and authorization tests
-- `ApicurioST` - Schema registry tests
-- `KroxyST` - Kafka proxy tests
-- And more...
+Extends `AbstractST`: `MessagesST`, `AuthST`, `ApicurioST`, `KroxyST`, and the other `*ST` classes.
 
 ## Setup Components
 
-Component-specific setup managers located in `src/main/java/.../setup/`:
+Component-specific setup managers live in `src/main/java/.../setup/`, each deploying, waiting for readiness, configuring, and cleaning up its component:
 
-| Directory | Purpose |
-|-----------|---------|
-| `console/` | Console operator and Console instance deployment |
-| `strimzi/` | Strimzi Cluster Operator (Kafka operator) installation |
-| `keycloak/` | Keycloak identity provider for authentication tests |
-| `apicurio/` | Apicurio schema registry for schema tests |
-| `kroxylicious/` | Kroxylicious Kafka proxy setup |
-| `prometheus/` | Prometheus metrics collection for monitoring tests |
-
-Each setup manager knows how to:
-- Deploy its component to Kubernetes
-- Wait for component readiness
-- Configure component for test scenarios
-- Clean up after tests
+| Directory | Component |
+|-----------|-----------|
+| `console/` | Console operator and Console instance |
+| `strimzi/` | Strimzi Cluster Operator |
+| `keycloak/` | Keycloak (authentication tests) |
+| `apicurio/` | Apicurio schema registry |
+| `kroxylicious/` | Kroxylicious Kafka proxy |
+| `prometheus/` | Prometheus metrics |
 
 ## Core Testing Frameworks
 
-### kubetest4j - Kubernetes Resource Management
+### kubetest4j
 
-**Purpose:** Manage Kubernetes resources in tests
+Manages Kubernetes resources in tests via `KubeResourceManager` — creation, readiness waits, and automatic cleanup for both namespaced and cluster-scoped resources.
 
-**Key Features:**
-- `KubeResourceManager` - Creates, tracks, and cleans up K8s resources automatically
-- Defines resource types for all custom resources (Kafka, Console, Kroxy, etc.)
-- Handles resource lifecycle: creation, waiting for readiness, deletion
-- Supports both namespaced and cluster-scoped resources
-
-**Example Usage in Tests:**
 ```java
-// Resources are automatically tracked and cleaned up
+// Automatically tracked and cleaned up
 KubeResourceManager.get().createResource(kafkaResource);
 ```
 
-### Playwright - Browser Automation
+### Playwright
 
-**Purpose:** Automate browser interactions for UI testing
+Automates browser interactions (clicks, typing, navigation, assertions), controlled by `RUN_HEADLESS` in `config.yaml`:
+- **Headless** (default) — no visible window, faster, CI-friendly
+- **Headed** — visible browser, for debugging and test development
 
-**Key Features:**
-- Automates browser actions: clicks, typing, navigation, assertions
-- Controlled via `RUN_HEADLESS` setting in config.yaml
-- Captures screenshots on failures to `SCREENSHOTS_DIR_PATH`
-- Generates detailed trace files for debugging (see [TROUBLESHOOTING.md](TROUBLESHOOTING.md))
-
-**Browser Modes:**
-- Headless (default): Tests run without visible browser - faster, suitable for CI
-- Headed: Browser window visible - useful for debugging and test development
+On failure it captures a screenshot to `systemtests/screenshots/<run-timestamp>/` and a trace file to `systemtests/tracing/<run-timestamp>/` (see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)). Both directories live outside `target/`, so `mvn clean` never removes them — useful for comparing screenshots/traces across runs.
 
 ## Test Buckets
 
-### `@TestBucket` annotation
+`@TestBucket("name")` groups tests that share Kubernetes resources, so setup/teardown for the bucket runs once instead of per-test:
 
-**Purpose:** Group related tests that share Kubernetes resources
-
-**Benefits:**
-- Optimizes resource creation and cleanup
-- Reduces test execution time by reusing infrastructure within a bucket
-- Tests in the same bucket share setup/teardown phases
-
-**Usage:**
 ```java
 @TestBucket("messages-basic")
 @Test
-void testProduceMessages() {
-    // Test implementation
-}
+void testProduceMessages() { ... }
 
 @TestBucket("messages-basic")
 @Test
-void testConsumeMessages() {
-    // Shares resources with testProduceMessages
-}
+void testConsumeMessages() { ... }  // shares resources with testProduceMessages
 ```
 
 ## Logging and Diagnostics
 
-The test framework automatically collects comprehensive logs, tracing and resources when tests fail.
-
 ### TestLogCollector
 
-**Purpose:** Automatically collect resource description and logs on test failure
-
-**What it collects:**
-- Logs from all namespaces labeled with `COLLECT_ST_LOGS=true`
-- Operator logs (Strimzi, Console operators)
-- Application logs (Kafka brokers, Console instances)
-- Test client logs
-- Supporting service logs (Keycloak, Apicurio, etc.)
-
-**Output location:** `TEST_LOG_DIR` (default: `target/logs/`)
-
-**Automatic labeling:** All namespaces created by tests are automatically labeled for log collection
+On test failure, `TestLogCollector` collects logs from every namespace labeled `COLLECT_ST_LOGS=true` (applied automatically to all test-created namespaces) — operator logs, application logs (Kafka, Console), test client logs, and supporting services (Keycloak, Apicurio, etc.) — into `TEST_LOG_DIR` (default `target/logs/`, wiped by `mvn clean`).
 
 ### YAML Resource Storage
 
-**Purpose:** Save all created Kubernetes resources for post-failure analysis
-
-**How it works:**
-- Enabled via `KubeResourceManager.get().setStoreYamlPath(Environment.TEST_LOG_DIR)`
-- Every K8s resource created during tests is saved as a YAML file
-- Files are timestamped and organized by test run
-
-**What's saved:**
-- ConfigMaps and Secrets
-- Deployments and StatefulSets
-- Services and Ingresses
-- Custom Resources (Kafka, KafkaTopic, KafkaUser, Console, etc.)
-
-**Use case:** Reproduce issues by examining exact resource configurations after test failure
+Every Kubernetes resource created during a test (ConfigMaps, Secrets, Deployments, Services, Custom Resources, etc.) is saved as a timestamped YAML file under `TEST_LOG_DIR` via `KubeResourceManager.get().setStoreYamlPath(Environment.TEST_LOG_DIR)`, so you can inspect the exact configuration after a failure.
 
 ### Configuration Snapshot
 
-**Purpose:** Capture test environment configuration for reproducibility
-
-**How it works:**
-- `Environment.logConfigAndSaveToFile()` saves current config at test initialization
-- Creates a copy of `config.yaml` in `TEST_LOG_DIR`
-- Includes all environment variable overrides
-
-**Use case:** Understand what configuration was used for a particular test run
+`Environment.logConfigAndSaveToFile()` copies the resolved `config.yaml` (including env var overrides) into `TEST_LOG_DIR` at test start, so you can confirm what configuration a given run used.
 
 ### Log Levels
 
-Control logging verbosity independently for files and console:
-
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `TEST_FILE_LOG_LEVEL` | `DEBUG` | File output verbosity (TRACE, DEBUG, INFO, WARN, ERROR) |
+| `TEST_FILE_LOG_LEVEL` | `DEBUG` | File output verbosity |
 | `TEST_CONSOLE_LOG_LEVEL` | `INFO` | Console output verbosity |
 
-**Strategy:** Detailed file logs (DEBUG) + clean console output (INFO) = best debugging experience
+Detailed file logs + a quiet console is the default and recommended combination.
 
 ---
 
-**See also:**
-- [README.md](README.md) - Getting started guide
-- [RUNNING_TESTS.md](RUNNING_TESTS.md) - How to run tests
-- [CONFIGURATION.md](CONFIGURATION.md) - Configuration reference
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Debugging and troubleshooting
+**See also:** [README.md](README.md) · [RUNNING_TESTS.md](RUNNING_TESTS.md) · [CONFIGURATION.md](CONFIGURATION.md) · [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
