@@ -166,10 +166,10 @@ wait_for_http() {
 kubectl apply -f "${SMOKE_MANIFEST}"
 kubectl wait --for=condition=ready pod -l app=cluster-setup-smoke-test --timeout=180s -n "${SMOKE_NAMESPACE}"
 
-echo "Checking http://${SMOKE_HOST}/ (ingress-nginx reload can take up to ~30s)..."
-wait_for_http "http://${SMOKE_HOST}/" ""
-echo "Checking https://${SMOKE_HOST}/ ..."
-wait_for_http "https://${SMOKE_HOST}/" "-k"
+echo "Checking http://${SMOKE_HOST}:${INGRESS_HTTP_PORT}/ (ingress-nginx reload can take up to ~30s)..."
+wait_for_http "http://${SMOKE_HOST}:${INGRESS_HTTP_PORT}/" ""
+echo "Checking https://${SMOKE_HOST}:${INGRESS_HTTPS_PORT}/ ..."
+wait_for_http "https://${SMOKE_HOST}:${INGRESS_HTTPS_PORT}/" "-k"
 echo "Smoke test passed: macOS -> ${CONTAINER_ENGINE} VM -> kind node -> ingress-nginx -> pod is working."
 
 cleanup_smoke_test
