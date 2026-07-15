@@ -16,6 +16,8 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 source ./lib/env.sh
 
+check_linux_rootless_podman_ip_tables
+
 if [ "${CONTAINER_ENGINE}" = "podman" ]; then
   ensure_podman_machine
 fi

@@ -3,17 +3,18 @@
 
 OS_NAME="$(uname -s)"
 
-# Auto-detect the container engine if not explicitly set: prefer podman,
-# fall back to docker, so this works out of the box on machines that only
-# have one of the two installed (common on Linux, where docker is often
-# the default with no podman in sight).
+# Auto-detect the container engine if not explicitly set: prefer docker,
+# fall back to podman. kind only ever supports these two, and docker has
+# been the more reliable of the two in practice (podman has repeatedly
+# needed workarounds: the ip_tables kernel module requirement on Linux,
+# and PID-limit crashes under a full Kafka+Console workload).
 if [ -z "${CONTAINER_ENGINE:-}" ]; then
-  if command -v podman >/dev/null 2>&1; then
-    CONTAINER_ENGINE="podman"
-  elif command -v docker >/dev/null 2>&1; then
+  if command -v docker >/dev/null 2>&1; then
     CONTAINER_ENGINE="docker"
+  elif command -v podman >/dev/null 2>&1; then
+    CONTAINER_ENGINE="podman"
   else
-    echo "Neither podman nor docker found in PATH. Install one, or set CONTAINER_ENGINE explicitly." >&2
+    echo "Neither docker nor podman found in PATH. Install one, or set CONTAINER_ENGINE explicitly." >&2
     exit 1
   fi
 fi
@@ -106,5 +107,33 @@ ensure_podman_machine() {
   if [ "${cpus}" != "${PODMAN_MACHINE_CPUS}" ] || [ "${mem}" != "${PODMAN_MACHINE_MEMORY}" ]; then
     echo "Note: podman machine '${name}' is already sized at ${cpus} CPUs / ${mem}MB memory (requested ${PODMAN_MACHINE_CPUS}/${PODMAN_MACHINE_MEMORY}MB). Not resizing an existing machine automatically." >&2
     echo "  To resize: podman machine stop ${name} && podman machine set --cpus ${PODMAN_MACHINE_CPUS} --memory ${PODMAN_MACHINE_MEMORY} ${name} && podman machine start ${name}" >&2
+  fi
+}
+
+# On native Linux with rootless podman, kube-proxy/ingress-nginx need the
+# host's ip_tables kernel module loaded — rootless containers can't load
+# kernel modules themselves (no CAP_SYS_MODULE), so a missing module
+# surfaces confusingly later as ingress-nginx/kube-proxy failing, not as an
+# obvious "module missing" error. Check up front and fail fast instead.
+# No-op on macOS (podman machine VM, handled by ensure_podman_machine) and
+# on rootful podman/docker (which don't hit this).
+check_linux_rootless_podman_ip_tables() {
+  if [ "${OS_NAME}" != "Linux" ] || [ "${CONTAINER_ENGINE}" != "podman" ]; then
+    return 0
+  fi
+
+  if [ "$(podman info --format json | jq -r .host.security.rootless)" != "true" ]; then
+    return 0
+  fi
+
+  if [ -z "$(lsmod | grep ^ip_tables)" ]; then
+    echo "podman is running rootless on Linux, but the 'ip_tables' kernel module isn't loaded." >&2
+    echo "Rootless containers can't load kernel modules themselves (no CAP_SYS_MODULE), and" >&2
+    echo "kube-proxy/ingress-nginx need it on the host - without it, ingress setup fails." >&2
+    echo "" >&2
+    echo "Fix:" >&2
+    echo "  sudo modprobe ip_tables" >&2
+    echo "  echo ip_tables | sudo tee /etc/modules-load.d/ip_tables.conf   # persist across reboots" >&2
+    exit 1
   fi
 }
