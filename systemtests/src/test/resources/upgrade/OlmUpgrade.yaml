@@ -3,4 +3,4 @@ oldOlmChannel: 0.12.x
 newOlmChannel: 0.13.x
 # Operator version
 oldOperatorVersion: 0.12.6
-newOperatorVersion: 0.13.0-snapshot
+newOperatorVersion: 0.14.0-snapshot
