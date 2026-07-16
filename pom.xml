@@ -33,7 +33,7 @@
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <jandex-maven-plugin.version>3.6.0</jandex-maven-plugin.version>
-        <spotbugs.version>4.10.2</spotbugs.version>
+        <spotbugs.version>4.10.3</spotbugs.version>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
 
         <!-- Sonar settings -->
