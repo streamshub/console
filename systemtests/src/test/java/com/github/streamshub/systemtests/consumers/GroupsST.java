@@ -112,7 +112,7 @@ public class GroupsST extends AbstractST {
             Map.entry("Hyphenated", "group-hyphen--name-"),
             Map.entry("With slash", "group/with//slash/"),
             Map.entry("Equals sign", "group=equals==two"),
-            // Map.entry("Comma separated", "group,comma,separated,,"),
+            Map.entry("Comma separated", "group,comma,separated,,"),
             Map.entry("With spaces", "group space allowed"),
             Map.entry("Pipe symbol", "group|pipe||secondpipe"),
             Map.entry("Tilde", "group~tilde~~name"),

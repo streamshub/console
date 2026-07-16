@@ -3,6 +3,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import escape from '../utils/escape';
 import { apiClient } from '../client';
 import { ListResponse, Resource } from '../types';
 
@@ -100,7 +101,7 @@ export function useResourceList<T extends Resource>(
           }
 
           if (typeof value === 'string') {
-            searchParams.set(`filter[${key}]`, `like,*${value}*`);
+            searchParams.set(`filter[${key}]`, `like,*${escape(value)}*`);
             return;
           }
 

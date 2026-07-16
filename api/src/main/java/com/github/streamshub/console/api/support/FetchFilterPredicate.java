@@ -24,6 +24,10 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
             this.value = value;
         }
 
+        public String value() {
+            return value;
+        }
+
         public static Operator fromValue(String value) {
             Objects.requireNonNull(value);
 

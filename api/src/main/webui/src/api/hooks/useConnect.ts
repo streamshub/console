@@ -3,6 +3,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import escape from '../utils/escape';
 import { apiClient } from '../client';
 import {
   ConnectorsResponse,
@@ -67,7 +68,7 @@ export function useConnectors(
       searchParams.set('filter[connectCluster.kafkaClusters]', `in,${kafkaId}`);
 
       if (params?.name) {
-        searchParams.set('filter[name]', `like,*${params.name}*`);
+        searchParams.set('filter[name]', `like,*${escape(params.name)}*`);
       }
 
       if (params?.pageSize) {
@@ -140,7 +141,7 @@ export function useConnectClusters(
       searchParams.set('filter[kafkaClusters]', `in,${kafkaId}`);
 
       if (params?.name) {
-        searchParams.set('filter[name]', `like,*${params.name}*`);
+        searchParams.set('filter[name]', `like,*${escape(params.name)}*`);
       }
 
       if (params?.pageSize) {

@@ -3,6 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import escape from '../utils/escape';
 import { apiClient } from '../client';
 import {
   RebalancesResponse,
@@ -66,7 +67,7 @@ export function useRebalances(
       }
 
       if (params?.name) {
-        searchParams.set('filter[name]', `like,*${params.name}*`);
+        searchParams.set('filter[name]', `like,*${escape(params.name)}*`);
       }
 
       if (params?.status && params.status.length > 0) {

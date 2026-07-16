@@ -94,6 +94,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -229,6 +230,40 @@ class GroupsResourceIT {
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(2))
                 .body("data.attributes.groupId", everyItem(matchesPattern(compile("^grp-\\d{2}-FLAG-.*$"))));
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // Exact match with all commas escaped
+        "'like,group\\,name\\,with\\,commas', true",
+        // Wildcard around an escaped comma substring
+        "'like,*name\\,with*',               true",
+        // Wildcard with no commas — matches the non-comma portion
+        "'like,*name*',                      true",
+        // Unescaped commas are parsed as additional operands, splitting the group name;
+        // none of the resulting operands matches the full group id
+        "'like,group,name,with,commas',      false",
+        // Exact match with all commas escaped, but with invalid trailing backslash
+        "'like,group\\,name\\,with\\,commas\\', false",
+    })
+    void testListGroupsWithCommaInId(String filterValue, boolean expectMatch) {
+        String groupId = "group,name,with,commas";
+        String topic = "t-" + UUID.randomUUID().toString();
+        String clientId = "c-" + UUID.randomUUID().toString();
+
+        try (var consumer = groupUtils.consume(groupId, topic, clientId, 2, false)) {
+            var req = whenRequesting(r -> r
+                    .param("filter[id]", filterValue)
+                    .get("", clusterId1))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()));
+
+            if (expectMatch) {
+                req.body("data.attributes.groupId", hasItem(groupId));
+            } else {
+                req.body("data.attributes.groupId", not(hasItem(groupId)));
+            }
         }
     }
 

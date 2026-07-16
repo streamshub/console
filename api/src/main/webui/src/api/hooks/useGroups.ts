@@ -3,6 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import escape from '../utils/escape';
 import { apiClient } from '../client';
 import {
   GroupsResponse,
@@ -56,7 +57,7 @@ export function useGroups(
       );
 
       if (params?.id) {
-        searchParams.set('filter[id]', `like,*${params.id}*`);
+        searchParams.set('filter[id]', `like,*${escape(params.id)}*`);
       }
 
       if (params?.type && params.type.length > 0) {
