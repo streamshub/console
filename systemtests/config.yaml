@@ -24,8 +24,6 @@ STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
 CONSOLE_DEPLOYMENT_NAME: streamshub-console
 # Install type for Console Operator [OLM; YAML]
 CONSOLE_INSTALL_TYPE: olm
-# Cluster domain required for k8s clusters except OpenShift.
-CONSOLE_CLUSTER_DOMAIN: "192.168.49.2.nip.io"
 # -------------------------------------------
 # OLM
 # -------------------------------------------

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ResourceManager(cleanResources = false)
 @SuppressWarnings("ClassDataAbstractionCoupling")
-@ExtendWith({TestExecutionWatcher.class, PlaywrightTracingExtension.class})
+@ExtendWith({TestExecutionWatcher.class, ResetTracingExtension.class})
 @ExtendWith(ExtensionContextParameterResolver.class)
 @TestMethodOrder(BucketMethodsOrderRandomizer.class)
 public abstract class AbstractST {

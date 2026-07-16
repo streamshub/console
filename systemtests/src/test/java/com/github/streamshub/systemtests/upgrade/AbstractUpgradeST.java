@@ -1,6 +1,6 @@
 package com.github.streamshub.systemtests.upgrade;
 
-import com.github.streamshub.systemtests.PlaywrightTracingExtension;
+import com.github.streamshub.systemtests.ResetTracingExtension;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.TestExecutionWatcher;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ResourceManager(cleanResources = false)
 @SuppressWarnings("ClassDataAbstractionCoupling")
-@ExtendWith({TestExecutionWatcher.class, PlaywrightTracingExtension.class})
+@ExtendWith({TestExecutionWatcher.class, ResetTracingExtension.class})
 @ExtendWith(ExtensionContextParameterResolver.class)
 @TestMethodOrder(BucketMethodsOrderRandomizer.class)
 public class AbstractUpgradeST {

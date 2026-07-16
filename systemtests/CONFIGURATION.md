@@ -42,7 +42,7 @@ mvn -pl systemtests verify -DskipSTs=false
 | `CONSOLE_DEPLOYMENT_NAME` | `streamshub-console` | Console instance deployment name. |
 | `CONSOLE_INSTALL_TYPE` | `olm` | `olm` (Operator Lifecycle Manager) or `yaml` (direct manifests). |
 | `CLIENT_TYPE` | `kubectl` | `kubectl` or `oc` (OpenShift). |
-| `CONSOLE_CLUSTER_DOMAIN` | _none — must be set_ | Ingress domain for non-OpenShift clusters. Auto-detected on OpenShift; otherwise used verbatim, with no auto-detection. For minikube, compute it per-cluster: `$(minikube ip).nip.io`. `config.yaml` ships `192.168.49.2.nip.io` as an example only — it's one specific minikube instance's IP and will not match yours. |
+| `CONSOLE_CLUSTER_DOMAIN` | _none — must be set_ | Ingress domain for non-OpenShift clusters. Auto-detected on OpenShift; otherwise used verbatim, with no auto-detection. For minikube, compute it per-cluster: `$(minikube ip).nip.io`. |
 
 ## OLM Configuration
 
