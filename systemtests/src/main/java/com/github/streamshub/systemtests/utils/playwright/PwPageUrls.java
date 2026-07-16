@@ -43,7 +43,8 @@ public class PwPageUrls {
     }
 
     public static String getGroupsMembersPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
-        return getGroupsPage(tcc, kafkaName) + "/" + consumerGroupName + "/members";
+        consumerGroupName = consumerGroupName.isBlank() ? "" : "/" + consumerGroupName;
+        return getGroupsPage(tcc, kafkaName) + consumerGroupName + "/members";
     }
 
     public static String getGroupsPage(TestCaseConfig tcc, String kafkaName) {

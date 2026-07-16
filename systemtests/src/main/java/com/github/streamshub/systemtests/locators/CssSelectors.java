@@ -146,6 +146,7 @@ public class CssSelectors {
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
+    public static final String BODY_EMPTY_STATE = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-c-empty-state > div.pf-v6-c-empty-state__content > div.pf-v6-c-empty-state__body";
 
     // Kafka credentials login page
 
