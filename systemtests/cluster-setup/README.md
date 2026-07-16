@@ -8,12 +8,26 @@ a minikube node's IP — used by CI's `$(minikube ip).nip.io` — isn't
 reachable from the host), but the scripts themselves are OS-agnostic and
 work on Linux too.
 
-**Container engine**: auto-detected — prefers `podman`, falls back to
-`docker` if podman isn't installed. Override explicitly with
-`CONTAINER_ENGINE=podman` or `CONTAINER_ENGINE=docker`. The podman-machine
-VM setup (`ensure_podman_machine` in `lib/env.sh`) only runs on macOS,
-where podman needs a VM to run containers at all — it's a no-op on native
-Linux, which doesn't need one.
+**Container engine / driver**: auto-detected, and `kind/` and `minikube/`
+pick differently:
+
+- `kind/` only ever supports `docker` or `podman` — prefers `docker`,
+  falls back to `podman`. Override with `CONTAINER_ENGINE=docker` or
+  `CONTAINER_ENGINE=podman`.
+- `minikube/` also considers VM-based drivers, per
+  [minikube's own driver docs](https://minikube.sigs.k8s.io/docs/drivers/):
+  `docker` → the platform's VM driver (`vfkit` on macOS, `kvm2` on Linux)
+  → `podman` as a last resort (still marked experimental upstream on both
+  OSes). Override with `CONTAINER_ENGINE=docker`, `vfkit`, `kvm2`, or
+  `podman`.
+
+Podman works as a fallback on both, but avoid it if you have another
+option — in practice it's needed real workarounds (the `ip_tables` kernel
+module requirement on Linux, PID-limit crashes under a full
+Kafka+Console workload, and rootless-mode failures reported directly
+against minikube). The podman-machine VM setup (`ensure_podman_machine`
+in `lib/env.sh`) only runs on macOS, where podman needs a VM to run
+containers at all — it's a no-op on Linux, which doesn't need one.
 
 ## Use kind
 
@@ -28,6 +42,15 @@ instead, which isn't reliably reachable from macOS. That means either a
 that requires a one-time sudo prompt — more moving parts either way. Use
 `minikube/` only if you specifically need it (e.g. closer parity with CI's
 tooling); otherwise `kind/` is simpler and more reliable.
+
+**macOS reality check**: `kind/` with the `docker` driver is the path
+that's actually been verified working reliably. `minikube/` with the
+`vfkit` driver has hit VM-networking failures in practice that are still
+being root-caused, and rootless podman is a recurring source of pain on
+both cluster types (see the driver notes above) — don't reach for `podman`
+or `vfkit` as your first choice on macOS. If you need `minikube/`, prefer
+`docker` as the driver; only try `vfkit`/`podman` if you're specifically
+debugging that path.
 
 ## Layout
 

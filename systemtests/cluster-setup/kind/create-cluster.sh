@@ -165,7 +165,22 @@ wait_for_http() {
   return 1
 }
 
-kubectl apply -f "${SMOKE_MANIFEST}"
+# The SSL-passthrough patch above replaces the ingress-nginx-controller pod
+# (hostPorts 80/443 can't coexist on one node, so it's a full kill-then-
+# recreate, not a smooth rolling update). `kubectl rollout status` only
+# confirms the new pod passed its /healthz readiness probe — it says
+# nothing about kube-proxy having programmed the new pod's IP into the
+# ingress-nginx-controller-admission Service's dataplane yet. Applying this
+# Ingress (which goes through that validating webhook) can land in that gap
+# and get "connection refused". Retry instead of guessing a fixed delay —
+# the apply is idempotent.
+for attempt in $(seq 1 15); do
+  if kubectl apply -f "${SMOKE_MANIFEST}"; then
+    break
+  fi
+  [ "${attempt}" -eq 15 ] && { echo "Failed to apply smoke test manifest after retries" >&2; exit 1; }
+  sleep 2
+done
 kubectl wait --for=condition=ready pod -l app=cluster-setup-smoke-test --timeout=180s -n "${SMOKE_NAMESPACE}"
 
 echo "Checking http://${SMOKE_HOST}:${INGRESS_HTTP_PORT}/ (ingress-nginx reload can take up to ~30s)..."
