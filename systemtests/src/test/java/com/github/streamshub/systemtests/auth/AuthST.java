@@ -7,6 +7,7 @@ import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.AuthTestConstants;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
+import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssSelectors;
@@ -20,6 +21,7 @@ import com.github.streamshub.systemtests.setup.keycloak.KeycloakInstanceSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakOperatorSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
@@ -112,12 +115,11 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_NO_RESULTS_FOUND, "No results found", false);
 
-        // TODO: enable once fixed
         // // Logout and check user is no longer logged in
-        // PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
-        // PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        // Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        // assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
 
     /**
@@ -204,17 +206,16 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
-        // TODO: enable once fixed
         // // Logout and check user is no longer logged in
-        // PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
-        // // Dev
-        // PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        // Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        // assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
-        // // Admin
-        // PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
-        // Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        // assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
+        // Dev
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+        // Admin
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
 
     /**
@@ -274,13 +275,12 @@ public class AuthST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403", true);
 
-        // TODO: enable once fixed
-        // LOGGER.info("Verify consumer groups page is unavailable");
-        // PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""));
-        // PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
-        //
+        LOGGER.info("Verify consumer groups page is unavailable");
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""));
+        PwUtils.waitForContainsText(tcc, CssSelectors.BODY_EMPTY_STATE, "403 Forbidden", true);
+
         // Logout and check user is no longer logged in
-        //PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
     }
 
     /**
@@ -373,9 +373,8 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Wait for producer and consumer clients on topic '{}' to complete successfully", newTopicName);
         WaitUtils.waitForClientsSuccess(clients);
-        // TODO: enable once fixed
         // Logout and check user is no longer logged in
-        //PwUtils.logoutUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
     }
 
     @BeforeAll
