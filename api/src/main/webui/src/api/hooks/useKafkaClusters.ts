@@ -26,7 +26,7 @@ export function useKafkaCluster(kafkaId: string | undefined, params?: {
       const searchParams = new URLSearchParams();
       
       if (params?.fields) {
-        searchParams.set('fields', params.fields);
+        searchParams.set('fields[kafkas]', params.fields);
       }
       
       const queryString = searchParams.toString();
