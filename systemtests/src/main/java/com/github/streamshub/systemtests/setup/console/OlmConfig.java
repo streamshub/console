@@ -121,8 +121,10 @@ public class OlmConfig extends InstallConfig {
     public OlmVersionModificationData getUpgradeData() {
         maybeCreateCatalogSource();
 
-        String newVersion = System.getProperty("operator.version", "")
-                .toLowerCase(Locale.ROOT);
+        String newVersion = Optional.of(Environment.CONSOLE_OPERATOR_VERSION)
+                .filter(Predicate.not(String::isBlank))
+                .orElseGet(() -> System.getProperty("operator.version", "")
+                        .toLowerCase(Locale.ROOT));
 
         String[] newVersionElements = newVersion.split("[.-]");
         var newChannelSemVer = Version.of(

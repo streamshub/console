@@ -31,6 +31,7 @@ public class Environment {
     public static final boolean SKIP_STRIMZI_INSTALLATION = ENVS.getOrDefault("SKIP_STRIMZI_INSTALLATION", Boolean::parseBoolean, false);
 
     // Console
+    public static final String CONSOLE_OPERATOR_VERSION = ENVS.getOrDefault("CONSOLE_OPERATOR_VERSION", "");
     public static final String CONSOLE_API_IMAGE = ENVS.getOrDefault("CONSOLE_API_IMAGE", "");
     public static final InstallType CONSOLE_INSTALL_TYPE = ENVS.getOrDefault("CONSOLE_INSTALL_TYPE", InstallType::fromString, InstallType.Yaml);
     public static final String CONSOLE_DEPLOYMENT_NAME = ENVS.getOrDefault("CONSOLE_DEPLOYMENT_NAME", "streamshub-console");
