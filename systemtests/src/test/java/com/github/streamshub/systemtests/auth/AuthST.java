@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests.auth;
 
+import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.clients.KafkaClients;
@@ -276,7 +277,24 @@ public class AuthST extends AbstractST {
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403", true);
 
         LOGGER.info("Verify consumer groups page is unavailable");
-        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""));
+        String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "unathorized-groups";
+        KafkaClients clients = new KafkaClientsBuilder()
+            .withNamespaceName(tcc.namespace())
+            .withTopicName(newTopicName)
+            .withMessageCount(Constants.MESSAGE_COUNT)
+            .withDelayMs(0)
+            .withProducerName(KafkaNamingUtils.producerName(newTopicName))
+            .withConsumerName(KafkaNamingUtils.consumerName(newTopicName))
+            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(newTopicName))
+            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
+            .withUsername(KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
+            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME), SecurityProtocol.SASL_PLAINTEXT))
+            .build();
+
+        KubeResourceManager.get().createResourceAsyncWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+        String consumerGroupEncodedName = Identifiers.encode(KafkaNamingUtils.consumerGroupName(newTopicName));
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, consumerGroupEncodedName));
         PwUtils.waitForContainsText(tcc, CssSelectors.BODY_EMPTY_STATE, "403 Forbidden", true);
 
         // Logout and check user is no longer logged in
