@@ -1,0 +1,45 @@
+#
+# This example demonstrates how to configure TLS for the StreamsHub Console server
+# using the `spec.tls` field of the Console custom resource.
+#
+# When `spec.tls` is set, the console container serves HTTPS on port 8443.
+# The operator automatically adjusts the Service (port 443 → 8443) and:
+#   - On plain Kubernetes: sets the Ingress backend-protocol annotation to HTTPS.
+#   - On OpenShift: switches the Route to passthrough TLS termination.
+#
+# This example stores the PEM certificate and key in a Secret. Create the Secret first:
+#
+#   kubectl create secret generic my-console-tls \
+#     --from-file=tls.crt=/path/to/tls.crt \
+#     --from-file=tls.key=/path/to/tls.key \
+#     -n console-namespace
+#
+# Replace <placeholders> with actual values specific to the environment.
+#
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  tls:
+    certificate:
+      valueFrom:
+        secretKeyRef:
+          name: my-console-tls  # Name of the Secret containing the TLS certificate
+          key: tls.crt          # Key within the Secret holding the PEM certificate
+    key:
+      valueFrom:
+        secretKeyRef:
+          name: my-console-tls  # Name of the Secret containing the TLS private key
+          key: tls.key          # Key within the Secret holding the PEM private key
+
+  kafkaClusters:
+    - name: console-kafka             # Name of the `Kafka` CR representing the cluster
+      namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
+      listener: secure                # Listener name from the `Kafka` CR to connect the console
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1   # Name of the `KafkaUser` CR used to connect to the Kafka cluster
