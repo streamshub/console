@@ -1,5 +1,14 @@
 package com.github.streamshub.systemtests.utils;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+
+import org.apache.logging.log4j.Logger;
+import org.slf4j.event.Level;
+
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.exceptions.SetupException;
@@ -14,6 +23,7 @@ import com.github.streamshub.systemtests.resourcetypes.kafka.KafkaUserType;
 import com.github.streamshub.systemtests.resourcetypes.kroxy.KroxyResourceType;
 import com.github.streamshub.systemtests.resourcetypes.prometheus.ServiceMonitorType;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.Namespaced;
@@ -21,11 +31,18 @@ import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.CatalogSource;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.CatalogSourceStatus;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.GRPCConnectionState;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionCondition;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionStatus;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProtocolFilter;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxy;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaProxyIngress;
 import io.kroxylicious.kubernetes.api.v1alpha1.KafkaService;
 import io.kroxylicious.kubernetes.api.v1alpha1.VirtualKafkaCluster;
+import io.skodjob.kubetest4j.resources.CatalogSourceType;
 import io.skodjob.kubetest4j.resources.ClusterRoleBindingType;
 import io.skodjob.kubetest4j.resources.ClusterRoleType;
 import io.skodjob.kubetest4j.resources.ConfigMapType;
@@ -42,10 +59,6 @@ import io.skodjob.kubetest4j.resources.ServiceAccountType;
 import io.skodjob.kubetest4j.resources.ServiceType;
 import io.skodjob.kubetest4j.resources.SubscriptionType;
 import io.skodjob.kubetest4j.utils.KubeUtils;
-import org.apache.logging.log4j.Logger;
-import org.slf4j.event.Level;
-
-import java.io.IOException;
 
 @SuppressWarnings("ClassDataAbstractionCoupling")
 public class SetupUtils {
@@ -75,6 +88,18 @@ public class SetupUtils {
     public static void initializeSystemTests() {
         LOGGER.info("Initializing system tests: registering resource types, callbacks and logging configuration");
         KubeResourceManager.get().setResourceTypes(
+            new CatalogSourceType() {
+                // Remove when upgrading kubetest4j
+                @Override
+                public boolean isReady(CatalogSource resource) {
+                    return Optional.ofNullable(resource)
+                            .map(CatalogSource::getStatus)
+                            .map(CatalogSourceStatus::getConnectionState)
+                            .map(GRPCConnectionState::getLastObservedState)
+                            .map("READY"::equalsIgnoreCase)
+                            .orElse(false);
+                }
+            },
             new CustomResourceDefinitionType(),
             new ClusterRoleBindingType(),
             new ClusterRoleType(),
@@ -94,7 +119,29 @@ public class SetupUtils {
             new SecretType(),
             new ServiceAccountType(),
             new ServiceType(),
-            new SubscriptionType(),
+            new SubscriptionType() {
+                // Remove when upgrading kubetest4j
+                @Override
+                public boolean isReady(Subscription resource) {
+                    Set<String> subscriptionProblems = Set.of(
+                            "CatalogSourcesUnhealthy",
+                            "InstallPlanMissing",
+                            "InstallPlanPending",
+                            "InstallPlanFailed",
+                            "ResolutionFailed"
+                    );
+
+                    return Optional.ofNullable(resource)
+                            .map(Subscription::getStatus)
+                            .map(SubscriptionStatus::getConditions)
+                            .filter(Predicate.not(Collection::isEmpty))
+                            .map(conditions -> conditions.stream()
+                                    .filter(condition -> subscriptionProblems.contains(condition.getType()))
+                                    .map(SubscriptionCondition::getStatus)
+                                    .noneMatch("True"::equalsIgnoreCase))
+                            .orElse(false);
+                }
+            },
             new KroxyResourceType<>(KafkaProxy.class),
             new KroxyResourceType<>(KafkaService.class),
             new KroxyResourceType<>(KafkaProxyIngress.class),

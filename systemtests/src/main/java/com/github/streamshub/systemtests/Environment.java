@@ -1,19 +1,20 @@
 package com.github.streamshub.systemtests;
 
-import com.github.streamshub.systemtests.constants.Constants;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+
 import io.fabric8.kubernetes.api.model.Service;
 import io.skodjob.kubetest4j.enums.InstallType;
 import io.skodjob.kubetest4j.environment.TestEnvironmentVariables;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 import static io.skodjob.kubetest4j.KubeTestEnv.USER_PATH;
 
@@ -43,7 +44,7 @@ public class Environment {
     public static final String CONSOLE_OLM_CATALOG_SOURCE_NAME = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAME", "streamshub-console-catalog");
     public static final String CONSOLE_OLM_PACKAGE_NAME = ENVS.getOrDefault("CONSOLE_OLM_PACKAGE_NAME", "streamshub-console-operator");
     public static final String CONSOLE_OLM_CHANNEL_NAME = ENVS.getOrDefault("CONSOLE_OLM_CHANNEL_NAME", "alpha");
-    public static final String CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE", Constants.OPENSHIFT_MARKETPLACE_NAMESPACE);
+    public static final String CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE", "olm");
     public static final String CONSOLE_OLM_CATALOG_SOURCE_IMAGE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_IMAGE", "");
 
     // Logs and debug
