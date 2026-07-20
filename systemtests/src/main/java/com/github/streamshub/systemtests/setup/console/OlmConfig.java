@@ -1,14 +1,35 @@
 package com.github.streamshub.systemtests.setup.console;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.exceptions.OperatorSdkNotInstalledException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.upgrade.OlmVersionModificationData;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+import com.github.zafarkhaja.semver.Version;
+
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.openshift.api.model.operatorhub.packages.v1.ChannelEntry;
+import io.fabric8.openshift.api.model.operatorhub.packages.v1.PackageChannel;
+import io.fabric8.openshift.api.model.operatorhub.packages.v1.PackageManifest;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.CatalogSource;
@@ -17,20 +38,21 @@ import io.fabric8.openshift.api.model.operatorhub.v1alpha1.ClusterServiceVersion
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionBuilder;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
-import java.util.List;
+import static org.awaitility.Awaitility.await;
 
 public class OlmConfig extends InstallConfig {
     private static final Logger LOGGER = LogWrapper.getLogger(OlmConfig.class);
-    private String olmAppBundlePrefix = Environment.CONSOLE_DEPLOYMENT_NAME;
-    private String packageName = Environment.CONSOLE_OLM_PACKAGE_NAME;
-    private String catalogSourceName = Environment.CONSOLE_OLM_CATALOG_SOURCE_NAME;
-    private String catalogSourceNamespace = Environment.CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE;
-    private String catalogSourceImage = Environment.CONSOLE_OLM_CATALOG_SOURCE_IMAGE;
+    private static final Pattern CHANNEL_VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)");
+
+    private final String olmAppBundlePrefix = Environment.CONSOLE_DEPLOYMENT_NAME;
+    private final String packageName = Environment.CONSOLE_OLM_PACKAGE_NAME;
+    private final String catalogSourceName = Environment.CONSOLE_OLM_CATALOG_SOURCE_NAME;
+    private final String catalogSourceNamespace = Environment.CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE;
+    private final String catalogSourceImage = Environment.CONSOLE_OLM_CATALOG_SOURCE_IMAGE;
+    private final String subscriptionName = Constants.CONSOLE_OLM_SUBSCRIPTION_NAME;
+
     private String channelName = Environment.CONSOLE_OLM_CHANNEL_NAME;
-    private String subscriptionName = Constants.CONSOLE_OLM_SUBSCRIPTION_NAME;
 
     public OlmConfig(String namespace) {
         super(namespace);
@@ -43,6 +65,14 @@ public class OlmConfig extends InstallConfig {
         }
     }
 
+    private void maybeCreateCatalogSource() {
+        if (!catalogSourceImage.isEmpty() &&
+            ResourceUtils.getKubeResource(CatalogSource.class, catalogSourceNamespace, catalogSourceName) == null) {
+            LOGGER.info("Creating CatalogSource '{}' in namespace '{}' using image '{}'", catalogSourceName, catalogSourceNamespace, catalogSourceImage);
+            KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmCatalogSource());
+        }
+    }
+
     @Override
     public void install() {
 
@@ -52,11 +82,7 @@ public class OlmConfig extends InstallConfig {
             return;
         }
 
-        if (!catalogSourceImage.isEmpty() &&
-            ResourceUtils.getKubeResource(CatalogSource.class, catalogSourceNamespace, catalogSourceName) == null) {
-            LOGGER.info("Creating CatalogSource '{}' in namespace '{}' using image '{}'", catalogSourceName, catalogSourceNamespace, catalogSourceImage);
-            KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmCatalogSource());
-        }
+        maybeCreateCatalogSource();
 
         LOGGER.info("Creating OLM OperatorGroup and Subscription '{}' for package '{}' in namespace '{}'", subscriptionName, packageName, deploymentNamespace);
         KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmOperatorGroup());
@@ -90,6 +116,106 @@ public class OlmConfig extends InstallConfig {
         } else {
             LOGGER.debug("No Console Operator deployment found with prefix '{}' in namespace '{}', nothing to delete", deploymentName, deploymentNamespace);
         }
+    }
+
+    public OlmVersionModificationData getUpgradeData() {
+        maybeCreateCatalogSource();
+
+        String newVersion = Optional.of(Environment.CONSOLE_OPERATOR_VERSION)
+                .filter(Predicate.not(String::isBlank))
+                .orElseGet(() -> System.getProperty("operator.version", "")
+                        .toLowerCase(Locale.ROOT));
+
+        String[] newVersionElements = newVersion.split("[.-]");
+        var newChannelSemVer = Version.of(
+                Long.valueOf(newVersionElements[0]),
+                Long.valueOf(newVersionElements[1])
+        );
+
+        var manifestClient = KubeResourceManager.get()
+                .kubeClient()
+                .getOpenShiftClient()
+                .operatorHub()
+                .packageManifests()
+                .inNamespace(Environment.CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE)
+                .withName(Environment.CONSOLE_OLM_PACKAGE_NAME);
+
+        var packageManifest = await("PackageManifest contains operator version")
+                .atMost(10, TimeUnit.SECONDS)
+                .ignoreException(NoSuchElementException.class)
+                .until(
+                    manifestClient::get,
+                    pm -> getPackageChannel(pm, newChannelSemVer) != null
+                );
+
+        var newPackageChannel = getPackageChannel(packageManifest, newChannelSemVer);
+        var oldPackageChannel = getPreviousPackageChannel(packageManifest, newChannelSemVer);
+
+        OlmVersionModificationData olmUpgradeData = new OlmVersionModificationData();
+
+        olmUpgradeData.setOldOlmChannel(oldPackageChannel.getName());
+        olmUpgradeData.setOldOperatorVersion(getLatestVersion(oldPackageChannel));
+
+        olmUpgradeData.setNewOlmChannel(newPackageChannel.getName());
+        olmUpgradeData.setNewOperatorVersion(newVersion);
+
+        LOGGER.info("Loaded OLM upgrade data: operator version {} -> {}, channel {} -> {}",
+                olmUpgradeData.getOldOperatorVersion(), olmUpgradeData.getNewOperatorVersion(),
+                olmUpgradeData.getOldOlmChannel(), olmUpgradeData.getNewOlmChannel());
+
+        return olmUpgradeData;
+    }
+
+    /**
+     * Find a channel in the package manifest with a name that contains the channelVersion
+     * in the name.
+     */
+    private PackageChannel getPackageChannel(PackageManifest manifest, Version channelVersion) {
+        return manifest.getStatus()
+            .getChannels()
+            .stream()
+            .filter(c -> channelVersion(c.getName()).map(channelVersion::equals).orElse(false))
+            .findFirst()
+            .orElseThrow();
+    }
+
+    /**
+     * Find a channel in the package manifest with a name that contains the latest version (according
+     * to SemVer) that is lower than channelVersion.
+     */
+    private PackageChannel getPreviousPackageChannel(PackageManifest manifest, Version channelVersion) {
+        return manifest.getStatus()
+            .getChannels()
+            .stream()
+            .map(c -> channelVersion(c.getName())
+                .filter(Predicate.not(channelVersion::isLowerThanOrEquivalentTo))
+                .map(otherChannelSemVer -> Map.entry(otherChannelSemVer, c))
+                .orElse(null))
+            .filter(Objects::nonNull)
+            .max(Comparator.comparing(Map.Entry::getKey))
+            .map(Map.Entry::getValue)
+            .orElseThrow();
+    }
+
+    private Optional<Version> channelVersion(String channelName) {
+        Matcher m = CHANNEL_VERSION_PATTERN.matcher(channelName);
+
+        if (m.find()) {
+            return Optional.of(Version.of(
+                    Long.valueOf(m.group(1)),
+                    Long.valueOf(m.group(2))
+            ));
+        }
+
+        return Optional.empty();
+    }
+
+    private String getLatestVersion(PackageChannel packageChannel) {
+        return packageChannel.getEntries()
+            .stream()
+            .max(Comparator.comparing(e -> Version.parse(e.getVersion())))
+            .map(ChannelEntry::getVersion)
+            .orElseThrow();
     }
 
     public void setChannelName(String channelName) {

@@ -1,5 +1,10 @@
 package com.github.streamshub.systemtests.upgrade;
 
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
@@ -16,25 +21,18 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
+
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TestTags.OLM_UPGRADE)
-public class OlmUpgradeST extends AbstractUpgradeST {
+class OlmUpgradeST extends AbstractUpgradeST {
     private static final Logger LOGGER = LogWrapper.getLogger(OlmUpgradeST.class);
     private TestCaseConfig tcc;
-    private ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
-    OlmVersionModificationData olmVersionData = new VersionModificationDataLoader(VersionModificationDataLoader.InstallType.OLM).getOlmUpgradeData();
 
     /**
      * Verifies that upgrading the Console Operator through OLM (Operator Lifecycle Manager)
@@ -61,10 +59,13 @@ public class OlmUpgradeST extends AbstractUpgradeST {
     @Test
     void testUpgradeOlmOperator() {
         // Setup
-        LOGGER.info("Setting up Console Operator subscription on old OLM channel '{}' (expected version '{}')", olmVersionData.getOldOlmChannel(), olmVersionData.getOldOperatorVersion());
         OlmConfig olmConfig = new OlmConfig(Constants.CO_NAMESPACE);
+        OlmVersionModificationData olmVersionData = olmConfig.getUpgradeData();
+        LOGGER.info("Setting up Console Operator subscription on old OLM channel '{}' (expected version '{}')", olmVersionData.getOldOlmChannel(), olmVersionData.getOldOperatorVersion());
 
         olmConfig.setChannelName(olmVersionData.getOldOlmChannel());
+
+        ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
         consoleOperatorSetup.setInstallConfig(olmConfig);
         LOGGER.info("Installing Console Operator via OLM into namespace '{}'", Constants.CO_NAMESPACE);
         consoleOperatorSetup.install(false);
@@ -81,7 +82,8 @@ public class OlmUpgradeST extends AbstractUpgradeST {
         assertEquals(olmVersionData.getOldOperatorVersion(), currentOperatorVersion);
 
         LOGGER.info("Performing basic UI checks before upgrade to confirm Console displays all {} pre-created topics correctly", TOTAL_TOPICS_COUNT);
-        checkOldUiTopicState(tcc, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         // Upgrade
         LOGGER.info("Triggering Console Operator OLM upgrade: switching subscription from channel '{}' to channel '{}'", olmVersionData.getOldOlmChannel(), olmVersionData.getNewOlmChannel());
@@ -103,18 +105,12 @@ public class OlmUpgradeST extends AbstractUpgradeST {
     void testClassSetup() {
         // Init test case config based on the test context
         tcc = getTestCaseConfig();
+
         // Prepare test environment
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
 
-        // Setup topics
-        final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
-
         KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, 1, 1, 1);
-        KafkaTopicUtils.setupUnmanagedUnderReplicatedAndUnavailableTopics(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()),
-            new KafkaTopicUtils.TopicTypeSpec(Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1),
-            new KafkaTopicUtils.TopicTypeSpec(Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas),
-            new KafkaTopicUtils.TopicTypeSpec(Constants.UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1));
     }
 
     @AfterAll

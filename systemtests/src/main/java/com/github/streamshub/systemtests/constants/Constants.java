@@ -26,7 +26,6 @@ public class Constants {
      * Namespaces
      */
     public static final String CO_NAMESPACE = "co-namespace";
-    public static final String OPENSHIFT_MARKETPLACE_NAMESPACE = "openshift-marketplace";
 
     /**
      * Test values
