@@ -1,19 +1,20 @@
 package com.github.streamshub.systemtests;
 
-import com.github.streamshub.systemtests.constants.Constants;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+
 import io.fabric8.kubernetes.api.model.Service;
 import io.skodjob.kubetest4j.enums.InstallType;
 import io.skodjob.kubetest4j.environment.TestEnvironmentVariables;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 import static io.skodjob.kubetest4j.KubeTestEnv.USER_PATH;
 
@@ -30,6 +31,7 @@ public class Environment {
     public static final boolean SKIP_STRIMZI_INSTALLATION = ENVS.getOrDefault("SKIP_STRIMZI_INSTALLATION", Boolean::parseBoolean, false);
 
     // Console
+    public static final String CONSOLE_OPERATOR_VERSION = ENVS.getOrDefault("CONSOLE_OPERATOR_VERSION", "");
     public static final String CONSOLE_API_IMAGE = ENVS.getOrDefault("CONSOLE_API_IMAGE", "");
     public static final InstallType CONSOLE_INSTALL_TYPE = ENVS.getOrDefault("CONSOLE_INSTALL_TYPE", InstallType::fromString, InstallType.Yaml);
     public static final String CONSOLE_DEPLOYMENT_NAME = ENVS.getOrDefault("CONSOLE_DEPLOYMENT_NAME", "streamshub-console");
@@ -43,7 +45,7 @@ public class Environment {
     public static final String CONSOLE_OLM_CATALOG_SOURCE_NAME = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAME", "streamshub-console-catalog");
     public static final String CONSOLE_OLM_PACKAGE_NAME = ENVS.getOrDefault("CONSOLE_OLM_PACKAGE_NAME", "streamshub-console-operator");
     public static final String CONSOLE_OLM_CHANNEL_NAME = ENVS.getOrDefault("CONSOLE_OLM_CHANNEL_NAME", "alpha");
-    public static final String CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE", Constants.OPENSHIFT_MARKETPLACE_NAMESPACE);
+    public static final String CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE", "olm");
     public static final String CONSOLE_OLM_CATALOG_SOURCE_IMAGE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_IMAGE", "");
 
     // Logs and debug

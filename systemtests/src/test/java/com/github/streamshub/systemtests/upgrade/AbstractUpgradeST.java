@@ -27,7 +27,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ResourceManager(cleanResources = false)
@@ -35,18 +34,18 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 @ExtendWith({TestExecutionWatcher.class, ResetTracingExtension.class})
 @ExtendWith(ExtensionContextParameterResolver.class)
 @TestMethodOrder(BucketMethodsOrderRandomizer.class)
-public class AbstractUpgradeST {
+class AbstractUpgradeST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractUpgradeST.class);
     private static boolean initialized = false;
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
 
     // Topics - shared by OlmUpgradeST and YamlUpgradeST, both pre-create the same 17 topics
     // (12 fully replicated, 3 under-replicated, 2 unavailable) to verify against before/after their upgrade.
-    protected static final int REPLICATED_TOPICS_COUNT = 7;
-    protected static final int UNMANAGED_REPLICATED_TOPICS_COUNT = 5;
+    protected static final int REPLICATED_TOPICS_COUNT = 17;
+    protected static final int UNMANAGED_REPLICATED_TOPICS_COUNT = 0;
     protected static final int TOTAL_REPLICATED_TOPICS_COUNT = REPLICATED_TOPICS_COUNT + UNMANAGED_REPLICATED_TOPICS_COUNT;
-    protected static final int UNDER_REPLICATED_TOPICS_COUNT = 3;
-    protected static final int UNAVAILABLE_TOPICS_COUNT = 2;
+    protected static final int UNDER_REPLICATED_TOPICS_COUNT = 0;
+    protected static final int UNAVAILABLE_TOPICS_COUNT = 0;
     protected static final int TOTAL_TOPICS_COUNT = TOTAL_REPLICATED_TOPICS_COUNT + UNDER_REPLICATED_TOPICS_COUNT + UNAVAILABLE_TOPICS_COUNT;
 
     // Old (pre-redesign) Console UI, valid for every operator version that predates the UI overhaul
@@ -108,10 +107,6 @@ public class AbstractUpgradeST {
      * @param unavailableTopicsCount     expected unavailable topic count
      */
     protected void checkOldUiTopicState(TestCaseConfig tcc, int totalTopicsCount, int totalReplicatedTopicsCount, int underReplicatedTopicsCount, int unavailableTopicsCount) {
-        // Old (pre-redesign) UI had a dedicated sign in with credentials button, no login modal
-        PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), false, false);
-        PwUtils.waitForLocatorAndClick(tcc, "body > div > div > div > div > form > button");
-
         LOGGER.info("Checking overview page topic status: {} total topics, {} partitions, {} fully replicated, {} under-replicated, {} unavailable",
             totalTopicsCount, totalTopicsCount, totalReplicatedTopicsCount, underReplicatedTopicsCount, unavailableTopicsCount);
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));

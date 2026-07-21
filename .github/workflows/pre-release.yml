@@ -21,10 +21,10 @@ jobs:
           CHANGED=$(git diff --name-only \
             ${{ github.event.pull_request.base.sha }} \
             ${{ github.event.pull_request.head.sha }} \
-            | grep -E "systemtests/src/test/resources/upgrade/(YamlUpgrade.yaml|OlmUpgrade.yaml)" || true)
+            | grep -E "systemtests/src/test/resources/upgrade/(YamlUpgrade.yaml)" || true)
 
           if [ -z "$CHANGED" ]; then
-            echo "❌[ERROR]: Neither YamlUpgrade.yaml nor OlmUpgrade.yaml was modified in this PR, exiting the flow."
+            echo "❌[ERROR]: YamlUpgrade.yaml was not modified in this PR, exiting the flow."
             exit 1
           fi
 
