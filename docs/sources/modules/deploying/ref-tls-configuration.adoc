@@ -15,11 +15,11 @@ When `spec.tls` is set, the operator makes the following changes automatically:
 
 * The console container switches to HTTPS (port 8443) and health probes use the HTTPS scheme.
 * The Kubernetes `Service` exposes port 443 and forwards traffic to port 8443 on the pod.
-* On plain Kubernetes, the `Ingress` sets the `nginx.ingress.kubernetes.io/backend-protocol` annotation to `HTTPS` and targets port 443 on the service.
-* On OpenShift, the `Route` uses `passthrough` TLS termination instead of `edge`, so the connection is encrypted end-to-end between the router and the console pod.
+* For plain Kubernetes clusters, the `Ingress` sets the `nginx.ingress.kubernetes.io/backend-protocol` annotation to `HTTPS` and targets port 443 on the service.
+* For OpenShift clusters, the `Route` uses `passthrough` TLS termination instead of `edge`, so the connection is encrypted end-to-end between the router and the console pod.
 
 TLS is an optional configuration.
-If `spec.tls` is not set the console continues to operate over plain HTTP, with TLS terminated at the edge by the ingress or route (edge termination with redirect).
+If `spec.tls` is not set, the console continues to operate over plain HTTP, with TLS terminated at the edge by the ingress or route (edge termination with redirect).
 
 == TLS properties
 
@@ -27,7 +27,7 @@ If `spec.tls` is not set the console continues to operate over plain HTTP, with 
 `spec.tls.certificate`:: The TLS certificate in PEM format, provided as a literal value or by reference to a `Secret` or `ConfigMap` entry.
 `spec.tls.key`:: The TLS private key in PEM format, provided as a literal value or by reference to a `Secret` or `ConfigMap` entry.
 
-Both `certificate` and `key` accept either a direct `value` string or a `valueFrom` reference.
+Both the `certificate` and `key` fields accept either a direct `value` string or a `valueFrom` reference.
 Storing keys and certificates in a `Secret` is strongly recommended for production environments.
 
 == Example TLS configuration
