@@ -52,6 +52,7 @@ import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
+import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
@@ -1460,4 +1461,13 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertThat(errorMessages, hasItem(containsString(CONSOLE_NAME + '-' + PrometheusDeployment.NAME)));
         });
     }
+
+    @Test
+    void testOperatorLeaseCreation() {
+        var lease = client.resources(Lease.class).withName("streamshub-console-operator-lease").get();
+        assertNotNull(lease);
+        // set in application.properties for the `test` profile
+        assertEquals("test-console-operator-id", lease.getSpec().getHolderIdentity());
+    }
+
 }
