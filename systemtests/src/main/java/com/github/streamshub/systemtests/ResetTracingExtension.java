@@ -16,8 +16,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * alone, even when the {@link TestCaseConfig} (and its underlying browser/page) is shared across
  * every test in the class.</p>
  */
-public class PlaywrightTracingExtension implements BeforeTestExecutionCallback {
-    private static final Logger LOGGER = LogWrapper.getLogger(PlaywrightTracingExtension.class);
+public class ResetTracingExtension implements BeforeTestExecutionCallback {
+    private static final Logger LOGGER = LogWrapper.getLogger(ResetTracingExtension.class);
 
     @Override
     public void beforeTestExecution(ExtensionContext extensionContext) {

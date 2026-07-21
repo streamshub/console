@@ -38,7 +38,24 @@ import java.util.regex.Pattern;
 
 public class PwUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(PwUtils.class);
+    // Characters rejected by GitHub Actions' upload-artifact path validation (and generally unsafe on NTFS)
+    private static final Pattern INVALID_ARTIFACT_PATH_CHARS = Pattern.compile("[\":<>|*?\r\n]");
     private PwUtils() {}
+
+    /**
+     * Replaces characters that are invalid in file/directory names (e.g. those rejected by
+     * GitHub Actions' {@code upload-artifact}) with an underscore.
+     *
+     * <p>JUnit {@code @ParameterizedTest} display names can contain such characters (e.g.
+     * {@code Type: X - Offset: "0"}), and these display names are used to build screenshot
+     * and tracing file paths.</p>
+     *
+     * @param name the raw name to sanitize
+     * @return the sanitized name, safe to use as a file or directory name
+     */
+    private static String sanitizeForPath(String name) {
+        return INVALID_ARTIFACT_PATH_CHARS.matcher(name).replaceAll("_");
+    }
 
     /**
      * Creates a Playwright {@link Browser} instance based on the configured browser type
@@ -525,7 +542,7 @@ public class PwUtils {
         String pageUrl = tcc.page().url().replace(PwPageUrls.getKafkaBaseUrl(tcc, kafkaName), "");
 
         String screenshotName = java.lang.String.join("/",
-            KubeResourceManager.get().getTestContext().getDisplayName().replace("()", ""),
+            sanitizeForPath(KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "")),
             tcc.namespace(),
             kafkaName,
             pageUrl.contains("?") ? pageUrl.split("\\?")[0] : pageUrl,
@@ -548,7 +565,7 @@ public class PwUtils {
      */
     public static void screenshot(Page page, String additionalSuffix) {
         String screenshotName = java.lang.String.join("/",
-            KubeResourceManager.get().getTestContext().getDisplayName().replace("()", ""),
+            sanitizeForPath(KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "")),
             additionalSuffix +
             (additionalSuffix.isEmpty() ? "" : "-") +
             LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss-SSS")) +
@@ -569,7 +586,7 @@ public class PwUtils {
      */
     public static void saveTracing(BrowserContext context) {
         context.tracing().stop(new Tracing.StopOptions().setPath(Paths.get(Environment.TRACING_DIR_PATH,
-            KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "") + "-trace.zip")));
+            sanitizeForPath(KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "")) + "-trace.zip")));
     }
 
 
