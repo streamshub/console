@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.security.GlobalSecurity;
+import com.github.streamshub.console.api.v1alpha1.spec.template.DeploymentTemplate;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.sundr.builder.annotations.Buildable;
@@ -32,6 +33,13 @@ public class ConsoleSpec {
             and private key to use for HTTPS connections.
             """)
     Tls tls;
+
+    @JsonPropertyDescription("""
+            Template for the Console Deployment and its pod. Allows configuration \
+            of scheduling constraints such as affinity, tolerations, topology spread \
+            constraints, and node selectors.
+            """)
+    DeploymentTemplate deployment;
 
     @JsonPropertyDescription("""
             Templates for Console instance containers. The templates allow \
@@ -75,6 +83,14 @@ public class ConsoleSpec {
 
     public void setTls(Tls tls) {
         this.tls = tls;
+    }
+
+    public DeploymentTemplate getDeployment() {
+        return deployment;
+    }
+
+    public void setDeployment(DeploymentTemplate deployment) {
+        this.deployment = deployment;
     }
 
     public Containers getContainers() {
