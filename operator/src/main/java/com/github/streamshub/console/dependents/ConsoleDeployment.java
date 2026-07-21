@@ -16,6 +16,8 @@ import com.github.streamshub.console.api.v1alpha1.spec.Images;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerSpec;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerTemplateSpec;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
+import com.github.streamshub.console.api.v1alpha1.spec.template.DeploymentTemplate;
+import com.github.streamshub.console.api.v1alpha1.spec.template.PodTemplate;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -51,6 +53,9 @@ public class ConsoleDeployment extends BaseDeployment {
         String name = instanceName(primary);
         String configSecretName = secret.instanceName(primary);
 
+        var podTemplate = Optional.ofNullable(primary.getSpec().getDeployment())
+                .map(DeploymentTemplate::getPod);
+
         var containers = Optional.ofNullable(primary.getSpec().getContainers());
         var templateAPI = containers.map(Containers::getApi).map(ContainerTemplateSpec::getSpec);
         // deprecated
@@ -82,6 +87,10 @@ public class ConsoleDeployment extends BaseDeployment {
                                 serializeDigest(context, "console-digest"))
                     .endMetadata()
                     .editSpec()
+                        .withAffinity(podTemplate.map(PodTemplate::getAffinity).orElse(null))
+                        .withTolerations(podTemplate.map(PodTemplate::getTolerations).orElse(null))
+                        .withTopologySpreadConstraints(podTemplate.map(PodTemplate::getTopologySpreadConstraints).orElse(null))
+                        .withNodeSelector(podTemplate.map(PodTemplate::getNodeSelector).orElse(null))
                         .withServiceAccountName(serviceAccount.instanceName(primary))
                         .editMatchingVolume(vol -> "config".equals(vol.getName()))
                             .editSecret()
