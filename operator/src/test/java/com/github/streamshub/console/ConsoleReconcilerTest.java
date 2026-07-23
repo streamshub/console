@@ -1464,7 +1464,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
     @Test
     void testOperatorLeaseCreation() {
-        var lease = client.resources(Lease.class).withName("streamshub-console-operator-lease").get();
+        var lease = client.resources(Lease.class).withName(LeaderConfigurationFactory.LEASE_NAME).get();
         assertNotNull(lease);
         // set in application.properties for the `test` profile
         assertEquals("test-console-operator-id", lease.getSpec().getHolderIdentity());
