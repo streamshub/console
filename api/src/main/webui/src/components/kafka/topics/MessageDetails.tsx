@@ -16,7 +16,9 @@ import {
   TabTitleText,
   ClipboardCopy,
   Title,
+  Tooltip,
 } from '@patternfly/react-core';
+import { HelpIcon } from '@patternfly/react-icons';
 import { allExpanded, darkStyles, defaultStyles, JsonView } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { KafkaRecord } from '@/api/types';
@@ -96,7 +98,12 @@ export function MessageDetails({ message }: MessageDetailsProps) {
         </DescriptionListGroup>
 
         <DescriptionListGroup>
-          <DescriptionListTerm>{t('topics.messages.field.size')}</DescriptionListTerm>
+          <DescriptionListTerm>
+            {t('topics.messages.field.size')}{' '}
+            <Tooltip content={t('topics.messages.tooltip.size')}>
+              <HelpIcon />
+            </Tooltip>
+          </DescriptionListTerm>
           <DescriptionListDescription>
             {formatBytes(message.attributes.size)}
           </DescriptionListDescription>

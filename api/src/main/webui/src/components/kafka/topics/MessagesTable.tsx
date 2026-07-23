@@ -11,9 +11,10 @@ import {
   Button,
   Title,
   Content,
+  Tooltip,
 } from '@patternfly/react-core';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { SearchIcon } from '@patternfly/react-icons';
+import { HelpIcon, SearchIcon } from '@patternfly/react-icons';
 import { KafkaRecord } from '@/api/types';
 import { Column, useColumnLabels } from './ColumnsModal';
 import { formatDateTime } from '@/utils/dateTime';
@@ -167,7 +168,16 @@ export function MessagesTable({
                 
                 return (
                   <Th key={column} modifier={modifier} width={width}>
-                    {columnLabels[column]}
+                    {column === 'size' ? (
+                      <>
+                        {columnLabels[column]}{' '}
+                        <Tooltip content={t('topics.messages.tooltip.size')}>
+                          <HelpIcon />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      columnLabels[column]
+                    )}
                   </Th>
                 );
               })}
