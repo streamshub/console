@@ -27,7 +27,7 @@
     "i18next": "^26.3.6",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-i18next": "^17.0.10",
+    "react-i18next": "^17.0.11",
     "react-json-view-lite": "^2.5.0",
     "react-router-dom": "^7.18.1",
     "victory": "^37.3.6",
