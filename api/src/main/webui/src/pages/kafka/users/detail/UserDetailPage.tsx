@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '@/hooks';
 import {
   PageSection,
   Title,
@@ -41,6 +42,9 @@ export function UserDetailPage() {
   const [activeTabKey, setActiveTabKey] = useState<string | number>(0);
 
   const { data, isLoading, error } = useUser(kafkaId, userId);
+
+  const kafkaUserName = data?.data?.attributes?.username || userId || '';
+  usePageTitle(kafkaUserName || undefined);
 
   const handleTabClick = (
     _event: React.MouseEvent<unknown> | React.KeyboardEvent,

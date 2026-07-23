@@ -5,6 +5,7 @@
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
+import { usePageTitle } from '@/hooks';
 import {
   PageSection,
   Tabs,
@@ -26,6 +27,9 @@ export function TopicDetailPage() {
   const location = useLocation();
   const { data, isLoading, error } = useTopic(kafkaId, topicId);
   const { addViewedTopic } = useViewedTopics(kafkaId);
+
+  const topicName = data?.data?.attributes?.name || topicId || '';
+  usePageTitle(topicName || undefined);
 
   // Track this topic as viewed when data is loaded
   useEffect(() => {
@@ -75,7 +79,6 @@ export function TopicDetailPage() {
   }
 
   const topic = data?.data;
-  const topicName = topic?.attributes.name || topicId || '';
 
   return (
     <>

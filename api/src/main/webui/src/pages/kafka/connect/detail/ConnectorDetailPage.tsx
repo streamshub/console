@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { usePageTitle } from '@/hooks';
 import {
   PageSection,
   Title,
@@ -53,6 +54,9 @@ export function ConnectorDetailPage() {
 
   const { data, isLoading, error } = useConnector(connectorId);
 
+  const connectorName = data?.data?.attributes?.name || connectorId || '';
+  usePageTitle(connectorName || undefined);
+
   const handleTabClick = (
     _event: React.MouseEvent<HTMLElement, MouseEvent>,
     tabIndex: string | number
@@ -84,7 +88,6 @@ export function ConnectorDetailPage() {
   const tasks = data.included?.filter((item) => item.type === 'connectorTasks') || [];
   const config = connector.attributes.config || {};
   const configEntries = Object.entries(config);
-  const connectorName = connector.attributes.name || connectorId || '';
 
   return (
     <>
