@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import io.apicurio.registry.resolver.ParsedSchema;
 import io.apicurio.registry.resolver.SchemaParser;
 import io.apicurio.registry.resolver.data.Record;
@@ -13,6 +15,7 @@ import io.apicurio.registry.resolver.data.Record;
  */
 public class MultiformatSchemaParser<D> implements SchemaParser<Object, D> {
 
+    private static final Logger LOGGER = Logger.getLogger(MultiformatSchemaParser.class);
     private final Map<String, SchemaParser<Object, ?>> delegates;
 
     public MultiformatSchemaParser(Set<SchemaParser<Object, ?>> delegates) {
@@ -41,6 +44,8 @@ public class MultiformatSchemaParser<D> implements SchemaParser<Object, D> {
                 return delegate.parseSchema(rawSchema, resolvedReferences);
             } catch (Exception e) {
                 // Schema is not valid for the delegate parser
+                LOGGER.debugf("Schema could not be parsed as artifact type %s: %s", 
+                        delegate.artifactType(), e.getLocalizedMessage());
             }
         }
 

@@ -205,9 +205,20 @@ public class MultiformatSerializer extends MultiformatSerdeBase
             try {
                 schema = getSchemaResolver().resolveSchemaByArtifactReference(reference);
             } catch (Exception e) {
-                LOGGER.warnf("Exception retrieving schema: %s", RootCause.of(e)
-                        .map(Throwable::getMessage)
-                        .orElseGet(() -> String.valueOf(e)));
+                Throwable cause = RootCause.of(e).orElse(e);
+
+                if (cause instanceof io.apicurio.registry.rest.client.v2.models.Error clientError) {
+                    LOGGER.infof("Schema could not be resolved: %s. Message: %s", reference, clientError.getMessageEscaped());
+                } else if (LOGGER.isDebugEnabled()) {
+                    /*
+                     * Only log the stack trace at debug level. Schema resolution will be attempted
+                     * for every message consumed and will lead to excessive logging in case of a
+                     * problem.
+                     */
+                    LOGGER.debugf(e, "Exception resolving schema reference: %s", reference);
+                } else {
+                    LOGGER.warnf("Exception resolving schema reference: %s ; %s", reference, e.getMessage());
+                }
                 schema = EMPTY_RESULT;
             }
         }
