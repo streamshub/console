@@ -78,6 +78,7 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
                         .cookieName("streamshub-console-kafka-" + clusterId)
                         .cookiePath(securedPath)
                         .cookieSameSite(CookieSameSite.STRICT)
+                        .loginPage(null) // disables redirect after login
                         .landingPage(null)
                         .build();
     }

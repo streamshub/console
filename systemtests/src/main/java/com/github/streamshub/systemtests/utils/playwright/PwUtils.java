@@ -706,8 +706,6 @@ public class PwUtils {
         waitForLocatorAndFill(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON);
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        // TODO: remove once fixed
-        PwUtils.reload(tcc);
         // Wait for overview page
         waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), true);
         LOGGER.info("Successfully logged into Console with Kafka credentials");
