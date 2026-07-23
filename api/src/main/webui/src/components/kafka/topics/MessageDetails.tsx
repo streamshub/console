@@ -17,6 +17,8 @@ import {
   ClipboardCopy,
   Title,
   Tooltip,
+  CodeBlock,
+  CodeBlockCode,
 } from '@patternfly/react-core';
 import { HelpIcon } from '@patternfly/react-icons';
 import { allExpanded, darkStyles, defaultStyles, JsonView } from 'react-json-view-lite';
@@ -24,6 +26,7 @@ import 'react-json-view-lite/dist/index.css';
 import { KafkaRecord } from '@/api/types';
 import { formatDateTime } from '@/utils/dateTime';
 import { useTheme } from '@/components/app/ThemeProvider';
+import { useSchemaContent } from '@/api/hooks/useSchemaContent';
 
 interface MessageDetailsProps {
   message: KafkaRecord;
@@ -79,6 +82,11 @@ export function MessageDetails({ message }: MessageDetailsProps) {
   const keyJson = maybeJson(message.attributes.key);
   const valueJson = maybeJson(message.attributes.value);
   const headers = Object.entries(message.attributes.headers ?? {});
+
+  const keySchemaContentUrl = message.relationships.keySchema?.links?.content;
+  const valueSchemaContentUrl = message.relationships.valueSchema?.links?.content;
+  const { data: keySchemaContent } = useSchemaContent(keySchemaContentUrl);
+  const { data: valueSchemaContent } = useSchemaContent(valueSchemaContentUrl);
 
   return (
     <DrawerPanelBody>
@@ -174,6 +182,11 @@ export function MessageDetails({ message }: MessageDetailsProps) {
                     {t('topics.messages.schema')}
                   </Title>
                   <p>{message.relationships.valueSchema.meta.name}</p>
+                  {valueSchemaContent && (
+                    <CodeBlock style={{ marginTop: '0.5rem' }}>
+                      <CodeBlockCode>{valueSchemaContent}</CodeBlockCode>
+                    </CodeBlock>
+                  )}
                 </div>
               )}
             </div>
@@ -203,6 +216,11 @@ export function MessageDetails({ message }: MessageDetailsProps) {
                     {t('topics.messages.schema')}
                   </Title>
                   <p>{message.relationships.keySchema.meta.name}</p>
+                  {keySchemaContent && (
+                    <CodeBlock style={{ marginTop: '0.5rem' }}>
+                      <CodeBlockCode>{keySchemaContent}</CodeBlockCode>
+                    </CodeBlock>
+                  )}
                 </div>
               )}
             </div>

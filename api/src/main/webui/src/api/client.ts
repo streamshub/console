@@ -84,6 +84,29 @@ class ApiClient {
   }
 
   /**
+   * GET request returning plain text (e.g. schema content)
+   */
+  async getText(path: string, options?: RequestInit): Promise<string> {
+    const url = `${this.baseUrl}${path}`;
+    const response = await fetch(url, {
+      ...options,
+      method: 'GET',
+      headers: {
+        'X-Requested-With': 'JavaScript',
+        ...options?.headers,
+      },
+    });
+    if (response.status === 499 && response.headers.get('WWW-Authenticate') === 'OIDC') {
+      this.login();
+      return '';
+    }
+    if (!response.ok) {
+      throw new ApiError(response.status, response.statusText);
+    }
+    return response.text();
+  }
+
+  /**
    * GET request
    */
   get<T>(path: string, options?: RequestInit): Promise<T> {
