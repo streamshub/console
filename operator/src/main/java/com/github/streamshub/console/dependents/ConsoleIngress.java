@@ -43,12 +43,18 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
 
     @Override
     protected Ingress desired(Console primary, Context<Console> context) {
+        boolean tls = primary.getSpec().getTls() != null;
+        String backendProtocol = tls ? "HTTPS" : "HTTP";
+        int servicePort = tls ? 443 : 80;
+        String serviceName = service.instanceName(primary);
+
         return load(context, "console.ingress.yaml", Ingress.class)
             .edit()
             .editMetadata()
                 .withName(instanceName(primary))
                 .withNamespace(primary.getMetadata().getNamespace())
                 .withLabels(commonLabels("console"))
+                .addToAnnotations("nginx.ingress.kubernetes.io/backend-protocol", backendProtocol)
             .endMetadata()
             .editSpec()
                 // Plain Kubernetes (non-OCP) clusters don't need a class name; the
@@ -56,7 +62,10 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                 .withIngressClassName(null)
                 .editDefaultBackend()
                     .editService()
-                        .withName(service.instanceName(primary))
+                        .withName(serviceName)
+                        .editPort()
+                            .withNumber(servicePort)
+                        .endPort()
                     .endService()
                 .endDefaultBackend()
                 .editFirstRule()
@@ -65,7 +74,10 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                         .editFirstPath()
                             .editBackend()
                                 .editService()
-                                    .withName(service.instanceName(primary))
+                                    .withName(serviceName)
+                                    .editPort()
+                                        .withNumber(servicePort)
+                                    .endPort()
                                 .endService()
                             .endBackend()
                         .endPath()

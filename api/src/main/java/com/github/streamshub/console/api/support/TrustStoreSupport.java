@@ -31,11 +31,16 @@ public class TrustStoreSupport {
     private static final String TRUST_PREFIX_SCHEMA_REGISTRY = "schema-registry:";
     private static final String TRUST_PREFIX_OIDC_PROVIDER = "oidc-provider:";
 
-    @Inject
     TlsConfigurationRegistry tlsRegistry;
 
-    @Inject
     Vertx vertx;
+
+    @Inject
+    public TrustStoreSupport(Vertx vertx, TlsConfigurationRegistry tlsRegistry, ConsoleConfig config) {
+        this.vertx = vertx;
+        this.tlsRegistry = tlsRegistry;
+        registerTrustStores(config);
+    }
 
     /*
      * public for testing only
@@ -65,7 +70,7 @@ public class TrustStoreSupport {
     /**
      * Extract trust store configuration and register with the TLS registry.
      */
-    public ConsoleConfig registerTrustStores(ConsoleConfig config) {
+    public void registerTrustStores(ConsoleConfig config) {
         registerTrustStores(config.getKafkaConnectClusters(), null);
         registerTrustStores(config.getMetricsSources(), null);
         registerTrustStores(config.getSchemaRegistries(), null);
@@ -74,8 +79,6 @@ public class TrustStoreSupport {
         if (oidcConfig != null) {
             registerTrustStores(List.of(oidcConfig), null);
         }
-
-        return config;
     }
 
     private void registerTrustStores(List<? extends Trustable> trustables, Trustable context) {

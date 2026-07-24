@@ -18,6 +18,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerTempl
 import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -64,6 +65,11 @@ public class ConsoleDeployment extends BaseDeployment {
         envVars.addAll(coalesce(primary.getSpec().getEnv(), Collections::emptyList));
         envVars.addAll(templateAPI.map(ContainerSpec::getEnv).orElseGet(Collections::emptyList));
 
+        boolean tls = primary.getSpec().getTls() != null;
+        String portName = tls ? "https" : "http";
+        int containerPort = tls ? 8443 : 8080;
+        String probeScheme = tls ? "HTTPS" : "HTTP";
+
         return desired.edit()
             .editMetadata()
                 .withName(name)
@@ -88,12 +94,34 @@ public class ConsoleDeployment extends BaseDeployment {
                                 .withSecretName(configSecretName)
                             .endSecret()
                         .endVolume()
-                        // Set API container image options
+                        // Set API container image and port options
                         .editMatchingContainer(c -> "console-api".equals(c.getName()))
                             .withImage(imageAPI)
                             .withImagePullPolicy(pullPolicy(imageAPI))
                             .withResources(templateAPI.map(ContainerSpec::getResources).orElse(null))
                             .addAllToEnv(envVars)
+                            .editFirstPort()
+                                .withName(portName)
+                                .withContainerPort(containerPort)
+                            .endPort()
+                            .editStartupProbe()
+                                .editHttpGet()
+                                    .withPort(new IntOrString(portName))
+                                    .withScheme(probeScheme)
+                                .endHttpGet()
+                            .endStartupProbe()
+                            .editLivenessProbe()
+                                .editHttpGet()
+                                    .withPort(new IntOrString(portName))
+                                    .withScheme(probeScheme)
+                                .endHttpGet()
+                            .endLivenessProbe()
+                            .editReadinessProbe()
+                                .editHttpGet()
+                                    .withPort(new IntOrString(portName))
+                                    .withScheme(probeScheme)
+                                .endHttpGet()
+                            .endReadinessProbe()
                         .endContainer()
                     .endSpec()
                 .endTemplate()
