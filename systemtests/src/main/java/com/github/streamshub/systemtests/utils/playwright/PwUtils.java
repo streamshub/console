@@ -711,11 +711,6 @@ public class PwUtils {
         loginModal.locator("form input#password").fill(password);
         loginModal.getByRole(AriaRole.BUTTON, new GetByRoleOptions().setName("Login")).click();
 
-        //waitForLocatorAndFill(tcc, "form input#username", kafkaUser);
-        //waitForLocatorAndFill(tcc, "form input#password", password);
-        //waitForLocatorAndClick(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON);
-        //Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-
         // Wait for overview page
         waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), true);
         LOGGER.info("Successfully logged into Console with Kafka credentials");
