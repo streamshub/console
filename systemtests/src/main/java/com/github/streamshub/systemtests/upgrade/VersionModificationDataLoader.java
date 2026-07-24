@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,38 +39,30 @@ public class VersionModificationDataLoader {
     }
 
     private void loadYamlUpgradeData() {
-        String oldOperatorVersion = requireNonBlank(Environment.OLD_CONSOLE_OPERATOR_VERSION, "OLD_CONSOLE_OPERATOR_VERSION");
-        String oldOperatorCrdsUrl = requireNonBlank(Environment.OLD_CONSOLE_OPERATOR_CRDS_URL, "OLD_CONSOLE_OPERATOR_CRDS_URL");
-        String newOperatorVersion = requireNonBlank(Environment.getConsoleOperatorVersion(),
-            "CONSOLE_OPERATOR_VERSION (or the 'operator.version' system property)");
-        String newOperatorCrdsUrl = resolveNewOperatorCrdsUrl(Environment.NEW_CONSOLE_OPERATOR_CRDS_URL,
-            () -> mergeLocalOperatorBundle(newOperatorVersion));
+        String oldOperatorVersion = Environment.OLD_CONSOLE_OPERATOR_VERSION;
+        String oldOperatorCrdsUrl = Environment.OLD_CONSOLE_OPERATOR_CRDS_URL;
+        String newOperatorVersion = Environment.getConsoleOperatorVersion();
+        String newOperatorCrdsUrl = resolveNewOperatorCrdsUrl(newOperatorVersion);
 
         this.yamlUpgradeData = new YamlVersionModificationData(oldOperatorVersion, newOperatorVersion, oldOperatorCrdsUrl, newOperatorCrdsUrl);
         LOGGER.info("Loaded Yaml upgrade data: operator version {} -> {}", oldOperatorVersion, newOperatorVersion);
     }
 
-    static String requireNonBlank(String value, String sourceName) {
-        if (value == null || value.isBlank()) {
-            throw new SetupException(sourceName + " is not set");
+    static String resolveNewOperatorCrdsUrl(String newOperatorVersion) {
+        if (Environment.NEW_CONSOLE_OPERATOR_CRDS_URL != null && !Environment.NEW_CONSOLE_OPERATOR_CRDS_URL.isBlank()) {
+            LOGGER.info("Using NEW_CONSOLE_OPERATOR_CRDS_URL override: {}", Environment.NEW_CONSOLE_OPERATOR_CRDS_URL);
+            return Environment.NEW_CONSOLE_OPERATOR_CRDS_URL;
         }
-        return value;
-    }
 
-    static String resolveNewOperatorCrdsUrl(String overrideUrl, Supplier<String> localMergeSupplier) {
-        if (overrideUrl != null && !overrideUrl.isBlank()) {
-            LOGGER.info("Using NEW_CONSOLE_OPERATOR_CRDS_URL override: {}", overrideUrl);
-            return overrideUrl;
-        }
-        String mergedPath = localMergeSupplier.get();
+        String mergedPath = mergeLocalOperatorBundle(newOperatorVersion);
         LOGGER.info("NEW_CONSOLE_OPERATOR_CRDS_URL not set, using locally merged operator manifest: {}", mergedPath);
         return mergedPath;
     }
 
-    private static String mergeLocalOperatorBundle(String expectedVersion) {
+    private static String mergeLocalOperatorBundle(String newOperatorVersion) {
         if (Files.notExists(OPERATOR_CRD_FILE) || Files.notExists(OPERATOR_RESOURCES_FILE)) {
-            throw new SetupException("Local Console Operator build output not found at '" + OPERATOR_CRD_FILE + "' and '" +
-                OPERATOR_RESOURCES_FILE + "'. Build the operator module first before running tests.");
+            throw new SetupException(String.format("Local Console Operator build output not found at '%s' and '%s. " +
+             "Build the operator module first before running tests.", OPERATOR_CRD_FILE, OPERATOR_RESOURCES_FILE));
         }
 
         String actualVersion;
@@ -83,10 +74,10 @@ public class VersionModificationDataLoader {
             throw new SetupException("Failed to read/merge local Console Operator build output", e);
         }
 
-        if (!expectedVersion.equals(actualVersion)) {
-            throw new SetupException("Local Console Operator build output at '" + OPERATOR_RESOURCES_FILE +
-                "' has version '" + actualVersion + "' but the expected new operator version is '" + expectedVersion +
-                "' (from CONSOLE_OPERATOR_VERSION/operator.version). Rebuild the operator module for the expected version.");
+        if (!newOperatorVersion.equals(actualVersion)) {
+            throw new SetupException(String.format("Local Console Operator build output at '%s' has version '%s' " +
+             "but the expected new operator version is '%s'. Rebuild the operator module for the expected version.",
+             OPERATOR_RESOURCES_FILE, actualVersion, newOperatorVersion));
         }
 
         return mergedBundle.toAbsolutePath().toString();

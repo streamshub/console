@@ -6,8 +6,7 @@ public class YamlVersionModificationData {
     private final String oldOperatorCrdsUrl;
     private final String newOperatorCrdsUrl;
 
-    public YamlVersionModificationData(String oldOperatorVersion, String newOperatorVersion,
-                                        String oldOperatorCrdsUrl, String newOperatorCrdsUrl) {
+    public YamlVersionModificationData(String oldOperatorVersion, String newOperatorVersion, String oldOperatorCrdsUrl, String newOperatorCrdsUrl) {
         this.oldOperatorVersion = oldOperatorVersion;
         this.newOperatorVersion = newOperatorVersion;
         this.oldOperatorCrdsUrl = oldOperatorCrdsUrl;
