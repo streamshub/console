@@ -17,10 +17,13 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Locator.GetByRoleOptions;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.TimeoutError;
 import com.microsoft.playwright.Tracing;
+import com.microsoft.playwright.assertions.PlaywrightAssertions;
+import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -702,12 +705,12 @@ public class PwUtils {
         tcc.page().navigate(baseUrl);
 
         // Login with user in the modal (note: these selectors might need updating for modal-based login)
-        waitForLocatorAndFill(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_NAME_INPUT, kafkaUser);
-        waitForLocatorAndFill(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_PASSWORD_INPUT, password);
-        waitForLocatorAndClick(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON);
-        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        // TODO: remove once fixed
-        PwUtils.reload(tcc);
+        var loginModal = tcc.page().getByRole(AriaRole.DIALOG);
+        PlaywrightAssertions.assertThat(loginModal).isVisible();
+        loginModal.locator("form input#username").fill(kafkaUser);
+        loginModal.locator("form input#password").fill(password);
+        loginModal.getByRole(AriaRole.BUTTON, new GetByRoleOptions().setName("Login")).click();
+
         // Wait for overview page
         waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), true);
         LOGGER.info("Successfully logged into Console with Kafka credentials");

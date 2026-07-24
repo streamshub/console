@@ -35,12 +35,21 @@ public class ClusterUtils {
     }
 
     public static String getClusterDomain() {
+        String domain;
+
         if (isOcp()) {
-            String domain = "apps." + ResourceUtils.getKubeResource(DNS.class, "cluster").getSpec().getBaseDomain();
+            domain = "apps." + ResourceUtils.getKubeResource(DNS.class, "cluster").getSpec().getBaseDomain();
             LOGGER.trace("Resolved OpenShift cluster domain: {}", domain);
-            return domain;
+        } else {
+            domain = Environment.CONSOLE_CLUSTER_DOMAIN;
+
+            if (domain.isBlank()) {
+                throw new IllegalStateException("Environment variable CONSOLE_CLUSTER_DOMAIN must be set for non-OpenShift clusters");
+            }
+
+            LOGGER.trace("Using configured cluster domain: {}", domain);
         }
-        LOGGER.trace("Using configured cluster domain: {}", Environment.CONSOLE_CLUSTER_DOMAIN);
-        return Environment.CONSOLE_CLUSTER_DOMAIN;
+
+        return domain;
     }
 }
