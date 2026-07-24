@@ -30,7 +30,7 @@ CONSOLE_INSTALL_TYPE: olm
 # Name of the CatalogSource for Console Operator
 CONSOLE_OLM_CATALOG_SOURCE_NAME: console-source
 # Namespace where lies the CatalogSource for Console Operator
-CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE: openshift-marketplace
+CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE: olm
 # Image of the CatalogSource to deploy for Console Operator. If empty (default), STs assume a CatalogSource
 # with the name/namespace above already exists on the cluster. If set, STs will create one from this image
 # (unless a CatalogSource with that name/namespace already exists).
@@ -48,7 +48,7 @@ STRIMZI_OPERATOR_VERSION: 1.0.0
 # 1. URL - released console-operator.yaml
 # 2. Local path that is relative to the root project dir
 # 3. Local path that is absolute
-CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.12.4/streamshub-console-operator.yaml
+CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.12.6/streamshub-console-operator.yaml
 # -------------------------------------------
 # Kroxy
 # -------------------------------------------
