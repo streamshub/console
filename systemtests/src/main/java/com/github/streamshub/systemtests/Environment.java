@@ -3,6 +3,9 @@ package com.github.streamshub.systemtests;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 import org.apache.logging.log4j.Logger;
 
@@ -111,6 +114,18 @@ public class Environment {
 
     public static boolean isOlmInstall() {
         return CONSOLE_INSTALL_TYPE.equals(InstallType.Olm);
+    }
+
+    /**
+     * Resolves the Console Operator version under test: {@link #CONSOLE_OPERATOR_VERSION} if set,
+     * otherwise the {@code operator.version} system property (populated by the Maven build with
+     * the current {@code project.version} — see systemtests/pom.xml), lowercased. Empty if neither
+     * is set.
+     */
+    public static String getConsoleOperatorVersion() {
+        return Optional.of(CONSOLE_OPERATOR_VERSION)
+            .filter(Predicate.not(String::isBlank))
+            .orElseGet(() -> System.getProperty("operator.version", "").toLowerCase(Locale.ROOT));
     }
 
     public static boolean isTestClientsPullSecretPresent() {
