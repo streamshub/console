@@ -42,14 +42,15 @@ public class ConsoleSpec {
     DeploymentTemplate deployment;
 
     @JsonPropertyDescription("""
-            Templates for Console instance containers. The templates allow \
-            users to specify how the Kubernetes resources are generated.
+            DEPRECATED: Templates for Console instance containers. The templates allow \
+            users to specify how the Kubernetes resources are generated. \
+            Use `deployment.spec.template.spec.serverContainer` property instead.
             """)
     Containers containers;
 
     @JsonPropertyDescription("""
             DEPRECATED: Image overrides to be used for the API and UI servers. \
-            Use `containers` property instead.
+            Use `deployment.spec.template.spec.serverContainer.image` property instead.
             """)
     Images images;
 
@@ -65,7 +66,7 @@ public class ConsoleSpec {
 
     @JsonPropertyDescription("""
             DEPRECATED: Environment variables which should be applied to the API container. \
-            Use `containers` property instead.
+            Use `deployment.spec.template.spec.serverContainer.env` property instead.
             """)
     List<EnvVar> env;
 

@@ -1,5 +1,7 @@
 package com.github.streamshub.console.api.v1alpha1.status;
 
+import java.util.Comparator;
+import java.util.Locale;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -121,9 +123,22 @@ public class Condition {
         private Types() {
         }
 
-        public static final String READY = "Ready";
-        public static final String WARNING = "Warning";
-        public static final String ERROR = "Error";
+        enum ConditionType {
+            READY("Ready"), WARNING("Warning"), ERROR("Error");
+            final String display;
+            ConditionType(String display) {
+                this.display = display;
+            }
+        }
+
+        public static final String READY = ConditionType.READY.display;
+        public static final String WARNING = ConditionType.WARNING.display;
+        public static final String ERROR = ConditionType.ERROR.display;
+
+        static final Comparator<String> COMPARATOR = (t1, t2) ->
+            // declaration order
+            ConditionType.valueOf(t1.toUpperCase(Locale.ROOT))
+                .compareTo(ConditionType.valueOf(t2.toUpperCase(Locale.ROOT)));
     }
 
     /**

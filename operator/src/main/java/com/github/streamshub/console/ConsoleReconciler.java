@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
@@ -227,6 +229,7 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
             Context<Console> context,
             Exception e) {
 
+        Logger.getLogger(getClass()).debug("Exception during reconcile", e);
         var result = context.managedWorkflowAndDependentResourceContext().getWorkflowReconcileResult();
         determineConditions(resource, result, e);
 
