@@ -84,8 +84,7 @@ public class VersionModificationDataLoader {
     }
 
     /**
-     * Extracts the value of the first {@code app.kubernetes.io/version} label found in the given
-     * YAML text. Package-private so it can be unit tested directly without a full local build.
+     * Extracts the value of the first {@code app.kubernetes.io/version} label found in the given YAML
      */
     static String extractOperatorVersionLabel(String yamlContent) {
         Matcher matcher = VERSION_LABEL_PATTERN.matcher(yamlContent);
