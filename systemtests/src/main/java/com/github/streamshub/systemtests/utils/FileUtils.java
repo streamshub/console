@@ -182,5 +182,29 @@ public class FileUtils {
 
         return new ByteArrayInputStream(combined.toByteArray());
     }
+
+    /**
+     * Concatenates the given files' raw contents, in order, into a single new temporary file —
+     * equivalent to {@code cat file1 file2 > merged}. Unlike {@link #loadYamlsFromPath(Path)}, this
+     * does not insert `---` separators between files, since the inputs (e.g. generated Kubernetes
+     * manifests) already contain their own document separators where needed.
+     *
+     * @param files ordered list of files to concatenate
+     * @return path to the merged temporary file
+     * @throws IOException if a file cannot be read or the temp file cannot be written
+     */
+    public static Path mergeYamlFiles(List<Path> files) throws IOException {
+        File mergedFile = Files.createTempFile("merged-operator-bundle", ".yaml", getDefaultPosixFilePermissions()).toFile();
+        mergedFile.deleteOnExit();
+
+        try (var out = Files.newOutputStream(mergedFile.toPath())) {
+            for (Path file : files) {
+                Files.copy(file, out);
+            }
+        }
+
+        LOGGER.debug("Merged {} files into temporary file: {}", files.size(), mergedFile.getAbsolutePath());
+        return mergedFile.toPath();
+    }
 }
 

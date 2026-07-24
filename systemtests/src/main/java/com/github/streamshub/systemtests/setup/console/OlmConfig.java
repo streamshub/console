@@ -3,7 +3,6 @@ package com.github.streamshub.systemtests.setup.console;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -121,10 +120,7 @@ public class OlmConfig extends InstallConfig {
     public OlmVersionModificationData getUpgradeData() {
         maybeCreateCatalogSource();
 
-        String newVersion = Optional.of(Environment.CONSOLE_OPERATOR_VERSION)
-                .filter(Predicate.not(String::isBlank))
-                .orElseGet(() -> System.getProperty("operator.version", "")
-                        .toLowerCase(Locale.ROOT));
+        String newVersion = Environment.getConsoleOperatorVersion();
 
         String[] newVersionElements = newVersion.split("[.-]");
         var newChannelSemVer = Version.of(

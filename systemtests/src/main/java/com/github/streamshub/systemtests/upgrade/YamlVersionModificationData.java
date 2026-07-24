@@ -14,11 +14,19 @@ public class YamlVersionModificationData {
         return newOperatorVersion;
     }
 
+    public void setNewOperatorVersion(String newOperatorVersion) {
+        this.newOperatorVersion = newOperatorVersion;
+    }
+
     public String getOldOperatorCrdsUrl() {
         return oldOperatorCrdsUrl;
     }
 
     public String getNewOperatorCrdsUrl() {
         return newOperatorCrdsUrl;
+    }
+
+    public void setNewOperatorCrdsUrl(String newOperatorCrdsUrl) {
+        this.newOperatorCrdsUrl = newOperatorCrdsUrl;
     }
 }

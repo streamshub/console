@@ -1,6 +1,8 @@
-# Operator version
+# Operator version to upgrade from.
 oldOperatorVersion: 0.12.6
-newOperatorVersion: 0.13.0
-# Url to generated CRDs Yaml containing operator.
+# Url to generated CRDs Yaml containing the old operator version.
 oldOperatorCrdsUrl: https://github.com/streamshub/console/releases/download/0.12.6/streamshub-console-operator.yaml
-newOperatorCrdsUrl: https://github.com/streamshub/console/releases/download/0.13.0/streamshub-console-operator.yaml
+# Operator version/bundle to upgrade to. Set both to the literal value 'HEAD' to auto-derive them from
+# the local build - see VersionModificationDataLoader - or set both to explicit values to pin them.
+newOperatorVersion: HEAD
+newOperatorCrdsUrl: HEAD
