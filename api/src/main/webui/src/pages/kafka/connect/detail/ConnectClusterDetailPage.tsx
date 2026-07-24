@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { usePageTitle } from '@/hooks';
 import {
   PageSection,
   Tabs,
@@ -52,6 +53,9 @@ export function ConnectClusterDetailPage() {
   const [activeTabKey, setActiveTabKey] = useState<string | number>(0);
 
   const { data, isLoading, error } = useConnectCluster(connectClusterId);
+
+  const clusterName = data?.data?.attributes?.name || connectClusterId || '';
+  usePageTitle(clusterName || undefined);
 
   const handleTabClick = (
     _event: React.MouseEvent<HTMLElement, MouseEvent>,

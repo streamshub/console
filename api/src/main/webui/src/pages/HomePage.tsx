@@ -27,12 +27,14 @@ import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useKafkaClusters } from '../api/hooks/useKafkaClusters';
 import { useMetadata } from '../api/hooks/useMetadata';
 import { useShowLearning } from '../hooks/useShowLearning';
+import { usePageTitle } from '@/hooks';
 import { AppLayout } from '@/components/app/AppLayout';
 import { ClustersDataView } from '@/components/home/ClustersDataView';
 import { ResourceListParams } from '@/api/hooks/useResourceList';
 
 export function HomePage() {
   const { t } = useTranslation();
+  usePageTitle();
   const [dataParams, setDataParams] = useState<ResourceListParams>({});
   const clusterResult = useKafkaClusters(dataParams);
   const { data: metadata } = useMetadata();

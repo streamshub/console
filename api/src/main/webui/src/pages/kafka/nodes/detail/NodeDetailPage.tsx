@@ -4,6 +4,7 @@
 
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '@/hooks';
 import {
   PageSection,
   Tabs,
@@ -24,6 +25,8 @@ export function NodeDetailPage() {
 
   // Fetch node configuration to verify node exists
   const { data, isLoading, error } = useNodeConfig(kafkaId, nodeId);
+
+  usePageTitle(t('nodes.brokerTitle', { nodeId }));
 
   // Determine active tab from URL
   const pathSegments = location.pathname.split('/').filter(Boolean);

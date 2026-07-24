@@ -4,6 +4,7 @@
 
 import { Outlet, useParams, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '@/hooks';
 import {
   Page,
   PageSection,
@@ -44,6 +45,10 @@ export function KafkaLayout() {
     userId?: string;
     nodeId?: string;
   }>();
+
+  // Must be called unconditionally before any early returns.
+  // Static routes supply handle.title; detail pages call usePageTitle themselves.
+  usePageTitle();
 
   const location = useLocation();
   const { data, isLoading, error } = useKafkaCluster(kafkaId, {

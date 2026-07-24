@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '@/hooks';
 import {
   PageSection,
   Title,
@@ -30,6 +31,9 @@ export function GroupDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: group, isLoading, error } = useGroup(kafkaId, groupId);
+
+  const groupName = group?.attributes.groupId || groupId || '';
+  usePageTitle(groupName || undefined);
 
   // Reset offset modal state
   const [isResetOffsetModalOpen, setIsResetOffsetModalOpen] = useState(false);
@@ -72,7 +76,6 @@ export function GroupDetailPage() {
     );
   }
 
-  const groupName = group?.attributes.groupId || groupId || '';
   const canResetOffset =
     hasPrivilege('UPDATE', group) &&
     group?.attributes.state === 'EMPTY' &&

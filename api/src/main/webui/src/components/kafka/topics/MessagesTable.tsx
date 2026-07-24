@@ -11,9 +11,10 @@ import {
   Button,
   Title,
   Content,
+  Tooltip,
 } from '@patternfly/react-core';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { SearchIcon } from '@patternfly/react-icons';
+import { ExclamationTriangleIcon, HelpIcon, SearchIcon } from '@patternfly/react-icons';
 import { KafkaRecord } from '@/api/types';
 import { Column, useColumnLabels } from './ColumnsModal';
 import { formatDateTime } from '@/utils/dateTime';
@@ -129,11 +130,39 @@ export function MessagesTable({
       case 'timestamp':
         return formatTimestampLocal(message.attributes.timestamp);
       case 'key':
-        return truncate(message.attributes.key);
+        return (
+          <>
+            {truncate(message.attributes.key)}
+            {message.relationships.keySchema && (
+              <Content>
+                <Content component="small">
+                  {message.relationships.keySchema.meta?.name}
+                  {message.relationships.keySchema.meta?.errors && (
+                    <> <ExclamationTriangleIcon /> {message.relationships.keySchema.meta.errors[0].detail}</>
+                  )}
+                </Content>
+              </Content>
+            )}
+          </>
+        );
       case 'headers':
         return renderHeaders(message.attributes.headers);
       case 'value':
-        return truncate(message.attributes.value);
+        return (
+          <>
+            {truncate(message.attributes.value)}
+            {message.relationships.valueSchema && (
+              <Content>
+                <Content component="small">
+                  {message.relationships.valueSchema.meta?.name}
+                  {message.relationships.valueSchema.meta?.errors && (
+                    <> <ExclamationTriangleIcon /> {message.relationships.valueSchema.meta.errors[0].detail}</>
+                  )}
+                </Content>
+              </Content>
+            )}
+          </>
+        );
       case 'size':
         return formatBytes(message.attributes.size);
       default:
@@ -167,7 +196,16 @@ export function MessagesTable({
                 
                 return (
                   <Th key={column} modifier={modifier} width={width}>
-                    {columnLabels[column]}
+                    {column === 'size' ? (
+                      <>
+                        {columnLabels[column]}{' '}
+                        <Tooltip content={t('topics.messages.tooltip.size')}>
+                          <HelpIcon />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      columnLabels[column]
+                    )}
                   </Th>
                 );
               })}

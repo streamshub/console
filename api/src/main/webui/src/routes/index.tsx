@@ -3,6 +3,7 @@
  */
 
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import type { TFunction } from 'i18next';
 import App from '../App';
 
 // Root pages
@@ -45,6 +46,11 @@ import { ConnectClusterDetailPage } from '@/pages/kafka/connect/detail/ConnectCl
 import { UsersPage } from '@/pages/kafka/users/UsersPage';
 import { UserDetailPage } from '@/pages/kafka/users/detail/UserDetailPage';
 
+// Route handle type — each route may declare a page title factory.
+export interface RouteHandle {
+  title?: (t: TFunction) => string;
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -65,14 +71,17 @@ export const router = createBrowserRouter([
           },
           {
             path: 'overview',
+            handle: { title: (t: TFunction) => t('kafka.overview') } satisfies RouteHandle,
             element: <KafkaOverview />,
           },
           {
             path: 'topics',
+            handle: { title: (t: TFunction) => t('kafka.topics') } satisfies RouteHandle,
             element: <TopicsPage />,
           },
           {
             path: 'topics/:topicId',
+            // Title is dynamic (fetched topic name) — set by TopicDetailPage via usePageTitle
             element: <TopicDetailPage />,
             children: [
               {
@@ -99,6 +108,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'nodes',
+            handle: { title: (t: TFunction) => t('nodes.title') } satisfies RouteHandle,
             element: <NodesPage />,
             children: [
               {
@@ -107,16 +117,19 @@ export const router = createBrowserRouter([
               },
               {
                 path: 'overview',
+                handle: { title: (t: TFunction) => t('nodes.title') } satisfies RouteHandle,
                 element: <NodesOverviewTab />,
               },
               {
                 path: 'rebalances',
+                handle: { title: (t: TFunction) => t('nodes.tabs.rebalances') } satisfies RouteHandle,
                 element: <NodesRebalancesTab />,
               },
             ],
           },
           {
             path: 'nodes/:nodeId',
+            // Title is dynamic (broker ID) — set by NodeDetailPage via usePageTitle
             element: <NodeDetailPage />,
             children: [
               {
@@ -131,10 +144,12 @@ export const router = createBrowserRouter([
           },
           {
             path: 'groups',
+            handle: { title: (t: TFunction) => t('groups.title') } satisfies RouteHandle,
             element: <GroupsPage />,
           },
           {
             path: 'groups/:groupId',
+            // Title is dynamic (fetched group ID) — set by GroupDetailPage via usePageTitle
             element: <GroupDetailPage />,
             children: [
               {
@@ -153,6 +168,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'connect',
+            handle: { title: (t: TFunction) => t('kafka.connect.title') } satisfies RouteHandle,
             element: <ConnectPage />,
             children: [
               {
@@ -161,28 +177,34 @@ export const router = createBrowserRouter([
               },
               {
                 path: 'connectors',
+                handle: { title: (t: TFunction) => t('kafka.connect.connectors') } satisfies RouteHandle,
                 element: <ConnectConnectorsTab />,
               },
               {
                 path: 'clusters',
+                handle: { title: (t: TFunction) => t('kafka.connect.connectClustersTitle') } satisfies RouteHandle,
                 element: <ConnectClustersTab />,
               },
             ],
           },
           {
             path: 'connect/connectors/:connectorId',
+            // Title is dynamic (fetched connector name) — set by ConnectorDetailPage via usePageTitle
             element: <ConnectorDetailPage />,
           },
           {
             path: 'connect/clusters/:connectClusterId',
+            // Title is dynamic (fetched cluster name) — set by ConnectClusterDetailPage via usePageTitle
             element: <ConnectClusterDetailPage />,
           },
           {
             path: 'users',
+            handle: { title: (t: TFunction) => t('kafka.users') } satisfies RouteHandle,
             element: <UsersPage />,
           },
           {
             path: 'users/:userId',
+            // Title is dynamic (fetched username) — set by UserDetailPage via usePageTitle
             element: <UserDetailPage />,
           },
           // More routes will be added as pages are migrated
