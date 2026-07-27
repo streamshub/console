@@ -28,6 +28,12 @@ public class ConsoleSpec {
     String hostname;
 
     @JsonPropertyDescription("""
+            TLS configuration for the Console server. Specifies the certificate \
+            and private key to use for HTTPS connections.
+            """)
+    Tls tls;
+
+    @JsonPropertyDescription("""
             Templates for Console instance containers. The templates allow \
             users to specify how the Kubernetes resources are generated.
             """)
@@ -61,6 +67,14 @@ public class ConsoleSpec {
 
     public void setHostname(String hostname) {
         this.hostname = hostname;
+    }
+
+    public Tls getTls() {
+        return tls;
+    }
+
+    public void setTls(Tls tls) {
+        this.tls = tls;
     }
 
     public Containers getContainers() {
