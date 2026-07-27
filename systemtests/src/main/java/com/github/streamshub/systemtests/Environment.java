@@ -3,7 +3,6 @@ package com.github.streamshub.systemtests;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -124,13 +123,14 @@ public class Environment {
     /**
      * Resolves the Console Operator version under test: {@link #CONSOLE_OPERATOR_VERSION} if set,
      * otherwise the {@code operator.version} system property (populated by the Maven build with
-     * the current {@code project.version} — see systemtests/pom.xml), lowercased. Empty if neither
-     * is set.
+     * the current {@code project.version} — see systemtests/pom.xml). Empty if neither is set.
+     * Not lowercased: must match the case used in the Quarkus-generated Kubernetes manifest's
+     * {@code app.kubernetes.io/version} label.
      */
     public static String getConsoleOperatorVersion() {
         return Optional.of(CONSOLE_OPERATOR_VERSION)
             .filter(Predicate.not(String::isBlank))
-            .orElseGet(() -> System.getProperty("operator.version", "").toLowerCase(Locale.ROOT));
+            .orElseGet(() -> System.getProperty("operator.version", ""));
     }
 
     public static boolean isTestClientsPullSecretPresent() {
