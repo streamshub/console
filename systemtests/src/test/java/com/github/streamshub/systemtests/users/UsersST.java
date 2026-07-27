@@ -6,7 +6,7 @@ import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
-import com.github.streamshub.systemtests.locators.KafkaUsersPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.KafkaUsersPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
@@ -104,17 +104,17 @@ public class UsersST extends AbstractST {
         // Verify navigation via url
         LOGGER.info("Navigating to single KafkaUser page for '{}'", userName);
         PwUtils.navigate(tcc, PwPageUrls.getSingleKafkaUserPage(tcc, tcc.kafkaName(), tcc.namespace(), userName));
-        PwUtils.waitForContainsText(tcc, KafkaUsersPageSelectors.KUPS_KAFKA_USER_NAME_HEADER, userName, true);
+        PwUtils.waitForContainsText(KafkaUsersPage.userNameHeading(tcc.page()), userName, true);
 
         // Verify description list
         LOGGER.debug("Verifying description list (name, username, auth type, creation timestamp) for KafkaUser '{}'", userName);
-        PwUtils.waitForContainsText(tcc, KafkaUsersPageSelectors.KUPS_DESCRIPTION_NAME, userName, true);
-        PwUtils.waitForContainsText(tcc, KafkaUsersPageSelectors.KUPS_DESCRIPTION_USERNAME, userName, true);
-        PwUtils.waitForContainsText(tcc, KafkaUsersPageSelectors.KUPS_DESCRIPTION_AUTH, authenticationType, true);
-        PwUtils.waitForContainsText(tcc, KafkaUsersPageSelectors.KUPS_DESCRIPTION_CREATION_TIMESTAMP, creationTimestamp, true);
+        PwUtils.waitForContainsText(KafkaUsersPage.nameField(tcc.page()), userName, true);
+        PwUtils.waitForContainsText(KafkaUsersPage.usernameField(tcc.page()), userName, true);
+        PwUtils.waitForContainsText(KafkaUsersPage.authenticationField(tcc.page()), authenticationType, true);
+        PwUtils.waitForContainsText(KafkaUsersPage.creationTimeField(tcc.page()), creationTimestamp, true);
 
         List<AclRule> acls = ((KafkaUserAuthorizationSimple) kafkaUser.getSpec().getAuthorization()).getAcls();
-        Locator rows = tcc.page().locator(KafkaUsersPageSelectors.KUPS_AUTHORIZATION_TABLE_ROWS);
+        Locator rows = KafkaUsersPage.authorizationTable(tcc.page()).rows();
 
         LOGGER.info("Verifying authorization table for KafkaUser '{}' contains {} ACL row(s)", userName, acls.size());
         assertEquals(acls.size(), rows.count(), "Mismatch between expected UI rows and actual KafkaUser ACL count");

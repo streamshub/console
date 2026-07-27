@@ -58,7 +58,7 @@ export function CliCommandDisplay({
           </Fragment>
         }
       >
-        <CodeBlockCode>{command}</CodeBlockCode>
+        <CodeBlockCode data-ouia-component-id="dry-run-command-text">{command}</CodeBlockCode>
       </CodeBlock>
     </ExpandableSection>
   );

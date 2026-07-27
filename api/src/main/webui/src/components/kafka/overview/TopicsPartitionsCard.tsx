@@ -108,7 +108,7 @@ export function TopicsPartitionsCard({
           >
             {/* Fully Replicated */}
             <FlexItem>
-              <Link to="../topics?status=FullyReplicated" style={{ textDecoration: 'none' }}>
+              <Link to="../topics?status=FullyReplicated" style={{ textDecoration: 'none' }} data-ouia-component-id="fully-replicated-status-link">
                 {isLoading ? (
                   <Skeleton shape="circle" width="1rem" style={{ display: 'inline-block' }} />
                 ) : (
@@ -130,7 +130,7 @@ export function TopicsPartitionsCard({
 
             {/* Under-replicated */}
             <FlexItem>
-              <Link to="../topics?status=UnderReplicated" style={{ textDecoration: 'none' }}>
+              <Link to="../topics?status=UnderReplicated" style={{ textDecoration: 'none' }} data-ouia-component-id="under-replicated-status-link">
                 {isLoading ? (
                   <Skeleton shape="circle" width="1rem" style={{ display: 'inline-block' }} />
                 ) : (
@@ -152,7 +152,7 @@ export function TopicsPartitionsCard({
 
             {/* Offline */}
             <FlexItem>
-              <Link to="../topics?status=Offline" style={{ textDecoration: 'none' }}>
+              <Link to="../topics?status=Offline" style={{ textDecoration: 'none' }} data-ouia-component-id="offline-status-link">
                 {isLoading ? (
                   <Skeleton shape="circle" width="1rem" style={{ display: 'inline-block' }} />
                 ) : (

@@ -60,7 +60,7 @@ export function RebalanceModal({ rebalance, isOpen, onClose }: RebalanceModalPro
               <HelpIcon />
             </Tooltip>
           </DescriptionListTerm>
-          <DescriptionListDescription>
+          <DescriptionListDescription data-ouia-component-id="rebalance-data-to-move-mb">
             {optimizationResult?.dataToMoveMB || 0} MB
           </DescriptionListDescription>
         </DescriptionListGroup>
@@ -128,7 +128,7 @@ export function RebalanceModal({ rebalance, isOpen, onClose }: RebalanceModalPro
               <HelpIcon />
             </Tooltip>
           </DescriptionListTerm>
-          <DescriptionListDescription>
+          <DescriptionListDescription data-ouia-component-id="rebalance-monitored-partitions-percentage">
             {optimizationResult?.monitoredPartitionsPercentage || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
@@ -164,7 +164,7 @@ export function RebalanceModal({ rebalance, isOpen, onClose }: RebalanceModalPro
               <HelpIcon />
             </Tooltip>
           </DescriptionListTerm>
-          <DescriptionListDescription>
+          <DescriptionListDescription data-ouia-component-id="rebalance-num-replica-movements">
             {optimizationResult?.numReplicaMovements || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
@@ -176,7 +176,7 @@ export function RebalanceModal({ rebalance, isOpen, onClose }: RebalanceModalPro
               <HelpIcon />
             </Tooltip>
           </DescriptionListTerm>
-          <DescriptionListDescription>
+          <DescriptionListDescription data-ouia-component-id="rebalance-balancedness-after">
             {optimizationResult?.onDemandBalancednessScoreAfter || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
@@ -188,7 +188,7 @@ export function RebalanceModal({ rebalance, isOpen, onClose }: RebalanceModalPro
               <HelpIcon />
             </Tooltip>
           </DescriptionListTerm>
-          <DescriptionListDescription>
+          <DescriptionListDescription data-ouia-component-id="rebalance-balancedness-before">
             {optimizationResult?.onDemandBalancednessScoreBefore || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>

@@ -240,7 +240,7 @@ export function ClusterCard({
 
                 {/* Kafka Version */}
                 <GridItem span={12} xl={4}>
-                  <div className="pf-v6-u-font-size-xl">
+                  <div className="pf-v6-u-font-size-xl" data-ouia-component-id="cluster-kafka-version">
                     {isLoading ? (
                       <Skeleton />
                     ) : (
@@ -280,6 +280,7 @@ export function ClusterCard({
               <DataList
                 aria-label={t('ClusterCard.cluster_errors_and_warnings')}
                 isCompact
+                data-ouia-component-id="cluster-warnings-list"
               >
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (

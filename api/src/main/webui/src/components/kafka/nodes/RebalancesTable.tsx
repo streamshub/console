@@ -190,7 +190,7 @@ export function RebalancesTable({
                             <FlexItem style={{ width: '25%' }}>
                               <DescriptionListGroup>
                                 <DescriptionListTerm>{t('rebalancing.autoApprovalEnabled')}</DescriptionListTerm>
-                                <DescriptionListDescription>
+                                <DescriptionListDescription data-ouia-component-id="rebalance-auto-approval-value">
                                   {rebalance.meta?.autoApproval === true ? 'true' : 'false'}
                                 </DescriptionListDescription>
                               </DescriptionListGroup>
@@ -224,7 +224,7 @@ export function RebalancesTable({
                                     <HelpIcon />
                                   </Popover>
                                 </DescriptionListTerm>
-                                <DescriptionListDescription>
+                                <DescriptionListDescription data-ouia-component-id="rebalance-mode-value">
                                   {rebalance.attributes.mode === 'full' ? (
                                     t('rebalancing.fullMode')
                                   ) : (

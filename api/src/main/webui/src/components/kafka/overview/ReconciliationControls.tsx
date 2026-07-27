@@ -43,7 +43,7 @@ export function ReconciliationControls({
   return (
     <>
       {isReconciliationPaused && (
-        <Banner color="yellow">
+        <Banner color="yellow" data-ouia-component-id="reconciliation-paused-banner">
           <Bullseye>
             <Flex spaceItems={{ default: 'spaceItemsMd' }}>
               <FlexItem spacer={{ default: 'spacerNone' }}>

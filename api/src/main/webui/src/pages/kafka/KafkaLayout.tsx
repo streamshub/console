@@ -296,7 +296,7 @@ export function KafkaLayout() {
         </BreadcrumbItem>
       )}
       {isGroupDetailPage && (
-        <BreadcrumbItem>
+        <BreadcrumbItem data-ouia-component-id="breadcrumb-group-name">
           {groupData?.attributes?.groupId}
         </BreadcrumbItem>
       )}

@@ -2,11 +2,12 @@ package com.github.streamshub.systemtests.utils.testchecks;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.TimeConstants;
-import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.ClusterOverviewPage;
+import com.github.streamshub.systemtests.locators.pages.NodesPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.microsoft.playwright.Locator;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 import org.apache.logging.log4j.Logger;
 
@@ -48,14 +49,14 @@ public class KafkaNodePoolChecks {
     public static void checkOverviewPageKafkaBrokerNodes(TestCaseConfig tcc, int brokerCount) {
         LOGGER.info("Checking overview page shows broker node count {}/{}", brokerCount, brokerCount);
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
+        PwUtils.waitForContainsText(ClusterOverviewPage.brokerCount(tcc.page()),
             brokerCount + "/" + brokerCount, TimeConstants.ACTION_WAIT_SHORT);
     }
 
     public static void checkNodesPageKafkaNodes(TestCaseConfig tcc, int totalNodeCount) {
         LOGGER.info("Checking nodes page shows total node count {}", totalNodeCount);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
-        PwUtils.waitForLocatorCount(tcc, totalNodeCount, NodesPageSelectors.NPS_TABLE_BODY, true);
+        PwUtils.waitForLocatorCount(totalNodeCount, NodesPage.table(tcc.page()).rows(), true);
     }
 
     /**
@@ -69,7 +70,7 @@ public class KafkaNodePoolChecks {
      */
     public static void checkFilterTypeResults(TestCaseConfig tcc, List<Integer> nodeIds, String expectedRole) {
         LOGGER.info("Verifying kafka node table filtered results for nodeIds {} with expected role [{}]", nodeIds, expectedRole);
-        PwUtils.waitForLocatorCount(tcc, nodeIds.size(), NodesPageSelectors.NPS_TABLE_BODY, true);
+        PwUtils.waitForLocatorCount(nodeIds.size(), NodesPage.table(tcc.page()).rows(), true);
         for (int row = 1; row < nodeIds.size(); row++) {
             checkKnpTableRow(tcc, row, nodeIds.get(row - 1), expectedRole);
         }
@@ -86,7 +87,8 @@ public class KafkaNodePoolChecks {
      */
     public static void checkKnpTableRow(TestCaseConfig tcc, int nthRow, int expectedNodeId, String expectedRole) {
         LOGGER.debug("Checking kafka node table row {} contains nodeId {} with role [{}]", nthRow, expectedNodeId, expectedRole);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.getNodeTableRowItem(nthRow, 2), String.valueOf(expectedNodeId), false, false);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.getNodeTableRowItem(nthRow, 3), expectedRole, false, false);
+        Locator row = NodesPage.table(tcc.page()).rows().nth(nthRow - 1);
+        PwUtils.waitForContainsText(NodesPage.table(tcc.page()).cell(row, "Node ID"), String.valueOf(expectedNodeId), false, false);
+        PwUtils.waitForContainsText(NodesPage.table(tcc.page()).cell(row, "Roles"), expectedRole, false, false);
     }
 }

@@ -116,6 +116,7 @@ export function OffsetValueSelector({
 
   const offsetToggle = (
     <MenuToggle
+      id="offset-select"
       ref={offsetToggleRef}
       onClick={() => setIsOffsetSelectOpen(!isOffsetSelectOpen)}
       isExpanded={isOffsetSelectOpen}

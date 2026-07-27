@@ -3,14 +3,10 @@ package com.github.streamshub.systemtests.utils.testutils;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
-import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
-import com.github.streamshub.systemtests.locators.SingleGroupPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.SingleGroupPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.microsoft.playwright.Locator;
 import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 public class GroupsTestUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(GroupsTestUtils.class);
@@ -31,25 +27,25 @@ public class GroupsTestUtils {
      */
     public static void selectResetOffsetType(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.info("Selecting reset offset type {}", offsetType);
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON);
+        PwUtils.waitForLocatorAndClick(SingleGroupPage.offsetTypeDropdownButton(tcc.page()));
 
         switch (offsetType) {
             case EARLIEST:
-                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET);
+                PwUtils.waitForLocatorAndClick(SingleGroupPage.earliestOffsetOption(tcc.page()));
                 break;
             case LATEST:
-                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_LATEST_OFFSET);
+                PwUtils.waitForLocatorAndClick(SingleGroupPage.latestOffsetOption(tcc.page()));
                 break;
             case DATE_TIME_ISO:
-                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET_ISO);
+                PwUtils.waitForLocatorAndClick(SingleGroupPage.specificDateTimeIsoOption(tcc.page()));
                 fillResetOffsetDatetime(tcc, dateTimeType, value);
                 break;
             case DATE_TIME_UNIX:
-                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET_UNIX);
+                PwUtils.waitForLocatorAndClick(SingleGroupPage.specificDateTimeUnixOption(tcc.page()));
                 fillResetOffsetDatetime(tcc, dateTimeType, value);
                 break;
             case DELETE_COMMITED_OFFSETS:
-                PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS);
+                PwUtils.waitForLocatorAndClick(SingleGroupPage.deleteCommittedOffsetsOption(tcc.page()));
                 break;
         }
     }
@@ -68,14 +64,8 @@ public class GroupsTestUtils {
      */
     public static void fillResetOffsetDatetime(TestCaseConfig tcc, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.debug("Selecting reset offset datetime type {} and filling value {}", dateTimeType, value);
-        switch (dateTimeType) {
-            case UNIX_EPOCH:
-                PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_UNIX, value);
-                break;
-            case ISO_8601:
-                PwUtils.waitForLocatorAndFill(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT_ISO, value);
-                break;
-        }
+        // The ISO and Unix inputs share the same #datetime-input element - they're mutually exclusive by offsetValue state.
+        PwUtils.waitForLocatorAndFill(SingleGroupPage.datetimeInput(tcc.page()), value);
     }
 
     /**
@@ -97,10 +87,10 @@ public class GroupsTestUtils {
         LOGGER.info("DryRun reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
         selectResetOffsetType(tcc, offsetType, dateTimeType, value);
 
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_DRY_RUN_COMMAND_DROPDOWN);
-        PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_DRY_RUN_COMMAND, offsetType.getCommand(), false, false);
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_CANCEL_DRY_RUN_OFFSET_BUTTON);
+        PwUtils.waitForLocatorAndClick(SingleGroupPage.dryRunButton(tcc.page()));
+        PwUtils.waitForLocatorAndClick(SingleGroupPage.dryRunCommandToggle(tcc.page()));
+        PwUtils.waitForContainsText(SingleGroupPage.dryRunCommandText(tcc.page()), offsetType.getCommand(), false, false);
+        PwUtils.waitForLocatorAndClick(SingleGroupPage.dryRunCancelButton(tcc.page()));
     }
 
     /**
@@ -120,43 +110,6 @@ public class GroupsTestUtils {
     public static void execResetOffset(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.info("Reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
         selectResetOffsetType(tcc, offsetType, dateTimeType, value);
-        PwUtils.waitForLocatorAndClick(tcc, SingleGroupPageSelectors.SGPS_RESET_PAGE_OFFSET_RESET_BUTTON);
-    }
-
-    /**
-     * Verifies that a consumer group with the given name is present in the Groups table.
-     *
-     * @param tcc               test case configuration containing the Playwright page
-     * @param consumerGroupName name of the consumer group expected to be visible
-     *
-     * @throws AssertionError if the consumer group is not found in the table
-     */
-    public static void waitForGroupInTable(TestCaseConfig tcc, String consumerGroupName) {
-        LOGGER.info("Verifying consumer group {} is present in Groups table", consumerGroupName);
-        List<String> visibleGroups = tcc.page().locator(GroupsPageSelectors.GPS_TABLE_ITEMS)
-            .all()
-            .stream()
-            .map(locator -> PwUtils.getTrimmedText(locator.allInnerTexts().toString()))
-            .toList();
-
-        if (visibleGroups.stream().noneMatch(group -> group.contains(consumerGroupName))) {
-            LOGGER.error("Consumer group {} not found in Groups table, visible groups: {}", consumerGroupName, visibleGroups);
-            throw new AssertionError("Consumer group not found in UI, expected: " + consumerGroupName +
-                " - Visible groups: " + visibleGroups);
-        }
-    }
-
-    /**
-     * Clicks the consumer group with the given name in the Groups table.
-     *
-     * @param tcc               test case configuration containing the Playwright page
-     * @param consumerGroupName name of the consumer group to open
-     */
-    public static void clickGroupInTable(TestCaseConfig tcc, String consumerGroupName) {
-        LOGGER.info("Opening consumer group {} from Groups table", consumerGroupName);
-        PwUtils.waitForLocatorAndClick(tcc.page().locator(GroupsPageSelectors.GPS_TABLE_ITEMS)
-            .filter(new Locator.FilterOptions().setHasText(consumerGroupName))
-            .locator("a")
-            .first());
+        PwUtils.waitForLocatorAndClick(SingleGroupPage.resetButton(tcc.page()));
     }
 }

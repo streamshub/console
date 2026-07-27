@@ -55,7 +55,7 @@ export function NodesPage() {
           <Split hasGutter style={{ alignItems: 'center', display: 'flex' }}>
             <SplitItem style={{ display: 'flex', alignItems: 'center' }}>{t('nodes.title')}</SplitItem>
             <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
-              <Label icon={isLoading ? <Spinner size="sm" /> : undefined}>
+              <Label icon={isLoading ? <Spinner size="sm" /> : undefined} data-ouia-component-id="nodes-total-badge">
                 {totalNodes}&nbsp;total
               </Label>
             </SplitItem>
@@ -64,6 +64,7 @@ export function NodesPage() {
                 <Label
                   icon={isLoading ? <Spinner size="sm" /> : <CheckCircleIcon />}
                   color="green"
+                  data-ouia-component-id="nodes-healthy-badge"
                 >
                   {healthyNodes}
                 </Label>
@@ -74,6 +75,7 @@ export function NodesPage() {
                 <Label
                   icon={isLoading ? <Spinner size="sm" /> : <ExclamationTriangleIcon />}
                   color="orange"
+                  data-ouia-component-id="nodes-unhealthy-badge"
                 >
                   {unhealthyNodes}
                 </Label>

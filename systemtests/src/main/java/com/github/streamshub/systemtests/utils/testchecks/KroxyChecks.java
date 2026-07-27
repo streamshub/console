@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.utils.testchecks;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.components.Masthead;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import org.apache.logging.log4j.Logger;
@@ -26,7 +26,7 @@ public class KroxyChecks {
     public static void checkKafkaClusterDropdownContains(TestCaseConfig tcc, List<String> expectedKafkaNames) {
         LOGGER.info("Checking Kafka cluster dropdown contains expected clusters: {}", expectedKafkaNames);
 
-        List<String> visibleKafkaClusters = tcc.page().locator(CssSelectors.PAGES_NAV_KAFKA_CLUSTERS_LIST_ITEMS)
+        List<String> visibleKafkaClusters = Masthead.clusterListItems(tcc.page())
             .all()
             .stream()
             .map(locator -> PwUtils.getTrimmedText(locator.allInnerTexts().toString()))

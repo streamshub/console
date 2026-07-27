@@ -310,7 +310,7 @@ export function NodesOverviewTab() {
                       <HelpIcon />
                     </Tooltip>
                   </DescriptionListTerm>
-                  <DescriptionListDescription>
+                  <DescriptionListDescription data-ouia-component-id="overview-total-nodes">
                     {formatNumber(totalNodes)}
                   </DescriptionListDescription>
                 </DescriptionListGroup>
@@ -318,7 +318,7 @@ export function NodesOverviewTab() {
                   <DescriptionListTerm>
                     {t('nodes.distribution.controllerRole')}
                   </DescriptionListTerm>
-                  <DescriptionListDescription>
+                  <DescriptionListDescription data-ouia-component-id="overview-controller-role">
                     {controllersWarning ? (
                       <Icon status="warning">
                         <ExclamationTriangleIcon />
@@ -335,7 +335,7 @@ export function NodesOverviewTab() {
                   <DescriptionListTerm>
                     {t('nodes.distribution.brokerRole')}
                   </DescriptionListTerm>
-                  <DescriptionListDescription>
+                  <DescriptionListDescription data-ouia-component-id="overview-broker-role">
                     {brokersWarning ? (
                       <Icon status="warning">
                         <ExclamationTriangleIcon />
@@ -355,7 +355,7 @@ export function NodesOverviewTab() {
                       <HelpIcon />
                     </Tooltip>
                   </DescriptionListTerm>
-                  <DescriptionListDescription>
+                  <DescriptionListDescription data-ouia-component-id="overview-lead-controller">
                     {t('nodes.distribution.leadControllerValue', {
                       leadController: leadControllerId,
                     })}
