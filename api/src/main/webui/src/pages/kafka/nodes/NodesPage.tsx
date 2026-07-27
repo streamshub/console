@@ -2,7 +2,7 @@
  * Nodes Page - Shows Kafka nodes with Overview and Rebalance tabs
  */
 
-import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Outlet } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   PageSection,

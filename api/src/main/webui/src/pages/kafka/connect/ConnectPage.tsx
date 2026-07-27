@@ -4,7 +4,7 @@
  * Main page for Kafka Connect with tabs for Connectors and Connect Clusters
  */
 
-import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Outlet } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   PageSection,

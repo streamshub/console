@@ -5,7 +5,7 @@
 
 import { Nav, NavItem, NavList, PageSidebar, PageSidebarBody } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
-import { NavLink, useParams, useLocation } from 'react-router-dom';
+import { NavLink, useParams, useLocation } from 'react-router';
 import { useAppLayout } from '@/components/app/AppLayoutProvider';
 
 interface NavItemConfig {

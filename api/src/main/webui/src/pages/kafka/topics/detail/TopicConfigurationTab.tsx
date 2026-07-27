@@ -2,7 +2,7 @@
  * Topic Configuration Tab - Shows configuration settings for a topic
  */
 
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useState, useMemo, useCallback } from 'react';
 import {

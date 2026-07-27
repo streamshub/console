@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ThProps } from '@patternfly/react-table';
 import { UseQueryResult } from '@tanstack/react-query';

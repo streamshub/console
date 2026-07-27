@@ -37,7 +37,7 @@ import {
   useControllerStatusLabels,
 } from './NodeStatusLabel';
 import { formatNumber } from '@/utils/format';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 interface NodesTableProps {
   kafkaId: string;

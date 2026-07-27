@@ -4,7 +4,7 @@
  * Displays the connect clusters table
  */
 
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { PageSection } from '@patternfly/react-core';
 import { ConnectClustersTable } from '@/components/kafka/connect/ConnectClustersTable';
 

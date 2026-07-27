@@ -2,7 +2,7 @@
  * Topic Detail Page - Shows detailed information about a topic with tabs
  */
 
-import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Outlet } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import {
