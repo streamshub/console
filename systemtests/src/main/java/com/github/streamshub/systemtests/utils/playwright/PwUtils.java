@@ -43,7 +43,7 @@ public class PwUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(PwUtils.class);
     // Only letters, digits and underscore are considered safe in a path segment; everything else
     // (quotes, path separators, punctuation, whitespace, control chars, ...) is replaced
-    private static final Pattern UNSAFE_PATH_CHARS = Pattern.compile("[^A-Za-z0-9_]+");
+    private static final Pattern UNSAFE_PATH_CHARS = Pattern.compile("\\W+");
     // Most filesystems (APFS, ext4, NTFS) reject individual path segments longer than 255 bytes
     private static final int MAX_PATH_SEGMENT_LENGTH = 100;
     private PwUtils() {}
