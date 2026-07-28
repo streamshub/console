@@ -14,7 +14,7 @@
  */
 
 import { useEffect } from 'react';
-import { useMatches } from 'react-router-dom';
+import { useMatches } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { RouteHandle } from '@/routes';
 
