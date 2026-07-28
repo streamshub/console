@@ -41,23 +41,31 @@ import java.util.regex.Pattern;
 
 public class PwUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(PwUtils.class);
-    // Characters rejected by GitHub Actions' upload-artifact path validation (and generally unsafe on NTFS)
-    private static final Pattern INVALID_ARTIFACT_PATH_CHARS = Pattern.compile("[\":<>|*?\r\n]");
+    // Only letters, digits and underscore are considered safe in a path segment; everything else
+    // (quotes, path separators, punctuation, whitespace, control chars, ...) is replaced
+    private static final Pattern UNSAFE_PATH_CHARS = Pattern.compile("\\W+");
+    // Most filesystems (APFS, ext4, NTFS) reject individual path segments longer than 255 bytes
+    private static final int MAX_PATH_SEGMENT_LENGTH = 100;
     private PwUtils() {}
 
     /**
      * Replaces characters that are invalid in file/directory names (e.g. those rejected by
-     * GitHub Actions' {@code upload-artifact}) with an underscore.
+     * GitHub Actions' {@code upload-artifact}) with an underscore, and truncates the result so it
+     * stays within filesystem path segment length limits.
      *
-     * <p>JUnit {@code @ParameterizedTest} display names can contain such characters (e.g.
-     * {@code Type: X - Offset: "0"}), and these display names are used to build screenshot
-     * and tracing file paths.</p>
+     * <p>JUnit {@code @ParameterizedTest} display names can contain such characters, as well as
+     * unbounded content (e.g. full schema definitions), and these display names are used to build
+     * screenshot and tracing file paths.</p>
      *
      * @param name the raw name to sanitize
      * @return the sanitized name, safe to use as a file or directory name
      */
     private static String sanitizeForPath(String name) {
-        return INVALID_ARTIFACT_PATH_CHARS.matcher(name).replaceAll("_");
+        String sanitized = UNSAFE_PATH_CHARS.matcher(name).replaceAll("_");
+        if (sanitized.length() > MAX_PATH_SEGMENT_LENGTH) {
+            sanitized = sanitized.substring(0, MAX_PATH_SEGMENT_LENGTH) + "_" + Integer.toHexString(sanitized.hashCode());
+        }
+        return sanitized;
     }
 
     /**
