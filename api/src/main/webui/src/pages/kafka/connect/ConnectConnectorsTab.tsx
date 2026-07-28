@@ -4,7 +4,7 @@
  * Displays the connectors table
  */
 
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { PageSection } from '@patternfly/react-core';
 import { ConnectorsTable } from '@/components/kafka/connect/ConnectorsTable';
 

@@ -22,7 +22,7 @@ import {
   Tooltip,
 } from '@patternfly/react-core';
 import { ArrowRightIcon, HomeIcon } from '@patternfly/react-icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState } from 'react';
 import { KafkaCluster } from '@/api/types';

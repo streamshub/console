@@ -2,7 +2,7 @@
  * Kafka Layout - Wrapper for Kafka cluster pages
  */
 
-import { Outlet, useParams, useLocation, Link } from 'react-router-dom';
+import { Outlet, useParams, useLocation, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   Page,

@@ -2,7 +2,7 @@
  * Node Detail Page - Shows details for a specific Kafka node/broker
  */
 
-import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Outlet } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   PageSection,

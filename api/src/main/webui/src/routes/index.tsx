@@ -2,7 +2,7 @@
  * React Router configuration
  */
 
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router';
 import App from '../App';
 
 // Root pages
