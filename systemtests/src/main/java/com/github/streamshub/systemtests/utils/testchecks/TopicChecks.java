@@ -41,12 +41,14 @@ public class TopicChecks {
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName));
 
         // Status
-        PwUtils.waitForContainsText(ClusterOverviewPage.totalTopics(tcc.page()), total + " topics", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(ClusterOverviewPage.totalPartitions(tcc.page()), partitions + " partitions", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        // useTopics() (backing all counts below) fetches once with no refetchInterval, so a stale count
+        // needs a page reload to re-fetch - a plain re-check of the same DOM would retry forever on stale data.
+        PwUtils.waitForContainsText(ClusterOverviewPage.totalTopics(tcc.page()), total + " topics", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(ClusterOverviewPage.totalPartitions(tcc.page()), partitions + " partitions", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
 
-        PwUtils.waitForContainsText(ClusterOverviewPage.fullyReplicated(tcc.page()), fullyReplicated + " Fully replicated", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(ClusterOverviewPage.underReplicated(tcc.page()), underReplicated + " Under-replicated", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(ClusterOverviewPage.unavailable(tcc.page()), unavailable + " Unavailable", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(ClusterOverviewPage.fullyReplicated(tcc.page()), fullyReplicated + " Fully replicated", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(ClusterOverviewPage.underReplicated(tcc.page()), underReplicated + " Under-replicated", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(ClusterOverviewPage.unavailable(tcc.page()), unavailable + " Unavailable", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
     }
 
     /**
@@ -66,10 +68,11 @@ public class TopicChecks {
         // Total topic count
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, kafkaName));
 
-        PwUtils.waitForContainsText(TopicsPage.totalTopicsBadge(tcc.page()), total + " total", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(TopicsPage.fullyReplicatedBadge(tcc.page()), Integer.toString(fullyReplicated), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(TopicsPage.underReplicatedBadge(tcc.page()), Integer.toString(underReplicated), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(TopicsPage.offlineBadge(tcc.page()), Integer.toString(unavailable), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
+        // Same non-polling useTopics() data source as the overview page - a reload is needed to see an updated count.
+        PwUtils.waitForContainsText(TopicsPage.totalTopicsBadge(tcc.page()), total + " total", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(TopicsPage.fullyReplicatedBadge(tcc.page()), Integer.toString(fullyReplicated), true, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(TopicsPage.underReplicatedBadge(tcc.page()), Integer.toString(underReplicated), true, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(TopicsPage.offlineBadge(tcc.page()), Integer.toString(unavailable), true, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
     }
 
     /**

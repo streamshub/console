@@ -40,7 +40,7 @@ public final class TextConstants {
     public static final String NODE_POOL = "Node Pool";
     public static final String ROLES = "Roles";
     public static final String STATUS = "Status";
-    public static final String REBALANCES_TABLE = "Rebalances table";
+    public static final String REBALANCES_TABLE = "Rebalances";
 
     // Kafka Users page
     public static final String AUTHORIZATION = "Authorization";
