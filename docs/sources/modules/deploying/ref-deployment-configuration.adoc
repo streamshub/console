@@ -1,0 +1,152 @@
+:_mod-docs-content-type: REFERENCE
+
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='ref-deployment-configuration-{context}']
+= Configuring the console deployment
+
+[role="_abstract"]
+You can customize how the operator deploys the console by configuring the `spec.deployment` field of the `Console` custom resource.
+This field provides a template that mirrors the structure of a Kubernetes `Deployment` manifest, giving you control over pod scheduling and container configuration.
+
+`spec.deployment` is optional.
+When omitted, the operator deploys the console using default settings.
+
+== Deployment template properties
+
+`spec.deployment.metadata`:: Optional labels and annotations to apply to the `Deployment` resource itself.
+`spec.deployment.metadata.labels`:: Additional labels to add to the `Deployment`.
+`spec.deployment.metadata.annotations`:: Additional annotations to add to the `Deployment`.
+`spec.deployment.spec.template`:: Template applied to the console pod.
+`spec.deployment.spec.template.metadata`:: Optional labels and annotations to apply to the console pod.
+`spec.deployment.spec.template.metadata.labels`:: Additional labels to add to the pod.
+`spec.deployment.spec.template.metadata.annotations`:: Additional annotations to add to the pod.
+`spec.deployment.spec.template.spec`:: Spec for the console pod. Configures scheduling constraints and the server container.
+
+=== Pod scheduling properties
+
+`spec.deployment.spec.template.spec.affinity`:: The pod's affinity rules.
+Constrains which node the console pod is eligible to be scheduled on, based on node labels or the labels of other pods already running on a node.
+See the https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity[Kubernetes affinity documentation] for details.
+`spec.deployment.spec.template.spec.tolerations`:: The pod's tolerations.
+Allows the console pod to be scheduled onto a node that has matching taints.
+See the https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/[Kubernetes taints and tolerations documentation] for details.
+`spec.deployment.spec.template.spec.topologySpreadConstraints`:: The pod's topology spread constraints.
+Controls how the console pod is spread across failure-domains such as regions, zones, or nodes.
+See the https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/[Kubernetes topology spread constraints documentation] for details.
+`spec.deployment.spec.template.spec.nodeSelector`:: A label selector that must match a node's labels for the console pod to be scheduled on that node.
+Specified as a map of key-value pairs.
+
+=== Server container properties
+
+`spec.deployment.spec.template.spec.serverContainer`:: Template for the console server container.
+`spec.deployment.spec.template.spec.serverContainer.image`:: Container image to use for the console server.
+When omitted, the operator uses its built-in default image.
+`spec.deployment.spec.template.spec.serverContainer.imagePullPolicy`:: Image pull policy for the console server image.
+Accepted values are `Always`, `IfNotPresent`, and `Never`.
+When omitted, the operator defaults to `IfNotPresent` for images specified by digest and `Always` for all other images.
+`spec.deployment.spec.template.spec.serverContainer.resources`:: CPU and memory resource requests and limits for the console server container.
+`spec.deployment.spec.template.spec.serverContainer.env`:: Additional environment variables to set on the console server container.
+
+== Examples
+
+=== Scheduling the console pod on specific nodes
+
+The following example uses a `nodeSelector` to schedule the console pod only on a node labeled `disktype: ssd`, and adds a toleration so that the pod can be placed on a node tainted `dedicated=console:NoSchedule`.
+
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  deployment:
+    spec:
+      template:
+        spec:
+          nodeSelector:
+            disktype: ssd
+          tolerations:
+            - key: dedicated
+              operator: Equal
+              value: console
+              effect: NoSchedule
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+----
+
+=== Pinning the console to a specific availability zone using node affinity
+
+The following example uses a preferred node affinity rule to favor nodes in the `us-east-1a` availability zone.
+
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  deployment:
+    spec:
+      template:
+        spec:
+          affinity:
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 1
+                  preference:
+                    matchExpressions:
+                      - key: topology.kubernetes.io/zone
+                        operator: In
+                        values:
+                          - us-east-1a
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+----
+
+=== Overriding the server container image and resources
+
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  deployment:
+    spec:
+      template:
+        spec:
+          serverContainer:
+            image: quay.io/my-org/console-api:latest
+            resources:
+              requests:
+                cpu: 250m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+----
