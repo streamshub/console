@@ -3,6 +3,8 @@ package com.github.streamshub.systemtests;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +42,11 @@ public class Environment {
 
     // YAML bundle
     public static final String CONSOLE_OPERATOR_BUNDLE_URL = ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "");
+
+    public static final String OLD_CONSOLE_OPERATOR_VERSION = ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_VERSION", "0.13.0");
+    public static final String OLD_CONSOLE_OPERATOR_CRDS_URL = ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_CRDS_URL",
+        "https://github.com/streamshub/console/releases/download/" + OLD_CONSOLE_OPERATOR_VERSION + "/streamshub-console-operator.yaml");
+    public static final String NEW_CONSOLE_OPERATOR_CRDS_URL = ENVS.getOrDefault("NEW_CONSOLE_OPERATOR_CRDS_URL", "");
 
     // OLM
     public static final String CONSOLE_OLM_CATALOG_SOURCE_NAME = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAME", "streamshub-console-catalog");
@@ -111,6 +118,19 @@ public class Environment {
 
     public static boolean isOlmInstall() {
         return CONSOLE_INSTALL_TYPE.equals(InstallType.Olm);
+    }
+
+    /**
+     * Resolves the Console Operator version under test: {@link #CONSOLE_OPERATOR_VERSION} if set,
+     * otherwise the {@code operator.version} system property (populated by the Maven build with
+     * the current {@code project.version} — see systemtests/pom.xml). Empty if neither is set.
+     * Not lowercased: must match the case used in the Quarkus-generated Kubernetes manifest's
+     * {@code app.kubernetes.io/version} label.
+     */
+    public static String getConsoleOperatorVersion() {
+        return Optional.of(CONSOLE_OPERATOR_VERSION)
+            .filter(Predicate.not(String::isBlank))
+            .orElseGet(() -> System.getProperty("operator.version", ""));
     }
 
     public static boolean isTestClientsPullSecretPresent() {

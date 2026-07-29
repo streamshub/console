@@ -14,8 +14,8 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
+import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -38,9 +38,8 @@ public class YamlUpgradeST extends AbstractUpgradeST {
     /**
      * Verifies that upgrading the Console Operator installed from plain YAML manifests
      * (as opposed to OLM) correctly transitions from the old to the new operator version,
-     * defined in {@code src/test/resources/upgrade/YamlUpgrade.yaml} (currently version
-     * {@code 0.11.0} to {@code 0.12.3}), while preserving the existing Console instance
-     * and keeping the UI fully functional throughout.
+     * while preserving the existing Console instance and keeping the UI fully functional
+     * throughout.
      *
      * <p>This test performs the following steps:</p>
      * <ul>
@@ -81,9 +80,9 @@ public class YamlUpgradeST extends AbstractUpgradeST {
         LOGGER.info("Verifying Console operator version label reports old version, expected '{}', actual '{}'", yamlVersionData.getOldOperatorVersion(), currentOperatorVersion);
         assertEquals(yamlVersionData.getOldOperatorVersion(), currentOperatorVersion);
 
-        LOGGER.info("Performing pre-upgrade UI checks, expecting {} topics in total ({} replicated, {} under-replicated, {} unavailable)",
-            TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
-        checkOldUiTopicState(tcc, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        LOGGER.info("Performing pre-upgrade UI checks");
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         // Upgrade
         LOGGER.info("Triggering in-place Console Operator upgrade from version '{}' to '{}' using YAML manifest URL: {}",
@@ -100,7 +99,8 @@ public class YamlUpgradeST extends AbstractUpgradeST {
 
         LOGGER.info("Performing post-upgrade UI checks, verifying all {} topics are still correctly reported after upgrading to version '{}'",
             TOTAL_TOPICS_COUNT, yamlVersionData.getNewOperatorVersion());
-        checkOldUiTopicState(tcc, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
     }
 
     @AfterEach
@@ -118,13 +118,7 @@ public class YamlUpgradeST extends AbstractUpgradeST {
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
 
-        final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
-
         KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, 1, 1, 1);
-        KafkaTopicUtils.setupUnmanagedUnderReplicatedAndUnavailableTopics(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()),
-            new KafkaTopicUtils.TopicTypeSpec(Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1),
-            new KafkaTopicUtils.TopicTypeSpec(Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas),
-            new KafkaTopicUtils.TopicTypeSpec(Constants.UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1));
     }
 
     @AfterAll
