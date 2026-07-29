@@ -45,7 +45,8 @@ spec:
           name: console-kafka-user1
 ----
 
-* `hostname` defines the hostname used to access the console over HTTP.
+* `hostname` defines the hostname used to access the console.
+When TLS is configured (see xref:ref-tls-configuration-{context}[Configuring TLS for the console server]), the console is accessed over HTTPS.
 * `kafkaClusters.name` specifies the name of the Strimzi `Kafka` resource that represents the cluster.
 * `kafkaClusters.namespace` specifies the namespace where the `Kafka` resource is deployed.
 * `kafkaClusters.listener` specifies the listener used to expose the Kafka cluster for console connections.
@@ -80,3 +81,5 @@ console-kafka  1/1    1       1
 . Access the console.
 +
 When the console is running, use the hostname specified in the `Console` resource (`spec.hostname`) to access the user interface.
+If TLS is enabled, use `https://` to access the console.
+For more information, see xref:ref-tls-configuration-{context}[Configuring TLS for the console server].

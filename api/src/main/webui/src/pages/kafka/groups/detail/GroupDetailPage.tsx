@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Outlet } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   PageSection,

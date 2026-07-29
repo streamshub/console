@@ -3,7 +3,7 @@
  * Provides the main layout and outlet for child routes
  */
 
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import { AppLayoutProvider } from '@/components/app/AppLayoutProvider';
 import { ThemeProvider } from '@/components/app/ThemeProvider';
 import { KafkaAuthProvider } from '@/components/auth/KafkaAuthProvider';

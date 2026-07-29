@@ -61,6 +61,7 @@ import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.KafkaConnectConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
+import com.github.streamshub.console.config.TlsConfigBuilder;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.TrustStoreConfigBuilder;
 import com.github.streamshub.console.config.ValueBuilder;
@@ -289,6 +290,15 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
      * access the secret entries.
      */
     private void buildClientSecrets(Console primary, Context<Console> context, Map<String, String> data) {
+        var tls = primary.getSpec().getTls();
+        if (tls != null) {
+            String namespace = primary.getMetadata().getNamespace();
+            maybePutSecretEntry(data, "console-tls-certificate.txt",
+                getValue(context, namespace, tls.getCertificate()));
+            maybePutSecretEntry(data, "console-tls-key.txt",
+                getValue(context, namespace, tls.getKey()));
+        }
+
         Optional.ofNullable(primary.getSpec().getSecurity())
             .map(GlobalSecurity::getOidc)
             .map(Oidc::getTrustStore)
@@ -458,6 +468,14 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private ConsoleConfig buildConfig(Console primary, Context<Console> context, ConsoleConfig currentConfig) {
         ConsoleConfig config = new ConsoleConfig();
+
+        var tls = primary.getSpec().getTls();
+        if (tls != null) {
+            config.setTls(new TlsConfigBuilder()
+                .withCertificate(mapValue(tls.getCertificate(), "console-tls-certificate"))
+                .withKey(mapValue(tls.getKey(), "console-tls-key"))
+                .build());
+        }
 
         addSecurity(primary, config, currentConfig, context);
         addMetricsSources(primary, config, context);

@@ -2,7 +2,7 @@
  * Error Page - Displayed when routing errors occur
  */
 
-import { useRouteError, isRouteErrorResponse } from 'react-router-dom';
+import { useRouteError, isRouteErrorResponse } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   Page,

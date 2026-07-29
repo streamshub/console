@@ -10,7 +10,7 @@
     "lint": "eslint . --ext js,ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@patternfly/patternfly": "^6.6.0",
+    "@patternfly/patternfly": "^6.6.1",
     "@patternfly/react-charts": "^8.6.0",
     "@patternfly/react-core": "^6.6.0",
     "@patternfly/react-data-view": "^6.5.0",
@@ -29,7 +29,7 @@
     "react-dom": "^19.2.8",
     "react-i18next": "^17.0.11",
     "react-json-view-lite": "^2.5.0",
-    "react-router-dom": "^7.18.1",
+    "react-router": "^8.0.0",
     "victory": "^37.3.6",
     "zustand": "^5.0.14"
   },
@@ -40,7 +40,7 @@
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",
     "@vitejs/plugin-react": "^6.0.4",
-    "eslint": "^10.7.0",
+    "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "typescript": "^6.0.3",
