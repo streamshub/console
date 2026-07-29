@@ -111,6 +111,7 @@
       "title": "Kafka Connect",
       "connectors": "Connectors",
       "connectClusters": "Clusters",
+      "connectClustersTitle": "Connect Clusters",
       "searchConnectors": "Search connectors",
       "searchClusters": "Search connect clusters",
       "noConnectors": "No connectors found",

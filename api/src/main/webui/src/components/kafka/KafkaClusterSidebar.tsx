@@ -39,7 +39,7 @@ export function KafkaClusterSidebar() {
     {
       id: 'connect',
       label: t('kafka.connect.title'),
-      path: `/kafka/${kafkaId}/connect/connectors`,
+      path: `/kafka/${kafkaId}/connect`,
     },
     {
       id: 'users',
