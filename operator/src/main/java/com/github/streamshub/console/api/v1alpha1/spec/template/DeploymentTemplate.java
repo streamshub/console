@@ -9,10 +9,16 @@ import io.sundr.builder.annotations.Buildable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DeploymentTemplate {
 
-    @JsonPropertyDescription("Metadata for the deployment template.")
+    @JsonPropertyDescription("""
+            Labels and annotations to apply to the Console Deployment resource.
+            """)
     private MetadataTemplate metadata;
 
-    @JsonPropertyDescription("Spec for the deployment template.")
+    @JsonPropertyDescription("""
+            Spec for the Console Deployment. Provides access to the pod template \
+            to configure scheduling constraints, pod metadata, the server container, \
+            and other pod-level settings.
+            """)
     private DeploymentSpecTemplate spec;
 
     public MetadataTemplate getMetadata() {

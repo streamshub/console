@@ -20,6 +20,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerSpec;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerTemplateSpec;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 import com.github.streamshub.console.api.v1alpha1.spec.template.ContainerTemplate;
+import com.github.streamshub.console.api.v1alpha1.spec.template.ContainerTemplate.ImagePullPolicy;
 import com.github.streamshub.console.api.v1alpha1.spec.template.DeploymentSpecTemplate;
 import com.github.streamshub.console.api.v1alpha1.spec.template.DeploymentTemplate;
 import com.github.streamshub.console.api.v1alpha1.spec.template.MetadataTemplate;
@@ -87,6 +88,7 @@ public class ConsoleDeployment extends BaseDeployment {
                 .or(() -> images.map(Images::getApi))
                 .orElse(defaultAPIImage);
         String imagePullPolicy = containerTemplate.map(ContainerTemplate::getImagePullPolicy)
+                .map(ImagePullPolicy::value)
                 .orElseGet(() -> pullPolicy(image));
         var containerResources = containerTemplate.map(ContainerTemplate::getResources)
                 .or(() -> templateAPI.map(ContainerSpec::getResources))
@@ -208,7 +210,9 @@ public class ConsoleDeployment extends BaseDeployment {
     }
 
     private static String pullPolicy(String image) {
-        return image.contains("sha256:") ? "IfNotPresent" : "Always";
+        return image.contains("sha256:")
+                ? ImagePullPolicy.IF_NOT_PRESENT.value()
+                : ImagePullPolicy.ALWAYS.value();
     }
 
     private static void warnDeprecations(Console primary, Optional<?> containers, Optional<?> images, Optional<?> envs) {

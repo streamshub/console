@@ -35,9 +35,10 @@ public class ConsoleSpec {
     Tls tls;
 
     @JsonPropertyDescription("""
-            Template for the Console Deployment and its pod. Allows configuration \
-            of scheduling constraints such as affinity, tolerations, topology spread \
-            constraints, and node selectors.
+            Template for the Console Deployment. Allows customisation of the Deployment \
+            and pod metadata, scheduling constraints (affinity, tolerations, topology \
+            spread constraints, and node selector), and the server container image, \
+            pull policy, resources, and environment variables.
             """)
     DeploymentTemplate deployment;
 

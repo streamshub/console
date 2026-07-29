@@ -10,9 +10,10 @@ import io.sundr.builder.annotations.Buildable;
 public class DeploymentSpecTemplate {
 
     @JsonPropertyDescription("""
-            Template for the console pod. Allows configuration of scheduling \
-            constraints such as affinity, tolerations, topology spread constraints, \
-            and node selectors.
+            Template for the console pod. Allows configuration of pod metadata, \
+            scheduling constraints (affinity, tolerations, topology spread constraints, \
+            and node selector), and the server container image, pull policy, resources, \
+            and environment variables.
             """)
     private PodTemplate template;
 

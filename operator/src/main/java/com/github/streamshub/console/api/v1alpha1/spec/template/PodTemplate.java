@@ -9,10 +9,17 @@ import io.sundr.builder.annotations.Buildable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PodTemplate {
 
-    @JsonPropertyDescription("Metadata for the pod template.")
+    @JsonPropertyDescription("""
+            Labels and annotations to apply to the console pod.
+            """)
     private MetadataTemplate metadata;
 
-    @JsonPropertyDescription("Spec for the pod template.")
+    @JsonPropertyDescription("""
+            Spec for the console pod. Allows configuration of scheduling constraints \
+            (affinity, tolerations, topology spread constraints, and node selector) \
+            and the server container image, pull policy, resources, and environment \
+            variables.
+            """)
     private PodSpecTemplate spec;
 
     public MetadataTemplate getMetadata() {
