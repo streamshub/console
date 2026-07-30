@@ -18,7 +18,7 @@ public class ConsoleStatus {
     private long observedGeneration;
 
     private final Set<Condition> conditions = new TreeSet<>(Comparator
-            .comparing(Condition::getType).reversed()
+            .comparing(Condition::getType, Condition.Types.COMPARATOR)
             .thenComparing(Condition::getLastTransitionTime)
             .thenComparing(Condition::getStatus, Comparator.nullsLast(String::compareTo))
             .thenComparing(Condition::getReason, Comparator.nullsLast(String::compareTo))

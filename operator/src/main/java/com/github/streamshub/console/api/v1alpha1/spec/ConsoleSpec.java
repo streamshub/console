@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.security.GlobalSecurity;
+import com.github.streamshub.console.api.v1alpha1.spec.template.DeploymentTemplate;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.sundr.builder.annotations.Buildable;
@@ -34,14 +35,23 @@ public class ConsoleSpec {
     Tls tls;
 
     @JsonPropertyDescription("""
-            Templates for Console instance containers. The templates allow \
-            users to specify how the Kubernetes resources are generated.
+            Template for the Console Deployment. Allows customisation of the Deployment \
+            and pod metadata, scheduling constraints (affinity, tolerations, topology \
+            spread constraints, and node selector), and the server container image, \
+            pull policy, resources, and environment variables.
+            """)
+    DeploymentTemplate deployment;
+
+    @JsonPropertyDescription("""
+            DEPRECATED: Templates for Console instance containers. The templates allow \
+            users to specify how the Kubernetes resources are generated. \
+            Use `deployment.spec.template.spec.serverContainer` property instead.
             """)
     Containers containers;
 
     @JsonPropertyDescription("""
             DEPRECATED: Image overrides to be used for the API and UI servers. \
-            Use `containers` property instead.
+            Use `deployment.spec.template.spec.serverContainer.image` property instead.
             """)
     Images images;
 
@@ -57,7 +67,7 @@ public class ConsoleSpec {
 
     @JsonPropertyDescription("""
             DEPRECATED: Environment variables which should be applied to the API container. \
-            Use `containers` property instead.
+            Use `deployment.spec.template.spec.serverContainer.env` property instead.
             """)
     List<EnvVar> env;
 
@@ -75,6 +85,14 @@ public class ConsoleSpec {
 
     public void setTls(Tls tls) {
         this.tls = tls;
+    }
+
+    public DeploymentTemplate getDeployment() {
+        return deployment;
+    }
+
+    public void setDeployment(DeploymentTemplate deployment) {
+        this.deployment = deployment;
     }
 
     public Containers getContainers() {
