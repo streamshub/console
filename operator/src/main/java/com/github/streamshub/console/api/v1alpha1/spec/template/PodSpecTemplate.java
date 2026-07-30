@@ -41,7 +41,7 @@ public class PodSpecTemplate {
     private Map<String, String> nodeSelector;
 
     @JsonPropertyDescription("""
-            Template for the console container. Allows configuration image, \
+            Template for the console container. Allows configuration of the image, \
             pull policy, resources, and environment variables.
             """)
     private ContainerTemplate serverContainer;
