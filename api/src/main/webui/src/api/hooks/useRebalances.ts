@@ -3,88 +3,36 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import escape from '../utils/escape';
 import { apiClient } from '../client';
 import {
-  RebalancesResponse,
   RebalanceResponse,
-  RebalanceStatus,
-  RebalanceMode,
+  Rebalance,
 } from '../types';
+import { ResourceListParams, useResourceList } from './useResourceList';
+
+const REBALANCE_FIELDS = 'name,namespace,creationTimestamp,status,mode,brokers,optimizationResult,conditions';
 
 /**
- * Fetch all rebalances for a Kafka cluster
+ * Fetch all rebalances for a Kafka cluster.
+ *
+ * Filter keys (pass via params.filters):
+ *   name   – string, matched with 'like'
+ *   status – string array, matched with 'in'
+ *   mode   – string array, matched with 'in'
  */
 export function useRebalances(
   kafkaId: string | undefined,
-  params?: {
-    pageSize?: number;
-    pageCursor?: string;
-    sort?: string;
-    sortDir?: 'asc' | 'desc';
-    name?: string;
-    status?: RebalanceStatus[];
-    mode?: RebalanceMode[];
-  }
+  params?: ResourceListParams,
 ) {
-  return useQuery({
-    queryKey: [
-      'rebalances',
-      kafkaId,
-      params?.pageSize,
-      params?.pageCursor,
-      params?.sort,
-      params?.sortDir,
-      params?.name,
-      params?.status,
-      params?.mode,
-    ],
-    queryFn: async () => {
-      if (!kafkaId) {
-        throw new Error('Kafka ID is required');
-      }
-
-      const searchParams = new URLSearchParams();
-
-      // Always include these fields
-      searchParams.set(
-        'fields[kafkaRebalances]',
-        'name,namespace,creationTimestamp,status,mode,brokers,optimizationResult,conditions'
-      );
-
-      if (params?.pageSize) {
-        searchParams.set('page[size]', params.pageSize.toString());
-      }
-
-      // Handle cursor-based pagination
-      if (params?.pageCursor) {
-        searchParams.set('page[after]', params.pageCursor);
-      }
-
-      if (params?.sort) {
-        const sortPrefix = params.sortDir === 'desc' ? '-' : '';
-        searchParams.set('sort', `${sortPrefix}${params.sort}`);
-      }
-
-      if (params?.name) {
-        searchParams.set('filter[name]', `like,*${escape(params.name)}*`);
-      }
-
-      if (params?.status && params.status.length > 0) {
-        searchParams.set('filter[status]', `in,${params.status.join(',')}`);
-      }
-
-      if (params?.mode && params.mode.length > 0) {
-        searchParams.set('filter[mode]', `in,${params.mode.join(',')}`);
-      }
-
-      const queryString = searchParams.toString();
-      const path = `/api/kafkas/${kafkaId}/rebalances${queryString ? `?${queryString}` : ''}`;
-
-      return apiClient.get<RebalancesResponse>(path);
+  return useResourceList<Rebalance>(
+    'kafkaRebalances',
+    `/api/kafkas/${kafkaId}/rebalances`,
+    {
+      fields: REBALANCE_FIELDS,
+      ...params,
+      enabled: !!kafkaId && (params?.enabled ?? true),
     },
-    enabled: !!kafkaId,
-  });
+  );
 }
 
 /**

@@ -146,7 +146,7 @@ export function RebalancesTable({
                       isInline
                       onClick={() => handleRebalanceClick(rebalance)}
                     >
-                      <Badge>{t('rebalancing.crBadge')}</Badge> {rebalance.attributes.name}
+                      {rebalance.attributes.name}
                     </Button>
                   </Td>
                   <Td dataLabel={t('rebalancing.status')}>

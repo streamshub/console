@@ -230,9 +230,7 @@ export function KafkaLayout() {
       )}
       {isNodesPage && (
         <BreadcrumbItem>
-          <Link to={`/kafka/${kafkaId}/nodes`}>
-            {t('kafka.nodes')}
-          </Link>
+          {t('kafka.nodes')}
         </BreadcrumbItem>
       )}
       {isNodesPage && nodesTab && nodesTab !== 'nodes' && (

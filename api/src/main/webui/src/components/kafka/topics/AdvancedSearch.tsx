@@ -232,7 +232,7 @@ export function AdvancedSearch({
         <PanelMain>
           <PanelMainBody>
             <Form onSubmit={handleSubmit}>
-              <FormSection title={t('common.filter')}>
+              <FormSection title={t('common.filter.label')}>
                 <Grid hasGutter>
                   <GridItem>
                     <FormGroup label={t('topics.messages.advancedSearch.hasTheWords')}>

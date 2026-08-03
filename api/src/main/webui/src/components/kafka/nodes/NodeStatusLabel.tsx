@@ -18,7 +18,7 @@ import {
   InProgressIcon,
   PendingIcon,
 } from '@patternfly/react-icons';
-import type { BrokerStatus, ControllerStatus, NodeRoles, Statuses } from '@/api/types';
+import type { BrokerStatus, ControllerStatus, NodeRoles, NodeStatuses } from '@/api/types';
 
 // Icon component for new process (recovery status)
 const NewProcessIcon = () => (
@@ -39,7 +39,7 @@ const NewProcessIcon = () => (
  * Role labels with counts
  */
 export const useRoleLabels = (
-  statuses?: Statuses
+  statuses?: NodeStatuses
 ): Record<NodeRoles, { label: ReactNode; labelWithCount: ReactNode }> => {
   const { t } = useTranslation();
 

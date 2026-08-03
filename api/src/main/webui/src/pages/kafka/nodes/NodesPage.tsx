@@ -29,7 +29,7 @@ export function NodesPage() {
   const location = useLocation();
 
   // Fetch nodes data for status labels
-  const { data, isLoading } = useNodes(kafkaId, { pageSize: 1 });
+  const { data, isLoading } = useNodes(kafkaId, { page: { size: 1 } });
   const summary = data?.meta?.summary;
   const totalNodes = data?.meta?.page?.total || 0;
 

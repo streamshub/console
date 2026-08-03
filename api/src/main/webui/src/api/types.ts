@@ -16,8 +16,8 @@ export type PaginationMeta = {
   rangeTruncated: boolean;
 };
 
-export interface ListResponse<T extends Resource> {
-  meta?: AbstractMeta & {
+export interface ListResponse<T extends Resource, M extends AbstractMeta = AbstractMeta> {
+  meta?: M & {
     page: PaginationMeta;
   };
   links?: {
@@ -100,6 +100,7 @@ export interface KafkaCluster extends Resource {
     status?: string;
     kafkaVersion?: string;
     creationTimestamp?: string;
+    cruiseControlEnabled?: boolean;
     listeners?: KafkaClusterListener[];
     conditions?: KafkaClusterCondition[];
   };
@@ -298,12 +299,20 @@ export interface NodePoolMeta {
 
 export type NodePools = Record<string, NodePoolMeta>;
 
-export type Statuses = Record<
+export type NodeStatuses = Record<
   'brokers' | 'controllers' | 'combined',
   Record<string, number>
 >;
 
-export interface Node {
+export interface NodeListMeta extends MetaWithPrivileges {
+  summary: {
+    nodePools: NodePools;
+    statuses: NodeStatuses;
+    leaderId?: string;
+  };
+}
+
+export interface Node extends Resource {
   id: string;
   type: 'nodes';
   meta?: MetaWithPrivileges;
@@ -329,27 +338,6 @@ export interface Node {
     } | null;
     storageUsed?: number | null;
     storageCapacity?: number | null;
-  };
-}
-
-export interface NodesResponse {
-  data: Node[];
-  meta: {
-    summary: {
-      nodePools: NodePools;
-      statuses: Statuses;
-      leaderId?: string;
-    };
-    page: {
-      total: number;
-      pageNumber?: number;
-    };
-  };
-  links: {
-    first: string | null;
-    prev: string | null;
-    next: string | null;
-    last: string | null;
   };
 }
 

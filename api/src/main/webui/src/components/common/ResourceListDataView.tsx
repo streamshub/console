@@ -14,6 +14,7 @@ import {
   DataViewState,
   useDataViewSort,
   DataViewTextFilterProps,
+  ExpandableContent,
 } from '@patternfly/react-data-view';
 /*
  * The following import is a work-around for
@@ -183,8 +184,17 @@ export interface ResourceListDataViewColumnMapper {
   ): DataViewTh[];
 }
 
+export interface ResourceListDataViewRowResult {
+  row: DataViewTr;
+  expandedRows?: ExpandableContent[];
+}
+
+function isRowResult(v: DataViewTr | ResourceListDataViewRowResult): v is ResourceListDataViewRowResult {
+  return v !== null && typeof v === 'object' && !Array.isArray(v) && 'expandedRows' in v;
+}
+
 export interface ResourceListDataViewRowMapper<T extends Resource> {
-  (entity: T): DataViewTr;
+  (entity: T): DataViewTr | ResourceListDataViewRowResult;
 }
 
 export interface ResourceListDataViewProps<T extends Resource> {
@@ -434,17 +444,17 @@ export function ResourceListDataView<T extends Resource>({
     return columnProvider.callback(sortBy, direction, onSort);
   }, [sortBy, direction, onSort, columnProvider]);
 
-  // Determine the active state, errors, and table rows for DataView
-  const [ activeState, errors, rows ] = useMemo(() => {
+  // Determine the active state, errors, table rows, and expanded rows for DataView
+  const [ activeState, errors, rows, expandedRows ] = useMemo(() => {
     if (resourceResult.isLoading) {
-      return [ DataViewState.loading, undefined, [] ];
+      return [ DataViewState.loading, undefined, [], [] ];
     }
 
     if (resourceResult?.error) {
       const e = resourceResult.error;
 
       if (e instanceof ApiError) {
-        return [ DataViewState.error, e.errors, [] ];
+        return [ DataViewState.error, e.errors, [], [] ];
       }
 
       const errObjects = [{
@@ -452,18 +462,18 @@ export function ResourceListDataView<T extends Resource>({
         detail: e.toString(),
       }];
 
-      return [ DataViewState.error, errObjects, [] ];
+      return [ DataViewState.error, errObjects, [], [] ];
     }
 
     if (listResponse?.data && listResponse?.data.length === 0) {
-      return [ DataViewState.empty, [], [] ];
+      return [ DataViewState.empty, [], [], [] ];
     }
 
-    return [
-      undefined,
-      [],
-      listResponse?.data?.map(entry => rowProvider.callback(entry)) ?? []
-    ];
+    const results = listResponse?.data?.map(entry => rowProvider.callback(entry)) ?? [];
+    const tableRows = results.map(r => isRowResult(r) ? r.row : r);
+    const allExpandedRows = results.flatMap(r => isRowResult(r) ? (r.expandedRows ?? []) : []);
+
+    return [ undefined, [], tableRows, allExpandedRows ];
   }, [ resourceResult.isLoading, resourceResult.error, listResponse, rowProvider ]);
 
   useEffect(() => {
@@ -630,6 +640,8 @@ export function ResourceListDataView<T extends Resource>({
           ouiaId={`${ouiaIdPrefix}-table`}
           columns={columns}
           rows={rows}
+          isExpandable={expandedRows.length > 0}
+          expandedRows={expandedRows}
           headStates={{
             [DataViewState.loading]: headLoading
           }}
