@@ -109,6 +109,11 @@
             <artifactId>quarkus-quinoa</artifactId>
             <version>${quarkus-quinoa.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.openapi.generator</groupId>
+            <artifactId>quarkus-openapi-generator</artifactId>
+            <version>2.23.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -310,6 +315,7 @@
                     <execution>
                         <goals>
                             <goal>build</goal>
+                            <goal>generate-code</goal>
                         </goals>
                         <configuration>
                             <properties>
@@ -323,6 +329,30 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <!--
+                                        This artifact is not published to Maven Central and must be retrieve from
+                                        https://linkedin.jfrog.io/artifactory/release instead :-(
+                                    -->
+                                    <groupId>com.linkedin.cruisecontrol</groupId>
+                                    <artifactId>cruise-control</artifactId>
+                                    <version>2.5.146</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/schema/cruise-control</outputDirectory>
+                                    <includes>yaml/**</includes>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>analyze</id>
                         <goals>

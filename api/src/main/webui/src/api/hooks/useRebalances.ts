@@ -11,6 +11,7 @@ import {
 import { ResourceListParams, useResourceList } from './useResourceList';
 
 const REBALANCE_FIELDS = 'name,namespace,creationTimestamp,status,mode,brokers,optimizationResult,conditions';
+const REBALANCE_DETAIL_FIELDS = `${REBALANCE_FIELDS},goals,optimizationProposal,sessionId`;
 
 /**
  * Fetch all rebalances for a Kafka cluster.
@@ -49,7 +50,7 @@ export function useRebalance(
         throw new Error('Kafka ID and Rebalance ID are required');
       }
 
-      const path = `/api/kafkas/${kafkaId}/rebalances/${rebalanceId}`;
+      const path = `/api/kafkas/${kafkaId}/rebalances/${rebalanceId}?fields[kafkaRebalances]=${REBALANCE_DETAIL_FIELDS}`;
 
       return apiClient.get<RebalanceResponse>(path);
     },

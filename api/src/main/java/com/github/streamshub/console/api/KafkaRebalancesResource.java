@@ -142,7 +142,7 @@ public class KafkaRebalancesResource {
                 listParams,
                 KafkaRebalance::fromCursor);
 
-        var rebalanceList = rebalanceService.listRebalances(listSupport);
+        var rebalanceList = rebalanceService.listRebalances(fields, listSupport);
         var responseEntity = new KafkaRebalance.RebalanceDataList(rebalanceList, listSupport);
 
         return Response.ok(responseEntity).build();
@@ -187,6 +187,7 @@ public class KafkaRebalancesResource {
                         KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
                         KafkaRebalance.Fields.SESSION_ID,
                         KafkaRebalance.Fields.OPTIMIZATION_RESULT,
+                        KafkaRebalance.Fields.OPTIMIZATION_PROPOSAL,
                         KafkaRebalance.Fields.CONDITIONS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
@@ -214,13 +215,14 @@ public class KafkaRebalancesResource {
                                 KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
                                 KafkaRebalance.Fields.SESSION_ID,
                                 KafkaRebalance.Fields.OPTIMIZATION_RESULT,
+                                KafkaRebalance.Fields.OPTIMIZATION_PROPOSAL,
                                 KafkaRebalance.Fields.CONDITIONS,
                             }))
             List<String> fields) {
 
         requestedFields.accept(fields);
 
-        var result = rebalanceService.getRebalance(rebalanceId);
+        var result = rebalanceService.getRebalance(rebalanceId, fields);
         var responseEntity = new KafkaRebalance.RebalanceData(result);
 
         return Response.ok(responseEntity).build();

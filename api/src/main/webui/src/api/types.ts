@@ -474,6 +474,16 @@ export interface TopicMetricsResponse {
 // Time duration options for metrics (in seconds)
 export type MetricsDuration = 300 | 900 | 3600 | 21600 | 43200 | 86400; // 5min, 15min, 1hr, 6hr, 12hr, 1d
 
+export interface BrokerLoadImpact {
+  before?: number | null;
+  after?: number | null;
+  diff?: number | null;
+}
+
+export interface OptimizationProposal {
+  brokerImpact?: Record<string, Record<string, BrokerLoadImpact>> | null;
+}
+
 export interface OptimizationResult {
   numIntraBrokerReplicaMovements?: number;
   numReplicaMovements?: number;
@@ -520,6 +530,8 @@ export interface Rebalance {
     brokers: number[] | null;
     sessionId?: string | null;
     optimizationResult?: OptimizationResult;
+    goals?: string[] | null;
+    optimizationProposal?: OptimizationProposal | null;
     conditions?: RebalanceCondition[] | null;
   };
 }

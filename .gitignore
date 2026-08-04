@@ -37,3 +37,4 @@ release.properties
 systemtests/screenshots/
 systemtests/config.yaml
 systemtests/tracing/
+/.playwright-mcp/
