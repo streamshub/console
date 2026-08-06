@@ -11,10 +11,9 @@ import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.enums.TopicsPerPage;
-import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.CssBuilder;
-import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
-import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.ClusterOverviewPage;
+import com.github.streamshub.systemtests.locators.pages.MessagesPage;
+import com.github.streamshub.systemtests.locators.pages.TopicsPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
@@ -95,15 +94,15 @@ public class TopicST extends AbstractST {
 
         LOGGER.info("Verify top pagination navigation using page sizes {}", topicsPerPageList);
         TopicChecks.checkPaginationPage(tcc, TOTAL_TOPICS_COUNT, topicsPerPageList,
-            TopicsPageSelectors.TPS_TOP_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
-            TopicsPageSelectors.TPS_TOP_PAGINATION_DROPDOWN_BUTTON_TEXT,
-            TopicsPageSelectors.TPS_TOP_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_TOP_PAGINATION_NAV_NEXT_BUTTON);
+            TopicsPage.paginationDropdownButton(tcc.page(), true), TopicsPage.paginationDropdownItems(tcc.page()),
+            TopicsPage.paginationDropdownButton(tcc.page(), true),
+            TopicsPage.paginationPrevButton(tcc.page(), true), TopicsPage.paginationNextButton(tcc.page(), true));
 
         LOGGER.info("Verify bottom pagination navigation using page sizes {}", topicsPerPageList);
         TopicChecks.checkPaginationPage(tcc, TOTAL_TOPICS_COUNT, topicsPerPageList,
-            TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
-            TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON_TEXT,
-            TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_NEXT_BUTTON);
+            TopicsPage.paginationDropdownButton(tcc.page(), false), TopicsPage.paginationDropdownItems(tcc.page()),
+            TopicsPage.paginationDropdownButton(tcc.page(), false),
+            TopicsPage.paginationPrevButton(tcc.page(), false), TopicsPage.paginationNextButton(tcc.page(), false));
     }
 
     /**
@@ -182,7 +181,6 @@ public class TopicST extends AbstractST {
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()));
-
         List<String> unavailableTopicsNames = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.UNAVAILABLE_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).sorted().toList();
 
         LOGGER.info("Verify sorting of offline topics by name in descending order");
@@ -190,15 +188,15 @@ public class TopicST extends AbstractST {
         LOGGER.info("Filter topics by status {}", TopicStatus.OFFLINE.getName());
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);
         TopicsTestUtils.selectTopicStatus(tcc, TopicStatus.OFFLINE);
-        PwUtils.waitForLocatorCount(tcc, UNAVAILABLE_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorCount(UNAVAILABLE_TOPICS_COUNT, TopicsPage.table(tcc.page()).rows(), false);
         // Sort by name
         LOGGER.info("Sort {} offline topic(s) by name in descending order", UNAVAILABLE_TOPICS_COUNT);
-        TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME_BUTTON, "descending");
-        PwUtils.waitForLocatorCount(tcc, UNAVAILABLE_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        TopicsTestUtils.selectSortBy(tcc, TopicsPage.sortByNameHeader(tcc.page()), "descending");
+        PwUtils.waitForLocatorCount(UNAVAILABLE_TOPICS_COUNT, TopicsPage.table(tcc.page()).rows(), false);
         LOGGER.debug("Expecting topic '{}' to appear first after descending name sort", unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1));
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1), true);
+        PwUtils.waitForContainsText(TopicsPage.table(tcc.page()).rows().nth(0), unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1), true);
 
-        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
+        PwUtils.waitForLocatorAndClick(TopicsPage.clearAllFiltersButton(tcc.page()));
 
         LOGGER.info("Verify sorting of fully replicated topics by storage usage in descending order");
 
@@ -206,15 +204,15 @@ public class TopicST extends AbstractST {
         LOGGER.info("Filter topics by status {}", TopicStatus.FULLY_REPLICATED.getName());
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);
         TopicsTestUtils.selectTopicStatus(tcc, TopicStatus.FULLY_REPLICATED);
-        PwUtils.waitForLocatorCount(tcc, Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorCount(Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPage.table(tcc.page()).rows(), false);
         // Sort by storage
         LOGGER.info("Sort {} fully replicated topic(s) by storage usage in descending order", Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT));
-        TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE_BUTTON, "descending");
-        PwUtils.waitForLocatorCount(tcc, Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        TopicsTestUtils.selectSortBy(tcc, TopicsPage.sortByStorageHeader(tcc.page()), "descending");
+        PwUtils.waitForLocatorCount(Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPage.table(tcc.page()).rows(), false);
         // Last managed replicated has utilized more storage
         final String topicWithLargestStorageUsage = Constants.REPLICATED_TOPICS_PREFIX + "-" + (REPLICATED_TOPICS_COUNT - 1);
         LOGGER.debug("Expecting topic '{}' with the highest storage usage to appear first", topicWithLargestStorageUsage);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, 1), topicWithLargestStorageUsage, true);
+        PwUtils.waitForContainsText(TopicsPage.table(tcc.page()).cell(TopicsPage.table(tcc.page()).rows().nth(0), "Name"), topicWithLargestStorageUsage, true);
     }
 
     /**
@@ -251,17 +249,17 @@ public class TopicST extends AbstractST {
             String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
             LOGGER.info("Visiting topic '{}' (id={}) messages page to mark it as recently viewed", topicName, topicId);
             PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), true, true);
-            PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, "No messages data", false);
+            PwUtils.waitForLocatorVisible(MessagesPage.emptyBodyContent(tcc.page()));
+            PwUtils.waitForContainsText(MessagesPage.emptyBodyContent(tcc.page()), "No messages data", false);
         }
 
         LOGGER.info("Navigate to overview page to check the recently viewed card is not empty");
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         LOGGER.info("Verify recently viewed topics card lists visited topics in reverse chronological order: {}", topicNames.reversed());
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(1), topicNames.get(2), false);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(2), topicNames.get(1), false);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.getTableRowItemLink(3), topicNames.get(0), false);
+        PwUtils.waitForContainsText(ClusterOverviewPage.recentTopicsListItems(tcc.page()).nth(0), topicNames.get(2), false);
+        PwUtils.waitForContainsText(ClusterOverviewPage.recentTopicsListItems(tcc.page()).nth(1), topicNames.get(1), false);
+        PwUtils.waitForContainsText(ClusterOverviewPage.recentTopicsListItems(tcc.page()).nth(2), topicNames.get(0), false);
 
         LOGGER.info("Delete {} topic(s), including the {} previously visited topic(s)", topics.size(), topicNames.size());
         KubeResourceManager.get().deleteResourceWithWait(topics.toArray(new KafkaTopic[0]));
@@ -269,9 +267,9 @@ public class TopicST extends AbstractST {
         assertTrue(ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), KafkaNamingUtils.topicPrefixName(tcc.kafkaName())).isEmpty());
 
         LOGGER.info("Verify recently viewed topics card still lists deleted topics: {}", topicNames.reversed());
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build(), topicNames.get(2), false);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(2).build(), topicNames.get(1), false);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(3).build(), topicNames.get(0), false);
+        PwUtils.waitForContainsText(ClusterOverviewPage.recentTopicsListItems(tcc.page()).nth(0), topicNames.get(2), false);
+        PwUtils.waitForContainsText(ClusterOverviewPage.recentTopicsListItems(tcc.page()).nth(1), topicNames.get(1), false);
+        PwUtils.waitForContainsText(ClusterOverviewPage.recentTopicsListItems(tcc.page()).nth(2), topicNames.get(0), false);
     }
 
     // ------

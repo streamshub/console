@@ -10,8 +10,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.MessagesParameterType;
 import com.github.streamshub.systemtests.enums.MessagesWhereFilter;
-import com.github.streamshub.systemtests.locators.CssSelectors;
-import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.MessagesPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
@@ -25,6 +24,8 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUti
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.MessagesChecks;
 import com.github.streamshub.systemtests.utils.testutils.MessagesTestUtils;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -43,6 +44,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
@@ -92,24 +94,26 @@ public class MessagesST extends AbstractST {
      * </ul>
      */
     public Stream<Arguments> searchUsingQueryScenarios() {
+        // Locator resolution is deferred via Function<Page, Locator> - this provider method runs during
+        // test discovery, before @BeforeAll sets up tcc's live Page, so a real Locator can't be built here yet.
         return Stream.of(
             Arguments.of(50, "", Map.of(
-                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
-                MessagesPageSelectors.getTableRowItem(1, 1), "299")),
+                (Function<Page, Locator>) page -> MessagesPage.table(page).rows().nth(0), VALUE_FILTER + " - 99",
+                (Function<Page, Locator>) page -> MessagesPage.cellAt(page, 1, 1), "299")),
             Arguments.of(2, "messages=latest retrieve=2", Map.of(
-                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
-                MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98")),
+                (Function<Page, Locator>) page -> MessagesPage.table(page).rows().nth(0), VALUE_FILTER + " - 99",
+                (Function<Page, Locator>) page -> MessagesPage.table(page).rows().nth(1), VALUE_FILTER + " - 98")),
             Arguments.of(20, "messages=offset:150 retrieve=20", Map.of(
-                MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 50",
-                MessagesPageSelectors.getTableRowItem(1, 1), "150")),
+                (Function<Page, Locator>) page -> MessagesPage.cellAt(page, 1, 5), HEADER_FILTER_MESSAGE + " - 50",
+                (Function<Page, Locator>) page -> MessagesPage.cellAt(page, 1, 1), "150")),
             Arguments.of(1, "messages=offset:10 retrieve=100 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
-                MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE + " - 42",
-                MessagesPageSelectors.getTableRowItem(1, 1), "42")),
+                (Function<Page, Locator>) page -> MessagesPage.cellAt(page, 1, 5), KEY_FILTER_MESSAGE + " - 42",
+                (Function<Page, Locator>) page -> MessagesPage.cellAt(page, 1, 1), "42")),
             Arguments.of(0, "messages=latest retrieve=40 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
-                MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_NO_DATA, "No messages data")),
+                (Function<Page, Locator>) MessagesPage::emptyBodyContent, "No messages data")),
             Arguments.of(50, "messages=totalyNotOkay retrieve=-9", Map.of(
-                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
-                MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98"))
+                (Function<Page, Locator>) page -> MessagesPage.table(page).rows().nth(0), VALUE_FILTER + " - 99",
+                (Function<Page, Locator>) page -> MessagesPage.table(page).rows().nth(1), VALUE_FILTER + " - 98"))
         );
     }
 
@@ -152,30 +156,32 @@ public class MessagesST extends AbstractST {
      *
      * @param expectedResults number of results expected to be displayed in the table
      * @param searchQuery the search query string to apply
-     * @param checks map of selectors to expected values used for content validation
+     * @param checks map of a locator-resolving function (deferred until a live {@link Page} exists,
+     *               see {@link #searchUsingQueryScenarios()}) to expected values used for content validation
      */
     @ParameterizedTest(name = "Query: {1}")
     @MethodSource("searchUsingQueryScenarios")
     @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
-    void testMessageSearchUsingQueries(int expectedResults, String searchQuery, Map<String, String> checks) {
+    void testMessageSearchUsingQueries(int expectedResults, String searchQuery, Map<Function<Page, Locator>, String> checks) {
         LOGGER.info("Running message search scenario on topic '{}' with query [{}], expecting {} result row(s)", kafkaTopicName, searchQuery, expectedResults);
         final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         LOGGER.debug("Waiting for message search page toolbar to be fully loaded before filtering messages");
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
-        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        PwUtils.waitForContainsText(MessagesPage.pageTitle(tcc.page()), kafkaTopicName, true);
+        PwUtils.waitForLocatorVisible(MessagesPage.searchInput(tcc.page()));
 
         LOGGER.info("Filling search query [{}] and awaiting {} result row(s)", searchQuery, expectedResults);
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, searchQuery);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, expectedResults, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForLocatorAndFill(MessagesPage.searchInput(tcc.page()), searchQuery);
+        PwUtils.waitForLocatorAndClick(MessagesPage.searchSubmitButton(tcc.page()));
+        PwUtils.waitForLocatorCount(expectedResults, MessagesPage.table(tcc.page()).rows(), true);
 
         LOGGER.info("Validating {} result check(s) for query [{}]", checks.size(), searchQuery);
-        checks.forEach((selector, expectedValue) -> {
-            LOGGER.debug("Checking selector [{}] contains expected value [{}]", selector, expectedValue);
-            PwUtils.waitForContainsText(tcc, selector, expectedValue, true);
-            assertTrue(tcc.page().locator(selector).allInnerTexts().toString().contains(expectedValue));
+        checks.forEach((locatorFn, expectedValue) -> {
+            Locator locator = locatorFn.apply(tcc.page());
+            LOGGER.debug("Checking locator [{}] contains expected value [{}]", locator, expectedValue);
+            PwUtils.waitForContainsText(locator, expectedValue, true);
+            assertTrue(locator.allInnerTexts().toString().contains(expectedValue));
         });
     }
 
@@ -260,7 +266,7 @@ public class MessagesST extends AbstractST {
         LOGGER.info("Using topic '{}' with id '{}'", testTopic, topicId);
 
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, testTopic, true);
+        PwUtils.waitForContainsText(MessagesPage.pageTitle(tcc.page()), testTopic, true);
 
         LOGGER.info("Filtering messages using ISO query timestamp (current) - expect 0 new messages");
         MessagesChecks.checkQueryBarFilter(tcc, TIMESTAMP_FILTER, Instant.now().atOffset(ZoneOffset.UTC).format(timestampFormatterQuery), 1, null);
@@ -299,8 +305,8 @@ public class MessagesST extends AbstractST {
 
         // Verify via UI popover (ISO mode)
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, testTopic, true);
-        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        PwUtils.waitForContainsText(MessagesPage.pageTitle(tcc.page()), testTopic, true);
+        PwUtils.waitForLocatorVisible(MessagesPage.searchInput(tcc.page()));
 
         LOGGER.info("Verifying timestamp filtering using UI popover (ISO mode) (current)");
         MessagesChecks.checkPopoverIsoFilter(tcc, currentDateTimeForm, newMessageCount, newMessageText);
@@ -360,19 +366,19 @@ public class MessagesST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         LOGGER.debug("Waiting for page toolbar to be fully loaded before filtering");
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
-        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        PwUtils.waitForContainsText(MessagesPage.pageTitle(tcc.page()), kafkaTopicName, true);
+        PwUtils.waitForLocatorVisible(MessagesPage.searchInput(tcc.page()));
 
         LOGGER.info("Verifying default state: latest 50 messages shown, row 1 = offset 299, query = 'messages=latest retrieve=50'");
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
-        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
+        PwUtils.waitForContainsText(MessagesPage.table(tcc.page()).rows().nth(0), VALUE_FILTER + " - 99", true);
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPage.cellAt(tcc.page(), 1, 1), "299"));
 
         LOGGER.info("Filtering messages by key [{}] with no offset specified - expecting 'No messages data'", KEY_FILTER);
         MessagesTestUtils.openFilterForm(tcc);
         MessagesTestUtils.selectWhere(tcc, MessagesWhereFilter.KEY);
         MessagesTestUtils.fillHasWords(tcc, KEY_FILTER);
         MessagesTestUtils.search(tcc);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_NO_DATA, "No messages data", true);
+        PwUtils.waitForContainsText(MessagesPage.emptyBodyContent(tcc.page()), "No messages data", true);
 
         // Take last messages of the first set and let it overlap with second set to see if it filters them out
         LOGGER.info("Setting offset to 95 and reapplying key filter [{}] - expecting 5 matching messages", KEY_FILTER);
@@ -383,14 +389,14 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verifying key-filtered messages: expecting 5 rows (offsets 95-99, ascending) matching key [{}]", KEY_FILTER);
         MessagesChecks.checkFilterResults(tcc, "messages=offset:95 retrieve=50 orderID where=key", 5, Map.of(
-            MessagesPageSelectors.getTableRowItem(1, 1), "95",
-            MessagesPageSelectors.getTableRowItem(1, 3), KEY_FILTER));
+            MessagesPage.cellAt(tcc.page(), 1, 1), "95",
+            MessagesPage.cellAt(tcc.page(), 1, 3), KEY_FILTER));
 
         LOGGER.debug("Resetting key filter - expecting fallback to default latest-50 view");
         MessagesTestUtils.openFilterForm(tcc);
         MessagesTestUtils.resetFilters(tcc);
         // Order is DESC
-        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPage.cellAt(tcc.page(), 1, 1), "299"));
 
         LOGGER.info("Filtering messages by Headers lookup [{}] at offset 95 - expecting 45 matching messages", HEADER_FILTER_LOOK_UP_TEXT);
         MessagesTestUtils.openFilterForm(tcc);
@@ -403,15 +409,15 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verifying header-filtered messages: expecting 45 rows (offsets 100-144, ascending) starting with value [{} - 0]", HEADER_FILTER_MESSAGE);
         MessagesChecks.checkFilterResults(tcc, "messages=offset:95 retrieve=50 " + HEADER_FILTER_LOOK_UP_TEXT + " where=headers", 45, Map.of(
-            MessagesPageSelectors.getTableRowItem(1, 1), "100",
-            MessagesPageSelectors.getTableRowItem(1, 4), HEADER_FILTER_LOOK_UP_TEXT,
-            MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 0"));
+            MessagesPage.cellAt(tcc.page(), 1, 1), "100",
+            MessagesPage.cellAt(tcc.page(), 1, 4), HEADER_FILTER_LOOK_UP_TEXT,
+            MessagesPage.cellAt(tcc.page(), 1, 5), HEADER_FILTER_MESSAGE + " - 0"));
 
         LOGGER.debug("Resetting header filter - expecting fallback to default latest-50 view");
         MessagesTestUtils.openFilterForm(tcc);
         MessagesTestUtils.resetFilters(tcc);
         // Order is DESC
-        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPage.cellAt(tcc.page(), 1, 1), "299"));
 
         LOGGER.info("Filtering messages by Value [{}] at offset 195 - expecting 45 matching messages", VALUE_FILTER);
         MessagesTestUtils.openFilterForm(tcc);
@@ -424,8 +430,8 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verifying value-filtered messages: expecting 45 rows (offsets 200-244, ascending) starting with value [{} - 0]", VALUE_FILTER);
         MessagesChecks.checkFilterResults(tcc, "messages=offset:195 retrieve=50 " + VALUE_FILTER + " where=value", 45, Map.of(
-            MessagesPageSelectors.getTableRowItem(1, 1), "200",
-            MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0"));
+            MessagesPage.cellAt(tcc.page(), 1, 1), "200",
+            MessagesPage.cellAt(tcc.page(), 1, 5), VALUE_FILTER + " - 0"));
 
         LOGGER.info("Completed popover filter-form scenarios (key, headers, value) on topic '{}'", kafkaTopicName);
     }

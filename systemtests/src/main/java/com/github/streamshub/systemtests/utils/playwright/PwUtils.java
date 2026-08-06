@@ -6,8 +6,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
-import com.github.streamshub.systemtests.locators.CssSelectors;
-import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
+import com.github.streamshub.systemtests.locators.components.Masthead;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
@@ -130,10 +129,6 @@ public class PwUtils {
     // --------------------------
     // Wait for locator visible
     // --------------------------
-    public static void waitForLocatorVisible(TestCaseConfig tcc, String selector) {
-        waitForLocatorVisible(tcc.page().locator(selector));
-    }
-
     public static void waitForLocatorVisible(Locator locator) {
         waitForLocatorVisible(locator, TimeConstants.ELEMENT_VISIBILITY_TIMEOUT);
     }
@@ -147,10 +142,6 @@ public class PwUtils {
     // --------------------------
     // Click actions
     // --------------------------
-    public static void waitForLocatorAndClick(TestCaseConfig tcc, String selector) {
-        waitForLocatorAndClick(tcc.page().locator(selector));
-    }
-
     public static void waitForLocatorAndClick(Locator locator) {
         waitForLocatorVisible(locator);
         clickWithRetry(locator);
@@ -178,10 +169,6 @@ public class PwUtils {
     // --------------------------
     // Fill actions
     // --------------------------
-    public static void waitForLocatorAndFill(TestCaseConfig tcc, String selector, String fillText) {
-        waitForLocatorAndFill(tcc.page().locator(selector), fillText);
-    }
-
     public static void waitForLocatorAndFill(Locator locator, String fillText) {
         waitForLocatorVisible(locator);
         fillWithRetry(locator, fillText);
@@ -191,9 +178,6 @@ public class PwUtils {
         Utils.retryAction("fill locator", () -> fill(locator, text), Constants.DEFAULT_ACTION_RETRIES);
     }
 
-    public static boolean fill(TestCaseConfig tcc, String selector, String text) {
-        return fill(tcc.page().locator(selector), text);
-    }
     public static boolean fill(Locator locator, String text) {
         LOGGER.debug("Filling locator [{}] with text [{}]", locator, text);
         try {
@@ -214,12 +198,8 @@ public class PwUtils {
         waitForContainsText(tcc, selector, text, reload, true, TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT, Constants.DEFAULT_ACTION_RETRIES);
     }
 
-    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload, boolean exactCase) {
-        waitForContainsText(tcc, selector, text, reload, exactCase, TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT, Constants.DEFAULT_ACTION_RETRIES);
-    }
-
-    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, long waitTime) {
-        waitForContainsText(tcc, selector, text, true, true, waitTime, Constants.DEFAULT_ACTION_RETRIES);
+    public static void waitForContainsText(Locator locator, String text, long waitTime) {
+        waitForContainsText(locator, text, true, true, waitTime, Constants.DEFAULT_ACTION_RETRIES);
     }
 
     /**
@@ -252,6 +232,35 @@ public class PwUtils {
 
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
+                }
+
+                return false;
+            }, retries, waitTime
+        );
+    }
+
+    public static void waitForContainsText(Locator locator, String text, boolean reload) {
+        waitForContainsText(locator, text, reload, true, TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT, Constants.DEFAULT_ACTION_RETRIES);
+    }
+
+    public static void waitForContainsText(Locator locator, String text, boolean reload, boolean exactCase) {
+        waitForContainsText(locator, text, reload, exactCase, TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT, Constants.DEFAULT_ACTION_RETRIES);
+    }
+
+    public static void waitForContainsText(Locator locator, String text, boolean reload, boolean exactCase, long waitTime, int retries) {
+        LOGGER.debug("Waiting for locator [{}] to contain text [{}]", locator, text);
+        Utils.retryAction("waitForContainsText: " + text,
+            () -> {
+                if (locatorContainsText(locator, text, exactCase)) {
+                    screenshot(locator.page(), "wait-text-success");
+                    return true;
+                }
+
+                LOGGER.warn("Locator did not contain text [{}]", text);
+                screenshot(locator.page(), "wait-text-retry");
+
+                if (reload) {
+                    locator.page().reload(getDefaultReloadOpts());
                 }
 
                 return false;
@@ -319,8 +328,7 @@ public class PwUtils {
      * found, the check is retried until the timeout is reached. Optionally, the
      * page can be reloaded between retries.</p>
      *
-     * @param tcc        {@link TestCaseConfig} instance representing the current browser page
-     * @param selector   selector used to resolve the {@link Locator} whose attribute will be inspected
+     * @param locator    the {@link Locator} whose attribute will be inspected
      * @param text       expected text to be contained in the attribute value
      * @param attribute  name of the attribute to inspect (e.g. {@code value}, {@code aria-label}, {@code href})
      * @param reload     if {@code true}, the page will be reloaded between retry attempts
@@ -328,32 +336,27 @@ public class PwUtils {
      *
      * @throws AssertionError if the attribute value does not contain the expected text within the timeout
      */
-    public static void waitForAttributeContainsText(TestCaseConfig tcc, String selector, String text, String attribute, boolean reload, boolean exactCase) {
-        LOGGER.debug("Waiting for locator [{}] to contain value [{}]", selector, text);
+    public static void waitForAttributeContainsText(Locator locator, String text, String attribute, boolean reload, boolean exactCase) {
+        LOGGER.debug("Waiting for locator [{}] to contain value [{}]", locator, text);
         Utils.retryAction("waitForAttributeContainsText: " + text,
             () -> {
-                // For reliability let's wait for the selector before getting it's value
-                waitForLocatorVisible(tcc, selector);
+                waitForLocatorVisible(locator);
 
-                if (attributeContainsText(tcc.page().locator(selector), attribute, text, exactCase)) {
-                    screenshot(tcc, tcc.kafkaName(), "wait-attribute-success");
+                if (attributeContainsText(locator, attribute, text, exactCase)) {
+                    screenshot(locator.page(), "wait-attribute-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator attribute did not contain text [{}]", text);
-                screenshot(tcc, tcc.kafkaName(), "wait-attribute-retry");
+                screenshot(locator.page(), "wait-attribute-retry");
 
                 if (reload) {
-                    reload(tcc);
+                    locator.page().reload(getDefaultReloadOpts());
                 }
 
                 return false;
             }
         );
-    }
-
-    public static boolean attributeContainsText(TestCaseConfig tcc, String selector, String attribute, String expectedText, boolean exactCase) {
-        return attributeContainsText(tcc.page().locator(selector), attribute, expectedText, exactCase);
     }
 
 
@@ -399,27 +402,26 @@ public class PwUtils {
      * If the count does not match the expected value, the check is retried until the
      * timeout is reached. Optionally, the page can be reloaded between retries.</p>
      *
-     * @param tcc      {@link TestCaseConfig} containing the page instance used for locating elements
-     * @param count    expected number of elements matching the selector
-     * @param selector selector used to resolve the {@link Locator}
+     * @param count    expected number of elements matching the locator
+     * @param locator  the {@link Locator} to count matches for
      * @param reload   if {@code true}, the page is reloaded between retry attempts when the count is incorrect
      */
-    public static void waitForLocatorCount(TestCaseConfig tcc, int count, String selector, boolean reload) {
-        LOGGER.debug("Waiting for locator [{}] to contain item count [{}] reload={}", selector, count, reload);
+    public static void waitForLocatorCount(int count, Locator locator, boolean reload) {
+        LOGGER.debug("Waiting for locator [{}] to contain item count [{}] reload={}", locator, count, reload);
         Utils.retryAction("waitForLocatorCount: " + count,
             () -> {
-                int locatorCount = tcc.page().locator(selector).all().size();
+                int locatorCount = locator.all().size();
                 if (locatorCount == count) {
                     LOGGER.debug("Locator has correct item count {}", count);
-                    screenshot(tcc, tcc.kafkaName(), "wait-count-success");
+                    screenshot(locator.page(), "wait-count-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator has incorrect item count {}, need {}", locatorCount, count);
-                screenshot(tcc, tcc.kafkaName(), "wait-count-retry");
+                screenshot(locator.page(), "wait-count-retry");
 
                 if (reload) {
-                    tcc.page().reload(getDefaultReloadOpts());
+                    locator.page().reload(getDefaultReloadOpts());
                 }
 
                 return false;
@@ -437,29 +439,26 @@ public class PwUtils {
      * If the expected state is not reached, the check is retried until the timeout
      * is reached. Optionally, the page can be reloaded between retries.</p>
      *
-     * @param tcc             {@link TestCaseConfig} containing the Playwright page instance
-     * @param selector        selector used to resolve the {@link Locator}
+     * @param locator         the {@link Locator} to check
      * @param shouldBeEnabled {@code true} if the element is expected to be enabled,
      *                        {@code false} if it is expected to be disabled
      * @param reload          if {@code true}, the page is reloaded between retry attempts
      */
-    public static void waitForElementEnabledState(TestCaseConfig tcc, String selector, boolean shouldBeEnabled, boolean reload) {
-        LOGGER.debug("Waiting for locator [{}] to reach enabled state [{}]", selector, shouldBeEnabled);
+    public static void waitForElementEnabledState(Locator locator, boolean shouldBeEnabled, boolean reload) {
+        LOGGER.debug("Waiting for locator [{}] to reach enabled state [{}]", locator, shouldBeEnabled);
         Utils.retryAction("waitForElementEnabledState enabled=" + shouldBeEnabled,
             () -> {
-                Locator locator = tcc.page().locator(selector);
-
                 if (locator.isEnabled() == shouldBeEnabled) {
                     LOGGER.debug("Locator has correct state enabled={}", locator.isEnabled());
-                    screenshot(tcc, tcc.kafkaName(), "wait-enabled-success");
+                    screenshot(locator.page(), "wait-enabled-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled);
-                screenshot(tcc, tcc.kafkaName(), "wait-enabled-retry");
+                screenshot(locator.page(), "wait-enabled-retry");
 
                 if (reload) {
-                    tcc.page().reload(getDefaultReloadOpts());
+                    locator.page().reload(getDefaultReloadOpts());
                 }
 
                 return false;
@@ -483,7 +482,7 @@ public class PwUtils {
                 }
 
                 // Check if Keycloak login page is displayed
-                if (tcc.page().locator(CssSelectors.LOGIN_KEYCLOAK_PAGE_TITLE).isVisible()) {
+                if (tcc.page().locator("#kc-header").isVisible()) {
                     LOGGER.info("Console website is ready");
                     screenshot(tcc, tcc.kafkaName(), "keycloak-ready");
                     return true;
@@ -638,9 +637,10 @@ public class PwUtils {
         waitForConsoleUiWithKeycloakToBecomeReady(tcc);
         navigate(tcc, baseUrl);
         // Login with user
-        waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_USERNAME_INPUT, username);
-        waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_PASSWORD_INPUT, password);
-        waitForLocatorAndClick(tcc, CssSelectors.LOGIN_KEYCLOAK_SIGN_IN_BUTTON);
+        Locator loginForm = tcc.page().locator("#kc-form-login");
+        waitForLocatorAndFill(loginForm.locator("input#username"), username);
+        waitForLocatorAndFill(loginForm.locator("input#password"), password);
+        waitForLocatorAndClick(loginForm.locator("button#kc-login"));
         // Wait for redirect to overview page
         waitForUrl(tcc, baseUrl, true);
         LOGGER.info("Successfully logged into Console");
@@ -663,18 +663,11 @@ public class PwUtils {
         Utils.retryAction("Log-out user " + userName, () -> {
             String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), https) + "/";
 
-            // There is a xpath difference between logout button in dashboard and in navbar on other pages
-            if (tcc.page().url().equals(dashboardUrl)) {
-                waitForLocatorAndClick(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON);
-            } else {
-                waitForLocatorAndClick(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON);
-            }
-
-            waitForLocatorAndClick(tcc, CssSelectors.PAGES_LOGOUT_BUTTON);
+            waitForLocatorAndClick(Masthead.userDropdownButton(tcc.page(), userName));
+            waitForLocatorAndClick(Masthead.logoutMenuItem(tcc.page()));
             Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
 
-            if (tcc.page().url().equals(dashboardUrl) ||
-                tcc.page().locator(KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON).allInnerTexts().contains(userName)) {
+            if (tcc.page().url().equals(dashboardUrl) || Masthead.userDropdownButton(tcc.page(), userName).isVisible()) {
                 LOGGER.warn("User '{}' has not been logged out", userName);
                 screenshot(tcc, tcc.kafkaName(), "logout-retry");
                 return false;

@@ -38,6 +38,7 @@ export function ErrorsAndWarnings({
     <ExpandableSection
       isExpanded={isExpanded}
       onToggle={(_event, isOpen) => setIsExpanded(isOpen)}
+      toggleId="cluster-warnings-toggle"
       toggleContent={
         <Title headingLevel="h3" className="pf-v6-u-font-size-sm">
           {t('ClusterCard.cluster_errors_and_warnings')}{' '}

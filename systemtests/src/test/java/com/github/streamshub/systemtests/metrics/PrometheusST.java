@@ -8,7 +8,6 @@ import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
-import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.prometheus.PrometheusInstanceSetup;
@@ -42,6 +41,14 @@ public class PrometheusST extends AbstractST {
     protected TestCaseConfig tcc;
     protected PrometheusOperatorSetup prometheusOperator;
     protected PrometheusInstanceSetup prometheusInstance;
+
+    // The overview page's charts (@patternfly/react-charts / Victory) render raw SVG text nodes with no
+    // data-testid/id/aria-label on individual axis labels - there is no semantic replacement available for
+    // these without a webui change (see design.md "Known webui gaps").
+    private static final String DISK_SPACE_CHART_NODE_TEXT_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(4) > div > div.pf-v6-c-chart > svg > g:nth-of-type(4) > text > tspan";
+    private static final String CPU_USAGE_CHART_NODE_TEXT_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(7) > div > div.pf-v6-c-chart > svg > g:nth-of-type(4) > text > tspan";
+    private static final String MEMORY_USAGE_CHART_NODE_TEXT_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(2) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(10) > div > div.pf-v6-c-chart > svg > g:nth-of-type(4) > text > tspan";
+    private static final String TOPIC_BYTES_CHART_NODE_TEXT_ITEMS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(2) > div.pf-v6-l-flex > div:nth-of-type(3) > div.pf-v6-c-card > div.pf-v6-c-card__body:nth-of-type(2) > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(3) > div > div > svg > g:nth-of-type(4) > text > tspan";
 
     /**
      * Tests that the console uses an externally provided (standalone) Prometheus instance for metrics
@@ -79,23 +86,23 @@ public class PrometheusST extends AbstractST {
 
         LOGGER.info("Verifying disk space usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // Disk
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
+        PwUtils.waitForContainsText(tcc, DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
+        PwUtils.waitForContainsText(tcc, DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
         LOGGER.info("Verifying CPU usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // CPU
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
+        PwUtils.waitForContainsText(tcc, CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
+        PwUtils.waitForContainsText(tcc, CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
         LOGGER.info("Verifying memory usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // Memory
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
+        PwUtils.waitForContainsText(tcc, MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
+        PwUtils.waitForContainsText(tcc, MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
 
         LOGGER.info("Verifying topic bytes chart contains incoming and outgoing bytes series for topic '{}'", Constants.REPLICATED_TOPICS_PREFIX);
         // Topics
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Incoming bytes", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Outgoing bytes", true);
+        PwUtils.waitForContainsText(tcc, TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Incoming bytes", true);
+        PwUtils.waitForContainsText(tcc, TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Outgoing bytes", true);
     }
 
     @BeforeAll

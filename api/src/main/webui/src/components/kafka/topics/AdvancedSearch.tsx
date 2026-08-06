@@ -241,6 +241,7 @@ export function AdvancedSearch({
                         value={query}
                         onChange={(_, value) => setQuery(value)}
                         placeholder={t('topics.messages.advancedSearch.queryHelper')}
+                        ouiaId="has-words-input"
                       />
                       <FormHelperText>
                         <HelperText>
@@ -267,6 +268,7 @@ export function AdvancedSearch({
                             onClick={() => setIsWhereOpen(!isWhereOpen)}
                             isExpanded={isWhereOpen}
                             style={{ width: '100%' }}
+                            ouiaId="where-dropdown-button"
                           >
                             {where === 'value' ? t('topics.messages.advancedSearch.whereValue') :
                              where === 'key' ? t('topics.messages.advancedSearch.whereKey') :
@@ -320,6 +322,7 @@ export function AdvancedSearch({
                                 onClick={() => setIsFromOpen(!isFromOpen)}
                                 isExpanded={isFromOpen}
                                 style={{ width: '100%' }}
+                                ouiaId="messages-from-dropdown-button"
                               >
                                 {fromCategory === 'offset' ? t('topics.messages.filter.offset') :
                                  fromCategory === 'timestamp' ? t('topics.messages.filter.timestamp') :
@@ -391,6 +394,7 @@ export function AdvancedSearch({
                                 onClick={() => setIsRetrieveOpen(!isRetrieveOpen)}
                                 isExpanded={isRetrieveOpen}
                                 style={{ width: '100%' }}
+                                ouiaId="retrieve-type-dropdown-button"
                               >
                                 {retrieveCategory === 'limit' ? 'Number of messages' : t('topics.messages.advancedSearch.continuously')}
                               </MenuToggle>
@@ -418,6 +422,7 @@ export function AdvancedSearch({
                                   onClick={() => setIsLimitOpen(!isLimitOpen)}
                                   isExpanded={isLimitOpen}
                                   style={{ width: '100%' }}
+                                  ouiaId="retrieve-limit-dropdown-button"
                                 >
                                   {limit}
                                 </MenuToggle>
@@ -464,6 +469,7 @@ export function AdvancedSearch({
                             onClick={() => setIsPartitionOpen(!isPartitionOpen)}
                             isExpanded={isPartitionOpen}
                             style={{ width: '100%' }}
+                            ouiaId="partition-dropdown-button"
                           >
                             {partition !== undefined
                               ? t('topics.messages.partitionOption', { value: partition })

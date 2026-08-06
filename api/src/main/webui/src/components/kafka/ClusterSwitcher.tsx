@@ -143,7 +143,7 @@ export function ClusterSwitcher({
       >
         <FlexItem>{t('kafka.selectCluster')}</FlexItem>
         <FlexItem>
-          <Badge isRead key="badge">
+          <Badge isRead key="badge" data-ouia-component-id="total-available-kafka-count">
             {clusters.length}
           </Badge>
         </FlexItem>

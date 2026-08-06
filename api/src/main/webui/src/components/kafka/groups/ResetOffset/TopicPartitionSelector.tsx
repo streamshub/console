@@ -83,6 +83,7 @@ export function TopicPartitionSelector({
 
   const topicToggle = (
     <MenuToggle
+      id="topic-select"
       ref={topicToggleRef}
       onClick={() => setIsTopicSelectOpen(!isTopicSelectOpen)}
       isExpanded={isTopicSelectOpen}
@@ -130,6 +131,7 @@ export function TopicPartitionSelector({
 
   const partitionToggle = (
     <MenuToggle
+      id="partition-select"
       ref={partitionToggleRef}
       onClick={() => setIsPartitionSelectOpen(!isPartitionSelectOpen)}
       isExpanded={isPartitionSelectOpen}
