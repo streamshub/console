@@ -1,19 +1,15 @@
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { DataViewTd } from '@patternfly/react-data-view';
 import { ThProps } from '@patternfly/react-table';
 import { UseQueryResult } from '@tanstack/react-query';
 import {
-  ClipboardCopy,
-  Content,
   Flex,
   FlexItem,
   Label,
   Tooltip,
 } from '@patternfly/react-core';
 import { HelpIcon } from '@patternfly/react-icons';
-import { ChartDonutUtilization } from '@patternfly/react-charts/victory';
 import { Node, ListResponse, BrokerStatus, ControllerStatus, NodeListMeta } from '@/api/types';
 import { ResourceListParams } from '@/api/hooks/useResourceList';
 import {
@@ -27,8 +23,7 @@ import {
   useBrokerStatusLabels,
   useControllerStatusLabels,
 } from './NodeStatusLabel';
-import { formatNumber, formatBytes } from '@/utils/format';
-import type { ChartDatum } from '@/components/kafka/overview/utils/types';
+import { formatNumber } from '@/utils/format';
 
 const columnNames = ['id', 'roles', 'status', 'replicas', 'rack', 'nodePool'] as const;
 
@@ -143,137 +138,74 @@ export function NodesDataView({
 
   const rowMapper: ResourceListDataViewRowMapper<Node> = useCallback(
     (node): ResourceListDataViewRowResult => {
-      const diskCapacity = node.attributes.storageCapacity;
-      const diskUsage = node.attributes.storageUsed;
-      const usedCapacity =
-        diskUsage != null && diskCapacity != null
-          ? diskUsage / diskCapacity
-          : undefined;
-
       return {
-        row: {
-          id: node.id,
-          row: [
-            {
-              // id on the first cell is how DataViewTableBasic matches expandedRows entries
-              id: node.id,
-              cell: (
-                <>
-                  {node.meta?.privileges?.includes('GET') === true ? (
-                    <Link to={`/kafka/${kafkaId}/nodes/${node.id}/configuration`}>
-                      {node.id}
-                    </Link>
-                  ) : (
-                    node.id
-                  )}
-                  {node.attributes.metadataState?.status === 'leader' && (
-                    <Label isCompact color="green" className="pf-v6-u-ml-sm">
-                      {t('nodes.leadController')}
-                    </Label>
-                  )}
-                </>
-              ),
-              props: { dataLabel: t('nodes.nodeId'), modifier: 'nowrap' },
-            } as DataViewTd,
-            {
-              cell: (
-                <>{node.attributes.roles?.map((role) => (
-                  <div key={role}>{roleLabels[role].label}</div>
-                ))}</>
-              ),
-              props: { dataLabel: t('nodes.roles'), modifier: 'nowrap' },
-            },
-            {
-              cell: (
-                <>
-                  <div className="pf-v6-u-active-color-100">
-                    {node.attributes.broker && brokerStatusLabels[node.attributes.broker.status]}
-                  </div>
-                  <div>
-                    {node.attributes.controller && controllerStatusLabels[node.attributes.controller.status]}
-                  </div>
-                </>
-              ),
-              props: { dataLabel: t('nodes.status'), modifier: 'nowrap' },
-            },
-            {
-              cell: node.attributes.kafkaVersion,
-              props: { dataLabel: t('nodes.kafkaVersion'), modifier: 'nowrap' },
-            },
-            {
-              cell: typeof node.attributes.broker?.leaderCount === 'number' &&
-                typeof node.attributes.broker?.replicaCount === 'number'
-                ? formatNumber(node.attributes.broker.leaderCount + node.attributes.broker.replicaCount)
-                : '-',
-              props: { dataLabel: t('nodes.replicas'), modifier: 'fitContent', style: { textAlign: 'right' } },
-            },
-            {
-              cell: typeof node.attributes.broker?.leaderCount === 'number'
-                ? formatNumber(node.attributes.broker.leaderCount)
-                : '-',
-              props: { dataLabel: t('nodes.leaders'), modifier: 'fitContent', style: { textAlign: 'right' } },
-            },
-            {
-              cell: node.attributes.rack || 'n/a',
-              props: { dataLabel: t('nodes.rack'), modifier: 'nowrap' },
-            },
-            {
-              cell: node.attributes.nodePool || 'n/a',
-              props: { dataLabel: t('nodes.nodePool'), modifier: 'nowrap' },
-            },
-          ],
-        },
-        expandedRows: [{
-          rowId: node.id as unknown as number,
-          columnId: 0,
-          content: (
-            <Flex gap={{ default: 'gap4xl' }} className="pf-v6-u-p-xl">
-              <FlexItem flex={{ default: 'flex_1' }} style={{ maxWidth: '50%' }}>
-                <Content>
-                  <Content><strong>{t('nodes.hostName')}</strong></Content>
-                  <Content>
-                    <ClipboardCopy isReadOnly variant="expansion" isExpanded>
-                      {node.attributes.host || 'n/a'}
-                    </ClipboardCopy>
-                  </Content>
-                </Content>
-              </FlexItem>
-              <FlexItem>
-                <Content>
-                  <Content><strong>{t('nodes.diskUsage')}</strong></Content>
-                </Content>
-                {usedCapacity !== undefined && (
-                  <div style={{ height: '300px', width: '230px' }}>
-                    <ChartDonutUtilization
-                      data={{ x: 'Used capacity', y: usedCapacity * 100 }}
-                      labels={({ datum }: { datum: ChartDatum }) =>
-                        datum.x ? `${datum.x}: ${datum.y.toFixed(1)}%` : null
-                      }
-                      legendData={[
-                        { name: `Used capacity: ${formatBytes(diskUsage!)}` },
-                        { name: `Available: ${formatBytes(diskCapacity! - diskUsage!)}` },
-                      ]}
-                      legendOrientation="vertical"
-                      legendPosition="bottom"
-                      padding={{ bottom: 75, left: 20, right: 20, top: 20 }}
-                      title={`${(usedCapacity * 100).toFixed(1)}%`}
-                      subTitle={`of ${formatBytes(diskCapacity!)}`}
-                      thresholds={[{ value: 60 }, { value: 90 }]}
-                      height={300}
-                      width={230}
-                    />
-                  </div>
+        row: [
+          {
+            cell: (
+              <>
+                {node.meta?.privileges?.includes('GET') === true ? (
+                  <Link to={`/kafka/${kafkaId}/nodes/${node.id}/configuration`}>
+                    {node.id}
+                  </Link>
+                ) : (
+                  node.id
                 )}
-              </FlexItem>
-              <FlexItem>
-                <Content>
-                  <Content><strong>{t('nodes.kafkaVersion')}</strong></Content>
-                </Content>
-                <div>{node.attributes.kafkaVersion ?? 'Unknown'}</div>
-              </FlexItem>
-            </Flex>
-          ),
-        }],
+                {node.attributes.metadataState?.status === 'leader' && (
+                  <Label isCompact color="green" className="pf-v6-u-ml-sm">
+                    {t('nodes.leadController')}
+                  </Label>
+                )}
+              </>
+            ),
+            props: { dataLabel: t('nodes.nodeId'), modifier: 'nowrap' },
+          },
+          {
+            cell: (
+              <>{node.attributes.roles?.map((role) => (
+                <div key={role}>{roleLabels[role].label}</div>
+              ))}</>
+            ),
+            props: { dataLabel: t('nodes.roles'), modifier: 'nowrap' },
+          },
+          {
+            cell: (
+              <>
+                <div className="pf-v6-u-active-color-100">
+                  {node.attributes.broker && brokerStatusLabels[node.attributes.broker.status]}
+                </div>
+                <div>
+                  {node.attributes.controller && controllerStatusLabels[node.attributes.controller.status]}
+                </div>
+              </>
+            ),
+            props: { dataLabel: t('nodes.status'), modifier: 'nowrap' },
+          },
+          {
+            cell: node.attributes.kafkaVersion,
+            props: { dataLabel: t('nodes.kafkaVersion'), modifier: 'nowrap' },
+          },
+          {
+            cell: typeof node.attributes.broker?.leaderCount === 'number' &&
+              typeof node.attributes.broker?.replicaCount === 'number'
+              ? formatNumber(node.attributes.broker.leaderCount + node.attributes.broker.replicaCount)
+              : '-',
+            props: { dataLabel: t('nodes.replicas'), modifier: 'fitContent', style: { textAlign: 'right' } },
+          },
+          {
+            cell: typeof node.attributes.broker?.leaderCount === 'number'
+              ? formatNumber(node.attributes.broker.leaderCount)
+              : '-',
+            props: { dataLabel: t('nodes.leaders'), modifier: 'fitContent', style: { textAlign: 'right' } },
+          },
+          {
+            cell: node.attributes.rack || 'n/a',
+            props: { dataLabel: t('nodes.rack'), modifier: 'nowrap' },
+          },
+          {
+            cell: node.attributes.nodePool || 'n/a',
+            props: { dataLabel: t('nodes.nodePool'), modifier: 'nowrap' },
+          },
+        ],
       };
     },
     [kafkaId, t, roleLabels, brokerStatusLabels, controllerStatusLabels],

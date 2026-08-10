@@ -26,7 +26,6 @@ import {
   DescriptionListGroup,
   DescriptionListTerm,
   DescriptionListDescription,
-  Badge,
   Popover,
   List,
   ListItem,

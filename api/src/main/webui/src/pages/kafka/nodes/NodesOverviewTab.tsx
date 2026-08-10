@@ -27,6 +27,7 @@ import { useNodes } from '@/api/hooks/useNodes';
 import { ResourceListParams } from '@/api/hooks/useResourceList';
 import { formatNumber } from '@/utils/format';
 import { NodesDataView } from '@/components/kafka/nodes/NodesDataView';
+import { NodeChartsCard } from '@/components/kafka/nodes/NodeChartsCard';
 
 export function NodesOverviewTab() {
   const { t } = useTranslation();
@@ -69,7 +70,7 @@ export function NodesOverviewTab() {
     <PageSection isFilled>
       <Grid hasGutter>
         <GridItem>
-          <Card>
+          <Card style={{ background: 'var(--pf-t--global--background--color--secondary--default)' }}>
             <CardBody>
               <DescriptionList
                 isCompact
@@ -134,6 +135,10 @@ export function NodesOverviewTab() {
             nodeResult={nodeResult}
             onDataViewChange={handleDataViewChange}
           />
+        </GridItem>
+
+        <GridItem>
+          <NodeChartsCard nodeResult={nodeResult} />
         </GridItem>
       </Grid>
     </PageSection>

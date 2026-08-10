@@ -514,6 +514,23 @@
     "statusLabels": {
       "healthyTooltip": "Number of healthy nodes",
       "unhealthyTooltip": "Number of unhealthy nodes"
+    },
+    "charts": {
+      "title": "Node charts",
+      "storageUsage": "Node storage usage",
+      "storageUsageSubtitle": "Total storage used per node",
+      "storageUsageTooltip": "Used and available storage per node.",
+      "storageUsageNoData": "No storage usage data available",
+      "storageUsageAriaTitle": "Node storage usage chart",
+      "storageUsageSeriesUsed": "Used",
+      "storageUsageSeriesAvailable": "Available",
+      "partitionDistribution": "Partition distribution",
+      "partitionDistributionSubtitle": "Balance of partition leaders and replicas across brokers",
+      "partitionDistributionTooltip": "Total replicas and leader partitions per broker node.",
+      "partitionDistributionNoData": "No partition data available",
+      "partitionDistributionAriaTitle": "Partition distribution chart",
+      "partitionDistributionSeriesLeaders": "Leaders",
+      "partitionDistributionSeriesReplicas": "Replicas"
     }
   },
   "rebalancing": {

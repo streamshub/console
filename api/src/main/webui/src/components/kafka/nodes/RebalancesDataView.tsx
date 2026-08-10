@@ -5,7 +5,6 @@ import { DataViewTd } from '@patternfly/react-data-view';
 import { ThProps, ActionsColumn } from '@patternfly/react-table';
 import { UseQueryResult } from '@tanstack/react-query';
 import {
-  Badge,
   Button,
   DescriptionList,
   DescriptionListDescription,
