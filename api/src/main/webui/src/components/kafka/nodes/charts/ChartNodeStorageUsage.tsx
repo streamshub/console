@@ -13,6 +13,7 @@ import { Node } from '@/api/types';
 import { formatBytes } from '@/utils/format';
 import { useChartWidth } from '@/components/kafka/overview/utils/useChartWidth';
 import { getPadding } from '@/components/kafka/overview/utils/chartConsts';
+import { VictoryZoomContainer } from 'victory-zoom-container';
 
 interface ChartNodeStorageUsageProps {
   nodes: Node[];
@@ -71,28 +72,39 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
 
   const barWidth = 20;
   const legendRows = 1;
-  const padding = { ...getPadding(legendRows), left: 80 };
-  // Each node row gets 60px; top/bottom padding keeps outer bars off the edge.
-  const chartHeight = storageNodes.length * 60 + padding.top + padding.bottom;
+  const padding = { ...getPadding(legendRows), left: 90 };
 
   return (
     <div ref={containerRef}>
       <Chart
         ariaTitle={t('nodes.charts.storageUsageAriaTitle')}
+        containerComponent={
+          <VictoryZoomContainer
+            disable={storageNodes.length < 21}
+            zoomDimension="x"
+            minimumZoom={{ x: 2 }}
+          />
+        }
         legendPosition="bottom-left"
         legendComponent={
           <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} />
         }
-        height={chartHeight}
         padding={padding}
         domainPadding={{ x: [30, 25] }}
         themeColor={ChartThemeColor.multiOrdered}
         width={width}
         legendAllowWrap={true}
       >
-        <ChartAxis dependentAxis showGrid tickValues={tickValues} tickFormat={(d: number) => formatBytes(d)} />
+        <ChartAxis
+          dependentAxis
+          label="Storage"
+          showGrid
+          tickValues={tickValues}
+          tickFormat={(d: number) => formatBytes(d)}
+          style={{ axisLabel: { padding: 75 } }}
+        />
         <ChartAxis />
-        <ChartStack horizontal>
+        <ChartStack>
           <ChartBar
             data={usedData}
             barWidth={barWidth}

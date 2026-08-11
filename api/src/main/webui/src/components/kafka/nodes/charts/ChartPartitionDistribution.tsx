@@ -8,6 +8,7 @@ import {
   ChartThemeColor,
   ChartTooltip,
 } from '@patternfly/react-charts/victory';
+import { VictoryZoomContainer } from 'victory-zoom-container';
 import { Alert } from '@patternfly/react-core';
 import { Node } from '@/api/types';
 import { formatNumber } from '@/utils/format';
@@ -43,7 +44,7 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
       name: t('nodes.charts.partitionDistributionSeriesLeaders'),
       x: `Node ${n.id}`,
       y: broker.leaderCount,
-      label: `Node ${n.id}\n${t('nodes.charts.partitionDistributionSeriesLeaders')}: ${formatNumber(broker.leaderCount)}`,
+      label: `${t('nodes.charts.partitionDistributionSeriesLeaders')}: ${formatNumber(broker.leaderCount)}`,
     };
   });
 
@@ -54,46 +55,55 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
       name: t('nodes.charts.partitionDistributionSeriesReplicas'),
       x: `Node ${n.id}`,
       y: broker.replicaCount,
-      label: `Node ${n.id}\n${t('nodes.charts.partitionDistributionSeriesReplicas')}: ${formatNumber(broker.replicaCount)}`,
+      label: `${t('nodes.charts.partitionDistributionSeriesReplicas')}: ${formatNumber(broker.replicaCount)}`,
     };
   });
 
   const legendData = [
-    { name: t('nodes.charts.partitionDistributionSeriesLeaders') },
     { name: t('nodes.charts.partitionDistributionSeriesReplicas') },
+    { name: t('nodes.charts.partitionDistributionSeriesLeaders') },
   ];
 
   const barWidth = 20;
   const legendRows = 1;
-  const padding = { ...getPadding(legendRows), left: 80 };
-  // Each node row gets 60px; top/bottom padding keeps outer bars off the edge.
-  const chartHeight = brokerNodes.length * 60 + padding.top + padding.bottom;
+  const padding = { ...getPadding(legendRows), left: 90 };
 
   return (
     <div ref={containerRef}>
       <Chart
         ariaTitle={t('nodes.charts.partitionDistributionAriaTitle')}
+        containerComponent={
+          <VictoryZoomContainer
+            disable={brokerNodes.length < 21}
+            zoomDimension="x"
+            minimumZoom={{ x: 2 }}
+          />
+        }
         legendPosition="bottom-left"
         legendComponent={
           <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} />
         }
-        height={chartHeight}
         padding={padding}
         domainPadding={{ x: [30, 25] }}
         themeColor={ChartThemeColor.multiOrdered}
         width={width}
         legendAllowWrap={true}
       >
-        <ChartAxis dependentAxis showGrid />
+        <ChartAxis
+          dependentAxis
+          showGrid
+          label="Partitions"
+          style={{ axisLabel: { padding: 75 } }}
+        />
         <ChartAxis />
-        <ChartStack horizontal>
+        <ChartStack>
           <ChartBar
-            data={leadersData}
+            data={replicasData}
             barWidth={barWidth}
             labelComponent={<ChartTooltip constrainToVisibleArea />}
           />
           <ChartBar
-            data={replicasData}
+            data={leadersData}
             barWidth={barWidth}
             labelComponent={<ChartTooltip constrainToVisibleArea />}
           />

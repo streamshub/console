@@ -16,7 +16,7 @@ import {
   ListItem,
   Popover,
 } from '@patternfly/react-core';
-import { HelpIcon } from '@patternfly/react-icons';
+import { AngleRightIcon, HelpIcon } from '@patternfly/react-icons';
 import { Rebalance, ListResponse } from '@/api/types';
 import { ResourceListParams } from '@/api/hooks/useResourceList';
 import {
@@ -72,6 +72,10 @@ export function RebalancesDataView({
 
   const colMapper: ResourceListDataViewColumnMapper = useCallback(
     (sortBy, direction, onSort) => [
+      {
+        // expander column,
+        cell: ''
+      },
       {
         cell: t('rebalancing.rebalanceName'),
         props: {
@@ -138,12 +142,22 @@ export function RebalancesDataView({
             {
               id: rebalance.id,
               cell: (
+                <AngleRightIcon
+                  style={{
+                    transition: 'transform 0.2s',
+                  }}
+                  className="expand-icon"
+                />
+              ),
+            } as DataViewTd,
+            {
+              cell: (
                 <Button variant="link" isInline onClick={() => onViewDetails(rebalance)}>
                   {rebalance.attributes.name}
                 </Button>
               ),
               props: { dataLabel: t('rebalancing.rebalanceName') },
-            } as DataViewTd,
+            },
             {
               cell: (
                 <StatusLabel
