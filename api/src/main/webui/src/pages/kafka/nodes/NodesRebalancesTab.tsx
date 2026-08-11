@@ -1,7 +1,3 @@
-/**
- * Nodes Rebalances Tab - Shows Kafka rebalances
- */
-
 import { useState, useCallback } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -19,16 +15,14 @@ import { useKafkaCluster } from '@/api/hooks/useKafkaClusters';
 import { ResourceListParams } from '@/api/hooks/useResourceList';
 import { RebalancesDataView } from '@/components/kafka/nodes/RebalancesDataView';
 import { RebalanceConfirmationModal } from '@/components/kafka/nodes/RebalanceConfirmationModal';
-import { RebalanceModal } from '@/components/kafka/nodes/RebalanceModal';
 import { Rebalance } from '@/api/types';
 
 export function NodesRebalancesTab() {
   const { t } = useTranslation();
   const { kafkaId } = useParams<{ kafkaId: string }>();
   const { data: clusterData } = useKafkaCluster(kafkaId, { fields: 'cruiseControlEnabled' });
-  const cruiseControlEnabled = clusterData?.data?.attributes?.cruiseControlEnabled ?? false;
+  const cruiseControlEnabled = clusterData?.data?.attributes?.cruiseControlEnabled ?? true;
 
-  // Table params driven by RebalancesDataView
   const [dataParams, setDataParams] = useState<ResourceListParams>({});
   const rebalanceResult = useRebalances(kafkaId, dataParams);
 
@@ -40,10 +34,6 @@ export function NodesRebalancesTab() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<'approve' | 'stop' | 'refresh'>('approve');
   const [pendingRebalance, setPendingRebalance] = useState<Rebalance | null>(null);
-
-  // Detail modal state
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedRebalance, setSelectedRebalance] = useState<Rebalance | null>(null);
 
   const { mutate: patchRebalance } = usePatchRebalance(kafkaId!);
 
@@ -63,11 +53,6 @@ export function NodesRebalancesTab() {
     setPendingRebalance(rebalance);
     setPendingAction('refresh');
     setIsConfirmModalOpen(true);
-  }, []);
-
-  const handleViewDetails = useCallback((rebalance: Rebalance) => {
-    setSelectedRebalance(rebalance);
-    setIsDetailModalOpen(true);
   }, []);
 
   const handleConfirmAction = () => {
@@ -115,7 +100,6 @@ export function NodesRebalancesTab() {
         onApprove={handleApprove}
         onStop={handleStop}
         onRefresh={handleRefresh}
-        onViewDetails={handleViewDetails}
       />
 
       <RebalanceConfirmationModal
@@ -123,12 +107,6 @@ export function NodesRebalancesTab() {
         action={pendingAction}
         onConfirm={handleConfirmAction}
         onCancel={handleCancelAction}
-      />
-
-      <RebalanceModal
-        rebalance={selectedRebalance}
-        isOpen={isDetailModalOpen}
-        onClose={() => { setIsDetailModalOpen(false); setSelectedRebalance(null); }}
       />
     </PageSection>
   );

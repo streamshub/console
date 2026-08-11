@@ -5,7 +5,6 @@ import { DataViewTd } from '@patternfly/react-data-view';
 import { ThProps, ActionsColumn } from '@patternfly/react-table';
 import { UseQueryResult } from '@tanstack/react-query';
 import {
-  Button,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
@@ -46,7 +45,6 @@ interface RebalancesDataViewProps {
   onApprove: (rebalance: Rebalance) => void;
   onStop: (rebalance: Rebalance) => void;
   onRefresh: (rebalance: Rebalance) => void;
-  onViewDetails: (rebalance: Rebalance) => void;
 }
 
 export function RebalancesDataView({
@@ -56,7 +54,6 @@ export function RebalancesDataView({
   onApprove,
   onStop,
   onRefresh,
-  onViewDetails,
 }: RebalancesDataViewProps) {
   const { t } = useTranslation();
   const statusConfig = useMemo(() => createRebalanceStatusConfig(t), [t]);
@@ -152,9 +149,9 @@ export function RebalancesDataView({
             } as DataViewTd,
             {
               cell: (
-                <Button variant="link" isInline onClick={() => onViewDetails(rebalance)}>
+                <Link to={`/kafka/${kafkaId}/nodes/rebalances/${rebalance.id}`}>
                   {rebalance.attributes.name}
-                </Button>
+                </Link>
               ),
               props: { dataLabel: t('rebalancing.rebalanceName') },
             },
@@ -288,13 +285,13 @@ export function RebalancesDataView({
         }],
       };
     },
-    [kafkaId, t, statusConfig, onApprove, onStop, onRefresh, onViewDetails],
+    [kafkaId, t, statusConfig, onApprove, onStop, onRefresh],
   );
 
   const rowProvider = useMemo(() => ({
-    dependencies: [kafkaId, t, statusConfig, onApprove, onStop, onRefresh, onViewDetails],
+    dependencies: [kafkaId, t, statusConfig, onApprove, onStop, onRefresh],
     callback: rowMapper,
-  }), [rowMapper, kafkaId, t, statusConfig, onApprove, onStop, onRefresh, onViewDetails]);
+  }), [rowMapper, kafkaId, t, statusConfig, onApprove, onStop, onRefresh]);
 
   return (
     <ResourceListDataView

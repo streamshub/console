@@ -28,6 +28,7 @@ import { NodesOverviewTab } from '@/pages/kafka/nodes/NodesOverviewTab';
 import { NodesRebalancesTab } from '@/pages/kafka/nodes/NodesRebalancesTab';
 import { NodeDetailPage } from '@/pages/kafka/nodes/detail/NodeDetailPage';
 import { NodeConfigurationTab } from '@/pages/kafka/nodes/detail/NodeConfigurationTab';
+import { RebalanceDetailPage } from '@/pages/kafka/nodes/detail/RebalanceDetailPage';
 
 // Groups pages
 import { GroupsPage } from '@/pages/kafka/groups/GroupsPage';
@@ -126,6 +127,11 @@ export const router = createBrowserRouter([
                 element: <NodesRebalancesTab />,
               },
             ],
+          },
+          {
+            path: 'nodes/rebalances/:rebalanceId',
+            // Title is dynamic (rebalance name) — set by RebalanceDetailPage via usePageTitle
+            element: <RebalanceDetailPage />,
           },
           {
             path: 'nodes/:nodeId',

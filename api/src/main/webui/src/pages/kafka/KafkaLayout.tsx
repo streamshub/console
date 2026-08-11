@@ -20,6 +20,7 @@ import { useKafkaCluster, useKafkaClusters } from '@/api/hooks/useKafkaClusters'
 import { useConnector, useConnectCluster } from '@/api/hooks/useConnect';
 import { useTopic } from '@/api/hooks/useTopics';
 import { useUser } from '@/api/hooks/useUsers';
+import { useRebalance } from '@/api/hooks/useRebalances';
 import { KafkaClusterSidebar } from '@/components/kafka/KafkaClusterSidebar';
 import { AppMasthead } from '@/components/app/AppMasthead';
 import { ReconciliationControls } from '@/components/kafka/overview/ReconciliationControls';
@@ -35,7 +36,8 @@ export function KafkaLayout() {
     connectorId,
     connectClusterId,
     userId,
-    nodeId
+    nodeId,
+    rebalanceId,
   } = useParams<{
     kafkaId: string;
     topicId?: string;
@@ -44,6 +46,7 @@ export function KafkaLayout() {
     connectClusterId?: string;
     userId?: string;
     nodeId?: string;
+    rebalanceId?: string;
   }>();
 
   // Must be called unconditionally before any early returns.
@@ -90,6 +93,12 @@ export function KafkaLayout() {
     { fields: ['username'] }
   );
 
+  // Fetch rebalance name if we're on a rebalance detail page
+  const { data: rebalanceData } = useRebalance(
+    rebalanceId ? kafkaId : undefined,
+    rebalanceId,
+  );
+
   if (isLoading) {
     return (
       <Page masthead={<AppMasthead showSidebarToggle={false} />}>
@@ -131,8 +140,12 @@ export function KafkaLayout() {
   const isTopicDetailPage = !!topicId;
   const topicName = topicData?.data?.attributes?.name || topicId || '';
   
+  // Check if we're on a rebalance detail page
+  const isRebalanceDetailPage = !!rebalanceId;
+  const rebalanceName = rebalanceData?.data?.attributes?.name || rebalanceId || '';
+
   // Check if we're on a nodes page (overview or rebalances tab)
-  const isNodesPage = pathSegments.includes('nodes') && !nodeId;
+  const isNodesPage = pathSegments.includes('nodes') && !nodeId && !isRebalanceDetailPage;
   const nodesTab = isNodesPage ? currentPage : null;
   
   // Check if we're on a node detail page
@@ -238,6 +251,25 @@ export function KafkaLayout() {
           {getNodesTabTitle(nodesTab)}
         </BreadcrumbItem>
       )}
+      {isRebalanceDetailPage && (
+        <BreadcrumbItem>
+          <Link to={`/kafka/${kafkaId}/nodes`}>
+            {t('kafka.nodes')}
+          </Link>
+        </BreadcrumbItem>
+      )}
+      {isRebalanceDetailPage && (
+        <BreadcrumbItem>
+          <Link to={`/kafka/${kafkaId}/nodes/rebalances`}>
+            {t('nodes.tabs.rebalances')}
+          </Link>
+        </BreadcrumbItem>
+      )}
+      {isRebalanceDetailPage && (
+        <BreadcrumbItem isActive>
+          {rebalanceName}
+        </BreadcrumbItem>
+      )}
       {isNodeDetailPage && (
         <BreadcrumbItem>
           <Link to={`/kafka/${kafkaId}/nodes`}>
@@ -320,7 +352,7 @@ export function KafkaLayout() {
           {username}
         </BreadcrumbItem>
       )}
-      {!isTopicDetailPage && !isNodesPage && !isNodeDetailPage && !isConnectPage && !isConnectorDetailPage && !isConnectClusterDetailPage && !isGroupDetailPage && !isUserDetailPage && currentPage !== kafkaId && (
+      {!isTopicDetailPage && !isNodesPage && !isNodeDetailPage && !isRebalanceDetailPage && !isConnectPage && !isConnectorDetailPage && !isConnectClusterDetailPage && !isGroupDetailPage && !isUserDetailPage && currentPage !== kafkaId && (
         <BreadcrumbItem isActive>
           {getPageTitle(currentPage)}
         </BreadcrumbItem>
