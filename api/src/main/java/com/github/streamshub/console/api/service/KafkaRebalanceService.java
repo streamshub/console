@@ -36,6 +36,8 @@ import io.streamshub.console.api.model.rebalance.cc.model.ExecutorState;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaSpec;
+import io.strimzi.api.kafka.model.kafka.cruisecontrol.CruiseControlSpec;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceProgress;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceSpec;
@@ -132,6 +134,24 @@ public class KafkaRebalanceService {
         rebalance.status(state.map(Enum::name).orElse(null));
         rebalance.mode(Optional.ofNullable(rebalanceSpec.getMode()).map(KafkaRebalanceMode::toValue).orElse(null));
         rebalance.brokers(rebalanceSpec.getBrokers());
+        rebalance.brokerCapacity(Optional.ofNullable(kafkaContext.resource())
+                .map(Kafka::getSpec)
+                .map(KafkaSpec::getCruiseControl)
+                .map(CruiseControlSpec::getBrokerCapacity)
+                .map(capacity -> new KafkaRebalance.BrokerCapacity(
+                        capacity.getCpu(),
+                        capacity.getInboundNetwork(),
+                        capacity.getOutboundNetwork(),
+                        Optional.ofNullable(capacity.getOverrides())
+                            .orElseGet(Collections::emptyList)
+                            .stream()
+                            .map(override -> new KafkaRebalance.BrokerCapacityOverride(
+                                    override.getBrokers(), 
+                                    override.getCpu(), 
+                                    override.getInboundNetwork(),
+                                    override.getOutboundNetwork()))
+                            .toList()))
+                .orElse(null));
         rebalance.goals(rebalanceSpec.getGoals());
         rebalance.skipHardGoalCheck(rebalanceSpec.isSkipHardGoalCheck());
         rebalance.rebalanceDisk(rebalanceSpec.isRebalanceDisk());

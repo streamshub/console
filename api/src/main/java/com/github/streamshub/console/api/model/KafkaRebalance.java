@@ -67,6 +67,7 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         public static final String STATUS = "status";
         public static final String MODE = "mode";
         public static final String BROKERS = "brokers";
+        public static final String BROKER_CAPACITY = "brokerCapacity";
         public static final String GOALS = "goals";
         public static final String SKIP_HARD_GOAL_CHECK = "skipHardGoalCheck";
         public static final String REBALANCE_DISK = "rebalanceDisk";
@@ -201,6 +202,30 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         String action;
     }
 
+    public static final record BrokerCapacityOverride(
+            @JsonProperty
+            List<Integer> brokers,
+            @JsonProperty
+            String cpu,
+            @JsonProperty
+            String inboundNetwork,
+            @JsonProperty
+            String outboundNetwork
+    ) {
+    }
+
+    public static final record BrokerCapacity(
+            @JsonProperty
+            String cpu,
+            @JsonProperty
+            String inboundNetwork,
+            @JsonProperty
+            String outboundNetwork,
+            @JsonProperty
+            List<BrokerCapacityOverride> overrides
+    ) {
+    }
+
     public static final record BrokerLoadImpact(
             @JsonProperty
             BigDecimal before,
@@ -245,6 +270,9 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         @JsonProperty
         @Schema(readOnly = true, nullable = true)
         List<Integer> brokers;
+
+        @JsonProperty
+        BrokerCapacity brokerCapacity;
 
         @JsonProperty
         @Schema(readOnly = true, nullable = true)
@@ -358,6 +386,10 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
 
     public void brokers(List<Integer> brokers) {
         attributes.brokers = brokers;
+    }
+
+    public void brokerCapacity(BrokerCapacity brokerCapacity) {
+        attributes.brokerCapacity = brokerCapacity;
     }
 
     public void goals(List<String> goals) {

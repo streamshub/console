@@ -17,10 +17,11 @@ import {
   ToolbarGroup,
   ToolbarItem,
 } from '@patternfly/react-core';
-import { Table, Tbody, Td, Th, Thead, Tr, ThProps } from '@patternfly/react-table';
-import { BrokerLoadImpact } from '@/api/types';
+import { Table, Tbody, Td, Th, Thead, Tr, ThProps, InnerScrollContainer } from '@patternfly/react-table';
+import { BrokerCapacity, BrokerLoadImpact } from '@/api/types';
 
 interface BrokerImpactTableProps {
+  brokerCapacity?: BrokerCapacity;
   brokerImpact: Record<string, Record<string, BrokerLoadImpact>> | null | undefined;
 }
 
@@ -36,11 +37,16 @@ interface BrokerRow {
  */
 const COLUMN_GROUPS: Array<{
   label: string;
-  pctKey: string;
+  pctKey?: string;
   absKey?: string;
+  absUnit?: string;
 }> = [
-  { label: 'Storage', pctKey: 'diskUsedPercentage', absKey: 'diskUsedMB' },
+  { label: 'Storage', pctKey: 'diskUsedPercentage', absKey: 'diskUsedMB', absUnit: 'MB' },
   { label: 'CPU',  pctKey: 'cpuPercentage' },
+  { label: 'Leaders',  absKey: 'leaders' },
+  { label: 'Followers',  absKey: 'replicas' },
+  { label: 'Network In',  absKey: 'leaderNetworkInRateKB', absUnit: "KB/s" },
+  { label: 'Network Out',  absKey: 'networkOutRateKB', absUnit: "KB/s" },
 ];
 
 // Sortable column identifiers
@@ -54,18 +60,13 @@ type SortKey =
 function BarCell({
   pct,
   label,
-  diff,
 }: {
   pct: number | null | undefined;
   label: string;
-  diff?: number | null;
 }) {
   if (pct == null) return <span>–</span>;
 
-  let barColor = 'var(--pf-t--global--color--brand--default)';
-  if (diff != null && diff < 0) barColor = 'var(--pf-t--color--green--60)';
-  if (diff != null && diff > 0) barColor = 'var(--pf-t--color--red--60)';
-
+  const barColor = 'var(--pf-t--global--color--brand--default)';
   const fill = Math.min(100, Math.max(0, pct));
 
   return (
@@ -110,21 +111,35 @@ function formatDiff(diff: number): string {
   return `${sign}${diff % 1 === 0 ? String(diff) : diff.toFixed(2)}`;
 }
 
+function formatFixed(positions: number, val?: number): string {
+  if (val) {
+    if (Number.isInteger(val)) {
+      return val.toString();
+    } else {
+      return val.toFixed(positions);
+    }
+  }
+  return '';
+}
+
 function DeltaCell({
-  diff,
+  pctDiff,
   absDiff,
+  absUnit,
 }: {
-  diff: number | null | undefined;
-  absDiff?: number | null;
+  pctDiff?: number;
+  absDiff?: number;
+  absUnit?: string;
 }) {
-  if (diff == null || diff === 0) return <span>–</span>;
-  const color = diff < 0 ? 'var(--pf-t--color--green--60)' : 'var(--pf-t--color--red--60)';
+  if (absDiff === 0 && pctDiff === 0) {
+    return <span>-</span>;
+  }
+
   return (
-    <span style={{ color, fontWeight: 500, whiteSpace: 'nowrap' }}>
-      {absDiff != null && absDiff !== 0 && (
-        <>{formatDiff(absDiff)} MB&nbsp;/&nbsp;</>
-      )}
-      {formatDiff(diff)}%
+    <span style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
+      {absDiff !== undefined ? <>{formatDiff(absDiff)} {absUnit}</> : <></>}
+      {absDiff !== undefined && pctDiff !== undefined ? <>&nbsp;/&nbsp;</> : <></>}
+      {pctDiff !== undefined ? <>{formatDiff(pctDiff ?? '-')}%</> : <></>}
     </span>
   );
 }
@@ -137,9 +152,35 @@ function buildBarLabel(pct: number, abs: number | null | undefined): string {
   return `${absMB} MB – ${pctStr}`;
 }
 
+function buildBrokerCapacity(id: string, brokerCapacity?: BrokerCapacity): string {
+  if (brokerCapacity) {
+    const brokerId = parseInt(id);
+
+    const capacity: {
+      cpu: string | null;
+      inboundNetwork: string | null;
+      outboundNetwork: string | null;
+    } = brokerCapacity.overrides?.find(o => o.brokers?.includes(brokerId))
+      ?? brokerCapacity;
+
+    const elements = [
+      (capacity.cpu ? 'CPU: ' + capacity.cpu : null),
+      (capacity.inboundNetwork ? capacity.inboundNetwork + ' in' : null),
+      (capacity.outboundNetwork ? capacity.outboundNetwork + ' out' : null)
+    ];
+
+    return elements.filter(s => s != null).join(", ");
+  }
+
+  return '-';
+}
+
 const DEFAULT_PAGE_SIZE = 20;
 
-export function BrokerImpactTable({ brokerImpact }: BrokerImpactTableProps) {
+export function BrokerImpactTable({
+  brokerCapacity,
+  brokerImpact
+}: BrokerImpactTableProps) {
   const { t } = useTranslation();
 
   const [nameFilter, setNameFilter] = useState('');
@@ -159,7 +200,7 @@ export function BrokerImpactTable({ brokerImpact }: BrokerImpactTableProps) {
   const activeGroups = useMemo(() => {
     if (!brokerImpact) return [];
     return COLUMN_GROUPS.filter((g) =>
-      Object.values(brokerImpact).some((m) => g.pctKey in m),
+      Object.values(brokerImpact).some((m) => (g.absKey ?? '' in m) || (g.pctKey ?? '' in m)),
     );
   }, [brokerImpact]);
 
@@ -169,11 +210,13 @@ export function BrokerImpactTable({ brokerImpact }: BrokerImpactTableProps) {
     return Object.entries(brokerImpact)
       .map(([brokerId, metrics]) => ({ brokerId, metrics }))
       .sort((a, b) => {
-        let cmp = 0;
+        // eslint-disable-next-line no-useless-assignment
+        let result = 0;
+
         if (sortKey === 'brokerId') {
           const aNum = parseInt(a.brokerId, 10);
           const bNum = parseInt(b.brokerId, 10);
-          cmp = !isNaN(aNum) && !isNaN(bNum) ? aNum - bNum : a.brokerId.localeCompare(b.brokerId);
+          result = !isNaN(aNum) && !isNaN(bNum) ? aNum - bNum : a.brokerId.localeCompare(b.brokerId);
         } else {
           // sortKey is "<pctKey>-before", "<pctKey>-after", or "<pctKey>-delta"
           const lastDash = sortKey.lastIndexOf('-');
@@ -181,9 +224,10 @@ export function BrokerImpactTable({ brokerImpact }: BrokerImpactTableProps) {
           const slot = sortKey.slice(lastDash + 1) as 'before' | 'after' | 'delta';
           const aVal = slot === 'delta' ? (a.metrics[metricKey]?.diff ?? 0) : (a.metrics[metricKey]?.[slot === 'before' ? 'before' : 'after'] ?? 0);
           const bVal = slot === 'delta' ? (b.metrics[metricKey]?.diff ?? 0) : (b.metrics[metricKey]?.[slot === 'before' ? 'before' : 'after'] ?? 0);
-          cmp = (aVal as number) - (bVal as number);
+          result = (aVal as number) - (bVal as number);
         }
-        return sortDirection === 'asc' ? cmp : -cmp;
+
+        return sortDirection === 'asc' ? result : -result;
       });
   }, [brokerImpact, sortKey, sortDirection]);
 
@@ -199,7 +243,7 @@ export function BrokerImpactTable({ brokerImpact }: BrokerImpactTableProps) {
       }
       if (onlyDeltas) {
         const hasAnyDelta = activeGroups.some((g) => {
-          const impact = row.metrics[g.pctKey];
+          const impact = row.metrics[g.absKey ?? ''] ?? row.metrics[g.pctKey ?? ''];
           return impact?.diff != null && impact.diff !== 0;
         });
         if (!hasAnyDelta) return false;
@@ -335,80 +379,94 @@ export function BrokerImpactTable({ brokerImpact }: BrokerImpactTableProps) {
         </ToolbarContent>
       </Toolbar>
 
-      <Table aria-label={t('rebalancing.brokerImpact.tableLabel')} variant="compact">
-        <Thead>
-          <Tr>
-            <Th sort={getSortParams('brokerId')}>{t('rebalancing.brokerImpact.broker')}</Th>
-            {activeGroups.map((g) => (
-              <>
-                {!onlyDeltas && (
-                  <Th key={`${g.pctKey}-before`} sort={getSortParams(`${g.pctKey}-before`)}>
-                    {g.label} {t('rebalancing.brokerImpact.before')}
-                  </Th>
-                )}
-                {!onlyDeltas && (
-                  <Th key={`${g.pctKey}-after`} sort={getSortParams(`${g.pctKey}-after`)}>
-                    {g.label} {t('rebalancing.brokerImpact.after')}
-                  </Th>
-                )}
-                <Th key={`${g.pctKey}-delta`} sort={getSortParams(`${g.pctKey}-delta`)}>
-                  {g.label} Δ
-                </Th>
-              </>
-            ))}
-          </Tr>
-        </Thead>
-        <Tbody>
-          {pagedRows.length === 0 ? (
+      <InnerScrollContainer>
+        <Table aria-label={t('rebalancing.brokerImpact.tableLabel')} variant="compact">
+          <Thead>
             <Tr>
-              <Td colSpan={colCount}>
-                <EmptyState>
-                  <EmptyStateBody>{t('rebalancing.brokerImpact.noResults')}</EmptyStateBody>
-                </EmptyState>
-              </Td>
+              <Th sort={getSortParams('brokerId')} modifier="nowrap" isStickyColumn hasRightBorder>
+                {t('rebalancing.brokerImpact.broker')}
+              </Th>
+              {activeGroups.map((g) => (
+                <>
+                  {!onlyDeltas && (
+                    <Th key={`${g.pctKey}-before`} modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-before`)}>
+                      {g.label} {t('rebalancing.brokerImpact.before')}
+                    </Th>
+                  )}
+                  {!onlyDeltas && (
+                    <Th key={`${g.pctKey}-after`} modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-after`)}>
+                      {g.label} {t('rebalancing.brokerImpact.after')}
+                    </Th>
+                  )}
+                  <Th key={`${g.pctKey}-delta`} modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-delta`)}>
+                    {g.label} Δ
+                  </Th>
+                </>
+              ))}
+              <Th modifier="nowrap">
+                {t('rebalancing.brokerImpact.brokerCapacity')}
+              </Th>
             </Tr>
-          ) : (
-            pagedRows.map((row) => (
-              <Tr key={row.brokerId}>
-                <Td dataLabel={t('rebalancing.brokerImpact.broker')}>
-                  {t('rebalancing.broker', { b: row.brokerId })}
+          </Thead>
+          <Tbody>
+            {pagedRows.length === 0 ? (
+              <Tr>
+                <Td colSpan={colCount}>
+                  <EmptyState>
+                    <EmptyStateBody>{t('rebalancing.brokerImpact.noResults')}</EmptyStateBody>
+                  </EmptyState>
                 </Td>
-                {activeGroups.map((g) => {
-                  const pctImpact = row.metrics[g.pctKey];
-                  const absImpact = g.absKey ? row.metrics[g.absKey] : undefined;
-                  return (
-                    <>
-                      {!onlyDeltas && (
-                        <Td key={`${row.brokerId}-${g.pctKey}-before`} dataLabel={`${g.label} ${t('rebalancing.brokerImpact.before')}`}>
-                          <BarCell
-                            pct={pctImpact?.before}
-                            label={buildBarLabel(pctImpact?.before ?? 0, absImpact?.before)}
-                          />
-                        </Td>
-                      )}
-                      {!onlyDeltas && (
-                        <Td key={`${row.brokerId}-${g.pctKey}-after`} dataLabel={`${g.label} ${t('rebalancing.brokerImpact.after')}`}>
-                          <BarCell
-                            pct={pctImpact?.after}
-                            label={buildBarLabel(pctImpact?.after ?? 0, absImpact?.after)}
-                            diff={pctImpact?.diff}
-                          />
-                        </Td>
-                      )}
-                      <Td key={`${row.brokerId}-${g.pctKey}-delta`} dataLabel={`${g.label} Δ`}>
-                        <DeltaCell
-                          diff={pctImpact?.diff}
-                          absDiff={absImpact?.diff}
-                        />
-                      </Td>
-                    </>
-                  );
-                })}
               </Tr>
-            ))
-          )}
-        </Tbody>
-      </Table>
+            ) : (
+              pagedRows.map((row) => (
+                <Tr key={row.brokerId}>
+                  <Td dataLabel={t('rebalancing.brokerImpact.broker')} isStickyColumn hasRightBorder>
+                    {t('rebalancing.broker', { b: row.brokerId })}
+                  </Td>
+                  {activeGroups.map((g) => {
+                    const pctImpact = g.pctKey ? row.metrics[g.pctKey] : undefined;
+                    const absImpact = g.absKey ? row.metrics[g.absKey] : undefined;
+                    return (
+                      <>
+                        {!onlyDeltas && (
+                          <Td key={`${row.brokerId}-${g.pctKey}-before`} dataLabel={`${g.label} ${t('rebalancing.brokerImpact.before')}`}>
+                            {pctImpact
+                              ? <BarCell
+                                pct={pctImpact?.before}
+                                label={buildBarLabel(pctImpact?.before ?? 0, absImpact?.before)}
+                              />
+                              : <>{formatFixed(2, absImpact?.before)} {g?.absUnit}</>}
+                          </Td>
+                        )}
+                        {!onlyDeltas && (
+                          <Td key={`${row.brokerId}-${g.pctKey}-after`} dataLabel={`${g.label} ${t('rebalancing.brokerImpact.after')}`}>
+                            {pctImpact
+                              ? <BarCell
+                                pct={pctImpact?.after}
+                                label={buildBarLabel(pctImpact?.after ?? 0, absImpact?.after)}
+                              />
+                              : <>{formatFixed(2, absImpact?.after)} {g?.absUnit}</>}
+                          </Td>
+                        )}
+                        <Td key={`${row.brokerId}-${g.pctKey}-delta`} dataLabel={`${g.label} Δ`}>
+                          <DeltaCell
+                            pctDiff={pctImpact?.diff}
+                            absDiff={absImpact?.diff}
+                            absUnit={g?.absUnit}
+                          />
+                        </Td>
+                      </>
+                    );
+                  })}
+                  <Td dataLabel={t('rebalancing.brokerImpact.brokerCapacity')} modifier='nowrap'>
+                    {buildBrokerCapacity(row.brokerId, brokerCapacity)}
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Tbody>
+        </Table>
+      </InnerScrollContainer>
 
       <Pagination
         itemCount={filteredRows.length}

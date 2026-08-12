@@ -33,6 +33,13 @@ rules:
       - ""
     resources:
       - pods
+  # API may read the ConfigMap associated with a KafkaRebalance
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
   # API may read the ClusterVersion to fetch the OpenShift version for display
   - verbs:
       - get

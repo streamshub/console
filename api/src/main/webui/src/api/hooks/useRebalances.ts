@@ -11,7 +11,7 @@ import {
 import { ResourceListParams, useResourceList } from './useResourceList';
 
 const REBALANCE_FIELDS = 'name,namespace,creationTimestamp,status,mode,brokers,optimizationResult,conditions';
-const REBALANCE_DETAIL_FIELDS = `${REBALANCE_FIELDS},goals,optimizationProposal,sessionId`;
+const REBALANCE_DETAIL_FIELDS = `${REBALANCE_FIELDS},brokerCapacity,goals,optimizationProposal,sessionId`;
 
 /**
  * Fetch all rebalances for a Kafka cluster.

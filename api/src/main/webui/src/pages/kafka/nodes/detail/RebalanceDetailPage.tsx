@@ -5,6 +5,7 @@ import {
   Alert,
   AlertActionCloseButton,
   Button,
+  CodeBlock,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
@@ -234,10 +235,22 @@ export function RebalanceDetailPage() {
           <DescriptionListGroup>
             <DescriptionListTerm>{t('rebalancing.status')}</DescriptionListTerm>
             <DescriptionListDescription>
-              {status 
-                ? <Label variant='outline' status={statusConfig[status].iconStatus} icon={<></>}>
+              {status ?
+                <>
+                  <Label variant='outline' status={statusConfig[status].iconStatus} icon={<></>}>
                     <StatusLabel status={status} config={statusConfig} />
                   </Label>
+                  {rebalance.attributes.conditions
+                    ?.filter(c => c.type === status)
+                    .filter(c => c.message?.length ?? 0 > 0) 
+                    .map(c => {
+                      return <>
+                        <Divider style={{padding: '1em' }} />
+                        <CodeBlock>{c.message}</CodeBlock>
+                      </>;
+                    })
+                  }
+                </>
                 : '–'}
             </DescriptionListDescription>
           </DescriptionListGroup>
@@ -253,7 +266,9 @@ export function RebalanceDetailPage() {
         <Title headingLevel="h2" size="lg" style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}>
           {t('rebalancing.brokerImpact.title')}
         </Title>
-        <BrokerImpactTable brokerImpact={rebalance.attributes.optimizationProposal?.brokerImpact} />
+        <BrokerImpactTable
+          brokerCapacity={rebalance.attributes.brokerCapacity}
+          brokerImpact={rebalance.attributes.optimizationProposal?.brokerImpact} />
       </PageSection>
 
       {/* Proposal detail expandable card */}
