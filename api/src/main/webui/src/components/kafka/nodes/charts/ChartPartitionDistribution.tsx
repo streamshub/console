@@ -8,7 +8,6 @@ import {
   ChartThemeColor,
   ChartTooltip,
 } from '@patternfly/react-charts/victory';
-import { VictoryZoomContainer } from 'victory-zoom-container';
 import { Alert } from '@patternfly/react-core';
 import { Node } from '@/api/types';
 import { formatNumber } from '@/utils/format';
@@ -64,21 +63,19 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
     { name: t('nodes.charts.partitionDistributionSeriesLeaders') },
   ];
 
-  const barWidth = 20;
+  // Configure custom spacing dimensions
+  const barWidth = 20;     // Thickness of each individual bar
+  const innerPadding = 16;  // Distance between bars in pixels
+
+  // Dynamically calculate the SVG canvas size based on data density
+  const calculatedChartHeight = leadersData.length * (barWidth + innerPadding) + 100;
   const legendRows = 1;
-  const padding = { ...getPadding(legendRows), left: 90 };
+  const padding = { ...getPadding(legendRows), left: 70 };
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} tabIndex={0}>
       <Chart
         ariaTitle={t('nodes.charts.partitionDistributionAriaTitle')}
-        containerComponent={
-          <VictoryZoomContainer
-            disable={brokerNodes.length < 21}
-            zoomDimension="x"
-            minimumZoom={{ x: 2 }}
-          />
-        }
         legendPosition="bottom-left"
         legendComponent={
           <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} />
@@ -87,13 +84,14 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
         domainPadding={{ x: [30, 25] }}
         themeColor={ChartThemeColor.multiOrdered}
         width={width}
+        height={calculatedChartHeight}
         legendAllowWrap={true}
       >
         <ChartAxis
           dependentAxis
-          showGrid
           label="Partitions"
-          style={{ axisLabel: { padding: 75 } }}
+          showGrid
+          horizontal
         />
         <ChartAxis />
         <ChartStack>

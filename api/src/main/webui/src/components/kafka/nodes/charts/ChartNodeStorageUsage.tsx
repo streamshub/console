@@ -13,7 +13,6 @@ import { Node } from '@/api/types';
 import { formatBytes } from '@/utils/format';
 import { useChartWidth } from '@/components/kafka/overview/utils/useChartWidth';
 import { getPadding } from '@/components/kafka/overview/utils/chartConsts';
-import { VictoryZoomContainer } from 'victory-zoom-container';
 
 interface ChartNodeStorageUsageProps {
   nodes: Node[];
@@ -65,26 +64,25 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
   // so we derive explicit tickValues instead.
   const maxCapacity = Math.max(...storageNodes.map((n) => n.attributes.storageCapacity as number));
   const tickStep = maxCapacity / 4;
+
   // Round step up to a power-of-1024 boundary so labels stay in one unit.
   const unitBoundary = Math.pow(1024, Math.floor(Math.log(tickStep) / Math.log(1024)));
   const roundedStep = Math.ceil(tickStep / unitBoundary) * unitBoundary;
   const tickValues = [0, 1, 2, 3, 4].map((i) => i * roundedStep);
 
-  const barWidth = 20;
+  // Configure custom spacing dimensions
+  const barWidth = 20;     // Thickness of each individual bar
+  const innerPadding = 16;  // Distance between bars in pixels
+
+  // Dynamically calculate the SVG canvas size based on data density
+  const calculatedChartHeight = usedData.length * (barWidth + innerPadding) + 100;
   const legendRows = 1;
-  const padding = { ...getPadding(legendRows), left: 90 };
+  const padding = { ...getPadding(legendRows), left: 70 };
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} tabIndex={0}>
       <Chart
         ariaTitle={t('nodes.charts.storageUsageAriaTitle')}
-        containerComponent={
-          <VictoryZoomContainer
-            disable={storageNodes.length < 21}
-            zoomDimension="x"
-            minimumZoom={{ x: 2 }}
-          />
-        }
         legendPosition="bottom-left"
         legendComponent={
           <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} />
@@ -93,6 +91,7 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
         domainPadding={{ x: [30, 25] }}
         themeColor={ChartThemeColor.multiOrdered}
         width={width}
+        height={calculatedChartHeight}
         legendAllowWrap={true}
       >
         <ChartAxis
@@ -101,7 +100,7 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
           showGrid
           tickValues={tickValues}
           tickFormat={(d: number) => formatBytes(d)}
-          style={{ axisLabel: { padding: 75 } }}
+          horizontal
         />
         <ChartAxis />
         <ChartStack>
