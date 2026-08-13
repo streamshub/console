@@ -166,7 +166,7 @@ jobs:
           # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
           #
           mvn verify -B --no-transfer-progress -DskipSTs \
-            -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+            -Dquarkus.package.write-transformed-bytecode-to-build-output=false
 
       - name: Archive Failed Tests Results
         uses: actions/upload-artifact@v7
