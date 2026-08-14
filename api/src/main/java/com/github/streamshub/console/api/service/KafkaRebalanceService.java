@@ -32,14 +32,12 @@ import com.github.streamshub.console.config.security.ResourceTypes;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.streamshub.console.api.model.rebalance.cc.model.ExecutorState;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.cruisecontrol.CruiseControlSpec;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
-import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceProgress;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceSpec;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceState;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceStatus;
@@ -182,9 +180,11 @@ public class KafkaRebalanceService {
             rebalance.optimizationProposal(getOptimizationProposal(namespace, rebalanceStatus));
         }
 
-        if (fields.contains(KafkaRebalance.Fields.PROGRESS)) {
+        /* FUTURE
+        if (fields.contains(KafkaRebalance.Fields.PROGRESS)) { NOSONAR
             rebalance.progress(getProgressStatus(namespace, rebalanceStatus));
         }
+        */
 
         return rebalance;
     }
@@ -214,48 +214,7 @@ public class KafkaRebalanceService {
                             })
                             .orElse(null);
 
-                    return new KafkaRebalance.OptimizationProposal(brokerLoadImpact, null);
-                })
-                .orElse(null);
-    }
-
-    private KafkaRebalance.ProgressStatus getProgressStatus(String namespace, Optional<KafkaRebalanceStatus> rebalanceStatus) {
-        return rebalanceStatus
-            .map(KafkaRebalanceStatus::getProgress)
-            .map(KafkaRebalanceProgress::getRebalanceProgressConfigMap)
-            .map(configMapName -> client.configMaps().inNamespace(namespace).withName(configMapName).get())
-            .map(configMap -> {
-                var data = configMap.getData();
-                var qname = "%s/%s".formatted(configMap.getMetadata().getNamespace(), configMap.getMetadata().getName());
-                var executorState = Optional.ofNullable(data.get("executorState.json"))
-                        .map(json -> {
-                            try {
-                                return mapper.readValue(json, ExecutorState.class);
-                            } catch (Exception e) {
-                                logger.warnf("Error reading 'executorState.json' from rebalance progress ConfigMap[%s]: %s", qname, e.getMessage());
-                                throw new RuntimeException(e);
-                            }
-                        })
-                        .orElse(null);
-
-                return new KafkaRebalance.ProgressStatus(
-                        getInteger(data, "estimatedTimeToCompletionInMinutes", qname),
-                        getInteger(data, "completedByteMovementPercentage", qname),
-                        executorState
-                );
-            })
-            .orElse(null);
-    }
-
-    private Integer getInteger(Map<String, String> data, String key, String mapQname) {
-        return Optional.ofNullable(data.get(key))
-                .map(value -> {
-                    try {
-                        return Integer.valueOf(value);
-                    } catch (Exception e) {
-                        logger.warnf("Error parsing '%s' from rebalance progress ConfigMap[%s]: %s", key, mapQname, e.getMessage());
-                        return null;
-                    }
+                    return new KafkaRebalance.OptimizationProposal(brokerLoadImpact);
                 })
                 .orElse(null);
     }

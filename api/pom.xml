@@ -109,11 +109,6 @@
             <artifactId>quarkus-quinoa</artifactId>
             <version>${quarkus-quinoa.version}</version>
         </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.openapi.generator</groupId>
-            <artifactId>quarkus-openapi-generator</artifactId>
-            <version>2.23.0</version>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.kafka</groupId>

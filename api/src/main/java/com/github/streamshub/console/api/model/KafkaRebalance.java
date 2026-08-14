@@ -31,8 +31,6 @@ import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.StringEnumeration;
 
-import io.streamshub.console.api.model.rebalance.cc.model.ExecutorState;
-import io.streamshub.console.api.model.rebalance.cc.model.OptimizationResult;
 import io.xlate.validation.constraints.Expression;
 
 import static java.util.Comparator.comparing;
@@ -80,7 +78,6 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         public static final String SESSION_ID = "sessionId";
         public static final String OPTIMIZATION_RESULT = "optimizationResult";
         public static final String OPTIMIZATION_PROPOSAL = "optimizationProposal";
-        public static final String PROGRESS = "progress";
         public static final String CONDITIONS = "conditions";
 
         static final Comparator<KafkaRebalance> ID_COMPARATOR =
@@ -238,21 +235,7 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
 
     public static final record OptimizationProposal(
             @JsonProperty
-            Map<String, Map<String, BrokerLoadImpact>> brokerImpact,
-
-            @JsonProperty
-            OptimizationResult optimization
-    ) {
-    }
-
-    public static final record ProgressStatus(
-            @JsonProperty
-            Integer estimatedTimeToCompletionInMinutes,
-            @JsonProperty
-            @Schema(minimum = "0", maximum = "100")
-            Integer completedByteMovementPercentage,
-            @JsonProperty
-            ExecutorState executorState
+            Map<String, Map<String, BrokerLoadImpact>> brokerImpact
     ) {
     }
 
@@ -321,10 +304,6 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         @JsonProperty
         @Schema(readOnly = true)
         OptimizationProposal optimizationProposal;
-
-        @JsonProperty
-        @Schema(readOnly = true)
-        ProgressStatus progress;
 
         @JsonProperty
         @Schema(readOnly = true)
@@ -438,10 +417,6 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
 
     public void optimizationProposal(OptimizationProposal optimizationProposal) {
         attributes.optimizationProposal = optimizationProposal;
-    }
-
-    public void progress(ProgressStatus progress) {
-        attributes.progress = progress;
     }
 
     public void conditions(List<Condition> conditions) {
