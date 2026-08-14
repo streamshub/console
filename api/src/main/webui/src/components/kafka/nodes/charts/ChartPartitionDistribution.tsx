@@ -13,6 +13,7 @@ import { Node } from '@/api/types';
 import { formatNumber } from '@/utils/format';
 import { useChartWidth } from '@/components/kafka/overview/utils/useChartWidth';
 import { getPadding } from '@/components/kafka/overview/utils/chartConsts';
+import { useMemo } from 'react';
 
 interface ChartPartitionDistributionProps {
   nodes: Node[];
@@ -22,22 +23,13 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
   const { t } = useTranslation();
   const [containerRef, width] = useChartWidth();
 
-  const brokerNodes = nodes.filter((n) => n.attributes.broker != null)
-    .sort((n1, n2) => parseInt(n2.id) - parseInt(n1.id));
-
-  if (brokerNodes.length === 0) {
-    return (
-      <Alert
-        variant="warning"
-        isInline
-        isPlain
-        title={t('nodes.charts.partitionDistributionNoData')}
-      />
-    );
-  }
+  const brokerNodes = useMemo(() => nodes
+    .filter((n) => n.attributes.broker != null)
+    .sort((n1, n2) => parseInt(n2.id) - parseInt(n1.id)),
+    [nodes]);
 
   // Bottom segment: leader partitions
-  const leadersData = brokerNodes.map((n) => {
+  const leadersData = useMemo(() => brokerNodes.map((n) => {
     const broker = n.attributes.broker!;
     return {
       name: t('nodes.charts.partitionDistributionSeriesLeaders'),
@@ -45,10 +37,10 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
       y: broker.leaderCount,
       label: `${t('nodes.charts.partitionDistributionSeriesLeaders')}: ${formatNumber(broker.leaderCount)}`,
     };
-  });
+  }), [t, brokerNodes]);
 
   // Top segment: follower replicas only (excludes leaders)
-  const replicasData = brokerNodes.map((n) => {
+  const replicasData = useMemo(() => brokerNodes.map((n) => {
     const broker = n.attributes.broker!;
     return {
       name: t('nodes.charts.partitionDistributionSeriesReplicas'),
@@ -56,7 +48,7 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
       y: broker.replicaCount,
       label: `${t('nodes.charts.partitionDistributionSeriesReplicas')}: ${formatNumber(broker.replicaCount)}`,
     };
-  });
+  }), [t, brokerNodes]);
 
   const legendData = [
     { name: t('nodes.charts.partitionDistributionSeriesReplicas') },
@@ -71,6 +63,17 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
   const calculatedChartHeight = leadersData.length * (barWidth + innerPadding) + 100;
   const legendRows = 1;
   const padding = { ...getPadding(legendRows), left: 70 };
+
+  if (brokerNodes.length === 0) {
+    return (
+      <Alert
+        variant="warning"
+        isInline
+        isPlain
+        title={t('nodes.charts.partitionDistributionNoData')}
+      />
+    );
+  }
 
   return (
     <div ref={containerRef} tabIndex={0}>
