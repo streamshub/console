@@ -24,6 +24,8 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.test.TestHelper;
 
+import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
@@ -47,6 +49,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -79,6 +82,7 @@ class KafkaRebalancesResourceIT {
             .endMetadata()
             .withNewSpec()
                 .withMode(mode)
+                .withGoals("Goal1", "Goal2", "Goal3")
             .endSpec();
 
         if (clusterName != null) {
@@ -102,6 +106,8 @@ class KafkaRebalancesResourceIT {
                         .withLastTransitionTime(Instant.now().toString())
                     .endCondition()
                     .addToOptimizationResult("intraBrokerDataToMoveMB", "0")
+                    // May not be created always - only for some tests
+                    .addToOptimizationResult("afterBeforeLoadConfigMap", "rebalance-" + sequence)
                 .endStatus();
         }
 
@@ -119,13 +125,30 @@ class KafkaRebalancesResourceIT {
         utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
 
+        client.resources(ConfigMap.class).inAnyNamespace().delete();
         client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(KafkaRebalance.class).inAnyNamespace().delete();
 
         utils.apply(client, new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers))
                 .editSpec()
                     .withNewCruiseControl()
-                        // empty
+                        .withNewBrokerCapacity()
+                            .withCpu("100m")
+                            .withInboundNetwork("100KiB/s")
+                            .withOutboundNetwork("100KiB/s")
+                            .addNewOverride()
+                                .withBrokers(2)
+                                .withCpu("200m")
+                                .withInboundNetwork("200KiB/s")
+                                .withOutboundNetwork("200KiB/s")
+                            .endOverride()
+                            .addNewOverride()
+                                .withBrokers(3)
+                                .withCpu("300m")
+                                .withInboundNetwork("300KiB/s")
+                                .withOutboundNetwork("300KiB/s")
+                            .endOverride()
+                        .endBrokerCapacity()
                     .endCruiseControl()
                 .endSpec()
                 .build());
@@ -213,6 +236,97 @@ class KafkaRebalancesResourceIT {
                 .toList();
 
         assertEquals(sortedValues, values);
+    }
+
+    @Test
+    void testDescribeRebalanceWithBrokerImpact() {
+        var response = whenRequesting(req -> req
+                .param("filter[mode]", KafkaRebalanceMode.FULL.toValue())
+                .param("filter[status]", KafkaRebalanceState.ProposalReady.name())
+                .param("filter[name]", "like,rebalance-*")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(1))
+            .extract();
+
+        String rebalanceId = response.jsonPath().getString("data[0].id");
+        String rebalanceName = response.jsonPath().getString("data[0].attributes.name");
+
+        client.resource(new ConfigMapBuilder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName(rebalanceName)
+                .endMetadata()
+                .addToData(
+                        "brokerLoad.json",
+                        """
+                        {
+                            "0": {
+                                "leaders": { "before": 1, "after": 2, "diff": 1 },
+                                "replicas": { "before": 2, "after": 1, "diff": -1 }
+                            },
+                            "1": {
+                                "leaders": { "before": 1, "after": 2, "diff": 1 },
+                                "replicas": { "before": 2, "after": 1, "diff": -1 }
+                            },
+                            "2": {
+                                "leaders": { "before": 1, "after": 2, "diff": 1 },
+                                "replicas": { "before": 2, "after": 1, "diff": -1 }
+                            }
+                        }
+                        """
+                )
+                .build())
+            .create();
+
+        whenRequesting(req -> req
+                .param(
+                        "fields[" + com.github.streamshub.console.api.model.KafkaRebalance.API_TYPE + "]",
+                        "brokerCapacity,optimizationProposal"
+                )
+                .get("{rebalanceId}", clusterId1, rebalanceId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.optimizationProposal.brokerImpact", allOf(hasKey("0"), hasKey("1"), hasKey("2")));
+    }
+
+    @Test
+    void testDescribeRebalanceWithInvalidBrokerImpact() {
+        var response = whenRequesting(req -> req
+                .param("filter[mode]", KafkaRebalanceMode.FULL.toValue())
+                .param("filter[status]", KafkaRebalanceState.ProposalReady.name())
+                .param("filter[name]", "like,rebalance-*")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(1))
+            .extract();
+
+        String rebalanceId = response.jsonPath().getString("data[0].id");
+        String rebalanceName = response.jsonPath().getString("data[0].attributes.name");
+
+        client.resource(new ConfigMapBuilder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName(rebalanceName)
+                .endMetadata()
+                .addToData(
+                        "brokerLoad.json",
+                        "{ INVALID JSON }"
+                )
+                .build())
+            .create();
+
+        whenRequesting(req -> req
+                .param(
+                        "fields[" + com.github.streamshub.console.api.model.KafkaRebalance.API_TYPE + "]",
+                        "brokerCapacity,optimizationProposal"
+                )
+                .get("{rebalanceId}", clusterId1, rebalanceId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.optimizationProposal.brokerImpact", nullValue(String.class));
     }
 
     @Test

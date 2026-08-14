@@ -156,7 +156,7 @@ public class KafkaRebalancesResource {
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     @Authorized
     @ResourcePrivilege(Privilege.GET)
-    public Response getRebalance(
+    public Response describeRebalance(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,

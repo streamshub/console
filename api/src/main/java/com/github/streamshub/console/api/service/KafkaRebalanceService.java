@@ -180,12 +180,6 @@ public class KafkaRebalanceService {
             rebalance.optimizationProposal(getOptimizationProposal(namespace, rebalanceStatus));
         }
 
-        /* FUTURE
-        if (fields.contains(KafkaRebalance.Fields.PROGRESS)) { NOSONAR
-            rebalance.progress(getProgressStatus(namespace, rebalanceStatus));
-        }
-        */
-
         return rebalance;
     }
 
@@ -209,7 +203,7 @@ public class KafkaRebalanceService {
                                     logger.warnf("""
                                             Error reading 'brokerLoad.json' from rebalance \
                                             afterBeforeLoadConfigMap ConfigMap[%s]: %s""", qname, e.getMessage());
-                                    throw new RuntimeException(e);
+                                    return null;
                                 }
                             })
                             .orElse(null);
