@@ -526,6 +526,14 @@
       "storageUsageSeriesUsedLabel": "Used {{storageUsed}} ({{storageUsedPct}})% of {{storageTotal}}",
       "storageUsageSeriesAvailable": "Available",
       "storageUsageSeriesAvailableLabel": "Available {{storageAvailable}} ({{storageAvailablePct}})% of {{storageTotal}}",
+      "sortBy": {
+        "label": "Order",
+        "nodeId": "Node ID",
+        "usedAsc": "Storage used: low to high",
+        "usedDesc": "Storage used: high to low",
+        "availableAsc": "Storage available: low to high",
+        "availableDesc": "Storage available: high to low"
+      },
       "partitionDistribution": "Partition distribution",
       "partitionDistributionSubtitle": "Balance of partition leaders and replicas across brokers",
       "partitionDistributionTooltip": "Total replicas and leader partitions per broker node.",

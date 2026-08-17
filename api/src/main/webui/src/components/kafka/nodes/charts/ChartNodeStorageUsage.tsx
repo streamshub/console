@@ -8,12 +8,20 @@ import {
   ChartThemeColor,
   ChartTooltip,
 } from '@patternfly/react-charts/victory';
-import { Alert } from '@patternfly/react-core';
+import {
+  Alert,
+  MenuToggle,
+  Select,
+  SelectList,
+  SelectOption,
+} from '@patternfly/react-core';
 import { Node } from '@/api/types';
 import { formatBytes } from '@/utils/format';
 import { useChartWidth } from '@/components/kafka/overview/utils/useChartWidth';
 import { getPadding } from '@/components/kafka/overview/utils/chartConsts';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+
+type StorageSortKey = 'nodeId' | 'usedAsc' | 'usedDesc' | 'availableAsc' | 'availableDesc';
 
 interface ChartNodeStorageUsageProps {
   nodes: Node[];
@@ -22,11 +30,29 @@ interface ChartNodeStorageUsageProps {
 export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
   const { t } = useTranslation();
   const [containerRef, width] = useChartWidth();
+  const [sortKey, setSortKey] = useState<StorageSortKey>('nodeId');
+  const [isSortOpen, setIsSortOpen] = useState(false);
 
-  const storageNodes = useMemo(() => nodes
-    .filter((n) => n.attributes.storageUsed != null && n.attributes.storageCapacity != null)
-    .sort((n1, n2) => parseInt(n2.id) - parseInt(n1.id)),
-    [nodes]);
+  const storageNodes = useMemo(() => {
+    const filtered = nodes.filter(
+      (n) => n.attributes.storageUsed != null && n.attributes.storageCapacity != null,
+    );
+    // Victory renders horizontal bar charts bottom-to-top, so the array must be
+    // in the opposite order to what the user sees visually (top-to-bottom).
+    return filtered.sort((n1, n2) => {
+      const used1 = n1.attributes.storageUsed as number;
+      const used2 = n2.attributes.storageUsed as number;
+      const avail1 = (n1.attributes.storageCapacity as number) - used1;
+      const avail2 = (n2.attributes.storageCapacity as number) - used2;
+      switch (sortKey) {
+        case 'usedAsc':      return used2 - used1;
+        case 'usedDesc':     return used1 - used2;
+        case 'availableAsc': return avail2 - avail1;
+        case 'availableDesc':return avail1 - avail2;
+        default:             return parseInt(n2.id) - parseInt(n1.id);
+      }
+    });
+  }, [nodes, sortKey]);
 
   const usedData = useMemo(() => storageNodes.map((n) => {
     const capacity = n.attributes.storageCapacity as number;
@@ -99,7 +125,47 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
   }
 
   return (
-    <div ref={containerRef} tabIndex={0}>
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--pf-t--global--spacer--sm)', marginBottom: 'var(--pf-t--global--spacer--sm)', minWidth: 0 }}>
+        <span>{t('nodes.charts.sortBy.label')}</span>
+        <Select
+          isOpen={isSortOpen}
+          onOpenChange={setIsSortOpen}
+          onSelect={(_e, val) => {
+            setSortKey(val as StorageSortKey);
+            setIsSortOpen(false);
+          }}
+          popperProps={{ position: 'right', enableFlip: true }}
+          toggle={(ref) => (
+            <MenuToggle
+              ref={ref}
+              onClick={() => setIsSortOpen((o) => !o)}
+              isExpanded={isSortOpen}
+            >
+              {t(`nodes.charts.sortBy.${sortKey}`)}
+            </MenuToggle>
+          )}
+        >
+          <SelectList>
+            <SelectOption value="nodeId">
+              {t('nodes.charts.sortBy.nodeId')}
+            </SelectOption>
+            <SelectOption value="usedAsc">
+              {t('nodes.charts.sortBy.usedAsc')}
+            </SelectOption>
+            <SelectOption value="usedDesc">
+              {t('nodes.charts.sortBy.usedDesc')}
+            </SelectOption>
+            <SelectOption value="availableAsc">
+              {t('nodes.charts.sortBy.availableAsc')}
+            </SelectOption>
+            <SelectOption value="availableDesc">
+              {t('nodes.charts.sortBy.availableDesc')}
+            </SelectOption>
+          </SelectList>
+        </Select>
+      </div>
+      <div ref={containerRef} tabIndex={0}>
       <Chart
         ariaTitle={t('nodes.charts.storageUsageAriaTitle')}
         legendPosition="bottom-left"
@@ -135,6 +201,7 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
           />
         </ChartStack>
       </Chart>
-    </div>
+      </div>
+    </>
   );
 }
