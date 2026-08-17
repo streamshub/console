@@ -87,17 +87,6 @@
         <module>systemtests</module>
     </modules>
 
-    <repositories>
-        <repository>
-            <id>linkedin-artifactory</id>
-            <name>LinkedIn JFrog Artifactory</name>
-            <url>https://linkedin.jfrog.io/artifactory/release</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
