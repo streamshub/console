@@ -16,16 +16,15 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.27.4.1</quarkus.platform.version>
+        <quarkus.platform.version>3.27.5.2</quarkus.platform.version>
         <strimzi-api.version>0.51.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
         <apicurio-registry.version>3.2.6</apicurio-registry.version>
-        <kiota-http-jdk.version>0.0.36</kiota-http-jdk.version>
-        <kafka.version>4.2.0</kafka.version>
+        <kafka.version>4.2.1</kafka.version>
 
         <!-- Test Dependencies -->
         <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
-        <kroxy-api.version>0.20.0</kroxy-api.version>
+        <kroxy-api.version>0.20.1</kroxy-api.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.15.0</maven.compiler.version>
@@ -90,6 +89,14 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bc-jdk18on-bom</artifactId>
+                <version>1.85.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- Fixes CVE-2026-9563, remove when updated in Quarkus -->
             <dependency>
                 <groupId>org.eclipse.parsson</groupId>
@@ -101,14 +108,14 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.136.Final</version>
+                <version>4.1.138.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-dependencies</artifactId>
-                <version>4.5.29</version>
+                <version>4.5.34</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -120,6 +127,24 @@
                 <version>6.4.0</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>at.yawk.lz4</groupId>
+                <artifactId>lz4-java</artifactId>
+                <version>1.11.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>1.5.7-16</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>1.16.7</version>
             </dependency>
 
             <dependency>
@@ -143,11 +168,6 @@
                 <groupId>io.strimzi</groupId>
                 <artifactId>kafka-oauth-client</artifactId>
                 <version>${strimzi-oauth.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.kiota</groupId>
-                <artifactId>kiota-http-jdk</artifactId>
-                <version>${kiota-http-jdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>

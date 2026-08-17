@@ -1,5 +1,12 @@
 # See https://docs.snyk.io/snyk-cli/scan-and-maintain-projects-using-the-cli/snyk-cli-for-snyk-code/exclude-directories-and-files-from-snyk-code-cli-tests
-ignore: {}
+ignore:
+  SNYK-JS-NEXT-15105315:
+    - "*":
+      reason: Affected configuration options are not in use
+  SNYK-JS-NEXT-15674556:
+    - "*":
+      reason: Mitigated by disabling image cache with configuration
+
 version: v1.25.0
 patch: {}
 exclude:
