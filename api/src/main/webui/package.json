@@ -31,7 +31,7 @@
     "react-json-view-lite": "^2.5.0",
     "react-router": "^8.0.0",
     "victory": "^37.3.6",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
