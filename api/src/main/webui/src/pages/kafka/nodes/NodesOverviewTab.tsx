@@ -36,6 +36,13 @@ export function NodesOverviewTab() {
   // Table data driven by NodesDataView
   const [tableParams, setTableParams] = useState<ResourceListParams>({});
   const nodeResult = useNodes(kafkaId, tableParams);
+  const nodeChartsResult = useNodes(kafkaId, {
+    fields: 'storageCapacity,storageUsed,broker',
+    page: {
+      sort: 'id',
+      size: 1000,
+    },
+  });
 
   const handleDataViewChange = useCallback((params: ResourceListParams) => {
     setTableParams(params);
@@ -138,7 +145,7 @@ export function NodesOverviewTab() {
         </GridItem>
 
         <GridItem>
-          <NodeChartsCard nodeResult={nodeResult} />
+          <NodeChartsCard nodeResult={nodeChartsResult} />
         </GridItem>
       </Grid>
     </PageSection>

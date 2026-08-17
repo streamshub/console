@@ -143,7 +143,8 @@ export function NodesDataView({
           {
             cell: (
               <>
-                {node.meta?.privileges?.includes('GET') === true ? (
+                {node.attributes.roles?.includes('broker')
+                    && node.meta?.privileges?.includes('GET') === true ? (
                   <Link to={`/kafka/${kafkaId}/nodes/${node.id}/configuration`}>
                     {node.id}
                   </Link>

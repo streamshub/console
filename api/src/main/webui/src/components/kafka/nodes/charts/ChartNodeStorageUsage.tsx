@@ -28,29 +28,39 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
     .sort((n1, n2) => parseInt(n2.id) - parseInt(n1.id)),
     [nodes]);
 
-  const usedData = useMemo(() => storageNodes.map((n) => ({
-    name: t('nodes.charts.storageUsageSeriesUsed'),
-    x: `Node ${n.id}`,
-    y: n.attributes.storageUsed as number,
-    //label: `${t('nodes.charts.storageUsageSeriesUsed')}: ${formatBytes(n.attributes.storageUsed as number)}`,
-  })), [t, storageNodes]);
+  const usedData = useMemo(() => storageNodes.map((n) => {
+    const capacity = n.attributes.storageCapacity as number;
+    const used = n.attributes.storageUsed ?? 0;
+    const usedPct = (used / capacity) * 100;
+
+    return {
+      name: t('nodes.charts.storageUsageSeriesUsed'),
+      x: `Node ${n.id}`,
+      y: n.attributes.storageUsed as number,
+      label: t('nodes.charts.storageUsageSeriesUsedLabel', {
+        "storageUsed": formatBytes(used),
+        "storageUsedPct": usedPct.toFixed(2),
+        "storageTotal": formatBytes(capacity),
+      }),
+    };
+  }), [t, storageNodes]);
 
   const availableData = useMemo(() => storageNodes.map((n) => {
-    const available = (n.attributes.storageCapacity as number) - (n.attributes.storageUsed as number);
+    const capacity = n.attributes.storageCapacity as number;
+    const available = capacity - (n.attributes.storageUsed ?? 0);
+    const availablePct = (available / capacity) * 100;
+
     return {
       name: t('nodes.charts.storageUsageSeriesAvailable'),
       x: `Node ${n.id}`,
       y: available,
-      //label: `${t('nodes.charts.storageUsageSeriesAvailable')}: ${formatBytes(available)}`,
+      label: t('nodes.charts.storageUsageSeriesAvailableLabel', {
+        "storageAvailable": formatBytes(available),
+        "storageAvailablePct": availablePct.toFixed(2),
+        "storageTotal": formatBytes(capacity),
+      }),
     };
   }), [t, storageNodes]);
-
-  const labels = useMemo(() => storageNodes.map((n) => {
-    const capacity = n.attributes.storageCapacity as number;
-    const used = n.attributes.storageUsed as number;
-    const available = capacity - used;
-    return `Used ${formatBytes(used)} (${((used / capacity) * 100).toFixed(2)}%) of ${formatBytes(capacity)}\nAvailable ${formatBytes(available)} (${((available / capacity) * 100).toFixed(2)}%)`;
-  }), [storageNodes]);
 
   const legendData = [
     { name: t('nodes.charts.storageUsageSeriesUsed') },
@@ -113,7 +123,6 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
         />
         <ChartAxis />
         <ChartStack
-          labels={labels}
           labelComponent={<ChartTooltip constrainToVisibleArea />}
         >
           <ChartBar
