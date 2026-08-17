@@ -62,7 +62,7 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
   // Dynamically calculate the SVG canvas size based on data density
   const calculatedChartHeight = leadersData.length * (barWidth + innerPadding) + 100;
   const legendRows = 1;
-  const padding = { ...getPadding(legendRows), left: 70 };
+  const padding = { ...getPadding(legendRows), left: 70, top: 40 };
 
   if (brokerNodes.length === 0) {
     return (
@@ -94,6 +94,11 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
           dependentAxis
           label="Partitions"
           showGrid
+          horizontal
+        />
+        <ChartAxis
+          dependentAxis
+          orientation="top"
           horizontal
         />
         <ChartAxis />

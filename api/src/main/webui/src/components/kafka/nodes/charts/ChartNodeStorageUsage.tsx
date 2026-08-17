@@ -111,7 +111,7 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
   // Dynamically calculate the SVG canvas size based on data density
   const calculatedChartHeight = usedData.length * (barWidth + innerPadding) + 100;
   const legendRows = 1;
-  const padding = { ...getPadding(legendRows), left: 70 };
+  const padding = { ...getPadding(legendRows), left: 70, top: 40 };
 
   if (storageNodes.length === 0) {
     return (
@@ -183,6 +183,13 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
           dependentAxis
           label="Storage"
           showGrid
+          tickValues={tickValues}
+          tickFormat={(d: number) => formatBytes(d)}
+          horizontal
+        />
+        <ChartAxis
+          dependentAxis
+          orientation="top"
           tickValues={tickValues}
           tickFormat={(d: number) => formatBytes(d)}
           horizontal
