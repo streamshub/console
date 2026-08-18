@@ -190,7 +190,7 @@ export interface ResourceListDataViewRowResult {
 }
 
 function isRowResult(v: DataViewTr | ResourceListDataViewRowResult): v is ResourceListDataViewRowResult {
-  return v !== null && typeof v === 'object' && !Array.isArray(v) && 'expandedRows' in v;
+  return v !== null && typeof v === 'object' && !Array.isArray(v) && 'row' in v;
 }
 
 export interface ResourceListDataViewRowMapper<T extends Resource> {

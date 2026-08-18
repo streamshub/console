@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -22,7 +23,7 @@ export interface NodeChartsCardProps {
 
 export function NodeChartsCard({ nodeResult }: NodeChartsCardProps) {
   const { t } = useTranslation();
-  const nodes = nodeResult.data?.data ?? [];
+  const nodes = useMemo(() => nodeResult.data?.data ?? [], [nodeResult.data]);
 
   return (
     <Card component="div">

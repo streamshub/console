@@ -96,13 +96,19 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
   // Compute 5 evenly-spaced, round tick values from 0 to maxCapacity.
   // Victory's tickCount hint does not produce round values for byte ranges,
   // so we derive explicit tickValues instead.
-  const maxCapacity = Math.max(...storageNodes.map((n) => n.attributes.storageCapacity as number));
-  const tickStep = maxCapacity / 4;
-
-  // Round step up to a power-of-1024 boundary so labels stay in one unit.
-  const unitBoundary = Math.pow(1024, Math.floor(Math.log(tickStep) / Math.log(1024)));
-  const roundedStep = Math.ceil(tickStep / unitBoundary) * unitBoundary;
-  const tickValues = [0, 1, 2, 3, 4].map((i) => i * roundedStep);
+  // Math.max(...array) avoids potential stack overflow for very large datasets
+  // by using reduce instead of spread.
+  const tickValues = useMemo(() => {
+    const maxCapacity = storageNodes.reduce(
+      (max, n) => Math.max(max, n.attributes.storageCapacity as number),
+      0,
+    );
+    const tickStep = maxCapacity / 4;
+    // Round step up to a power-of-1024 boundary so labels stay in one unit.
+    const unitBoundary = Math.pow(1024, Math.floor(Math.log(tickStep) / Math.log(1024)));
+    const roundedStep = Math.ceil(tickStep / unitBoundary) * unitBoundary;
+    return [0, 1, 2, 3, 4].map((i) => i * roundedStep);
+  }, [storageNodes]);
 
   // Configure custom spacing dimensions
   const barWidth = 20;     // Thickness of each individual bar
@@ -187,7 +193,7 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
       >
         <ChartAxis
           dependentAxis
-          label="Storage"
+          label={t('nodes.charts.storageUsageAxisLabel')}
           showGrid
           tickValues={tickValues}
           tickFormat={(d: number) => formatBytes(d)}

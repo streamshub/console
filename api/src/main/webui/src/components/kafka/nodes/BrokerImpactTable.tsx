@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -112,7 +112,7 @@ function formatDiff(diff: number): string {
 }
 
 function formatFixed(positions: number, val?: number): string {
-  if (val) {
+  if (val != null) {
     if (Number.isInteger(val)) {
       return val.toString();
     } else {
@@ -139,7 +139,7 @@ function DeltaCell({
     <span style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
       {absDiff !== undefined ? <>{formatDiff(absDiff)} {absUnit}</> : <></>}
       {absDiff !== undefined && pctDiff !== undefined ? <>&nbsp;/&nbsp;</> : <></>}
-      {pctDiff !== undefined ? <>{formatDiff(pctDiff ?? '-')}%</> : <></>}
+      {pctDiff !== undefined ? <>{formatDiff(pctDiff)}%</> : <></>}
     </span>
   );
 }
@@ -210,8 +210,7 @@ export function BrokerImpactTable({
     return Object.entries(brokerImpact)
       .map(([brokerId, metrics]) => ({ brokerId, metrics }))
       .sort((a, b) => {
-        // eslint-disable-next-line no-useless-assignment
-        let result = 0;
+        let result;
 
         if (sortKey === 'brokerId') {
           const aNum = parseInt(a.brokerId, 10);
@@ -257,13 +256,13 @@ export function BrokerImpactTable({
     return filteredRows.slice(start, start + perPage);
   }, [filteredRows, page, perPage]);
 
-  const toggleBroker = (brokerId: string) => {
+  const toggleBroker = useCallback((brokerId: string) => {
     setSelectedBrokers((prev) =>
       prev.includes(brokerId) ? prev.filter((b) => b !== brokerId) : [...prev, brokerId],
     );
-  };
+  }, []);
 
-  const handleSort = (key: SortKey) => {
+  const handleSort = useCallback((key: SortKey) => {
     if (sortKey === key) {
       setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
@@ -271,7 +270,7 @@ export function BrokerImpactTable({
       setSortDirection('asc');
     }
     setPage(1);
-  };
+  }, [sortKey]);
 
   const getSortParams = (key: SortKey): ThProps['sort'] => ({
     sortBy: {
@@ -292,7 +291,8 @@ export function BrokerImpactTable({
 
   const brokerFilterLabels = selectedBrokers.map((b) => t('rebalancing.broker', { b }));
 
-  const colCount = 1 + activeGroups.length * (onlyDeltas ? 1 : 3);
+  // +1 for the sticky broker-ID column, +1 for the broker capacity column at the end
+  const colCount = 2 + activeGroups.length * (onlyDeltas ? 1 : 3);
 
   return (
     <>
@@ -387,25 +387,27 @@ export function BrokerImpactTable({
                 {t('rebalancing.brokerImpact.broker')}
               </Th>
               {activeGroups.map((g) => (
-                <>
+                <Fragment key={g.pctKey ?? g.absKey}>
                   {!onlyDeltas && (
-                    <Th key={`${g.pctKey}-before`} modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-before`)}>
+                    <Th modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-before`)}>
                       {g.label} {t('rebalancing.brokerImpact.before')}
                     </Th>
                   )}
                   {!onlyDeltas && (
-                    <Th key={`${g.pctKey}-after`} modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-after`)}>
+                    <Th modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-after`)}>
                       {g.label} {t('rebalancing.brokerImpact.after')}
                     </Th>
                   )}
-                  <Th key={`${g.pctKey}-delta`} modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-delta`)}>
+                  <Th modifier="nowrap" sort={getSortParams(`${g.absKey ?? g.pctKey}-delta`)}>
                     {g.label} Δ
                   </Th>
-                </>
+                </Fragment>
               ))}
-              <Th modifier="nowrap">
-                {t('rebalancing.brokerImpact.brokerCapacity')}
-              </Th>
+              {!onlyDeltas && (
+                <Th modifier="nowrap">
+                  {t('rebalancing.brokerImpact.brokerCapacityConfig')}
+                </Th>
+              )}
             </Tr>
           </Thead>
           <Tbody>
@@ -427,9 +429,9 @@ export function BrokerImpactTable({
                     const pctImpact = g.pctKey ? row.metrics[g.pctKey] : undefined;
                     const absImpact = g.absKey ? row.metrics[g.absKey] : undefined;
                     return (
-                      <>
+                      <Fragment key={g.pctKey ?? g.absKey}>
                         {!onlyDeltas && (
-                          <Td key={`${row.brokerId}-${g.pctKey}-before`} dataLabel={`${g.label} ${t('rebalancing.brokerImpact.before')}`}>
+                          <Td dataLabel={`${g.label} ${t('rebalancing.brokerImpact.before')}`}>
                             {pctImpact
                               ? <BarCell
                                 pct={pctImpact?.before}
@@ -439,7 +441,7 @@ export function BrokerImpactTable({
                           </Td>
                         )}
                         {!onlyDeltas && (
-                          <Td key={`${row.brokerId}-${g.pctKey}-after`} dataLabel={`${g.label} ${t('rebalancing.brokerImpact.after')}`}>
+                          <Td dataLabel={`${g.label} ${t('rebalancing.brokerImpact.after')}`}>
                             {pctImpact
                               ? <BarCell
                                 pct={pctImpact?.after}
@@ -448,19 +450,21 @@ export function BrokerImpactTable({
                               : <>{formatFixed(2, absImpact?.after)} {g?.absUnit}</>}
                           </Td>
                         )}
-                        <Td key={`${row.brokerId}-${g.pctKey}-delta`} dataLabel={`${g.label} Δ`}>
+                        <Td dataLabel={`${g.label} Δ`}>
                           <DeltaCell
                             pctDiff={pctImpact?.diff}
                             absDiff={absImpact?.diff}
                             absUnit={g?.absUnit}
                           />
                         </Td>
-                      </>
+                      </Fragment>
                     );
                   })}
-                  <Td dataLabel={t('rebalancing.brokerImpact.brokerCapacity')} modifier='nowrap'>
-                    {buildBrokerCapacity(row.brokerId, brokerCapacity)}
-                  </Td>
+                  {!onlyDeltas && (
+                    <Td dataLabel={t('rebalancing.brokerImpact.brokerCapacityConfig')} modifier='nowrap'>
+                      {buildBrokerCapacity(row.brokerId, brokerCapacity)}
+                    </Td>
+                  )}
                 </Tr>
               ))
             )}

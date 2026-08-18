@@ -20,11 +20,18 @@ import { Rebalance } from '@/api/types';
 export function NodesRebalancesTab() {
   const { t } = useTranslation();
   const { kafkaId } = useParams<{ kafkaId: string }>();
-  const { data: clusterData } = useKafkaCluster(kafkaId, { fields: 'cruiseControlEnabled' });
-  const cruiseControlEnabled = clusterData?.data?.attributes?.cruiseControlEnabled ?? true;
+  const { data: clusterData, isLoading: isClusterLoading } = useKafkaCluster(kafkaId, { fields: 'cruiseControlEnabled' });
+  // While the cluster data is loading we don't yet know whether CC is enabled,
+  // so default to undefined (not true) to avoid a premature rebalances fetch or
+  // a false-positive "not enabled" flash.
+  const cruiseControlEnabled = isClusterLoading
+    ? undefined
+    : (clusterData?.data?.attributes?.cruiseControlEnabled ?? false);
 
   const [dataParams, setDataParams] = useState<ResourceListParams>({});
-  const rebalanceResult = useRebalances(kafkaId, dataParams);
+  // Disable the rebalances query until we know CC is enabled, avoiding a
+  // wasted network request on clusters where it is not configured.
+  const rebalanceResult = useRebalances(kafkaId, { ...dataParams, enabled: cruiseControlEnabled === true });
 
   const handleDataViewChange = useCallback((params: ResourceListParams) => {
     setDataParams(params);
@@ -55,20 +62,20 @@ export function NodesRebalancesTab() {
     setIsConfirmModalOpen(true);
   }, []);
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = useCallback(() => {
     if (pendingRebalance) {
       patchRebalance({ rebalanceId: pendingRebalance.id, action: pendingAction });
     }
     setIsConfirmModalOpen(false);
     setPendingRebalance(null);
-  };
+  }, [pendingRebalance, patchRebalance, pendingAction]);
 
-  const handleCancelAction = () => {
+  const handleCancelAction = useCallback(() => {
     setIsConfirmModalOpen(false);
     setPendingRebalance(null);
-  };
+  }, []);
 
-  if (!cruiseControlEnabled) {
+  if (cruiseControlEnabled === false) {
     return (
       <PageSection isFilled>
         <EmptyState headingLevel="h2" icon={BalanceScaleIcon} titleText={t('rebalancing.cruiseControlNotEnabled')}>

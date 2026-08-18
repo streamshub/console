@@ -98,7 +98,7 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
       >
         <ChartAxis
           dependentAxis
-          label="Partitions"
+          label={t('nodes.charts.partitionDistributionAxisLabel')}
           showGrid
           horizontal
         />

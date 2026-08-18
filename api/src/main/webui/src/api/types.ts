@@ -478,12 +478,12 @@ export interface BrokerCapacity {
   cpu: string | null;
   inboundNetwork: string | null;
   outboundNetwork: string | null;
-  overrides: [{
+  overrides: Array<{
     brokers: number[] | null;
     cpu: string | null;
     inboundNetwork: string | null;
     outboundNetwork: string | null;
-  }];
+  }>;
 }
 
 export interface BrokerLoadImpact {

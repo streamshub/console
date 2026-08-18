@@ -522,6 +522,7 @@
       "storageUsageTooltip": "Used and available storage per node.",
       "storageUsageNoData": "No storage usage data available",
       "storageUsageAriaTitle": "Node storage usage chart",
+      "storageUsageAxisLabel": "Storage",
       "storageUsageSeriesUsed": "Used",
       "storageUsageSeriesUsedLabel": "Used {{storageUsed}} ({{storageUsedPct}})% of {{storageTotal}}",
       "storageUsageSeriesAvailable": "Available",
@@ -539,6 +540,7 @@
       "partitionDistributionTooltip": "Total replicas and leader partitions per broker node.",
       "partitionDistributionNoData": "No partition data available",
       "partitionDistributionAriaTitle": "Partition distribution chart",
+      "partitionDistributionAxisLabel": "Partitions",
       "partitionDistributionSeriesLeaders": "Leaders",
       "partitionDistributionSeriesReplicas": "Replicas"
     }
@@ -590,7 +592,8 @@
       "selectBrokers": "Select brokers",
       "onlyShowDeltas": "Only show deltas",
       "noData": "No broker impact data available. A proposal must be generated first.",
-      "noResults": "No brokers match the current filters."
+      "noResults": "No brokers match the current filters.",
+      "brokerCapacityConfig": "Configured Broker Capacity"
     },
     "proposalDetail": {
       "title": "Proposal detail",
