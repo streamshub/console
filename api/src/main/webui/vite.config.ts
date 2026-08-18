@@ -36,5 +36,5 @@ export default defineConfig({
       '@patternfly/react-data-view',
       'react-json-view-lite',
     ]
-  }
+  },
 });

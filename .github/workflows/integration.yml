@@ -208,25 +208,23 @@ jobs:
           npm ci --ignore-scripts
           npm run lint
 
-#  test-storybook:
-#    runs-on: ubuntu-24.04
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v7
-#
-#      - name: Build Storybook
-#        working-directory: ./ui
-#        run: |
-#          npm ci
-#          npx playwright install
-#          npm run build-storybook
-#
-#      - name: Test Storybook
-#        working-directory: ./ui
-#        run: |
-#          npx --yes concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
-#            "npx http-server storybook-static --port 6006 --silent" \
-#            "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook"
+  test-storybook:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Dependencies
+        working-directory: api/src/main/webui
+        run: npm ci --ignore-scripts
+
+      - name: Install Playwright Browsers
+        working-directory: api/src/main/webui
+        run: node_modules/.bin/playwright install chromium --with-deps
+
+      - name: Test Storybook
+        working-directory: api/src/main/webui
+        run: npm run test-storybook
 
   Playwright:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}
