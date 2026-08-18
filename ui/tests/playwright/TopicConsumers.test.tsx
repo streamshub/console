@@ -2,7 +2,7 @@ import { expect, test } from "./authenticated-test";
 
 test.beforeEach(async ({ authenticatedPage }) => {
   await authenticatedPage.goToGroups();
-  await authenticatedPage.clickFirstLinkInTheTable("groups-listing", "Topics");
+  await authenticatedPage.clickFirstLinkInTheTable("kafka-groups-table", "Topics");
 });
 
 test("Topics consumers", async ({ page, authenticatedPage }) => {

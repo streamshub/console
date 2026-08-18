@@ -21,7 +21,7 @@ test("Kafka Users page: shows table headers or empty state", async ({
     return;
   }
 
-  const usersTable = page.locator('table[data-ouia-component-id="kafka-users-listing"]');
+  const usersTable = page.locator('table[data-ouia-component-id="kafka-users-table"]');
 
   await test.step("Table is visible", async () => {
     await expect(usersTable).toBeVisible();

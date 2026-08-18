@@ -14,19 +14,19 @@ test("Cluster Overview page", async ({ page }) => {
   });
   await test.step("Cluster overview page should display correctly", async () => {
     const newPage = page.mainFrame();
-    expect(await newPage.innerText("body")).toContain("Cluster overview");
-    expect(await newPage.innerText("body")).toContain(
+    const pageMain = newPage.locator("main");
+
+    await expect(pageMain).toContainText("Cluster overview");
+    await expect(pageMain).toContainText(
       "Key performance indicators and important information regarding the Kafka cluster.",
     );
-    expect(await newPage.innerText("body")).toContain("Online brokers");
-    expect(await newPage.innerText("body")).toContain("Groups");
-    expect(await newPage.innerText("body")).toContain("Kafka version");
-    expect(await newPage.innerText("body")).toContain("Used disk space");
-    expect(await newPage.innerText("body")).toContain("CPU usage");
-    expect(await newPage.innerText("body")).toContain("Memory usage");
-    expect(await newPage.innerText("body")).toContain("Topic metrics");
-    expect(await newPage.innerText("body")).toContain(
-      "Topics bytes incoming and outgoing",
-    );
+    await expect(pageMain).toContainText("Online brokers");
+    await expect(pageMain).toContainText("Groups");
+    await expect(pageMain).toContainText("Kafka version");
+    await expect(pageMain).toContainText("Used disk space");
+    await expect(pageMain).toContainText("CPU usage");
+    await expect(pageMain).toContainText("Memory usage");
+    await expect(pageMain).toContainText("Topic metrics");
+    await expect(pageMain).toContainText("Topics bytes incoming and outgoing");
   });
 });
