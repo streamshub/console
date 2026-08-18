@@ -59,10 +59,16 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
   const barWidth = 20;     // Thickness of each individual bar
   const innerPadding = 16;  // Distance between bars in pixels
 
-  // Dynamically calculate the SVG canvas size based on data density
-  const calculatedChartHeight = leadersData.length * (barWidth + innerPadding) + 100;
+  // Size the canvas so Victory allocates exactly (barWidth + innerPadding) px per bar slot.
+  // Adding the actual top + bottom padding (rather than an arbitrary constant) ensures the
+  // gap between bars stays constant regardless of the number of nodes.
   const legendRows = 1;
   const padding = { ...getPadding(legendRows), left: 70, top: 40 };
+  const slotHeight = barWidth + innerPadding;
+  const calculatedChartHeight = leadersData.length * slotHeight + padding.top + padding.bottom;
+  // Half a slot keeps the first/last bar the same distance from the axis edge as the
+  // inter-bar gap, regardless of how many nodes are shown.
+  const edgePadding = slotHeight / 2;
 
   if (brokerNodes.length === 0) {
     return (
@@ -84,7 +90,7 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
           <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} />
         }
         padding={padding}
-        domainPadding={{ x: [30, 25] }}
+        domainPadding={{ x: [edgePadding, edgePadding] }}
         themeColor={ChartThemeColor.multiOrdered}
         width={width}
         height={calculatedChartHeight}
