@@ -3,26 +3,27 @@ import { Link, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ThProps } from '@patternfly/react-table';
 import { UseQueryResult } from '@tanstack/react-query';
-import { KafkaUser, ListResponse } from '@/api/types';
+import { ConnectCluster, ListResponse } from '@/api/types';
 import { ResourceListParams } from '@/api/hooks/useResourceList';
 import {
   ResourceListDataView,
   ResourceListDataViewColumnMapper,
   ResourceListDataViewRowMapper,
 } from '@/components/common/ResourceListDataView';
-import { formatDateTime } from '@/utils/dateTime';
+import { HelpIcon } from '@patternfly/react-icons';
+import { Tooltip } from '@patternfly/react-core';
 
-const columnNames = ['name', 'namespace', 'creationTimestamp', 'username', 'authenticationType'] as const;
+const columnNames = ['name', 'version'] as const;
 
-interface UsersDataViewProps {
-  usersResult: UseQueryResult<ListResponse<KafkaUser>, Error>;
+interface ConnectClustersDataViewProps {
+  connectClustersResult: UseQueryResult<ListResponse<ConnectCluster>, Error>;
   onDataViewChange: (params: ResourceListParams) => void;
 }
 
-export function UsersDataView({
-  usersResult,
+export function ConnectClustersDataView({
+  connectClustersResult,
   onDataViewChange,
-}: UsersDataViewProps) {
+}: ConnectClustersDataViewProps) {
   const { t } = useTranslation();
   const { kafkaId } = useParams<{ kafkaId: string }>();
 
@@ -55,7 +56,7 @@ export function UsersDataView({
   const colMapper: ResourceListDataViewColumnMapper = useCallback(
     (sortBy, direction, onSort) => [
       {
-        cell: t('users.columnName'),
+        cell: t('kafka.connect.name', 'Name'),
         props: {
           sort: {
             sortBy: {
@@ -69,16 +70,28 @@ export function UsersDataView({
         },
       },
       {
-        cell: t('users.columnNamespace'),
+        cell: t('kafka.connect.version', 'Version'),
+        props: {
+          sort: {
+            sortBy: {
+              index: sortBy ? columnNames.indexOf(sortBy as typeof columnNames[number]) : undefined,
+              direction,
+            },
+            columnIndex: 1,
+            onSort: (event, columnIndex, sortDirection) =>
+              handleSort(onSort, event, columnIndex, sortDirection),
+          } as ThProps['sort'],
+        },
       },
       {
-        cell: t('users.columnCreationTime'),
-      },
-      {
-        cell: t('users.columnUsername'),
-      },
-      {
-        cell: t('users.columnAuthentication'),
+        cell: (
+          <>
+            {t('kafka.connect.workers', 'Workers')}{' '}
+            <Tooltip content={t('kafka.connect.workersTooltip', 'Number of worker nodes')}>
+              <HelpIcon />
+            </Tooltip>
+          </>
+        ),
       },
     ],
     [t, handleSort]
@@ -89,54 +102,34 @@ export function UsersDataView({
     callback: colMapper,
   }), [colMapper, t, handleSort]);
 
-  const rowMapper: ResourceListDataViewRowMapper<KafkaUser> = useCallback(
-    (user) => {
-      const canViewDetails = user.meta?.privileges?.includes('GET') === true;
-
-      return {
-        id: user.id,
-        row: [
-          {
-            cell: canViewDetails ? (
-              <Link to={`/kafka/${kafkaId}/users/${user.id}`}>
-                {user.attributes.name}
-              </Link>
-            ) : (
-              user.attributes.name
-            ),
-            props: {
-              dataLabel: t('users.columnName'),
-            },
+  const rowMapper: ResourceListDataViewRowMapper<ConnectCluster> = useCallback(
+    (cluster) => ({
+      id: cluster.id,
+      row: [
+        {
+          cell: (
+            <Link to={`/kafka/${kafkaId}/connect/clusters/${encodeURIComponent(cluster.id)}`}>
+              {cluster.attributes.name}
+            </Link>
+          ),
+          props: {
+            dataLabel: t('kafka.connect.name', 'Name'),
           },
-          {
-            cell: user.attributes.namespace ?? '-',
-            props: {
-              dataLabel: t('users.columnNamespace'),
-            },
+        },
+        {
+          cell: cluster.attributes.version || '-',
+          props: {
+            dataLabel: t('kafka.connect.version', 'Version'),
           },
-          {
-            cell: user.attributes.creationTimestamp
-              ? formatDateTime({ value: user.attributes.creationTimestamp })
-              : '-',
-            props: {
-              dataLabel: t('users.columnCreationTime'),
-            },
+        },
+        {
+          cell: cluster.attributes.replicas ?? '-',
+          props: {
+            dataLabel: t('kafka.connect.workers', 'Workers'),
           },
-          {
-            cell: user.attributes.username,
-            props: {
-              dataLabel: t('users.columnUsername'),
-            },
-          },
-          {
-            cell: user.attributes.authenticationType,
-            props: {
-              dataLabel: t('users.columnAuthentication'),
-            },
-          },
-        ],
-      };
-    },
+        },
+      ],
+    }),
     [kafkaId, t]
   );
 
@@ -147,14 +140,14 @@ export function UsersDataView({
 
   return (
     <ResourceListDataView
-      resourceResult={usersResult}
+      resourceResult={connectClustersResult}
       columnProvider={colProvider}
       rowProvider={rowProvider}
       onDataViewChange={handleDataViewChange}
-      ariaLabel={t('users.tableLabel')}
-      ouiaIdPrefix="kafka-users"
+      ariaLabel={t('kafka.connect.connectClusters', 'Connect Clusters')}
+      ouiaIdPrefix="kafka-connect-clusters"
       dataFilters={{
-        username: {
+        name: {
           type: 'text',
           title: t('common.name'),
           placeholder: t('common.filterByName'),

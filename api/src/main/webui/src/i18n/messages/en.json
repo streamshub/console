@@ -9,6 +9,7 @@
     "delete": "Delete",
     "edit": "Edit",
     "create": "Create",
+    "name": "Name",
     "search": "Search",
     "filterByName": "Filter by name",
     "clear": "Clear",
