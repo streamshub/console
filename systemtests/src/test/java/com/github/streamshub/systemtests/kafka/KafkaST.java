@@ -17,10 +17,9 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
-import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.CssBuilder;
-import com.github.streamshub.systemtests.locators.CssSelectors;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
+import com.github.streamshub.systemtests.locators.components.Modal;
+import com.github.streamshub.systemtests.locators.pages.ClusterOverviewPage;
+import com.github.streamshub.systemtests.locators.pages.NodesPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
@@ -91,7 +90,7 @@ public class KafkaST extends AbstractST {
 
         LOGGER.debug("Verify default Kafka broker count on OverviewPage");
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
+        PwUtils.waitForContainsText(ClusterOverviewPage.brokerCount(tcc.page()),
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, true);
 
         LOGGER.debug("Verify default Kafka node count on Nodes page");
@@ -108,23 +107,23 @@ public class KafkaST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
         LOGGER.debug("Open pop-up modal for pause reconciliation");
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Pause Reconciliation", false);
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON);
+        PwUtils.waitForContainsText(ClusterOverviewPage.pauseReconciliationButton(tcc.page()), "Pause Reconciliation", false);
+        PwUtils.waitForLocatorAndClick(ClusterOverviewPage.pauseReconciliationButton(tcc.page()));
 
         LOGGER.debug("Check pop-up modal for pause reconciliation");
-        PwUtils.waitForLocatorVisible(tcc, CssSelectors.PAGES_POPUP_MODAL);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_HEADER, "Pause cluster reconciliation?", false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_BODY, "While paused, updates to the cluster are ignored until reconciliation is resumed.", false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, "Cancel", false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, "Confirm", false);
+        PwUtils.waitForLocatorVisible(Modal.root(tcc.page()));
+        PwUtils.waitForContainsText(Modal.heading(tcc.page()), "Pause cluster reconciliation?", false);
+        PwUtils.waitForContainsText(Modal.root(tcc.page()), "While paused, updates to the cluster are ignored until reconciliation is resumed.", false);
+        PwUtils.waitForContainsText(Modal.cancelButton(tcc.page()), "Cancel", false);
+        PwUtils.waitForContainsText(Modal.confirmButton(tcc.page()), "Confirm", false);
 
         LOGGER.debug("Confirm pause reconciliation");
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
+        PwUtils.waitForLocatorAndClick(Modal.confirmButton(tcc.page()));
 
         // Check aftermath
         LOGGER.info("Verify UI state after pausing Kafka reconciliation");
-        PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION,
+        PwUtils.waitForLocatorVisible(ClusterOverviewPage.reconciliationPausedBanner(tcc.page()));
+        PwUtils.waitForContainsText(ClusterOverviewPage.reconciliationPausedBanner(tcc.page()),
             "Cluster reconciliation paused. Changes to the Kafka resource will not be applied.", false);
 
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
@@ -134,13 +133,12 @@ public class KafkaST extends AbstractST {
         LOGGER.info("Verify ReconciliationPaused warning appears in UI");
 
         // Check the reconciliation paused warning is displayed in the warnings card
-        if (tcc.page().locator(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_DROPDOWN_LIST).isHidden()) {
+        if (ClusterOverviewPage.warningsList(tcc.page()).isHidden()) {
             LOGGER.debug("Warnings dropdown list is hidden, opening it to reveal warning messages");
-            PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+            PwUtils.waitForLocatorAndClick(ClusterOverviewPage.warningsToggle(tcc.page()));
         }
 
-        PwUtils.waitForContainsText(tcc,
-            ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS,
+        PwUtils.waitForContainsText(ClusterOverviewPage.warningMessages(tcc.page()),
             "Cluster reconciliation paused. Changes to the Kafka resource will not be applied.",
             false);
 
@@ -162,17 +160,17 @@ public class KafkaST extends AbstractST {
         WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
 
         LOGGER.info("Resume Kafka reconciliation using UI");
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Resume Reconciliation", true);
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON);
+        PwUtils.waitForContainsText(ClusterOverviewPage.pauseReconciliationButton(tcc.page()), "Resume Reconciliation", true);
+        PwUtils.waitForLocatorAndClick(ClusterOverviewPage.pauseReconciliationButton(tcc.page()));
 
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, "Cancel", false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, "Confirm", false);
+        PwUtils.waitForContainsText(Modal.cancelButton(tcc.page()), "Cancel", false);
+        PwUtils.waitForContainsText(Modal.confirmButton(tcc.page()), "Confirm", false);
 
         LOGGER.debug("Confirm resume reconciliation");
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
+        PwUtils.waitForLocatorAndClick(Modal.confirmButton(tcc.page()));
 
         // Reconciliation is resumed and button should display Pause
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Pause Reconciliation", true);
+        PwUtils.waitForContainsText(ClusterOverviewPage.pauseReconciliationButton(tcc.page()), "Pause Reconciliation", true);
 
         // Check annotation
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set back to false");
@@ -187,7 +185,7 @@ public class KafkaST extends AbstractST {
 
         LOGGER.debug("Verify new Kafka broker count on OverviewPage is {}", scaledBrokersCount);
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
+        PwUtils.waitForContainsText(ClusterOverviewPage.brokerCount(tcc.page()),
             scaledBrokersCount + "/" + scaledBrokersCount, TimeConstants.ACTION_WAIT_LONG);
 
         LOGGER.debug("Verify new Kafka node count on Nodes page");
@@ -197,23 +195,23 @@ public class KafkaST extends AbstractST {
         // Now verify resume from top notification and just check the annotation on Kafka cluster
         LOGGER.info("Pause Kafka reconciliation using UI");
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_POPUP_MODAL_HEADER, "Pause cluster reconciliation?", false);
+        PwUtils.waitForLocatorAndClick(ClusterOverviewPage.pauseReconciliationButton(tcc.page()));
+        PwUtils.waitForContainsText(Modal.heading(tcc.page()), "Pause cluster reconciliation?", false);
 
         LOGGER.debug("Confirm pause reconciliation");
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
+        PwUtils.waitForLocatorAndClick(Modal.confirmButton(tcc.page()));
 
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
 
         LOGGER.info("Resume Kafka reconciliation using button from top notification");
-        PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON);
+        PwUtils.waitForLocatorAndClick(ClusterOverviewPage.reconciliationResumeButton(tcc.page()));
 
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CANCEL_BUTTON, "Cancel", false);
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON, "Confirm", false);
+        PwUtils.waitForContainsText(Modal.cancelButton(tcc.page()), "Cancel", false);
+        PwUtils.waitForContainsText(Modal.confirmButton(tcc.page()), "Confirm", false);
 
         LOGGER.debug("Confirm resume reconciliation");
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_MODAL_CONFIRM_BUTTON);
+        PwUtils.waitForLocatorAndClick(Modal.confirmButton(tcc.page()));
 
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set back to false");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
@@ -229,24 +227,24 @@ public class KafkaST extends AbstractST {
     private void checkNodesPageNodeCounts(int brokerCount) {
         LOGGER.debug("Verify Nodes page header shows total={}, working={}, warning=0",
             brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS, brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT,
+        PwUtils.waitForContainsText(NodesPage.totalCountBadge(tcc.page()),
             Integer.toString(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT,
+        PwUtils.waitForContainsText(NodesPage.workingNodesBadge(tcc.page()),
             Integer.toString(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
+        PwUtils.waitForContainsText(NodesPage.warningNodesBadge(tcc.page()), "0", true);
         // Page infobox
         // total nodes
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(1).build(),
+        PwUtils.waitForContainsText(NodesPage.totalNodesCount(tcc.page()),
             Integer.toString(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         // with controller role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(2).build(),
+        PwUtils.waitForContainsText(NodesPage.controllerRoleCount(tcc.page()),
             Integer.toString(Constants.REGULAR_CONTROLLER_REPLICAS), true);
         // with broker role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(),
+        PwUtils.waitForContainsText(NodesPage.brokerRoleCount(tcc.page()),
             Integer.toString(brokerCount), true);
         // Node table
         LOGGER.debug("Verify Nodes page table row count equals {}", brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS);
-        assertEquals(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
+        assertEquals(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS, NodesPage.table(tcc.page()).rowCount());
     }
 
     /**

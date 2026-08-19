@@ -52,7 +52,7 @@ export function TopicsPage() {
           <Split hasGutter style={{ alignItems: 'center', display: 'flex' }}>
             <SplitItem style={{ display: 'flex', alignItems: 'center' }}>{t('topics.title')}</SplitItem>
             <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
-              <Label icon={isLoading ? <Spinner size="sm" /> : undefined}>
+              <Label icon={isLoading ? <Spinner size="sm" /> : undefined} data-ouia-component-id="topics-total-badge">
                 {totalItems}&nbsp;total
               </Label>
             </SplitItem>
@@ -61,6 +61,7 @@ export function TopicsPage() {
                 <Label
                   icon={isLoading ? <Spinner size="sm" /> : <CheckCircleIcon />}
                   color="green"
+                  data-ouia-component-id="topics-fully-replicated-badge"
                 >
                   {statusSummary?.FullyReplicated ?? 0}
                 </Label>
@@ -71,6 +72,7 @@ export function TopicsPage() {
                 <Label
                   icon={isLoading ? <Spinner size="sm" /> : <ExclamationTriangleIcon />}
                   color="orange"
+                  data-ouia-component-id="topics-under-replicated-badge"
                 >
                   {(statusSummary?.UnderReplicated ?? 0) + (statusSummary?.PartiallyOffline ?? 0) + (statusSummary?.Unknown ?? 0)}
                 </Label>
@@ -81,6 +83,7 @@ export function TopicsPage() {
                 <Label
                   icon={isLoading ? <Spinner size="sm" /> : <ExclamationCircleIcon />}
                   color="red"
+                  data-ouia-component-id="topics-offline-badge"
                 >
                   {statusSummary?.Offline ?? 0}
                 </Label>

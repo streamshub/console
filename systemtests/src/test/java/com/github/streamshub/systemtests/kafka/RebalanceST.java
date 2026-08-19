@@ -3,7 +3,8 @@ package com.github.streamshub.systemtests.kafka;
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.TestTags;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
+import com.github.streamshub.systemtests.locators.components.Modal;
+import com.github.streamshub.systemtests.locators.pages.NodesPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
@@ -14,6 +15,8 @@ import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.options.AriaRole;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
@@ -81,36 +84,39 @@ public class RebalanceST extends AbstractST {
 
         LOGGER.info("Verifying rebalance proposals table shows a single 'Proposal Ready' entry for rebalance '{}'", rebalanceName);
         PwUtils.navigate(tcc, PwPageUrls.getKafkaRebalancePage(tcc, tcc.kafkaName()));
-        PwUtils.waitForLocatorCount(tcc, 1, NodesPageSelectors.NPS_REBALANCE_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_STATUS, "Proposal Ready", true);
-        assertTrue(tcc.page().locator(NodesPageSelectors.NPS_REBALANCE_PROPOSAL_NAME).allInnerTexts().toString().contains(rebalanceName));
+        PwUtils.waitForLocatorCount(1, NodesPage.rebalanceTable(tcc.page()).rows(), true);
+        Locator rebalanceRow = NodesPage.rebalanceTable(tcc.page()).rows().first();
+        PwUtils.waitForContainsText(NodesPage.rebalanceTable(tcc.page()).cell(rebalanceRow, "Status"), "Proposal Ready", true);
+        Locator rebalanceNameButton = rebalanceRow.getByRole(AriaRole.BUTTON);
+        assertTrue(rebalanceNameButton.allInnerTexts().toString().contains(rebalanceName));
 
         LOGGER.info("Inspecting rebalance proposal dropdown for auto-approval flag and rebalance mode");
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_DROPDOWN_BUTTON);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_DROPDOWN_AUTO_APPROVAL_ENABLED, "false", true);
-        assertTrue(tcc.page().locator(NodesPageSelectors.NPS_REBALANCE_PROPOSAL_DROPDOWN_MODE).allInnerTexts().toString().toLowerCase(Locale.ENGLISH).contains(KafkaRebalanceMode.FULL.toValue()));
+        PwUtils.waitForLocatorAndClick(NodesPage.rebalanceExpandToggle(rebalanceRow));
+        PwUtils.waitForContainsText(NodesPage.rebalanceAutoApprovalValue(tcc.page()), "false", true);
+        assertTrue(NodesPage.rebalanceModeValue(tcc.page()).allInnerTexts().toString().toLowerCase(Locale.ENGLISH).contains(KafkaRebalanceMode.FULL.toValue()));
 
         LOGGER.info("Opening proposal data modal for rebalance '{}' to verify optimization result values", rebalanceName);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_NAME);
+        PwUtils.waitForLocatorAndClick(rebalanceNameButton);
         // table values
         Map<String, Object> status = ResourceUtils.getKubeResource(KafkaRebalance.class, tcc.namespace(), rebalanceName).getStatus().getOptimizationResult();
         LOGGER.debug("KafkaRebalance '{}' optimizationResult from status: {}", rebalanceName, status);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_PROPOSAL_MODAL_DATA_TO_MOVE, status.get("dataToMoveMB").toString(), false);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_PROPOSAL_MODAL_DATA_MONITORED_PARTITIONS_PERCENTAGE, status.get("monitoredPartitionsPercentage").toString(), false);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_PROPOSAL_MODAL_DATA_NUMBER_REPLICA_MOVEMENTS, status.get("numReplicaMovements").toString(), false);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_PROPOSAL_MODAL_DATA_BALANCEDNESS_BEFORE, status.get("onDemandBalancednessScoreBefore").toString(), false);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_PROPOSAL_MODAL_DATA_BALANCEDNESS_AFTER, status.get("onDemandBalancednessScoreAfter").toString(), false);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_PROPOSAL_MODAL_CLOSE_BUTTON);
+        Locator modalRoot = Modal.root(tcc.page());
+        PwUtils.waitForContainsText(NodesPage.rebalanceDataToMoveMb(tcc.page()), status.get("dataToMoveMB").toString(), false);
+        PwUtils.waitForContainsText(NodesPage.rebalanceMonitoredPartitionsPercentage(tcc.page()), status.get("monitoredPartitionsPercentage").toString(), false);
+        PwUtils.waitForContainsText(NodesPage.rebalanceNumReplicaMovements(tcc.page()), status.get("numReplicaMovements").toString(), false);
+        PwUtils.waitForContainsText(NodesPage.rebalanceBalancednessBefore(tcc.page()), status.get("onDemandBalancednessScoreBefore").toString(), false);
+        PwUtils.waitForContainsText(NodesPage.rebalanceBalancednessAfter(tcc.page()), status.get("onDemandBalancednessScoreAfter").toString(), false);
+        PwUtils.waitForLocatorAndClick(modalRoot.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Close")));
 
         LOGGER.info("Approving rebalance proposal '{}' via UI action dropdown", rebalanceName);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_PROPOSAL_ACTION_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_PROPOSAL_ACTION_APPROVE_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_PROPOSAL_MODAL_CONFIRM_BUTTON);
+        PwUtils.waitForLocatorAndClick(NodesPage.rebalanceActionsMenuButton(rebalanceRow));
+        PwUtils.waitForLocatorAndClick(NodesPage.rebalanceMenuItem(tcc.page(), "Approve"));
+        PwUtils.waitForLocatorAndClick(Modal.confirmButton(tcc.page()));
 
         LOGGER.info("Verifying that UI approval transitioned KafkaRebalance '{}' to '{}' state", rebalanceName, KafkaRebalanceState.Rebalancing);
         WaitUtils.waitForKafkaRebalanceProposalStatus(tcc.namespace(), rebalanceName, KafkaRebalanceState.Rebalancing);
         LOGGER.debug("Confirming '{}' state is reflected in the UI proposal status for rebalance '{}'", KafkaRebalanceState.Rebalancing, rebalanceName);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_STATUS, KafkaRebalanceState.Rebalancing.name(), true);
+        PwUtils.waitForContainsText(NodesPage.rebalanceTable(tcc.page()).cell(NodesPage.rebalanceTable(tcc.page()).rows().first(), "Status"), KafkaRebalanceState.Rebalancing.name(), true);
     }
 
     @AfterEach

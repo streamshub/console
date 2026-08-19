@@ -5,13 +5,12 @@ import com.github.streamshub.systemtests.enums.MessagesParameterType;
 import com.github.streamshub.systemtests.enums.MessagesRetrieveType;
 import com.github.streamshub.systemtests.enums.MessagesRetrieveLimit;
 import com.github.streamshub.systemtests.enums.MessagesWhereFilter;
-import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.MessagesPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 import org.apache.logging.log4j.Logger;
-
-import java.util.regex.Pattern;
 
 public class MessagesTestUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesTestUtils.class);
@@ -26,8 +25,8 @@ public class MessagesTestUtils {
      */
     public static void openFilterForm(TestCaseConfig tcc) {
         LOGGER.info("Opening Messages popover filter form");
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
-        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT);
+        PwUtils.waitForLocatorAndClick(MessagesPage.advancedSearchToggle(tcc.page()));
+        PwUtils.waitForLocatorVisible(MessagesPage.hasWordsInput(tcc.page()));
     }
 
     /**
@@ -38,7 +37,7 @@ public class MessagesTestUtils {
      */
     public static void fillHasWords(TestCaseConfig tcc, String text) {
         LOGGER.debug("Filling 'Has the words' input with [{}]", text);
-        fillAndVerify(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, text);
+        fillAndVerify(MessagesPage.hasWordsInput(tcc.page()), text);
     }
 
     /**
@@ -49,7 +48,7 @@ public class MessagesTestUtils {
      */
     public static void selectWhere(TestCaseConfig tcc, MessagesWhereFilter where) {
         LOGGER.info("Selecting 'Where' filter [{}]", where.getLabel());
-        selectMenuItem(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON, where.getLabel());
+        selectMenuItem(tcc.page(), MessagesPage.whereDropdownButton(tcc.page()), where.getLabel());
     }
 
     /**
@@ -64,13 +63,13 @@ public class MessagesTestUtils {
      */
     public static void selectMessagesParameter(TestCaseConfig tcc, MessagesParameterType type, String value) {
         LOGGER.info("Selecting Messages parameter [{}] with value [{}]", type.getLabel(), value);
-        selectMenuItem(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_BUTTON, type.getLabel());
+        selectMenuItem(tcc.page(), MessagesPage.messagesFromDropdownButton(tcc.page()), type.getLabel());
 
         switch (type) {
             case FROM_OFFSET, FROM_UNIX_TIMESTAMP ->
-                fillAndVerify(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, value);
+                fillAndVerify(MessagesPage.offsetInput(tcc.page()), value);
             case FROM_TIMESTAMP ->
-                fillAndVerify(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_TIMESTAMP_INPUT, value);
+                fillAndVerify(MessagesPage.timestampInput(tcc.page()), value);
             case LATEST -> LOGGER.debug("Messages parameter [Latest messages] has no secondary input to fill");
         }
     }
@@ -86,10 +85,10 @@ public class MessagesTestUtils {
      */
     public static void selectRetrieveType(TestCaseConfig tcc, MessagesRetrieveType type, MessagesRetrieveLimit limit) {
         LOGGER.info("Selecting Retrieve type [{}]{}", type.getLabel(), limit != null ? " with limit [" + limit.getLabel() + "]" : "");
-        selectMenuItem(tcc, MessagesPageSelectors.MPS_TPF_RETRIEVE_DROPDOWN_BUTTON, type.getLabel());
+        selectMenuItem(tcc.page(), MessagesPage.retrieveTypeDropdownButton(tcc.page()), type.getLabel());
 
         if (type == MessagesRetrieveType.NUMBER_OF_MESSAGES && limit != null) {
-            selectMenuItem(tcc, MessagesPageSelectors.MPS_TPF_RETRIEVE_LIMIT_DROPDOWN_BUTTON, limit.getLabel());
+            selectMenuItem(tcc.page(), MessagesPage.retrieveLimitDropdownButton(tcc.page()), limit.getLabel());
         }
     }
 
@@ -102,7 +101,7 @@ public class MessagesTestUtils {
     public static void selectPartition(TestCaseConfig tcc, Integer partitionIndex) {
         String label = partitionIndex == null ? ALL_PARTITIONS_LABEL : String.valueOf(partitionIndex);
         LOGGER.info("Selecting 'In partition' filter [{}]", label);
-        selectMenuItem(tcc, MessagesPageSelectors.MPS_TPF_PARTITION_DROPDOWN_BUTTON, label);
+        selectMenuItem(tcc.page(), MessagesPage.partitionDropdownButton(tcc.page()), label);
     }
 
     /**
@@ -112,7 +111,7 @@ public class MessagesTestUtils {
      */
     public static void search(TestCaseConfig tcc) {
         LOGGER.debug("Submitting Messages filter form");
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
+        PwUtils.waitForLocatorAndClick(MessagesPage.formSearchButton(tcc.page()));
     }
 
     /**
@@ -122,65 +121,45 @@ public class MessagesTestUtils {
      */
     public static void resetFilters(TestCaseConfig tcc) {
         LOGGER.debug("Resetting Messages filter form");
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_RESET_BUTTON);
+        PwUtils.waitForLocatorAndClick(MessagesPage.formResetButton(tcc.page()));
     }
 
     /**
      * Opens a dropdown toggle, clicks the item matching the given label exactly (avoiding substring collisions
      * such as "5"/"50" or "1"/"10"), and verifies the toggle now displays that label.
      *
-     * @param tcc            test case configuration containing the Playwright page
-     * @param toggleSelector selector for the dropdown's toggle button
-     * @param exactLabel     the exact, case-sensitive label of the item to select
+     * @param page       the Playwright page used to resolve the shared open-menu-item locator
+     * @param toggle     the dropdown's toggle button
+     * @param exactLabel the exact, case-sensitive label of the item to select
      *
      * @throws AssertionError if the toggle does not display the expected label after selection
      */
-    private static void selectMenuItem(TestCaseConfig tcc, String toggleSelector, String exactLabel) {
-        PwUtils.waitForLocatorAndClick(tcc, toggleSelector);
+    private static void selectMenuItem(Page page, Locator toggle, String exactLabel) {
+        PwUtils.waitForLocatorAndClick(toggle);
+        PwUtils.waitForLocatorAndClick(MessagesPage.openMenuItem(page, exactLabel));
 
-        // Playwright serializes this Pattern's source to a JavaScript RegExp on the browser side, so it must be
-        // escaped in a JS-regex-safe way - Java's Pattern.quote() wraps in \Q...\E, which JS regex doesn't
-        // understand, silently producing a pattern that can never match anything.
-        Pattern exactMatch = Pattern.compile("^" + escapeForJsRegex(exactLabel) + "$");
-        Locator item = tcc.page().locator(MessagesPageSelectors.MPS_TPF_OPEN_MENU_ITEM_BUTTONS)
-            .filter(new Locator.FilterOptions().setHasText(exactMatch));
-        PwUtils.waitForLocatorAndClick(item);
-
-        String toggleText = PwUtils.getTrimmedText(tcc.page().locator(toggleSelector).innerText());
+        String toggleText = PwUtils.getTrimmedText(toggle.innerText());
         if (!toggleText.contains(exactLabel)) {
-            LOGGER.error("Dropdown [{}] shows [{}], expected [{}]", toggleSelector, toggleText, exactLabel);
-            throw new AssertionError("Dropdown [" + toggleSelector + "] expected to show [" + exactLabel + "] but showed [" + toggleText + "]");
+            LOGGER.error("Dropdown shows [{}], expected [{}]", toggleText, exactLabel);
+            throw new AssertionError("Dropdown expected to show [" + exactLabel + "] but showed [" + toggleText + "]");
         }
-    }
-
-    /**
-     * Escapes regex metacharacters using backslash-escaping valid in both Java and JavaScript regex syntax
-     * (unlike {@link Pattern#quote(String)}, which uses Java-only {@code \Q...\E} quoting that JavaScript's
-     * RegExp does not understand - Playwright sends the pattern's source to the browser as a JS RegExp).
-     *
-     * @param text the literal text to escape
-     * @return the escaped text, safe to embed in a regex matched by Playwright's browser-side engine
-     */
-    private static String escapeForJsRegex(String text) {
-        return text.replaceAll("[.*+?^${}()|\\[\\]\\\\]", "\\\\$0");
     }
 
     /**
      * Fills an input and verifies the resulting value matches exactly.
      *
-     * @param tcc      test case configuration containing the Playwright page
-     * @param selector selector for the input to fill
-     * @param value    the value to fill and verify
+     * @param input the input to fill
+     * @param value the value to fill and verify
      *
      * @throws AssertionError if the input's value doesn't match after filling
      */
-    private static void fillAndVerify(TestCaseConfig tcc, String selector, String value) {
-        PwUtils.waitForLocatorAndFill(tcc, selector, value);
+    private static void fillAndVerify(Locator input, String value) {
+        PwUtils.waitForLocatorAndFill(input, value);
 
-        String actual = tcc.page().locator(selector).inputValue();
+        String actual = input.inputValue();
         if (!value.equals(actual)) {
-            LOGGER.error("Input [{}] has value [{}], expected [{}]", selector, actual, value);
-            throw new AssertionError("Input [" + selector + "] expected value [" + value + "] but was [" + actual + "]");
+            LOGGER.error("Input has value [{}], expected [{}]", actual, value);
+            throw new AssertionError("Input expected value [" + value + "] but was [" + actual + "]");
         }
     }
 }

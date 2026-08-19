@@ -3,10 +3,11 @@ package com.github.streamshub.systemtests.utils.testchecks;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.MessagesParameterType;
-import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.MessagesPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.testutils.MessagesTestUtils;
+import com.microsoft.playwright.Locator;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
@@ -40,10 +41,10 @@ public class MessagesChecks {
         MessagesTestUtils.openFilterForm(tcc);
         MessagesTestUtils.selectMessagesParameter(tcc, MessagesParameterType.FROM_UNIX_TIMESTAMP, unixTimestamp);
         MessagesTestUtils.search(tcc);
-        PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForLocatorCount(expectedCount, MessagesPage.table(tcc.page()).rows(), true);
         if (expectedContent != null) {
             LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
+            PwUtils.waitForContainsText(MessagesPage.cellAt(tcc.page(), 1, 5), expectedContent, true);
         }
     }
 
@@ -74,10 +75,10 @@ public class MessagesChecks {
         MessagesTestUtils.openFilterForm(tcc);
         MessagesTestUtils.selectMessagesParameter(tcc, MessagesParameterType.FROM_TIMESTAMP, isoDateTime);
         MessagesTestUtils.search(tcc);
-        PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForLocatorCount(expectedCount, MessagesPage.table(tcc.page()).rows(), true);
         if (expectedContent != null) {
             LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
+            PwUtils.waitForContainsText(MessagesPage.cellAt(tcc.page(), 1, 5), expectedContent, true);
         }
     }
 
@@ -106,36 +107,36 @@ public class MessagesChecks {
      */
     public static void checkQueryBarFilter(TestCaseConfig tcc, String filterPrefix, String timestampValue, int expectedCount, String expectedContent) {
         LOGGER.info("Checking query bar filter [{}{}] returns {} message(s)", filterPrefix, timestampValue, expectedCount);
-        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, filterPrefix + timestampValue);
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, timestampValue, Constants.VALUE_ATTRIBUTE, true, true);
-        PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForLocatorVisible(MessagesPage.searchInput(tcc.page()));
+        PwUtils.waitForLocatorAndFill(MessagesPage.searchInput(tcc.page()), filterPrefix + timestampValue);
+        PwUtils.waitForLocatorAndClick(MessagesPage.searchSubmitButton(tcc.page()));
+        PwUtils.waitForAttributeContainsText(MessagesPage.searchInput(tcc.page()), timestampValue, Constants.VALUE_ATTRIBUTE, true, true);
+        PwUtils.waitForLocatorCount(expectedCount, MessagesPage.table(tcc.page()).rows(), true);
         if (expectedContent != null) {
             LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
+            PwUtils.waitForContainsText(MessagesPage.cellAt(tcc.page(), 1, 5), expectedContent, true);
         }
     }
 
     /**
      * Verifies the outcome of a popover filter-form submission: that the resulting query-bar value matches
-     * what's expected, that the expected number of result rows are shown, and that each given selector
+     * what's expected, that the expected number of result rows are shown, and that each given locator
      * contains its expected text.
      *
      * @param tcc                 Test case configuration containing Playwright context
      * @param expectedQueryValue  The expected value of the search query-bar input after submitting the form
      *                            (e.g. {@code "messages=offset:95 retrieve=50 orderID where=key"})
      * @param expectedCount       Expected number of messages returned after filtering
-     * @param rowChecks           Map of selector to expected text, each verified against the result table
+     * @param rowChecks           Map of locator to expected text, each verified against the result table
      *                            (e.g. a specific row/column cell)
      */
-    public static void checkFilterResults(TestCaseConfig tcc, String expectedQueryValue, int expectedCount, Map<String, String> rowChecks) {
+    public static void checkFilterResults(TestCaseConfig tcc, String expectedQueryValue, int expectedCount, Map<Locator, String> rowChecks) {
         LOGGER.info("Checking filter results: query=[{}], expecting {} row(s)", expectedQueryValue, expectedCount);
-        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, expectedQueryValue, Constants.VALUE_ATTRIBUTE, true, true);
-        PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        rowChecks.forEach((selector, expectedText) -> {
-            LOGGER.debug("Checking selector [{}] contains expected value [{}]", selector, expectedText);
-            PwUtils.waitForContainsText(tcc, selector, expectedText, true);
+        PwUtils.waitForAttributeContainsText(MessagesPage.searchInput(tcc.page()), expectedQueryValue, Constants.VALUE_ATTRIBUTE, true, true);
+        PwUtils.waitForLocatorCount(expectedCount, MessagesPage.table(tcc.page()).rows(), true);
+        rowChecks.forEach((locator, expectedText) -> {
+            LOGGER.debug("Checking locator [{}] contains expected value [{}]", locator, expectedText);
+            PwUtils.waitForContainsText(locator, expectedText, true);
         });
     }
 }

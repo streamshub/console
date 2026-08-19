@@ -96,7 +96,7 @@ export function RecentTopicsCard({
           ) : (
             <>
               <Divider />
-              <List isPlain style={{ paddingTop: '1rem' }}>
+              <List isPlain style={{ paddingTop: '1rem' }} data-ouia-component-id="recent-topics-list">
                 {viewedTopics.map((topic) => (
                   <ListItem key={topic.topicId}>
                     <Link

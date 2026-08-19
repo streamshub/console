@@ -5,8 +5,8 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
-import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.components.Masthead;
+import com.github.streamshub.systemtests.locators.pages.ClusterOverviewPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.kroxylicious.KroxyResourcesSetup;
@@ -64,13 +64,13 @@ public class KroxyST extends AbstractST {
         LOGGER.info("Verify default kafka from strimzi CR");
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_NAME, tcc.kafkaName(), true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION, Environment.ST_KAFKA_VERSION, true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
+        PwUtils.waitForContainsText(ClusterOverviewPage.clusterName(tcc.page()), tcc.kafkaName(), true);
+        PwUtils.waitForContainsText(ClusterOverviewPage.kafkaVersion(tcc.page()), Environment.ST_KAFKA_VERSION, true);
+        PwUtils.waitForContainsText(ClusterOverviewPage.brokerCount(tcc.page()),
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, true);
 
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "2", true);
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_NAV_KAFKA_SELECT_BUTTON);
+        PwUtils.waitForContainsText(Masthead.totalAvailableKafkaCount(tcc.page()), "2", true);
+        PwUtils.waitForLocatorAndClick(Masthead.clusterSwitcherButton(tcc.page()));
         KroxyChecks.checkKafkaClusterDropdownContains(tcc, List.of(tcc.kafkaName(), tcc.virtualKafkaClusterName()));
 
         LOGGER.info("Verify virtual kafka from kroxy");
@@ -78,13 +78,13 @@ public class KroxyST extends AbstractST {
 
         String virtualClusterVersion = KroxyTestUtils.normalizeVirtualClusterVersionToMajorMinor(Environment.ST_KAFKA_VERSION);
 
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_NAME, tcc.virtualKafkaClusterName(), true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION, virtualClusterVersion, true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
+        PwUtils.waitForContainsText(ClusterOverviewPage.clusterName(tcc.page()), tcc.virtualKafkaClusterName(), true);
+        PwUtils.waitForContainsText(ClusterOverviewPage.kafkaVersion(tcc.page()), virtualClusterVersion, true);
+        PwUtils.waitForContainsText(ClusterOverviewPage.brokerCount(tcc.page()),
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, true);
 
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "2", true);
-        PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_NAV_KAFKA_SELECT_BUTTON);
+        PwUtils.waitForContainsText(Masthead.totalAvailableKafkaCount(tcc.page()), "2", true);
+        PwUtils.waitForLocatorAndClick(Masthead.clusterSwitcherButton(tcc.page()));
         KroxyChecks.checkKafkaClusterDropdownContains(tcc, List.of(tcc.kafkaName(), tcc.virtualKafkaClusterName()));
     }
 

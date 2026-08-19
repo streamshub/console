@@ -123,15 +123,15 @@ export function UserDetailPage() {
             <DescriptionList isHorizontal columnModifier={{ default: '2Col' }}>
               <DescriptionListGroup>
                 <DescriptionListTerm>{t('users.details.name')}</DescriptionListTerm>
-                <DescriptionListDescription>{name}</DescriptionListDescription>
+                <DescriptionListDescription data-ouia-component-id="user-detail-name">{name}</DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
                 <DescriptionListTerm>{t('users.details.username')}</DescriptionListTerm>
-                <DescriptionListDescription>{username}</DescriptionListDescription>
+                <DescriptionListDescription data-ouia-component-id="user-detail-username">{username}</DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
                 <DescriptionListTerm>{t('users.details.authentication')}</DescriptionListTerm>
-                <DescriptionListDescription>
+                <DescriptionListDescription data-ouia-component-id="user-detail-authentication">
                   {authenticationType}
                 </DescriptionListDescription>
               </DescriptionListGroup>
@@ -143,7 +143,7 @@ export function UserDetailPage() {
               </DescriptionListGroup>
               <DescriptionListGroup>
                 <DescriptionListTerm>{t('users.details.creationTime')}</DescriptionListTerm>
-                <DescriptionListDescription>
+                <DescriptionListDescription data-ouia-component-id="user-detail-creation-time">
                   {creationTimestamp ? formatDateTime({ value: creationTimestamp }) : '-'}
                 </DescriptionListDescription>
               </DescriptionListGroup>

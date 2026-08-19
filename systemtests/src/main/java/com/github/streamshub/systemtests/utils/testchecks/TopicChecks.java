@@ -6,14 +6,14 @@ import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.enums.TopicsPerPage;
-import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.CssBuilder;
-import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.ClusterOverviewPage;
+import com.github.streamshub.systemtests.locators.pages.TopicsPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
+import com.microsoft.playwright.Locator;
 
 import org.apache.logging.log4j.Logger;
 
@@ -41,12 +41,14 @@ public class TopicChecks {
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName));
 
         // Status
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_TOPICS, total + " topics", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_PARTITIONS, partitions + " partitions", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        // useTopics() (backing all counts below) fetches once with no refetchInterval, so a stale count
+        // needs a page reload to re-fetch - a plain re-check of the same DOM would retry forever on stale data.
+        PwUtils.waitForContainsText(ClusterOverviewPage.totalTopics(tcc.page()), total + " topics", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(ClusterOverviewPage.totalPartitions(tcc.page()), partitions + " partitions", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
 
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_FULLY_REPLICATED, fullyReplicated + " Fully replicated", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_UNDER_REPLICATED, underReplicated + " Under-replicated", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_UNAVAILABLE, unavailable + " Unavailable", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(ClusterOverviewPage.fullyReplicated(tcc.page()), fullyReplicated + " Fully replicated", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(ClusterOverviewPage.underReplicated(tcc.page()), underReplicated + " Under-replicated", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(ClusterOverviewPage.unavailable(tcc.page()), unavailable + " Unavailable", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
     }
 
     /**
@@ -66,10 +68,11 @@ public class TopicChecks {
         // Total topic count
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, kafkaName));
 
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_TOTAL_TOPICS_BADGE, total + " total", false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_SUCCESS, Integer.toString(fullyReplicated), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_WARNING, Integer.toString(underReplicated), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_ERROR, Integer.toString(unavailable), false, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
+        // Same non-polling useTopics() data source as the overview page - a reload is needed to see an updated count.
+        PwUtils.waitForContainsText(TopicsPage.totalTopicsBadge(tcc.page()), total + " total", true, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(TopicsPage.fullyReplicatedBadge(tcc.page()), Integer.toString(fullyReplicated), true, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(TopicsPage.underReplicatedBadge(tcc.page()), Integer.toString(underReplicated), true, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(TopicsPage.offlineBadge(tcc.page()), Integer.toString(unavailable), true, true, TimeConstants.ACTION_WAIT_SHORT, Constants.SELECTOR_RETRIES);
     }
 
     /**
@@ -82,17 +85,17 @@ public class TopicChecks {
      *  - Iterates forward through all pages, verifying content and pagination info
      *  - Iterates backward through all pages, verifying content and pagination info
      *
-     * @param tcc                     the test case configuration with page context
-     * @param topicsCount             the total number of topics present
-     * @param topicsPerPageList       list of topics per page options to test
-     * @param dropdownButtonSelector  CSS selector for the dropdown button controlling topics per page
-     * @param dropdownItemsSelector   CSS selector for the dropdown items in the topics per page selector
-     * @param paginationTextSelector  CSS selector for the pagination summary text (e.g., "1-10 of 57")
-     * @param previousButtonSelector  CSS selector for the pagination "previous page" button
-     * @param nextButtonSelector      CSS selector for the pagination "next page" button
+     * @param tcc                the test case configuration with page context
+     * @param topicsCount        the total number of topics present
+     * @param topicsPerPageList  list of topics per page options to test
+     * @param dropdownButton     the dropdown button controlling topics per page
+     * @param dropdownItems      the dropdown items in the topics per page selector
+     * @param paginationText     the pagination summary text (e.g., "1-10 of 57")
+     * @param previousButton     the pagination "previous page" button
+     * @param nextButton         the pagination "next page" button
      */
     public static void checkPaginationPage(TestCaseConfig tcc, int topicsCount, List<TopicsPerPage> topicsPerPageList,
-        String dropdownButtonSelector, String dropdownItemsSelector, String paginationTextSelector, String previousButtonSelector, String nextButtonSelector) {
+        Locator dropdownButton, Locator dropdownItems, Locator paginationText, Locator previousButton, Locator nextButton) {
         for (TopicsPerPage topicsPerPageOption : topicsPerPageList) {
             int lowBoundary;
             int highBoundary;
@@ -105,10 +108,10 @@ public class TopicChecks {
             PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()));
 
             LOGGER.debug("Opening topics-per-page dropdown selector");
-            PwUtils.waitForLocatorAndClick(tcc, dropdownButtonSelector);
+            PwUtils.waitForLocatorAndClick(dropdownButton);
 
             LOGGER.debug("Selecting topics-per-page dropdown item [{}] for value {}", topicsPerPageOption.getDropdownPosition(), topicsPerPage);
-            PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(dropdownItemsSelector).nth(topicsPerPageOption.getDropdownPosition()).build());
+            PwUtils.waitForLocatorAndClick(dropdownItems.nth(topicsPerPageOption.getDropdownPosition() - 1));
 
             // Check pages
             int pageOverflow = topicsCount % topicsPerPage;
@@ -120,14 +123,14 @@ public class TopicChecks {
                 lowBoundary = (topicsPerPage * (pageNum - 1)) + 1;
                 highBoundary = Integer.min(topicsPerPage * pageNum, topicsCount);
                 topicsOnPage = pageNum == numOfPages ? finalPageSize : topicsPerPage;
-                checkPaginationContent(tcc, pageNum, numOfPages, topicsOnPage, lowBoundary, highBoundary, topicsCount, paginationTextSelector, nextButtonSelector);
+                checkPaginationContent(tcc, pageNum, numOfPages, topicsOnPage, lowBoundary, highBoundary, topicsCount, paginationText, nextButton);
             }
             // Backwards movement
             for (int pageNum = numOfPages; pageNum >= 1; pageNum--) {
                 lowBoundary = (topicsPerPage * (pageNum - 1)) + 1;
                 highBoundary = Integer.min(topicsPerPage * pageNum, topicsCount);
                 topicsOnPage = pageNum == numOfPages ? finalPageSize : topicsPerPage;
-                checkPaginationContent(tcc, pageNum, 1, topicsOnPage, lowBoundary, highBoundary, topicsCount, paginationTextSelector, previousButtonSelector);
+                checkPaginationContent(tcc, pageNum, 1, topicsOnPage, lowBoundary, highBoundary, topicsCount, paginationText, previousButton);
             }
         }
     }
@@ -143,18 +146,18 @@ public class TopicChecks {
      * @param topicsOnPage          the expected number of topics displayed on the current page
      * @param lowBoundary           the lowest topic index shown on the current page (1-based)
      * @param highBoundary          the highest topic index shown on the current page
-     * @param topicsCount           the total number of topics in all pages
-     * @param paginationTextSelector CSS selector for the pagination summary text element
-     * @param moveButtonSelector    CSS selector for the button used to navigate to the next/previous page
+     * @param topicsCount        the total number of topics in all pages
+     * @param paginationText     the pagination summary text element
+     * @param moveButton         the button used to navigate to the next/previous page
      */
-    private static void checkPaginationContent(TestCaseConfig tcc, int pageNum, int numOfFinalPage, int topicsOnPage, int lowBoundary, int highBoundary, int topicsCount, String paginationTextSelector, String moveButtonSelector) {
+    private static void checkPaginationContent(TestCaseConfig tcc, int pageNum, int numOfFinalPage, int topicsOnPage, int lowBoundary, int highBoundary, int topicsCount, Locator paginationText, Locator moveButton) {
         LOGGER.debug("Checking pagination page {}, expecting {} topics displayed", pageNum, topicsOnPage);
         // Check that correct number of topics is displayed
-        PwUtils.waitForLocatorCount(tcc, topicsOnPage, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorCount(topicsOnPage, TopicsPage.table(tcc.page()).rows(), false);
         // Check pagination details
         String paginationOf = String.format("%s - %s of %s", lowBoundary, highBoundary, topicsCount);
         LOGGER.debug("Verifying pagination summary text shows [{}]", paginationOf);
-        PwUtils.waitForContainsText(tcc, paginationTextSelector, paginationOf, false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
+        PwUtils.waitForContainsText(paginationText, paginationOf, false, true, TimeConstants.ACTION_WAIT_MEDIUM, Constants.SELECTOR_RETRIES);
 
         // Click to move to next page
         if (pageNum == numOfFinalPage) {
@@ -162,8 +165,8 @@ public class TopicChecks {
             return;
         }
 
-        LOGGER.debug("Navigating to next pagination page via selector [{}]", moveButtonSelector);
-        PwUtils.waitForLocatorAndClick(tcc, moveButtonSelector);
+        LOGGER.debug("Navigating to next pagination page via locator [{}]", moveButton);
+        PwUtils.waitForLocatorAndClick(moveButton);
     }
 
     /**
@@ -180,11 +183,11 @@ public class TopicChecks {
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
         for (String topicName : topicNames) {
             LOGGER.debug("Verifying filtered result shows topic name [{}]", topicName);
-            PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, topicName);
-            PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
-            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
+            PwUtils.waitForLocatorAndFill(TopicsPage.searchInput(tcc.page()), topicName);
+            PwUtils.waitForLocatorAndClick(TopicsPage.searchButton(tcc.page()));
+            PwUtils.waitForContainsText(TopicsPage.table(tcc.page()).row(topicName), topicName, false);
         }
-        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
+        PwUtils.waitForLocatorAndClick(TopicsPage.clearAllFiltersButton(tcc.page()));
     }
 
     /**
@@ -202,11 +205,11 @@ public class TopicChecks {
         for (String topicName : topicNames) {
             String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
             LOGGER.debug("Verifying filtered result shows topic [{}] for id [{}]", topicName, topicId);
-            PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, topicId);
-            PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
-            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
+            PwUtils.waitForLocatorAndFill(TopicsPage.searchInput(tcc.page()), topicId);
+            PwUtils.waitForLocatorAndClick(TopicsPage.searchButton(tcc.page()));
+            PwUtils.waitForContainsText(TopicsPage.table(tcc.page()).rows().first(), topicName, false);
         }
-        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
+        PwUtils.waitForLocatorAndClick(TopicsPage.clearAllFiltersButton(tcc.page()));
     }
 
     /**
@@ -224,13 +227,13 @@ public class TopicChecks {
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);
         TopicsTestUtils.selectTopicStatus(tcc, status);
         // Use default max results per page or actual topic count if it's less than the maximum per page
-        PwUtils.waitForLocatorCount(tcc, Math.min(topicNames.size(), Constants.DEFAULT_TOPICS_PER_PAGE), TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorCount(Math.min(topicNames.size(), Constants.DEFAULT_TOPICS_PER_PAGE), TopicsPage.table(tcc.page()).rows(), false);
 
         for (String topicName : topicNames) {
             LOGGER.debug("Verifying topic [{}] is present in results filtered by status [{}]", topicName, status.getName());
-            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_TABLE_ROWS, topicName, true);
+            PwUtils.waitForContainsText(TopicsPage.table(tcc.page()).rows(), topicName, true);
         }
 
-        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
+        PwUtils.waitForLocatorAndClick(TopicsPage.clearAllFiltersButton(tcc.page()));
     }
 }

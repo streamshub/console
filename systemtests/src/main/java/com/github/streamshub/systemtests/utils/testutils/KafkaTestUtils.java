@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.utils.testutils;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.NodesPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.microsoft.playwright.Locator;
@@ -24,8 +24,8 @@ public class KafkaTestUtils {
      */
     public static void filterKnpByRole(TestCaseConfig tcc, String roleName) {
         LOGGER.info("Filtering Kafka Node Pool table by role {}", roleName);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_TYPE_ROLE_DROPDOWN_BUTTON);
-        List<Locator> knpItems = tcc.page().locator(NodesPageSelectors.NPS_FILTER_BY_NODEPOOL_ITEMS).all();
+        PwUtils.waitForLocatorAndClick(NodesPage.roleFilterButton(tcc.page()));
+        List<Locator> knpItems = NodesPage.filterMenuItems(tcc.page()).all();
         for (Locator knpItem : knpItems) {
             if (PwUtils.locatorContainsText(knpItem, roleName, false)) {
                 PwUtils.waitForLocatorAndClick(knpItem);
@@ -44,8 +44,8 @@ public class KafkaTestUtils {
      */
     public static void resetKnpFilters(TestCaseConfig tcc, int defaultNodeCount) {
         LOGGER.info("Clearing all Kafka Node Pool filters, expecting {} nodes to be listed", defaultNodeCount);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_CLEAR_ALL_FILTERS_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, defaultNodeCount, NodesPageSelectors.NPS_TABLE_BODY, true);
+        PwUtils.waitForLocatorAndClick(NodesPage.clearAllFiltersButton(tcc.page()));
+        PwUtils.waitForLocatorCount(defaultNodeCount, NodesPage.table(tcc.page()).rows(), true);
         PwUtils.reload(tcc);
     }
 }

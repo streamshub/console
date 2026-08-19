@@ -5,7 +5,7 @@ import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
+import com.github.streamshub.systemtests.locators.pages.MessagesPage;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.apicurio.ApicurioOperatorSetup;
 import com.github.streamshub.systemtests.setup.apicurio.ApicurioRegistry3Setup;
@@ -205,20 +205,12 @@ public class ApicurioST extends AbstractST {
 
         PwUtils.navigate(tcc, PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
 
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.getTableRowItem(1, 1));
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_NAME, schemaName, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_VALUE_FORMAT, artifactType, true);
-        // TODO: removed?
-        // String schemaLink = tcc.page().locator(MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_LINK).getAttribute(CssBuilder.HREF);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_CODE, PwUtils.getTrimmedText(schema), true);
+        PwUtils.waitForLocatorAndClick(MessagesPage.cellAt(tcc.page(), 1, 1));
+        PwUtils.waitForContainsText(MessagesPage.sidebarSchemaName(tcc.page()), schemaName, true);
+        PwUtils.waitForContainsText(MessagesPage.sidebarValueFormat(tcc.page()), artifactType, true);
+        PwUtils.waitForContainsText(MessagesPage.sidebarSchemaCode(tcc.page()), PwUtils.getTrimmedText(schema), true);
 
-        // TODO: removed?
-        // Content Id depends on how much artifacts are present in the registry - just like globalId
         LOGGER.info("Navigating to schema page to verify artifact content for {}", artifactId);
-        // PwUtils.navigate(tcc, PwPageUrls.getConsoleUrl(tcc) + schemaLink);
-        //
-        // PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SCHEMA_PAGE_HEADER, schemaName, true);
-        // PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SCHEMA_PAGE_CODE, PwUtils.getTrimmedText(schema), true);
 
         // Delete artifact
         LOGGER.info("Deleting artifact: {} from group: {}", artifactId, Constants.APICURIO_DEFAULT_GROUP);
@@ -325,21 +317,9 @@ public class ApicurioST extends AbstractST {
         String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
         PwUtils.navigate(tcc, PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
 
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.getTableRowItem(1, 1));
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_VALUE_FORMAT, valueFormat, true);
-
-        // TODO: removed?
-        // String currentMessage = tcc.page().locator(MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_FORMATED_PLAIN)
-        //     .getAttribute(Constants.VALUE_ATTRIBUTE)
-        //     .replaceAll("\\s", "")
-        //     .toLowerCase(Locale.ROOT);
-        //
-        // String expectedMessage = PwUtils.getTrimmedText(message)
-        //     .replaceAll("\\s", "")
-        //     .toLowerCase(Locale.ROOT);
-        //
-        // assertTrue(currentMessage.contains(expectedMessage));
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_CODE, PwUtils.getTrimmedText(message), false);
+        PwUtils.waitForLocatorAndClick(MessagesPage.cellAt(tcc.page(), 1, 1));
+        PwUtils.waitForContainsText(MessagesPage.sidebarValueFormat(tcc.page()), valueFormat, true);
+        PwUtils.waitForContainsText(MessagesPage.sidebarSchemaCode(tcc.page()), PwUtils.getTrimmedText(message), false);
 
         // Delete artifact
         LOGGER.info("Deleting artifact: {} from group: {}", artifactId, Constants.APICURIO_DEFAULT_GROUP);
