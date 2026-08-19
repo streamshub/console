@@ -1,14 +1,25 @@
 package com.github.streamshub.systemtests.utils.resourceutils.kafka;
 
-import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.Utils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
-import io.fabric8.kubernetes.api.model.Secret;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.function.Function;
+
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.ScramMechanism;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
+
+import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.Utils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+
+import io.fabric8.kubernetes.api.model.Secret;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 
 public class KafkaClientsUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaClientsUtils.class);
@@ -35,5 +46,42 @@ public class KafkaClientsUtils {
         return SaslConfigs.SASL_MECHANISM + "=" + ScramMechanism.SCRAM_SHA_512.mechanismName() + "\n" +
             CommonClientConfigs.SECURITY_PROTOCOL_CONFIG + "=" + securityProtocol + "\n" +
             SaslConfigs.SASL_JAAS_CONFIG + "=" + saslJaasConfigDecrypted + "\n";
+    }
+
+    public static <C> C createSecureClient(String namespace, String kafkaName, String userName, Function<Properties, C> factory) {
+        var kafka = ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName);
+
+        var bootstrapServers = Optional.ofNullable(kafka.getStatus())
+                .map(KafkaStatus::getListeners)
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .filter(l -> Constants.SECURE_LISTENER_NAME.equals(l.getName()))
+                .map(l -> l.getBootstrapServers())
+                .findFirst()
+                .orElseThrow();
+
+        String saslJaasConfig = Utils.decodeFromBase64(ResourceUtils.getKubeResource(
+                Secret.class,
+                namespace,
+                userName)
+            .getData()
+            .get(SaslConfigs.SASL_JAAS_CONFIG));
+
+        var caCertificate = Utils.decodeFromBase64(ResourceUtils.getKubeResource(
+                Secret.class,
+                namespace,
+                kafkaName + "-trustbundle")
+            .getData()
+            .get("cluster-ca.crt"));
+
+        Properties properties = new Properties();
+        properties.setProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_SSL.name);
+        properties.setProperty(SaslConfigs.SASL_MECHANISM, ScramMechanism.SCRAM_SHA_512.mechanismName());
+        properties.setProperty(SaslConfigs.SASL_JAAS_CONFIG, saslJaasConfig);
+        properties.setProperty(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, caCertificate);
+        properties.setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PEM");
+
+        return factory.apply(properties);
     }
 }

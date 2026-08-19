@@ -28,7 +28,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         if (tcc.isPresent()) {
             LOGGER.error("Exception has been thrown. Last known page url {}", tcc.get().page().url());
             LOGGER.info("Capturing failure screenshot and saving browser trace for test [{}]", extensionContext.getDisplayName());
-            PwUtils.screenshot(tcc.get(), tcc.get().kafkaName(), "exception");
+            PwUtils.screenshot(tcc.get(), "exception");
             tcc.get().stopAndSaveTracing();
         } else {
             LOGGER.warn("Exception has been thrown, but no TestCaseConfig instance was stored in the ExtensionContext - skipping screenshot/trace capture");
