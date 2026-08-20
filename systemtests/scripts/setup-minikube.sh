@@ -44,6 +44,7 @@ if ! minikube status ${MK_PROFILE_ARG} >/dev/null 2>&1 ; then
     --driver=${MINIKUBE_DRIVER:-kvm2} \
     --cpus=${MINIKUBE_CPU_COUNT:-6} \
     --memory=${MINIKUBE_MEMORY:-16384} \
+    --disk-size=${MINIKUBE_DISK_SIZE:-50g} \
     --container-runtime=${MINIKUBE_CONTAINER_RUNTIME:-docker} \
     --addons=registry,storage,ingress,ingress-dns,metrics-server \
     --insecure-registry="${IMAGE_REGISTRY},10.0.0.0/24" \

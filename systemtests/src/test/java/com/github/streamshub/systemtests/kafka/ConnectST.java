@@ -1,5 +1,14 @@
 package com.github.streamshub.systemtests.kafka;
 
+import java.util.concurrent.CompletableFuture;
+
+import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
@@ -22,19 +31,16 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaCmdUtils
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
+
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.connect.KafkaConnectResources;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
+import static com.github.streamshub.systemtests.utils.Utils.runAsyncWithContext;
+import static com.github.streamshub.systemtests.utils.Utils.runComposableAsyncWithContext;
 
 @Tag(TestTags.REGRESSION)
-public class ConnectST extends AbstractST {
+class ConnectST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(ConnectST.class);
     private TestCaseConfig tcc;
     private static final String CONNECT_CLUSTERS_WITH_SINK_SOURCE_CONNECTORS_BUCKET = "ConnectClustersWithSinkSourceConnectors";
@@ -197,60 +203,84 @@ public class ConnectST extends AbstractST {
      */
     @SetupTestBucket(CONNECT_CLUSTERS_WITH_SINK_SOURCE_CONNECTORS_BUCKET)
     public void prepareKafkaConnectClustersWithSinkSourceConnectors() {
-        // Deploy two kafka connect clusters
-        LOGGER.info("Deploying source Kafka Connect cluster '{}' with file plugin for Kafka '{}'", KAFKA_CONNECT_SRC_NAME, tcc.kafkaName());
-        KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(tcc.namespace(), KAFKA_CONNECT_SRC_NAME, tcc.kafkaName(), tcc.kafkaUserName(), tcc.consoleInstanceName());
+        var srcConn = runAsyncWithContext(() -> {
+            // Deploy two kafka connect clusters
+            LOGGER.info("Deploying source Kafka Connect cluster '{}' with file plugin for Kafka '{}'", KAFKA_CONNECT_SRC_NAME, tcc.kafkaName());
+            KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(
+                    tcc.namespace(),
+                    KAFKA_CONNECT_SRC_NAME,
+                    tcc.kafkaName(),
+                    tcc.kafkaUserName(),
+                    tcc.consoleInstanceName());
+        });
 
-        LOGGER.info("Deploying sink Kafka Connect cluster '{}' with file plugin for Kafka '{}'", KAFKA_CONNECT_SINK_NAME, tcc.kafkaName());
-        KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(tcc.namespace(), KAFKA_CONNECT_SINK_NAME, tcc.kafkaName(), tcc.kafkaUserName(), tcc.consoleInstanceName());
+        var snkConn = runAsyncWithContext(() -> {
+            LOGGER.info("Deploying sink Kafka Connect cluster '{}' with file plugin for Kafka '{}'", KAFKA_CONNECT_SINK_NAME, tcc.kafkaName());
+            KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(
+                    tcc.namespace(),
+                    KAFKA_CONNECT_SINK_NAME,
+                    tcc.kafkaName(),
+                    tcc.kafkaUserName(),
+                    tcc.consoleInstanceName());
+        });
 
-        // Deploy console
-        LOGGER.info("Deploying Console instance '{}' registered with Kafka Connect clusters '{}' and '{}'", tcc.consoleInstanceName(), KAFKA_CONNECT_SRC_NAME, KAFKA_CONNECT_SINK_NAME);
-        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName())
-            .editSpec()
-                .addNewKafkaConnectCluster()
-                    .withName(KAFKA_CONNECT_SRC_NAME)
-                    .withNamespace(tcc.namespace())
-                    .withKafkaClusters(tcc.namespace() + "/" + tcc.kafkaName())
-                    .withUrl(KafkaConnectResources.url(KAFKA_CONNECT_SRC_NAME, tcc.namespace(), Constants.CONNECT_SERVICE_PORT))
-                .endKafkaConnectCluster()
-                .addNewKafkaConnectCluster()
-                    .withName(KAFKA_CONNECT_SINK_NAME)
-                    .withNamespace(tcc.namespace())
-                    .withKafkaClusters(tcc.namespace() + "/" + tcc.kafkaName())
-                    .withUrl(KafkaConnectResources.url(KAFKA_CONNECT_SINK_NAME, tcc.namespace(), Constants.CONNECT_SERVICE_PORT))
-                .endKafkaConnectCluster()
-            .endSpec()
-            .build());
+        var console = runAsyncWithContext(() -> {
+            // Deploy console
+            LOGGER.info("Deploying Console instance '{}' registered with Kafka Connect clusters '{}' and '{}'", tcc.consoleInstanceName(), KAFKA_CONNECT_SRC_NAME, KAFKA_CONNECT_SINK_NAME);
+            ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(
+                    tcc.namespace(),
+                    tcc.consoleInstanceName(),
+                    tcc.kafkaName(),
+                    tcc.kafkaUserName())
+                .editSpec()
+                    .addNewKafkaConnectCluster()
+                        .withName(KAFKA_CONNECT_SRC_NAME)
+                        .withNamespace(tcc.namespace())
+                        .withKafkaClusters(tcc.namespace() + "/" + tcc.kafkaName())
+                        .withUrl(KafkaConnectResources.url(KAFKA_CONNECT_SRC_NAME, tcc.namespace(), Constants.CONNECT_SERVICE_PORT))
+                    .endKafkaConnectCluster()
+                    .addNewKafkaConnectCluster()
+                        .withName(KAFKA_CONNECT_SINK_NAME)
+                        .withNamespace(tcc.namespace())
+                        .withKafkaClusters(tcc.namespace() + "/" + tcc.kafkaName())
+                        .withUrl(KafkaConnectResources.url(KAFKA_CONNECT_SINK_NAME, tcc.namespace(), Constants.CONNECT_SERVICE_PORT))
+                    .endKafkaConnectCluster()
+                .endSpec()
+                .build());
+        });
 
-        LOGGER.debug("Creating connector topic '{}' with 1 partition, 1 replica, min ISR 1", CONNECTOR_TOPIC);
-        String topicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), CONNECTOR_TOPIC, 1, 1, 1, 1)
-            .getFirst()
-            .getMetadata()
-            .getName();
+        CompletableFuture.allOf(srcConn, snkConn, console)
+            .thenCompose(runComposableAsyncWithContext(() -> {
+                LOGGER.debug("Creating connector topic '{}' with 1 partition, 1 replica, min ISR 1", CONNECTOR_TOPIC);
+                String topicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), CONNECTOR_TOPIC, 1, 1, 1, 1)
+                    .getFirst()
+                    .getMetadata()
+                    .getName();
 
-        LOGGER.info("Creating source connector '{}' on cluster '{}' and sink connector '{}' on cluster '{}' for topic '{}'",
-            SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME, SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME, topicName);
-        KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultFileSourceConnector(tcc.namespace(), SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME, topicName, 2).build());
-        KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultFileSinkConnector(tcc.namespace(), SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME, topicName, 2).build());
+                LOGGER.info("Creating source connector '{}' on cluster '{}' and sink connector '{}' on cluster '{}' for topic '{}'",
+                    SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME, SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME, topicName);
+                KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultFileSourceConnector(tcc.namespace(), SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME, topicName, 2).build());
+                KubeResourceManager.get().createResourceWithWait(KafkaConnectSetup.defaultFileSinkConnector(tcc.namespace(), SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME, topicName, 2).build());
 
-        KafkaClients clients = new KafkaClientsBuilder()
-            .withNamespaceName(tcc.namespace())
-            .withTopicName(topicName)
-            .withMessageCount(Constants.MESSAGE_COUNT)
-            .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(topicName))
-            .withConsumerName(KafkaNamingUtils.consumerName(topicName))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(topicName))
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
-            .withUsername(tcc.kafkaUserName())
-            .withMessage(CONNECTOR_MESSAGE)
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
-            .build();
+                KafkaClients clients = new KafkaClientsBuilder()
+                    .withNamespaceName(tcc.namespace())
+                    .withTopicName(topicName)
+                    .withMessageCount(Constants.MESSAGE_COUNT)
+                    .withDelayMs(0)
+                    .withProducerName(KafkaNamingUtils.producerName(topicName))
+                    .withConsumerName(KafkaNamingUtils.consumerName(topicName))
+                    .withConsumerGroup(KafkaNamingUtils.consumerGroupName(topicName))
+                    .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+                    .withUsername(tcc.kafkaUserName())
+                    .withMessage(CONNECTOR_MESSAGE)
+                    .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+                    .build();
 
-        LOGGER.info("Producing and consuming {} messages on topic '{}' to populate connector data", Constants.MESSAGE_COUNT, topicName);
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
+                LOGGER.info("Producing and consuming {} messages on topic '{}' to populate connector data", Constants.MESSAGE_COUNT, topicName);
+                KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+                WaitUtils.waitForClientsSuccess(clients);
+            }))
+            .join();
 
         LOGGER.info("Waiting for connector '{}' to be available via Kafka Connect REST API on cluster '{}'", SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME);
         KafkaCmdUtils.waitForConnectorInServiceApi(tcc.namespace(), KAFKA_CONNECT_SRC_NAME, SOURCE_CONNECTOR_NAME);
