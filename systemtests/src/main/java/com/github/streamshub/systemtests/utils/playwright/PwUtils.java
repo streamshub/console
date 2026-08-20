@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests.utils.playwright;
 
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -364,10 +365,12 @@ public class PwUtils {
      * @return {@code true} if the attribute value contains the expected text, otherwise {@code false}
      */
     public static boolean attributeContainsText(Locator locator, String attribute, String expectedText, boolean exactCase) {
+        String escapedText = expectedText.replaceAll("[.*+?^${}()|\\[\\]\\\\]", "\\\\$0");
+
         try {
             PlaywrightAssertions.assertThat(locator).hasAttribute(
                     attribute,
-                    Pattern.compile(".*?" + Pattern.quote(expectedText) + ".*?"),
+                    Pattern.compile(".*?" + escapedText + ".*?"),
                     new HasAttributeOptions().setIgnoreCase(!exactCase));
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(
@@ -378,8 +381,8 @@ public class PwUtils {
             }
             return true;
         } catch (AssertionError e) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(
                         "Locator attribute [{}] value [{}] does NOT contain expected [{}]",
                         attribute,
                         locator.getAttribute(attribute),
@@ -561,18 +564,18 @@ public class PwUtils {
      */
     public static void screenshot(Page page, String additionalSuffix) {
         var context = KubeResourceManager.get().getTestContext();
+        var testClass = context.getTestClass().map(Class::getName).orElse("_UnknownTestClass");
+        var testMethod = context.getTestMethod().map(Method::getName).orElse("_unknownTestMethod");
+        var testDisplay = sanitizeForPath(KubeResourceManager.get().getTestContext().getDisplayName().replace("()", ""));
         var timestamp = LocalDateTime.now(ZoneId.systemDefault())
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss-SSS"));
         var filename = timestamp + (additionalSuffix.isEmpty() ? "" : "-") + additionalSuffix + ".png";
 
-        String screenshotName = String.join("/",
-                context.getTestClass().map(Class::getName).orElse("_UnknownTestClass"),
-                sanitizeForPath(KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "")),
-                filename)
-            .replaceAll("//+", "/");
+        Path screenshotPath = Path.of(testClass, testMethod, testDisplay, filename);
+        LOGGER.debug("Taking a screenshot: {}", screenshotPath);
 
-        LOGGER.debug("Taking a screenshot: {}", screenshotName);
-        page.screenshot(new Page.ScreenshotOptions().setPath(Path.of(Environment.SCREENSHOTS_DIR_PATH, screenshotName)));
+        Path screenshotRoot = Path.of(Environment.SCREENSHOTS_DIR_PATH);
+        page.screenshot(new Page.ScreenshotOptions().setPath(screenshotRoot.resolve(screenshotPath)));
     }
 
     /**

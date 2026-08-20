@@ -43,7 +43,7 @@ public class MessagesChecks {
         PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         if (expectedContent != null) {
             LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
+            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, "Value"), expectedContent, true);
         }
     }
 
@@ -77,7 +77,7 @@ public class MessagesChecks {
         PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         if (expectedContent != null) {
             LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
+            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, "Value"), expectedContent, true);
         }
     }
 
@@ -113,7 +113,7 @@ public class MessagesChecks {
         PwUtils.waitForLocatorCount(tcc, expectedCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         if (expectedContent != null) {
             LOGGER.debug("Verifying first search result row contains [{}]", expectedContent);
-            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), expectedContent, true);
+            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, "Value"), expectedContent, true);
         }
     }
 

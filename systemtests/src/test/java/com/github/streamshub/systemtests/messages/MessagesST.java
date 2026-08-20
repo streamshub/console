@@ -1,5 +1,24 @@
 package com.github.streamshub.systemtests.messages;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
@@ -25,31 +44,14 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUti
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.MessagesChecks;
 import com.github.streamshub.systemtests.utils.testutils.MessagesTestUtils;
-import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
-import java.util.stream.Stream;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
-public class MessagesST extends AbstractST {
+class MessagesST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesST.class);
     private static final String VARIOUS_MESSAGE_TYPES_BUCKET = "VariousMessageTypes";
     private TestCaseConfig tcc;
@@ -94,22 +96,22 @@ public class MessagesST extends AbstractST {
     public Stream<Arguments> searchUsingQueryScenarios() {
         return Stream.of(
             Arguments.of(50, "", Map.of(
-                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
-                MessagesPageSelectors.getTableRowItem(1, 1), "299")),
+                MessagesPageSelectors.getTableRowItem(1, "Value"), VALUE_FILTER + " - 99",
+                MessagesPageSelectors.getTableRowItem(1, "Offset"), "299")),
             Arguments.of(2, "messages=latest retrieve=2", Map.of(
-                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
-                MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98")),
+                MessagesPageSelectors.getTableRowItem(1, "Value"), VALUE_FILTER + " - 99",
+                MessagesPageSelectors.getTableRowItem(2, "Value"), VALUE_FILTER + " - 98")),
             Arguments.of(20, "messages=offset:150 retrieve=20", Map.of(
-                MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 50",
-                MessagesPageSelectors.getTableRowItem(1, 1), "150")),
+                MessagesPageSelectors.getTableRowItem(1, "Value"), HEADER_FILTER_MESSAGE + " - 50",
+                MessagesPageSelectors.getTableRowItem(1, "Offset"), "150")),
             Arguments.of(1, "messages=offset:10 retrieve=100 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
-                MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE + " - 42",
-                MessagesPageSelectors.getTableRowItem(1, 1), "42")),
+                MessagesPageSelectors.getTableRowItem(1, "Value"), KEY_FILTER_MESSAGE + " - 42",
+                MessagesPageSelectors.getTableRowItem(1, "Offset"), "42")),
             Arguments.of(0, "messages=latest retrieve=40 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
                 MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_NO_DATA, "No messages data")),
             Arguments.of(50, "messages=totalyNotOkay retrieve=-9", Map.of(
-                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
-                MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98"))
+                MessagesPageSelectors.getTableRowItem(1, "Value"), VALUE_FILTER + " - 99",
+                MessagesPageSelectors.getTableRowItem(2, "Value"), VALUE_FILTER + " - 98"))
         );
     }
 
@@ -169,7 +171,7 @@ public class MessagesST extends AbstractST {
         LOGGER.info("Filling search query [{}] and awaiting {} result row(s)", searchQuery, expectedResults);
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, searchQuery);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, expectedResults, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForLocatorCount(tcc, expectedResults, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, false);
 
         LOGGER.info("Validating {} result check(s) for query [{}]", checks.size(), searchQuery);
         checks.forEach((selector, expectedValue) -> {
@@ -364,8 +366,8 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
         LOGGER.info("Verifying default state: latest 50 messages shown, row 1 = offset 299, query = 'messages=latest retrieve=50'");
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
-        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, "Value"), VALUE_FILTER + " - 99", true);
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, "Offset"), "299"));
 
         LOGGER.info("Filtering messages by key [{}] with no offset specified - expecting 'No messages data'", KEY_FILTER);
         MessagesTestUtils.openFilterForm(tcc);
@@ -383,14 +385,14 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verifying key-filtered messages: expecting 5 rows (offsets 95-99, ascending) matching key [{}]", KEY_FILTER);
         MessagesChecks.checkFilterResults(tcc, "messages=offset:95 retrieve=50 orderID where=key", 5, Map.of(
-            MessagesPageSelectors.getTableRowItem(1, 1), "95",
-            MessagesPageSelectors.getTableRowItem(1, 3), KEY_FILTER));
+            MessagesPageSelectors.getTableRowItem(1, "Offset"), "95",
+            MessagesPageSelectors.getTableRowItem(1, "Key"), KEY_FILTER));
 
         LOGGER.debug("Resetting key filter - expecting fallback to default latest-50 view");
         MessagesTestUtils.openFilterForm(tcc);
         MessagesTestUtils.resetFilters(tcc);
         // Order is DESC
-        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, "Offset"), "299"));
 
         LOGGER.info("Filtering messages by Headers lookup [{}] at offset 95 - expecting 45 matching messages", HEADER_FILTER_LOOK_UP_TEXT);
         MessagesTestUtils.openFilterForm(tcc);
@@ -403,15 +405,15 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verifying header-filtered messages: expecting 45 rows (offsets 100-144, ascending) starting with value [{} - 0]", HEADER_FILTER_MESSAGE);
         MessagesChecks.checkFilterResults(tcc, "messages=offset:95 retrieve=50 " + HEADER_FILTER_LOOK_UP_TEXT + " where=headers", 45, Map.of(
-            MessagesPageSelectors.getTableRowItem(1, 1), "100",
-            MessagesPageSelectors.getTableRowItem(1, 4), HEADER_FILTER_LOOK_UP_TEXT,
-            MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 0"));
+            MessagesPageSelectors.getTableRowItem(1, "Offset"), "100",
+            MessagesPageSelectors.getTableRowItem(1, "Headers"), HEADER_FILTER_LOOK_UP_TEXT,
+            MessagesPageSelectors.getTableRowItem(1, "Value"), HEADER_FILTER_MESSAGE + " - 0"));
 
         LOGGER.debug("Resetting header filter - expecting fallback to default latest-50 view");
         MessagesTestUtils.openFilterForm(tcc);
         MessagesTestUtils.resetFilters(tcc);
         // Order is DESC
-        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, 1), "299"));
+        MessagesChecks.checkFilterResults(tcc, "messages=latest retrieve=50", 50, Map.of(MessagesPageSelectors.getTableRowItem(1, "Offset"), "299"));
 
         LOGGER.info("Filtering messages by Value [{}] at offset 195 - expecting 45 matching messages", VALUE_FILTER);
         MessagesTestUtils.openFilterForm(tcc);
@@ -424,8 +426,8 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verifying value-filtered messages: expecting 45 rows (offsets 200-244, ascending) starting with value [{} - 0]", VALUE_FILTER);
         MessagesChecks.checkFilterResults(tcc, "messages=offset:195 retrieve=50 " + VALUE_FILTER + " where=value", 45, Map.of(
-            MessagesPageSelectors.getTableRowItem(1, 1), "200",
-            MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0"));
+            MessagesPageSelectors.getTableRowItem(1, "Offset"), "200",
+            MessagesPageSelectors.getTableRowItem(1, "Value"), VALUE_FILTER + " - 0"));
 
         LOGGER.info("Completed popover filter-form scenarios (key, headers, value) on topic '{}'", kafkaTopicName);
     }
