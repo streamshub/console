@@ -91,7 +91,11 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
                     method.getAnnotation(SetupTestBucket.class).value().equals(testBucketGroupName)) {
                     // Called method needs to be either explicitly public or needs to be -> `method.setAccessible(true)`
                     LOGGER.info("Invoking @SetupTestBucket method [{}] for TestBucket [{}]", method.getName(), testBucketGroupName);
-                    method.invoke(testMethodContext.getRequiredTestInstance());
+                    if (method.trySetAccessible()) {
+                        method.invoke(testMethodContext.getRequiredTestInstance());
+                    } else {
+                        throw new IllegalStateException("Unable to access @SetupTestBucket method " + method);
+                    }
                 }
             }
         } else {
@@ -138,9 +142,14 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
             .mapToInt(sourceName -> {
                 try {
                     Method sourceMethod = testMethod.getDeclaringClass().getDeclaredMethod(sourceName);
-                    // Use only if method is not explicitly public
-                    // sourceMethod.setAccessible(true);
-                    Object value = sourceMethod.invoke(testMethodContext.getRequiredTestInstance());
+                    final Object value;
+
+                    // In case method is not explicitly public
+                    if (sourceMethod.trySetAccessible()) {
+                        value = sourceMethod.invoke(testMethodContext.getRequiredTestInstance());
+                    } else {
+                        throw new IllegalStateException("Unable to access @SetupTestBucket method " + sourceMethod);
+                    }
 
                     if (value instanceof Stream<?> stream) {
                         int count = (int) stream.count();
