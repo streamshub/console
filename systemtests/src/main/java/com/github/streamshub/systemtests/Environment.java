@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import org.apache.logging.log4j.Logger;
 
@@ -124,13 +125,19 @@ public class Environment {
      * Resolves the Console Operator version under test: {@link #CONSOLE_OPERATOR_VERSION} if set,
      * otherwise the {@code operator.version} system property (populated by the Maven build with
      * the current {@code project.version} — see systemtests/pom.xml). Empty if neither is set.
-     * Not lowercased: must match the case used in the Quarkus-generated Kubernetes manifest's
-     * {@code app.kubernetes.io/version} label.
+     * 
+     * The provided transformer allows the caller to modify the system property if needed. E.g.
+     * it must not be lower-cased for YAML testing in order to match the case used in the 
+     * Quarkus-generated Kubernetes manifest's {@code app.kubernetes.io/version} label, but it
+     * must be lower-cased for the OLM version scheme.
      */
-    public static String getConsoleOperatorVersion() {
+    public static String getConsoleOperatorVersion(UnaryOperator<String> systemPropertyTransformer) {
         return Optional.of(CONSOLE_OPERATOR_VERSION)
             .filter(Predicate.not(String::isBlank))
-            .orElseGet(() -> System.getProperty("operator.version", ""));
+            .orElseGet(() -> {
+                var version = System.getProperty("operator.version", "");
+                return systemPropertyTransformer.apply(version);
+            });
     }
 
     public static boolean isTestClientsPullSecretPresent() {
