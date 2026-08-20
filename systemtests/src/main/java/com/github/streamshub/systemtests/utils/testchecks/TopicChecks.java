@@ -182,7 +182,7 @@ public class TopicChecks {
             LOGGER.debug("Verifying filtered result shows topic name [{}]", topicName);
             PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, topicName);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
-            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
+            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, "Name"), topicName, false);
         }
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
     }
@@ -204,7 +204,7 @@ public class TopicChecks {
             LOGGER.debug("Verifying filtered result shows topic [{}] for id [{}]", topicName, topicId);
             PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, topicId);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
-            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), topicName, false);
+            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, "Name"), topicName, false);
         }
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
     }
@@ -228,7 +228,7 @@ public class TopicChecks {
 
         for (String topicName : topicNames) {
             LOGGER.debug("Verifying topic [{}] is present in results filtered by status [{}]", topicName, status.getName());
-            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_TABLE_ROWS, topicName, true);
+            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_TABLE_BODY, topicName, true);
         }
 
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);

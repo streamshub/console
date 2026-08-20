@@ -7,9 +7,13 @@ import java.util.function.Function;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.ScramMechanism;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.logging.log4j.Logger;
 
 import com.github.streamshub.systemtests.constants.Constants;
@@ -46,6 +50,13 @@ public class KafkaClientsUtils {
         return SaslConfigs.SASL_MECHANISM + "=" + ScramMechanism.SCRAM_SHA_512.mechanismName() + "\n" +
             CommonClientConfigs.SECURITY_PROTOCOL_CONFIG + "=" + securityProtocol + "\n" +
             SaslConfigs.SASL_JAAS_CONFIG + "=" + saslJaasConfigDecrypted + "\n";
+    }
+
+    public static Producer<String, String> stringProducer(Properties properties) {
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.put(ProducerConfig.ACKS_CONFIG, "all");
+        return new KafkaProducer<>(properties);
     }
 
     public static <C> C createSecureClient(String namespace, String kafkaName, String userName, Function<Properties, C> factory) {
