@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
@@ -203,6 +204,8 @@ class ConnectST extends AbstractST {
      */
     @SetupTestBucket(CONNECT_CLUSTERS_WITH_SINK_SOURCE_CONNECTORS_BUCKET)
     public void prepareKafkaConnectClustersWithSinkSourceConnectors() {
+        CompletableFuture<Void> connect;
+
         var srcConn = runAsyncWithContext(() -> {
             // Deploy two kafka connect clusters
             LOGGER.info("Deploying source Kafka Connect cluster '{}' with file plugin for Kafka '{}'", KAFKA_CONNECT_SRC_NAME, tcc.kafkaName());
@@ -214,7 +217,7 @@ class ConnectST extends AbstractST {
                     tcc.consoleInstanceName());
         });
 
-        var snkConn = runAsyncWithContext(() -> {
+        Runnable deployConnectSink = () -> {
             LOGGER.info("Deploying sink Kafka Connect cluster '{}' with file plugin for Kafka '{}'", KAFKA_CONNECT_SINK_NAME, tcc.kafkaName());
             KafkaConnectSetup.setupDefaultKafkaDefaultConnectWithFilePluginIfNeeded(
                     tcc.namespace(),
@@ -222,7 +225,15 @@ class ConnectST extends AbstractST {
                     tcc.kafkaName(),
                     tcc.kafkaUserName(),
                     tcc.consoleInstanceName());
-        });
+        };
+
+        if (Environment.CONNECT_DEPLOY_CONCURRENT) {
+            LOGGER.info("CONNECT_DEPLOY_CONCURRENT is true, deploying {} and {} concurrently", KAFKA_CONNECT_SRC_NAME, KAFKA_CONNECT_SINK_NAME);
+            connect = CompletableFuture.allOf(srcConn, runAsyncWithContext(deployConnectSink));
+        } else {
+            LOGGER.info("CONNECT_DEPLOY_CONCURRENT is false, deploying {} and {} sequentially", KAFKA_CONNECT_SRC_NAME, KAFKA_CONNECT_SINK_NAME);
+            connect = srcConn.thenComposeAsync(runComposableAsyncWithContext(deployConnectSink));
+        }
 
         var console = runAsyncWithContext(() -> {
             // Deploy console
@@ -249,7 +260,7 @@ class ConnectST extends AbstractST {
                 .build());
         });
 
-        CompletableFuture.allOf(srcConn, snkConn, console)
+        CompletableFuture.allOf(connect, console)
             .thenCompose(runComposableAsyncWithContext(() -> {
                 LOGGER.debug("Creating connector topic '{}' with 1 partition, 1 replica, min ISR 1", CONNECTOR_TOPIC);
                 String topicName = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), CONNECTOR_TOPIC, 1, 1, 1, 1)

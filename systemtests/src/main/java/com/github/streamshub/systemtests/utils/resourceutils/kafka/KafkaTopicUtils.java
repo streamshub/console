@@ -397,14 +397,14 @@ public class KafkaTopicUtils {
 
     private static void produce(Producer<String, String> producer, List<KafkaTopic> topics, int recordCount) {
         for (KafkaTopic kt : topics) {
-            IntStream.rangeClosed(0, recordCount).forEach(i -> {
+            IntStream.rangeClosed(0, recordCount).forEach(i ->
                 producer.send(new ProducerRecord<String, String>(
                         kt.getMetadata().getName(),
                         i % kt.getSpec().getPartitions(),
                         "key-" + i,
                         "value-" + i
-                ));
-            });
+                ))
+            );
         }
     }
 }

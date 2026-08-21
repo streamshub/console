@@ -84,6 +84,7 @@ public class Environment {
     public static final String CONNECT_IMAGE_WITH_FILE_PLUGIN = ENVS.getOrDefault("CONNECT_IMAGE_WITH_FILE_PLUGIN", "");
     public static final String CONNECT_BUILD_IMAGE_PATH = ENVS.getOrDefault("CONNECT_BUILD_IMAGE_PATH", "");
     public static final String CONNECT_BUILD_REGISTRY_SECRET = ENVS.getOrDefault("CONNECT_BUILD_REGISTRY_SECRET", "");
+    public static final boolean CONNECT_DEPLOY_CONCURRENT = ENVS.getOrDefault("CONNECT_DEPLOY_CONCURRENT", Boolean::parseBoolean, false);
 
     public static final String TEST_CLIENTS_PULL_SECRET = ENVS.getOrDefault("TEST_CLIENTS_PULL_SECRET", "");
 
