@@ -323,7 +323,7 @@ class TopicST extends AbstractST {
                 KafkaNamingUtils.kafkaUserName(tcc.kafkaName()),
                 KafkaClientsUtils::stringProducer)) {
 
-            IntStream.rangeClosed(0, Constants.MESSAGE_COUNT_HIGH).forEach(i -> {
+            IntStream.range(0, Constants.MESSAGE_COUNT_HIGH).forEach(i -> {
                 producer.send(new ProducerRecord<String, String>(
                         topicWithMoreMessages,
                         "key-" + i,
