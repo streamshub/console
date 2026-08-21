@@ -79,6 +79,18 @@ public class KafkaTopicUtils {
         return ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, namespace, topicNamePrefix);
     }
 
+    public static List<KafkaTopic> setupTopicsIfNeededAndReturn(String namespace, String kafkaName, List<String> topicNames, int partitions, int replicas, int minIsr) {
+        LOGGER.info("Create {} topics for cluster {} with names {}", topicNames.size(), kafkaName, topicNames);
+
+        List<KafkaTopic> topics = topicNames.stream()
+            .map(name -> defaultTopic(namespace, kafkaName, name, partitions, replicas, minIsr).build())
+            .toList();
+
+        LOGGER.debug("Creating {} KafkaTopic resource(s) in namespace {} with names {} ", topics.size(), namespace, topicNames);
+        KubeResourceManager.get().createOrUpdateResourceAsyncWait(topics.toArray(new KafkaTopic[0]));
+        return topics;
+    }
+
     /**
      * Sets up a list of Kafka topics that will become under-replicated by intentionally scaling down brokers.
      *
