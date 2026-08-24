@@ -31,6 +31,25 @@ public class CssBuilder {
         }
     }
 
+    public CssBuilder withAttributeSelector(String name, String operator, String value) {
+        this.cssClass.append('[');
+        this.cssClass.append(name);
+        this.cssClass.append(operator);
+        this.cssClass.append('"');
+        this.cssClass.append(value);
+        this.cssClass.append('"');
+        this.cssClass.append(']');
+        return this;
+    }
+
+    public CssBuilder withAriaLabel(String label) {
+        return withAttributeSelector("aria-label", "=", label);
+    }
+
+    public CssBuilder withDataLabel(String label) {
+        return withAttributeSelector("data-label", "=", label);
+    }
+
     // -------------------
     // Combinators
     // -------------------

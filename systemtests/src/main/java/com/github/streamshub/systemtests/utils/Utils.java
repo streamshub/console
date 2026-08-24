@@ -16,7 +16,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 
 public class Utils {
     private static final Logger LOGGER = LogWrapper.getLogger(Utils.class);
@@ -147,5 +149,26 @@ public class Utils {
             Thread.currentThread().interrupt();
             LOGGER.error("Sleep was interrupted due to: {}", e.getMessage());
         }
+    }
+
+    public static CompletableFuture<Void> runAsyncWithContext(Runnable runnable) {
+        return runAsyncWithContext(KubeResourceManager.get().getTestContext(), runnable);
+    }
+
+    public static Function<Void, CompletableFuture<Void>> runComposableAsyncWithContext(Runnable runnable) {
+        var context = KubeResourceManager.get().getTestContext();
+        return nothing -> runAsyncWithContext(context, runnable);
+    }
+
+    public static CompletableFuture<Void> runAsyncWithContext(ExtensionContext context, Runnable runnable) {
+        return CompletableFuture.runAsync(() -> {
+            KubeResourceManager.get().setTestContext(context);
+
+            try {
+                runnable.run();
+            } finally {
+                KubeResourceManager.get().cleanTestContext();
+            }
+        });
     }
 }

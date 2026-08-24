@@ -35,7 +35,7 @@ public class TopicsTestUtils {
             Locator locator = tcc.page().locator(selectorWithAttribute);
 
             if (locator == null || locator.isHidden()) {
-                PwUtils.screenshot(tcc, tcc.kafkaName(), "topicStatusFilterInvisible");
+                PwUtils.screenshot(tcc, "topicStatusFilterInvisible");
                 throw new IllegalStateException("Locator was not visible");
             }
 

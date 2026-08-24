@@ -30,18 +30,18 @@ public class LogWrapper {
         ConsoleAppender consoleAppender = ConsoleAppender.newBuilder()
                 .setName(STDOUT)
                 .setLayout(PatternLayout.newBuilder()
-                    .withPattern("%d{yyyy-MM-dd HH:mm:ss}{GMT} [%thread] %highlight{%-5p} [%c{1}:%L] %m%n")
+                    .setPattern("%d{yyyy-MM-dd HH:mm:ss}{GMT} [%thread] %highlight{%-5p} [%c{1}:%L] %m%n")
                     .build())
                 .build();
         consoleAppender.start();
 
         RollingFileAppender rollingAppender = RollingFileAppender.newBuilder()
                 .setName(ROLLING_FILE)
-                .withFileName(Environment.TEST_LOG_DIR + "/streamshub-debug-" + Environment.BUILD_ID + ".log")
-                .withFilePattern(Environment.TEST_LOG_DIR + "/streamshub-debug-%d{yyyy-MM-dd-HH-mm-ss}-%i.log.gz")
-                .withPolicy(SizeBasedTriggeringPolicy.createPolicy("100MB"))
-                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax("5").build())
-                .setLayout(PatternLayout.newBuilder().withPattern("%d{yyyy-MM-dd HH:mm:ss}{GMT} %-5p [%c{1}:%L] %m%n").build())
+                .setFileName(Environment.TEST_LOG_DIR + "/streamshub-debug-" + Environment.BUILD_ID + ".log")
+                .setFilePattern(Environment.TEST_LOG_DIR + "/streamshub-debug-%d{yyyy-MM-dd-HH-mm-ss}-%i.log.gz")
+                .setPolicy(SizeBasedTriggeringPolicy.createPolicy("100MB"))
+                .setStrategy(DefaultRolloverStrategy.newBuilder().setMax("5").build())
+                .setLayout(PatternLayout.newBuilder().setPattern("%d{yyyy-MM-dd HH:mm:ss}{GMT} %-5p [%c{1}:%L] %m%n").build())
                 .build();
         rollingAppender.start();
 

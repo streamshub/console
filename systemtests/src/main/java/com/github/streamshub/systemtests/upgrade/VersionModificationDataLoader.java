@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,7 +42,7 @@ public class VersionModificationDataLoader {
     private void loadYamlUpgradeData() {
         String oldOperatorVersion = Environment.OLD_CONSOLE_OPERATOR_VERSION;
         String oldOperatorCrdsUrl = Environment.OLD_CONSOLE_OPERATOR_CRDS_URL;
-        String newOperatorVersion = Environment.getConsoleOperatorVersion();
+        String newOperatorVersion = Environment.getConsoleOperatorVersion(UnaryOperator.identity());
         String newOperatorCrdsUrl = resolveNewOperatorCrdsUrl(newOperatorVersion);
 
         this.yamlUpgradeData = new YamlVersionModificationData(oldOperatorVersion, newOperatorVersion, oldOperatorCrdsUrl, newOperatorCrdsUrl);

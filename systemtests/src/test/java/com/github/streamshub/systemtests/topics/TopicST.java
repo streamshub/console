@@ -1,11 +1,25 @@
 package com.github.streamshub.systemtests.topics;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.IntStream;
+
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
-import com.github.streamshub.systemtests.clients.KafkaClients;
-import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.FilterType;
@@ -24,33 +38,21 @@ import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaCmdUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
-import io.fabric8.kubernetes.api.model.Pod;
+
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-
-import java.util.List;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
+import static com.github.streamshub.systemtests.utils.Utils.runAsyncWithContext;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class TopicST extends AbstractST {
+class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
     private static final String VARIOUS_TOPIC_TYPES_BUCKET = "VariousTopicTypes";
     private TestCaseConfig tcc;
@@ -140,10 +142,18 @@ public class TopicST extends AbstractST {
         LOGGER.info("Verify topics filtering by name, id, and status");
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()));
 
-        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).getFirst().getMetadata().getName();
-        LOGGER.debug("Using broker pod '{}' to list unmanaged replicated topics with prefix '{}'", brokerPodName, Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX);
-        final List<String> unmanagedReplicatedTopicsNames = KafkaCmdUtils.listKafkaTopicsByPrefix(tcc.namespace(), tcc.kafkaName(), brokerPodName,
-            KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX);
+        final List<String> unmanagedReplicatedTopicsNames;
+
+        try (Admin admin = KafkaClientsUtils.createSecureClient(tcc.namespace(), tcc.kafkaName(), tcc.kafkaUserName(), Admin::create)) {
+            unmanagedReplicatedTopicsNames = admin.listTopics()
+                    .namesToListings()
+                    .toCompletionStage()
+                    .toCompletableFuture()
+                    .join()
+                    .keySet()
+                    .stream()
+                    .toList();
+        }
 
         LOGGER.info("Verify filtering topics by name using {} unmanaged replicated topic(s)", unmanagedReplicatedTopicsNames.size());
         TopicChecks.checkTopicsFilterByName(tcc, unmanagedReplicatedTopicsNames);
@@ -196,7 +206,7 @@ public class TopicST extends AbstractST {
         TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME_BUTTON, "descending");
         PwUtils.waitForLocatorCount(tcc, UNAVAILABLE_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         LOGGER.debug("Expecting topic '{}' to appear first after descending name sort", unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1));
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItems(1), unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1), true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, "Name"), unavailableTopicsNames.get(UNAVAILABLE_TOPICS_COUNT - 1), true);
 
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
 
@@ -214,7 +224,7 @@ public class TopicST extends AbstractST {
         // Last managed replicated has utilized more storage
         final String topicWithLargestStorageUsage = Constants.REPLICATED_TOPICS_PREFIX + "-" + (REPLICATED_TOPICS_COUNT - 1);
         LOGGER.debug("Expecting topic '{}' with the highest storage usage to appear first", topicWithLargestStorageUsage);
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, 1), topicWithLargestStorageUsage, true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTopicsTableRowItem(1, "Name"), topicWithLargestStorageUsage, true);
     }
 
     /**
@@ -301,34 +311,30 @@ public class TopicST extends AbstractST {
 
         LOGGER.info("Create all required topic types: {} replicated, {} unmanaged replicated, {} under-replicated, {} unavailable",
             TOTAL_REPLICATED_TOPICS_COUNT, UNMANAGED_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
-        final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
 
         LOGGER.info("Create {} fully replicated topic(s) with prefix '{}'", REPLICATED_TOPICS_COUNT, Constants.REPLICATED_TOPICS_PREFIX);
         List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, 1, 1, 1);
         // Produce extra messages for the last fullyReplicated topic - use higher message count number to take more storage
         String topicWithMoreMessages = replicatedTopics.get(REPLICATED_TOPICS_COUNT - 1).getMetadata().getName();
         LOGGER.info("Produce {} extra message(s) to topic '{}' to increase its storage usage", Constants.MESSAGE_COUNT_HIGH, topicWithMoreMessages);
-        KafkaClients clients = new KafkaClientsBuilder()
-            .withNamespaceName(tcc.namespace())
-            .withTopicName(topicWithMoreMessages)
-            .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
-            .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(topicWithMoreMessages))
-            .withConsumerName(KafkaNamingUtils.consumerName(topicWithMoreMessages))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(topicWithMoreMessages))
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
-            .withUsername(tcc.kafkaUserName())
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
-            .build();
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        LOGGER.debug("Waiting for producer/consumer clients of topic '{}' to finish successfully", topicWithMoreMessages);
-        WaitUtils.waitForClientsSuccess(clients);
+        try (Producer<String, String> producer = KafkaClientsUtils.createSecureClient(
+                tcc.namespace(),
+                tcc.kafkaName(),
+                KafkaNamingUtils.kafkaUserName(tcc.kafkaName()),
+                KafkaClientsUtils::stringProducer)) {
 
-        LOGGER.info("Create {} unmanaged replicated, {} under-replicated (broker replicas scaled {} -> {}), and {} unavailable topic(s)",
-            UNMANAGED_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, Constants.REGULAR_BROKER_REPLICAS, scaledUpBrokerReplicas, UNAVAILABLE_TOPICS_COUNT);
+            IntStream.range(0, Constants.MESSAGE_COUNT_HIGH).forEach(i -> {
+                producer.send(new ProducerRecord<String, String>(
+                        topicWithMoreMessages,
+                        "key-" + i,
+                        "value-" + i
+                ));
+            });
+        }
+
         KafkaTopicUtils.setupUnmanagedUnderReplicatedAndUnavailableTopics(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()),
             new KafkaTopicUtils.TopicTypeSpec(Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1),
-            new KafkaTopicUtils.TopicTypeSpec(Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas),
+            new KafkaTopicUtils.TopicTypeSpec(Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.defaultMessageCount(), 1, Constants.REGULAR_BROKER_REPLICAS + 1, Constants.REGULAR_BROKER_REPLICAS + 1),
             new KafkaTopicUtils.TopicTypeSpec(Constants.UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.defaultMessageCount(), 1, 1, 1));
     }
 
@@ -338,8 +344,21 @@ public class TopicST extends AbstractST {
         tcc = getTestCaseConfig();
         // Prepare test environment
         NamespaceUtils.prepareNamespace(tcc.namespace());
-        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
-        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
+
+        var kafkaSetup = runAsyncWithContext(() -> {
+            KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
+        });
+
+        var consoleSetup = runAsyncWithContext(() -> {
+            ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(
+                    tcc.namespace(),
+                    tcc.consoleInstanceName(),
+                    tcc.kafkaName(),
+                    tcc.kafkaUserName())
+                .build());
+        });
+
+        CompletableFuture.allOf(kafkaSetup, consoleSetup).join();
         PwUtils.login(tcc);
     }
 

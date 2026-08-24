@@ -1,5 +1,23 @@
 package com.github.streamshub.systemtests.auth;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.common.GroupState;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.clients.KafkaClients;
@@ -7,6 +25,7 @@ import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.AuthTestConstants;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
+import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssSelectors;
@@ -20,6 +39,7 @@ import com.github.streamshub.systemtests.setup.keycloak.KeycloakInstanceSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakOperatorSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
@@ -31,24 +51,19 @@ import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUti
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
+
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import io.skodjob.kubetest4j.wait.Wait;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
+import static com.github.streamshub.systemtests.utils.Utils.runAsyncWithContext;
+import static com.github.streamshub.systemtests.utils.Utils.runComposableAsyncWithContext;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class AuthST extends AbstractST {
+class AuthST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AuthST.class);
     private TestCaseConfig tcc;
 
@@ -112,12 +127,11 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_NO_RESULTS_FOUND, "No results found", false);
 
-        // TODO: enable once fixed
         // // Logout and check user is no longer logged in
-        // PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
-        // PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        // Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        // assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
 
     /**
@@ -153,8 +167,8 @@ public class AuthST extends AbstractST {
         PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_ADMIN_ALICE, true);
 
         LOGGER.info("Verify dashboard lists both Kafka clusters '{}' and '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
-        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, true);
         PwUtils.waitForLocatorCount(tcc, 2, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS + ":first-child", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, true);
 
         LOGGER.info("Navigate to Dev Kafka cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
         PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
@@ -204,17 +218,16 @@ public class AuthST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
-        // TODO: enable once fixed
         // // Logout and check user is no longer logged in
-        // PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
-        // // Dev
-        // PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        // Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        // assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
-        // // Admin
-        // PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
-        // Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        // assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
+        // Dev
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+        // Admin
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
     }
 
     /**
@@ -274,13 +287,29 @@ public class AuthST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403", true);
 
-        // TODO: enable once fixed
-        // LOGGER.info("Verify consumer groups page is unavailable");
-        // PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""));
-        // PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403 Forbidden", true);
-        //
+        LOGGER.info("Verify consumer groups page is unavailable");
+        String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "unauthorized-groups";
+        KafkaClients clients = new KafkaClientsBuilder()
+            .withNamespaceName(tcc.namespace())
+            .withTopicName(newTopicName)
+            .withMessageCount(Constants.MESSAGE_COUNT)
+            .withDelayMs(0)
+            .withProducerName(KafkaNamingUtils.producerName(newTopicName))
+            .withConsumerName(KafkaNamingUtils.consumerName(newTopicName))
+            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(newTopicName))
+            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
+            .withUsername(KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
+            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME), SecurityProtocol.SASL_PLAINTEXT))
+            .build();
+
+        KubeResourceManager.get().createResourceAsyncWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+        String consumerGroupEncodedName = Identifiers.encode(KafkaNamingUtils.consumerGroupName(newTopicName));
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, consumerGroupEncodedName));
+        PwUtils.waitForContainsText(tcc, CssSelectors.BODY_EMPTY_STATE, "403", true);
+
         // Logout and check user is no longer logged in
-        //PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
     }
 
     /**
@@ -373,9 +402,8 @@ public class AuthST extends AbstractST {
 
         LOGGER.info("Wait for producer and consumer clients on topic '{}' to complete successfully", newTopicName);
         WaitUtils.waitForClientsSuccess(clients);
-        // TODO: enable once fixed
         // Logout and check user is no longer logged in
-        //PwUtils.logoutUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
     }
 
     @BeforeAll
@@ -393,31 +421,71 @@ public class AuthST extends AbstractST {
         keycloakInstance = new KeycloakInstanceSetup(tcc.namespace());
         keycloakInstance.setup();
 
+        var kcImp = runAsyncWithContext(() -> {
+            // Import console auth realm
+            keycloakInstance.importConsoleRealm(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true),
+                false,
+                KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_USER_MAPPING);
+        });
+
         // Setup Kafkas for both teams
-        // Dev Kafka
-        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
-        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
-            false,
-            AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-            AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 1, 1, 1);
+        var kDev = runAsyncWithContext(() -> {
+            // Dev Kafka
+            KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+            KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+                false,
+                AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+                AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 1, 1, 1);
+        });
 
-        // Admin Kafka
-        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
-        KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME,
-            false,
-            AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-            AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, 1, 1, 1);
+        var kAdm = runAsyncWithContext(() -> {
+            // Admin Kafka
+            KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+            KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME,
+                false,
+                AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+                AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, 1, 1, 1);
+        });
 
-        // Import console auth realm
-        keycloakInstance.importConsoleRealm(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true),
-            false,
-            KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_USER_MAPPING);
+        CompletableFuture.allOf(kcImp, kDev, kAdm)
+            .thenCompose(runComposableAsyncWithContext(() -> {
+                // Console instance
+                ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(),
+                        keycloakInstance, KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING).build());
+            }))
+            .thenCompose(runComposableAsyncWithContext(() -> {
+                ConsoleUtils.patchConsoleNginxBuffer(tcc.namespace(), tcc.consoleInstanceName());
+            }))
+            .join();
+    }
 
-        // Console instance
-        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(),
-            keycloakInstance, KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING).build());
+    @BeforeEach
+    void testCaseSetup() {
+        for (var clusterName : List.of(AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME)) {
+            try (Admin admin = KafkaClientsUtils.createSecureClient(
+                    tcc.namespace(),
+                    clusterName, 
+                    KafkaNamingUtils.kafkaUserName(clusterName),
+                    Admin::create)) {
+                Wait.until("Groups deleted", 2_000, 120_000, () -> {
+                    var groups = admin.listGroups().all().toCompletionStage().toCompletableFuture().join();
 
-        ConsoleUtils.patchConsoleNginxBuffer(tcc.namespace(), tcc.consoleInstanceName());
+                    if (!groups.isEmpty()) {
+                        var emptyGroups = groups.stream()
+                                .filter(l -> l.groupState().map(GroupState.EMPTY::equals).orElse(false))
+                                .map(l -> l.groupId()).toList();
+
+                        if (!emptyGroups.isEmpty()) {
+                            admin.deleteConsumerGroups(emptyGroups).all().toCompletionStage().toCompletableFuture().join();
+                        }
+
+                        groups = admin.listGroups().all().toCompletionStage().toCompletableFuture().join();
+                    }
+
+                    return groups.isEmpty();
+                });
+            }
+        }
     }
 
     @AfterEach

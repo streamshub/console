@@ -1,27 +1,35 @@
 package com.github.streamshub.systemtests.utils.resourceutils.kafka;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.NewPartitionReassignment;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.logging.log4j.Logger;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class KafkaTopicUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaTopicUtils.class);
@@ -69,6 +77,18 @@ public class KafkaTopicUtils {
 
         LOGGER.info("Topics with prefix {} are already present, skipping creation", topicNamePrefix);
         return ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, namespace, topicNamePrefix);
+    }
+
+    public static List<KafkaTopic> setupTopicsIfNeededAndReturn(String namespace, String kafkaName, List<String> topicNames, int partitions, int replicas, int minIsr) {
+        LOGGER.info("Create {} topics for cluster {} with names {}", topicNames.size(), kafkaName, topicNames);
+
+        List<KafkaTopic> topics = topicNames.stream()
+            .map(name -> defaultTopic(namespace, kafkaName, name, partitions, replicas, minIsr).build())
+            .toList();
+
+        LOGGER.debug("Creating {} KafkaTopic resource(s) in namespace {} with names {} ", topics.size(), namespace, topicNames);
+        KubeResourceManager.get().createOrUpdateResourceAsyncWait(topics.toArray(new KafkaTopic[0]));
+        return topics;
     }
 
     /**
@@ -312,11 +332,13 @@ public class KafkaTopicUtils {
      */
     public static void setupUnmanagedUnderReplicatedAndUnavailableTopics(String namespace, String kafkaName, String kafkaUser,
             TopicTypeSpec unmanagedSpec, TopicTypeSpec underReplicatedSpec, TopicTypeSpec unavailableSpec) {
-        LOGGER.info("Create unmanaged, under-replicated, and unavailable topics for cluster {} with a shared broker scale cycle", kafkaName);
 
         // Scale brokers up once in the background - shared by the under-replicated and unavailable scenarios
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
         int scaledUpBrokersCount = knp.getSpec().getReplicas() + 1;
+        LOGGER.info("Create {} unmanaged replicated, {} under-replicated (broker replicas scaled {} -> {}), and {} unavailable topic(s)",
+                unmanagedSpec.numberToCreate(), underReplicatedSpec.numberToCreate(), knp.getSpec().getReplicas(), scaledUpBrokersCount, unavailableSpec.numberToCreate());
+
         LOGGER.debug("Starting asynchronous broker scale-up of cluster {} to {} replicas", kafkaName, scaledUpBrokersCount);
         CompletableFuture<Void> brokerScaleUp = CompletableFuture.runAsync(() -> KafkaUtils.scaleBrokerReplicasWithWait(namespace, kafkaName, scaledUpBrokersCount));
 
@@ -324,7 +346,22 @@ public class KafkaTopicUtils {
         List<KafkaTopic> unmanagedTopics = IntStream.range(0, unmanagedSpec.numberToCreate())
             .mapToObj(i -> defaultTopic(namespace, kafkaName, unmanagedSpec.topicNamePrefix() + "-" + i, unmanagedSpec.partitions(), unmanagedSpec.replicas(), unmanagedSpec.minIsr()).build())
             .toList();
-        List<KafkaClients> allClients = new ArrayList<>(buildAndCreateClients(namespace, kafkaName, kafkaUser, unmanagedTopics, unmanagedSpec.messageCount()));
+
+        try (Admin admin = KafkaClientsUtils.createSecureClient(namespace, kafkaName, kafkaUser, Admin::create)) {
+            var newTopics = unmanagedTopics.stream().map(kt -> {
+                var spec = kt.getSpec();
+                return new NewTopic(
+                        kt.getMetadata().getName(),
+                        spec.getPartitions().intValue(),
+                        spec.getReplicas().shortValue())
+                    .configs(spec.getConfig().entrySet().stream()
+                            .filter(e -> e.getValue() instanceof String)
+                            .map(e -> Map.entry(e.getKey(), (String) e.getValue()))
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+            }).toList();
+
+            admin.createTopics(newTopics).all().toCompletionStage().toCompletableFuture().join();
+        }
 
         brokerScaleUp.join();
 
@@ -334,24 +371,29 @@ public class KafkaTopicUtils {
         List<KafkaTopic> unavailableTopics = KafkaTopicUtils.setupTopicsIfNeededAndReturn(namespace, kafkaName, unavailableSpec.topicNamePrefix(),
             unavailableSpec.numberToCreate(), unavailableSpec.partitions(), unavailableSpec.replicas(), unavailableSpec.minIsr());
 
-        allClients.addAll(buildAndCreateClients(namespace, kafkaName, kafkaUser, underReplicatedTopics, underReplicatedSpec.messageCount()));
-
         // Reassign each unavailable topic's partition onto the new broker
         // https://strimzi.io/blog/2022/09/16/reassign-partitions/
         List<Integer> brokerIds = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName)).getStatus().getNodeIds();
         int lastBrokerId = brokerIds.stream().sorted().toList().get(brokerIds.size() - 1);
-        String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace, KafkaNamingUtils.brokerPodNamePrefix(kafkaName)).getFirst().getMetadata().getName();
 
-        List<KafkaClients> unavailableClients = unavailableTopics.stream()
-            .map(kt -> buildClients(namespace, kafkaName, kafkaUser, kt.getMetadata().getName(), unavailableSpec.messageCount()))
-            .toList();
-        unavailableClients.forEach(clients -> KafkaCmdUtils.reassignTopicPartitionToAnotherBroker(namespace, kafkaName, brokerPodName, clients.getTopicName(), lastBrokerId, clients));
+        try (Admin admin = KafkaClientsUtils.createSecureClient(namespace, kafkaName, kafkaUser, Admin::create)) {
+            var reassignments = unavailableTopics.stream()
+                    .map(kt ->
+                        Map.entry(
+                                new TopicPartition(kt.getMetadata().getName(), 0),
+                                Optional.of(new NewPartitionReassignment(List.of(lastBrokerId)))
+                        )
+                    )
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        allClients.addAll(createClientsAsync(unavailableClients));
+            admin.alterPartitionReassignments(reassignments).all().toCompletionStage().toCompletableFuture().join();
+        }
 
-        LOGGER.debug("Waiting for {} client pair(s) across unmanaged, under-replicated, and unavailable topics to finish", allClients.size());
-        // Wait for all producer/consumer clients across all three topic groups at once
-        WaitUtils.waitForClientsSuccess(allClients);
+        try (Producer<String, String> producer = KafkaClientsUtils.createSecureClient(namespace, kafkaName, kafkaUser, KafkaClientsUtils::stringProducer)) {
+            produce(producer, unmanagedTopics, unmanagedSpec.messageCount());
+            produce(producer, underReplicatedTopics, underReplicatedSpec.messageCount());
+            produce(producer, unavailableTopics, unavailableSpec.messageCount());
+        }
 
         // Annotate Strimzi Kafka to allow broker scaledown without checking the brokers and topics
         // https://strimzi.io/blog/2024/01/03/prevent-broker-scale-down-if-containing-paritition-replicas/
@@ -365,32 +407,16 @@ public class KafkaTopicUtils {
         KafkaUtils.removeAnnotation(namespace, kafkaName, ResourceAnnotations.ANNO_STRIMZI_IO_SKIP_BROKER_SCALEDOWN_CHECK, true);
     }
 
-    private static KafkaClients buildClients(String namespace, String kafkaName, String kafkaUser, String topicName, int messageCount) {
-        return new KafkaClientsBuilder()
-            .withNamespaceName(namespace)
-            .withTopicName(topicName)
-            .withMessageCount(messageCount)
-            .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(topicName))
-            .withConsumerName(KafkaNamingUtils.consumerName(topicName))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(topicName))
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName))
-            .withUsername(kafkaUser)
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT))
-            .build();
-    }
-
-    private static List<KafkaClients> createClientsAsync(List<KafkaClients> clientsList) {
-        KubeResourceManager.get().createResourceAsyncWait(clientsList.stream()
-            .flatMap(clients -> Stream.of(clients.producer(), clients.consumer()))
-            .toArray(Job[]::new));
-        return clientsList;
-    }
-
-    private static List<KafkaClients> buildAndCreateClients(String namespace, String kafkaName, String kafkaUser, List<KafkaTopic> topics, int messageCount) {
-        List<KafkaClients> clientsList = topics.stream()
-            .map(kt -> buildClients(namespace, kafkaName, kafkaUser, kt.getMetadata().getName(), messageCount))
-            .toList();
-        return createClientsAsync(clientsList);
+    private static void produce(Producer<String, String> producer, List<KafkaTopic> topics, int recordCount) {
+        for (KafkaTopic kt : topics) {
+            IntStream.rangeClosed(0, recordCount).forEach(i ->
+                producer.send(new ProducerRecord<String, String>(
+                        kt.getMetadata().getName(),
+                        i % kt.getSpec().getPartitions(),
+                        "key-" + i,
+                        "value-" + i
+                ))
+            );
+        }
     }
 }

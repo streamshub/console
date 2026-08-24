@@ -21,10 +21,27 @@ public class TopicsPageSelectors {
 
     public static final String TPS_NO_RESULTS_FOUND = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(2) > table.pf-v6-c-table > tbody.pf-v6-c-table__tbody > tr.pf-v6-c-table__tr > td.pf-v6-c-table__td > div.pf-v6-c-empty-state > div.pf-v6-c-empty-state__content > div.pf-v6-c-empty-state__header:nth-of-type(1) > div.pf-v6-c-empty-state__title:nth-of-type(2) > h4.pf-v6-c-empty-state__title-text";
 
-    public static final String TPS_TABLE_ROWS = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > section.pf-v6-c-page__main-section:nth-of-type(3) > div.pf-v6-c-page__main-body > div.pf-v6-l-stack > div.pf-v6-l-stack__item:nth-of-type(2) > table.pf-v6-c-table > tbody.pf-v6-c-table__tbody > tr.pf-v6-c-table__tr";
+    public static final String TPS_TABLE_BODY = new CssBuilder()
+            .withElementTable()
+            .withAriaLabel("Topics table")
+            .withDesc()
+            .withElementTbody()
+            .build();
+
+    public static final String TPS_TABLE_ROWS = new CssBuilder(TPS_TABLE_BODY)
+            .withElementTr()
+            .build();
+
+    private static CssBuilder getTableRowCells(int nthRow) {
+        return new CssBuilder(TPS_TABLE_ROWS).nth(nthRow).withElementTd();
+    }
 
     public static String getTopicsTableRowItems(int nth) {
-        return CssBuilder.joinLocators(new CssBuilder(TPS_TABLE_ROWS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
+        return getTableRowCells(nth).build();
+    }
+
+    public static String getTopicsTableRowItem(int nthRow, String dataLabel) {
+        return getTableRowCells(nthRow).withDataLabel(dataLabel).build();
     }
 
     public static String getTopicsTableRowItem(int nthRow, int nthColumn) {

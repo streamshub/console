@@ -1,5 +1,16 @@
 package com.github.streamshub.systemtests.utils.playwright;
 
+import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.regex.Pattern;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -22,22 +33,17 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.TimeoutError;
 import com.microsoft.playwright.Tracing;
+import com.microsoft.playwright.assertions.LocatorAssertions.ContainsTextOptions;
+import com.microsoft.playwright.assertions.LocatorAssertions.HasAttributeOptions;
 import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
+
 import io.fabric8.kubernetes.api.model.Secret;
 import io.skodjob.kubetest4j.KubeTestConstants;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.skodjob.kubetest4j.wait.Wait;
-import org.apache.logging.log4j.Logger;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.regex.Pattern;
 
 public class PwUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(PwUtils.class);
@@ -105,7 +111,7 @@ public class PwUtils {
         // Navigate directly to overview page and wait for it to load
         navigate(tcc, PwPageUrls.getOverviewPage(tcc, kafkaName), true, false);
         LOGGER.info("Successfully accessed Console overview page");
-        screenshot(tcc, kafkaName, "login-success");
+        screenshot(tcc, "login-success");
     }
 
     public static void login(TestCaseConfig tcc) {
@@ -141,7 +147,6 @@ public class PwUtils {
     public static void waitForLocatorVisible(Locator locator, long timeout) {
         LOGGER.debug("Waiting for locator to be visible without reloading [{}]", locator);
         locator.waitFor(new Locator.WaitForOptions().setTimeout(timeout).setState(WaitForSelectorState.VISIBLE));
-        Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_VERY_SHORT);
     }
 
     // --------------------------
@@ -166,7 +171,6 @@ public class PwUtils {
         LOGGER.debug("Clicking on locator [{}]", locator);
         try {
             locator.click(new Locator.ClickOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
-            Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_VERY_SHORT);
             screenshot(locator.page(), "click-success");
             return true;
         } catch (RuntimeException e) {
@@ -198,7 +202,6 @@ public class PwUtils {
         LOGGER.debug("Filling locator [{}] with text [{}]", locator, text);
         try {
             locator.fill(text, new Locator.FillOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
-            Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT);
             screenshot(locator.page(), "fill-success");
             return true;
         } catch (RuntimeException e) {
@@ -243,12 +246,12 @@ public class PwUtils {
         Utils.retryAction("waitForContainsText: " + text,
             () -> {
                 if (locatorContainsText(tcc.page().locator(selector), text, exactCase)) {
-                    screenshot(tcc, tcc.kafkaName(), "wait-text-success");
+                    screenshot(tcc, "wait-text-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator did not contain text [{}]", text);
-                screenshot(tcc, tcc.kafkaName(), "wait-text-retry");
+                screenshot(tcc, "wait-text-retry");
 
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
@@ -276,23 +279,14 @@ public class PwUtils {
      * @return {@code true} if the locator text contains the expected text, otherwise {@code false}
      */
     public static boolean locatorContainsText(Locator locator, String expectedText, boolean exactCase) {
-        // Text might be either inner or a content text
-        String allInnerTexts = locator.allInnerTexts().toString();
-        String innerText = getTrimmedText(allInnerTexts.isEmpty() || allInnerTexts.contains("null") ?
-            locator.allTextContents().toString() : allInnerTexts);
-
-        LOGGER.debug("Checking locator text [{}], expected [{}], exact case - {}", innerText, expectedText, exactCase);
-
-        boolean containsText = innerText.contains(expectedText) ||
-            !exactCase && innerText.toLowerCase(Locale.ROOT).contains(expectedText.toLowerCase(Locale.ROOT));
-
-        if (containsText) {
-            LOGGER.debug("Locator text [{}] CONTAINS expected [{}]", innerText, expectedText);
-        } else {
-            LOGGER.debug("Locator text [{}] does NOT contain expected [{}]", innerText, expectedText);
+        try {
+            PlaywrightAssertions.assertThat(locator).containsText(expectedText, new ContainsTextOptions()
+                    .setIgnoreCase(!exactCase));
+            return true;
+        } catch (AssertionError e) {
+            LOGGER.info("Locator.containsText AssertionError: {}", e.getMessage());
+            return false;
         }
-
-        return containsText;
     }
 
     public static void waitForLocatorContainsText(Locator locator, String text, boolean exactCase) {
@@ -301,9 +295,7 @@ public class PwUtils {
 
     public static void waitForLocatorContainsText(Locator locator, String text, long componentLoadTimeout, boolean exactCase) {
         Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
-            () -> {
-                return locatorContainsText(locator, text, exactCase);
-            },
+            () -> locatorContainsText(locator, text, exactCase),
             () -> LOGGER.error("Locator did not contain text [{}]", text)
         );
     }
@@ -336,12 +328,12 @@ public class PwUtils {
                 waitForLocatorVisible(tcc, selector);
 
                 if (attributeContainsText(tcc.page().locator(selector), attribute, text, exactCase)) {
-                    screenshot(tcc, tcc.kafkaName(), "wait-attribute-success");
+                    screenshot(tcc, "wait-attribute-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator attribute did not contain text [{}]", text);
-                screenshot(tcc, tcc.kafkaName(), "wait-attribute-retry");
+                screenshot(tcc, "wait-attribute-retry");
 
                 if (reload) {
                     reload(tcc);
@@ -373,20 +365,31 @@ public class PwUtils {
      * @return {@code true} if the attribute value contains the expected text, otherwise {@code false}
      */
     public static boolean attributeContainsText(Locator locator, String attribute, String expectedText, boolean exactCase) {
-        String attributeValue = getTrimmedText(locator.getAttribute(attribute));
+        String escapedText = expectedText.replaceAll("[.*+?^${}()|\\[\\]\\\\]", "\\\\$0");
 
-        LOGGER.debug("Checking locator attribute [{}] value [{}] against expected [{}], exact case - {}", attribute, attributeValue, expectedText, exactCase);
-
-        boolean containsText = attributeValue.contains(expectedText) ||
-            !exactCase && attributeValue.toLowerCase(Locale.ROOT).contains(expectedText.toLowerCase(Locale.ROOT));
-
-        if (containsText) {
-            LOGGER.debug("Locator attribute [{}] value [{}] CONTAINS expected [{}]", attribute, attributeValue, expectedText);
-        } else {
-            LOGGER.debug("Locator attribute [{}] value [{}] does NOT contain expected [{}]", attribute, attributeValue, expectedText);
+        try {
+            PlaywrightAssertions.assertThat(locator).hasAttribute(
+                    attribute,
+                    Pattern.compile(".*?" + escapedText + ".*?"),
+                    new HasAttributeOptions().setIgnoreCase(!exactCase));
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(
+                        "Locator attribute [{}] value [{}] CONTAINS expected [{}]",
+                        attribute,
+                        locator.getAttribute(attribute),
+                        expectedText);
+            }
+            return true;
+        } catch (AssertionError e) {
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(
+                        "Locator attribute [{}] value [{}] does NOT contain expected [{}]",
+                        attribute,
+                        locator.getAttribute(attribute),
+                        expectedText);
+            }
+            return false;
         }
-
-        return containsText;
     }
 
     // --------------------------
@@ -411,12 +414,12 @@ public class PwUtils {
                 int locatorCount = tcc.page().locator(selector).all().size();
                 if (locatorCount == count) {
                     LOGGER.debug("Locator has correct item count {}", count);
-                    screenshot(tcc, tcc.kafkaName(), "wait-count-success");
+                    screenshot(tcc, "wait-count-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator has incorrect item count {}, need {}", locatorCount, count);
-                screenshot(tcc, tcc.kafkaName(), "wait-count-retry");
+                screenshot(tcc, "wait-count-retry");
 
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
@@ -451,12 +454,12 @@ public class PwUtils {
 
                 if (locator.isEnabled() == shouldBeEnabled) {
                     LOGGER.debug("Locator has correct state enabled={}", locator.isEnabled());
-                    screenshot(tcc, tcc.kafkaName(), "wait-enabled-success");
+                    screenshot(tcc, "wait-enabled-success");
                     return true;
                 }
 
                 LOGGER.warn("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled);
-                screenshot(tcc, tcc.kafkaName(), "wait-enabled-retry");
+                screenshot(tcc, "wait-enabled-retry");
 
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
@@ -478,14 +481,14 @@ public class PwUtils {
 
                 if (tcc.page().locator("body").innerText().contains("Error")) {
                     LOGGER.warn("Console website displayed an Error, retrying...");
-                    screenshot(tcc, tcc.kafkaName(), "keycloak-error");
+                    screenshot(tcc, "keycloak-error");
                     return false;
                 }
 
                 // Check if Keycloak login page is displayed
                 if (tcc.page().locator(CssSelectors.LOGIN_KEYCLOAK_PAGE_TITLE).isVisible()) {
                     LOGGER.info("Console website is ready");
-                    screenshot(tcc, tcc.kafkaName(), "keycloak-ready");
+                    screenshot(tcc, "keycloak-ready");
                     return true;
                 }
 
@@ -548,23 +551,8 @@ public class PwUtils {
      * @param kafkaName        name of the Kafka cluster used in the path structure
      * @param additionalSuffix optional suffix appended to the screenshot filename
      */
-    public static void screenshot(TestCaseConfig tcc, String kafkaName, String additionalSuffix) {
-        // e.g. screenshots/testFilterTopics/topicst-33aaa/topics/screenshotname-2025-04-21__18-05-33-123.png
-        String pageUrl = tcc.page().url().replace(PwPageUrls.getKafkaBaseUrl(tcc, kafkaName), "");
-
-        String screenshotName = java.lang.String.join("/",
-            sanitizeForPath(KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "")),
-            tcc.namespace(),
-            kafkaName,
-            pageUrl.contains("?") ? pageUrl.split("\\?")[0] : pageUrl,
-            additionalSuffix +
-            (additionalSuffix.isEmpty() ? "" : "-") +
-            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss-SSS")) +
-            ".png")
-            .replaceAll("//+", "/");
-
-        LOGGER.debug("Taking a screenshot: {}", screenshotName);
-        tcc.page().screenshot(new Page.ScreenshotOptions().setPath(Path.of(Environment.SCREENSHOTS_DIR_PATH, screenshotName)));
+    public static void screenshot(TestCaseConfig tcc, String additionalSuffix) {
+        screenshot(tcc.page(), additionalSuffix);
     }
 
     /**
@@ -575,16 +563,19 @@ public class PwUtils {
      * @param additionalSuffix suffix appended to the screenshot filename
      */
     public static void screenshot(Page page, String additionalSuffix) {
-        String screenshotName = java.lang.String.join("/",
-            sanitizeForPath(KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "")),
-            additionalSuffix +
-            (additionalSuffix.isEmpty() ? "" : "-") +
-            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss-SSS")) +
-            ".png")
-            .replaceAll("//+", "/");
+        var context = KubeResourceManager.get().getTestContext();
+        var testClass = context.getTestClass().map(Class::getName).orElse("_UnknownTestClass");
+        var testMethod = context.getTestMethod().map(Method::getName).orElse("_unknownTestMethod");
+        var testDisplay = sanitizeForPath(KubeResourceManager.get().getTestContext().getDisplayName().replace("()", ""));
+        var timestamp = LocalDateTime.now(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss-SSS"));
+        var filename = timestamp + (additionalSuffix.isEmpty() ? "" : "-") + additionalSuffix + ".png";
 
-        LOGGER.debug("Taking a screenshot: {}", screenshotName);
-        page.screenshot(new Page.ScreenshotOptions().setPath(Path.of(Environment.SCREENSHOTS_DIR_PATH, screenshotName)));
+        Path screenshotPath = Path.of(testClass, testMethod, testDisplay, filename);
+        LOGGER.debug("Taking a screenshot: {}", screenshotPath);
+
+        Path screenshotRoot = Path.of(Environment.SCREENSHOTS_DIR_PATH);
+        page.screenshot(new Page.ScreenshotOptions().setPath(screenshotRoot.resolve(screenshotPath)));
     }
 
     /**
@@ -644,7 +635,7 @@ public class PwUtils {
         // Wait for redirect to overview page
         waitForUrl(tcc, baseUrl, true);
         LOGGER.info("Successfully logged into Console");
-        screenshot(tcc, tcc.kafkaName(), "login-oidc-success");
+        screenshot(tcc, "login-oidc-success");
     }
 
     /**
@@ -671,17 +662,16 @@ public class PwUtils {
             }
 
             waitForLocatorAndClick(tcc, CssSelectors.PAGES_LOGOUT_BUTTON);
-            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
 
             if (tcc.page().url().equals(dashboardUrl) ||
                 tcc.page().locator(KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON).allInnerTexts().contains(userName)) {
                 LOGGER.warn("User '{}' has not been logged out", userName);
-                screenshot(tcc, tcc.kafkaName(), "logout-retry");
+                screenshot(tcc, "logout-retry");
                 return false;
             }
 
             LOGGER.info("Successfully logged out user '{}'", userName);
-            screenshot(tcc, tcc.kafkaName(), "logout-success");
+            screenshot(tcc, "logout-success");
             return true;
         }, Constants.LOGOUT_RETRIES);
     }
@@ -722,7 +712,7 @@ public class PwUtils {
         // Wait for overview page
         waitForUrl(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), true);
         LOGGER.info("Successfully logged into Console with Kafka credentials");
-        screenshot(tcc, tcc.kafkaName(), "login-kafka-creds-success");
+        screenshot(tcc, "login-kafka-creds-success");
     }
 
     public static void navigate(TestCaseConfig tcc, String url) {
@@ -748,13 +738,12 @@ public class PwUtils {
             () -> {
                 try {
                     tcc.page().navigate(url, getDefaultNavigateOpts(TimeConstants.ELEMENT_VISIBILITY_TIMEOUT));
-                    screenshot(tcc, tcc.kafkaName(), "navigate-success");
+                    screenshot(tcc, "navigate-success");
                     return true;
                 } catch (TimeoutError e) {
                     LOGGER.warn("Navigation to '{}' timed out, retrying...", url);
-                    screenshot(tcc, tcc.kafkaName(), "navigate-timeout-retry");
+                    screenshot(tcc, "navigate-timeout-retry");
                     // Force reload to reset broken HTTP/2 connection state
-                    Utils.sleepWait(TimeConstants.ACTION_WAIT_SHORT);
                     tcc.page().reload();
                     return false;
                 }
@@ -776,9 +765,11 @@ public class PwUtils {
      * @param tcc the {@link TestCaseConfig} containing the Playwright page to reload
      */
     public static void reload(TestCaseConfig tcc) {
-        LOGGER.info("Reloading page with current url '{}'", tcc.page().url());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Reloading page with current url '{}'", tcc.page().url());
+        }
         tcc.page().reload(getDefaultReloadOpts());
-        screenshot(tcc, tcc.kafkaName(), "reload");
+        screenshot(tcc, "reload");
     }
 
     /**

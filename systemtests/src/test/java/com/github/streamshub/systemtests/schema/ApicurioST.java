@@ -205,7 +205,7 @@ public class ApicurioST extends AbstractST {
 
         PwUtils.navigate(tcc, PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
 
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.getTableRowItem(1, 1));
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.getTableRowItem(1, "Offset"));
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_SCHEMA_NAME, schemaName, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_VALUE_FORMAT, artifactType, true);
         // TODO: removed?
@@ -325,7 +325,7 @@ public class ApicurioST extends AbstractST {
         String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
         PwUtils.navigate(tcc, PwPageUrls.getSingleTopicPage(tcc, tcc.kafkaName(), topicId));
 
-        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.getTableRowItem(1, 1));
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.getTableRowItem(1, "Offset"));
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_MESSAGE_SIDEBAR_VALUE_FORMAT, valueFormat, true);
 
         // TODO: removed?
