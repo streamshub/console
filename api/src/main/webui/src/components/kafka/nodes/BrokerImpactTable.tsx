@@ -423,7 +423,7 @@ export function BrokerImpactTable({
               pagedRows.map((row) => (
                 <Tr key={row.brokerId}>
                   <Td dataLabel={t('rebalancing.brokerImpact.broker')} isStickyColumn hasRightBorder>
-                    {t('rebalancing.broker', { b: row.brokerId })}
+                    {row.brokerId}
                   </Td>
                   {activeGroups.map((g) => {
                     const pctImpact = g.pctKey ? row.metrics[g.pctKey] : undefined;
