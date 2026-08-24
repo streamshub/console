@@ -73,6 +73,10 @@ function updatePageParams(page: ResourceListPageParams, searchParams: URLSearchP
   }
 }
 
+export function resourceListQueryKeyPrefix(resourceType: string): string {
+  return resourceType + '-resource-list-query';
+}
+
 export function useResourceList<T extends Resource, M extends AbstractMeta = AbstractMeta>(
   resourceType: string,
   path: string,
@@ -80,7 +84,7 @@ export function useResourceList<T extends Resource, M extends AbstractMeta = Abs
 ) {
   return useQuery({
     queryKey: [
-      resourceType + '-resource-list-query',
+      resourceListQueryKeyPrefix(resourceType),
       path,
       JSON.stringify(params),
     ],

@@ -8,7 +8,7 @@ import {
   RebalanceResponse,
   Rebalance,
 } from '../types';
-import { ResourceListParams, useResourceList } from './useResourceList';
+import { ResourceListParams, resourceListQueryKeyPrefix, useResourceList } from './useResourceList';
 
 const REBALANCE_FIELDS = 'name,namespace,creationTimestamp,status,mode,brokers,optimizationResult,conditions';
 const REBALANCE_DETAIL_FIELDS = `${REBALANCE_FIELDS},brokerCapacity,goals,optimizationProposal,sessionId`;
@@ -85,9 +85,27 @@ export function usePatchRebalance(kafkaId: string) {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, { rebalanceId }) => {
       // Invalidate rebalances queries to refetch
-      queryClient.invalidateQueries({ queryKey: ['rebalances', kafkaId] });
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          if (key.length > 1) {
+            const listKey = [ resourceListQueryKeyPrefix('kafkaRebalances'), `/api/kafkas/${kafkaId}/rebalances`];
+
+            if (key[0] === listKey[0] && key[1] === listKey[1]) {
+              return true;
+            }
+
+            const singleKey = ['rebalance', kafkaId, rebalanceId];
+
+            if (key.length === singleKey.length && singleKey.every((v, i) => v === key[i])) {
+              return true;
+            }
+          }
+          return false;
+        }
+      });
     },
   });
 }
