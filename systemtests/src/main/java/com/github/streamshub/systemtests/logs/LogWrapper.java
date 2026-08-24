@@ -50,11 +50,7 @@ public class LogWrapper {
         loggerConfig.addAppender(consoleAppender, Level.toLevel(Environment.TEST_CONSOLE_LOG_LEVEL, Level.INFO), null);
         loggerConfig.addAppender(rollingAppender, Level.toLevel(Environment.TEST_FILE_LOG_LEVEL, Level.DEBUG), null);
 
-        // Add a specific logger config to silence Kafka's internal debug
-        LoggerConfig kafkaClientLoggerConfig = new LoggerConfig("org.apache.kafka.clients", Level.WARN, true);
-        config.addLogger("org.apache.kafka.clients", kafkaClientLoggerConfig);
-
-        // Add a specific logger config to silence Netty's internal debug
+        // Add a specific logger config to silence Netty’s internal debug
         LoggerConfig nettyLoggerConfig = new LoggerConfig("io.netty", Level.WARN, true);
         config.addLogger("io.netty", nettyLoggerConfig);
 
