@@ -1,12 +1,9 @@
 package com.github.streamshub.console.api.support.serdes;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * The multi-format de-/serializer uses this type as both the key and value in
@@ -18,11 +15,9 @@ import java.util.Map;
  */
 public class RecordData {
 
-    public static final String BINARY_DATA_MESSAGE = "Binary or non-UTF-8 encoded data cannot be displayed";
-    static final int REPLACEMENT_CHARACTER = '\uFFFD';
-
-    public final Map<String, String> meta = new LinkedHashMap<>(1);
-    byte[] data;
+    public final Map<String, String> meta = LinkedHashMap.newLinkedHashMap(1);
+    private byte[] data;
+    private String stringData;
     com.github.streamshub.console.api.model.jsonapi.JsonApiError error;
 
     public RecordData(byte[] data) {
@@ -31,7 +26,8 @@ public class RecordData {
     }
 
     public RecordData(String data) {
-        this(data != null ? data.getBytes(StandardCharsets.UTF_8) : null);
+        super();
+        this.stringData = data;
     }
 
     public com.github.streamshub.console.api.model.jsonapi.JsonApiError error() {
@@ -39,58 +35,31 @@ public class RecordData {
     }
 
     /**
-     * Convert this instance's {@link RecordData#data data} bytes to a string
-     * Optionally, the length of the string will be limited to maxValueLength. When
-     * invalid characters are detected, the result is replaced with the value of
-     * {@link #BINARY_DATA_MESSAGE}.
-     *
-     * @param maxValueLength maximum length of the result string
-     * @return the record's data bytes as a string
+     * Returns the raw bytes for this record data. If a byte array was provided at
+     * construction, it is returned directly. If a String was provided, it is lazily
+     * encoded to UTF-8 bytes. Returns {@code null} when both fields are null.
      */
-    public String dataString(Integer maxValueLength) {
-        return bytesToString(data, maxValueLength);
+    public byte[] bytes() {
+        if (data != null) {
+            return data;
+        }
+        if (stringData != null) {
+            return stringData.getBytes(StandardCharsets.UTF_8);
+        }
+        return null;
+    }
+
+    public void bytes(byte[] data) {
+        this.data = Objects.requireNonNull(data);
+        this.stringData = null;
     }
 
     /**
-     * Convert the given bytes to a string Optionally, the length of the string will
-     * be limited to maxValueLength. When invalid characters are detected, the
-     * result is replaced with the value of {@link #BINARY_DATA_MESSAGE}.
-     *
-     * @param bytes          byte array to be converted to a string
-     * @param maxValueLength maximum length of the result string
-     * @return the record's data bytes as a string
+     * Returns the original String value provided at construction, or {@code null}
+     * when the instance was constructed from a byte array (or with a null String).
      */
-    public static String bytesToString(byte[] bytes, Integer maxValueLength) {
-        if (bytes == null) {
-            return null;
-        }
-
-        if (bytes.length == 0) {
-            return "";
-        }
-
-        int bufferSize = maxValueLength != null ? Math.min(maxValueLength, bytes.length) : bytes.length;
-        StringBuilder buffer = new StringBuilder(bufferSize);
-
-        try (Reader reader = new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8)) {
-            int input;
-
-            while ((input = reader.read()) > -1) {
-                if (input == REPLACEMENT_CHARACTER || !Character.isDefined(input)) {
-                    return BINARY_DATA_MESSAGE;
-                }
-
-                buffer.append((char) input);
-
-                if (maxValueLength != null && buffer.length() == maxValueLength) {
-                    break;
-                }
-            }
-
-            return buffer.toString();
-        } catch (IOException e) {
-            return BINARY_DATA_MESSAGE;
-        }
+    public String stringValue() {
+        return stringData;
     }
 
 }
