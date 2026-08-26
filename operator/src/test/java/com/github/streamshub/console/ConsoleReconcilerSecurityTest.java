@@ -370,8 +370,9 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
         });
 
         console = client.resource(console).get();
-        client.resource(console).edit(c -> {
-            return new ConsoleBuilder(c)
+        console.getMetadata().setManagedFields(null);
+
+        client.resource(new ConsoleBuilder(console)
                     .editSpec()
                         .editSecurity()
                             .editOidc()
@@ -379,8 +380,8 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
                             .endOidc()
                         .endSecurity()
                     .endSpec()
-                    .build();
-        });
+                .build())
+            .serverSideApply();
 
         assertConsoleConfig(consoleConfig -> {
             var securityConfig = consoleConfig.getSecurity();
