@@ -52,8 +52,12 @@ export function MessagesTable({
   const { t } = useTranslation();
   const columnLabels = useColumnLabels();
 
-  const truncate = (value: string | null): React.ReactNode => {
-    if (!value) return '-';
+  const truncate = (value: string | null, emptyText: string): React.ReactNode => {
+    if (value === null || value === undefined || value === '') return (
+      <span style={{ fontStyle: 'italic', color: 'var(--pf-t--global--text--color--subtle)' }}>
+        {emptyText}
+      </span>
+    );
     return (
       <span
         style={{
@@ -68,23 +72,40 @@ export function MessagesTable({
     );
   };
 
-  const renderHeaders = (headers: Record<string, unknown>) => {
+  const isBinaryKey = (message: KafkaRecord) => message.meta?.content?.key?.type === 'application/octet-stream';
+  const isBinaryValue = (message: KafkaRecord) => message.meta?.content?.value?.type === 'application/octet-stream';
+
+  const renderHeaders = (headers: Record<string, unknown>, message: KafkaRecord) => {
     const entries = Object.entries(headers);
-    if (entries.length === 0) return '-';
+    if (entries.length === 0) return (
+      <span style={{ fontStyle: 'italic', color: 'var(--pf-t--global--text--color--subtle)' }}>
+        {t('topics.messages.noHeaders')}
+      </span>
+    );
     return (
       <div>
-        {entries.map(([k, v]) => (
-          <div
-            key={k}
-            style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <strong>{k}</strong>: {String(v)}
-          </div>
-        ))}
+        {entries.map(([k, v]) => {
+          const isBinary = message.meta?.content?.headers?.[k]?.type === 'application/octet-stream';
+          return (
+            <div
+              key={k}
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <strong>{k}</strong>:{' '}
+              {isBinary ? (
+                <span style={{ fontStyle: 'italic', color: 'var(--pf-t--global--text--color--subtle)' }}>
+                  {t('topics.messages.binaryDataNotDisplayed')}
+                </span>
+              ) : (
+                String(v)
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -139,7 +160,13 @@ export function MessagesTable({
       case 'key':
         return (
           <>
-            {truncate(message.attributes.key)}
+            {isBinaryKey(message) ? (
+              <span style={{ fontStyle: 'italic', color: 'var(--pf-t--global--text--color--subtle)' }}>
+                {t('topics.messages.binaryDataNotDisplayed')}
+              </span>
+            ) : (
+              truncate(message.attributes.key, t('topics.messages.noKey'))
+            )}
             {message.relationships.keySchema && (
               <Content>
                 <Content component="small">
@@ -157,11 +184,17 @@ export function MessagesTable({
           </>
         );
       case 'headers':
-        return renderHeaders(message.attributes.headers);
+        return renderHeaders(message.attributes.headers, message);
       case 'value':
         return (
           <>
-            {truncate(message.attributes.value)}
+            {isBinaryValue(message) ? (
+              <span style={{ fontStyle: 'italic', color: 'var(--pf-t--global--text--color--subtle)' }}>
+                {t('topics.messages.binaryDataNotDisplayed')}
+              </span>
+            ) : (
+              truncate(message.attributes.value, t('topics.messages.noValue'))
+            )}
             {message.relationships.valueSchema && (
               <Content>
                 <Content component="small">
