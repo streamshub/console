@@ -388,14 +388,28 @@ export interface RelatedSchema {
   };
 }
 
+export interface ContentMeta {
+  type: string;
+  encoding?: string;
+  omitted?: boolean;
+  truncated?: boolean;
+}
+
 export interface KafkaRecord {
   type: 'records';
+  meta?: {
+    content?: {
+      key?: ContentMeta;
+      value?: ContentMeta;
+      headers?: Record<string, ContentMeta>;
+    };
+  };
   attributes: {
     partition: number;
     offset: number;
     timestamp: string;
     timestampType: string;
-    headers: Record<string, unknown>;
+    headers: Record<string, string>;
     key: string | null;
     value: string | null;
     size?: number;
