@@ -90,20 +90,55 @@ export function MessageDetails({ message }: MessageDetailsProps) {
   const valueJson = maybeJson(message.attributes.value);
   const headers = Object.entries(message.attributes.headers ?? {});
 
-  const handleDownload = (fieldName: string, base64Value: string | null) => {
+  const handleDownload = async (fieldName: string, base64Value: string | null) => {
     if (!base64Value) return;
+
+    const filename = `message-p${message.attributes.partition}-o${message.attributes.offset}-${fieldName}.bin`;
+
     try {
-      const byteCharacters = atob(base64Value);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      let blob: Blob;
+
+      // Uint8Array.fromBase64 is ES2025 and not included in this project's ES2020 lib,
+      // so TypeScript has no type for it. We cast through `unknown` to access it at
+      // runtime while keeping the `'fromBase64' in Uint8Array` guard so the fallback
+      // path is still reached on browsers that don't support it yet (older Firefox/Safari).
+      if ('fromBase64' in Uint8Array && typeof (Uint8Array as unknown as { fromBase64: unknown }).fromBase64 === 'function') {
+        const bytes = (Uint8Array as unknown as { fromBase64: (s: string) => Uint8Array }).fromBase64(base64Value);
+        // `bytes.buffer` is typed as `ArrayBufferLike` (which includes SharedArrayBuffer)
+        // but Blob only accepts `ArrayBuffer`. We cast directly since the buffer produced
+        // by fromBase64 is always a plain ArrayBuffer in practice.
+        blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/octet-stream' });
+      } else {
+        const byteCharacters = atob(base64Value);
+        const bytes = new Uint8Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          bytes[i] = byteCharacters.charCodeAt(i);
+        }
+        blob = new Blob([bytes], { type: 'application/octet-stream' });
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/octet-stream' });
+
+      // Use the File System Access API save dialog when available (Chromium/Edge).
+      // Falls back to the silent anchor-click download for Firefox/Safari.
+      if ('showSaveFilePicker' in window) {
+        try {
+          const fileHandle = await (window as unknown as {
+            showSaveFilePicker: (opts: object) => Promise<{ createWritable: () => Promise<{ write: (b: Blob) => Promise<void>; close: () => Promise<void> }> }>;
+          }).showSaveFilePicker({
+            suggestedName: filename,
+            types: [{ description: 'Binary file', accept: { 'application/octet-stream': ['.bin'] } }],
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          return;
+        } catch (e) {
+          // User cancelled the dialog — do nothing.
+          if (e instanceof DOMException && e.name === 'AbortError') return;
+          // Any other error: fall through to the anchor fallback.
+        }
+      }
+
       const url = URL.createObjectURL(blob);
-      
-      const filename = `message-p${message.attributes.partition}-o${message.attributes.offset}-${fieldName}.bin`;
-        
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
