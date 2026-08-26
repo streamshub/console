@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,8 +28,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -47,6 +46,7 @@ import org.apache.kafka.common.header.Headers;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.streamshub.console.api.model.KafkaRecord;
 import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToOne;
@@ -59,8 +59,6 @@ import static java.util.Objects.requireNonNullElse;
 
 @ApplicationScoped
 public class RecordService {
-
-    private static final int REPLACEMENT_CHARACTER = '\uFFFD';
 
     @Inject
     Logger logger;
@@ -452,13 +450,23 @@ public class RecordService {
         StringBuilder sb = new StringBuilder();
         boolean binary = false;
 
-        try (Reader reader = new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8)) {
+        try (Reader reader = new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8
+                .newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT))) {
             int cp;
+
             while ((cp = reader.read()) != -1) {
-                if (cp == REPLACEMENT_CHARACTER || !Character.isDefined(cp)) {
+                if (isExcludedUnicodeC0(cp) || isUnicodeC1(cp)) {
+                    /*
+                     * Consider NUL, C0 controls (except common text whitespace), DEL,
+                     * and C1 controls to be indicative of "binary data" that will not 
+                     * be displayed as text in the UI.
+                     */
                     binary = true;
                     break;
                 }
+
                 sb.appendCodePoint(cp);
             }
         } catch (IOException e) {
@@ -467,17 +475,27 @@ public class RecordService {
 
         if (binary) {
             if (maxValueLength != null && bytes.length > maxValueLength) {
-                return new FieldResult(null, ContentMeta.omitted());
+                return new FieldResult(null, ContentMeta.forBinaryOmitted());
             }
-            return new FieldResult(Base64.getEncoder().encodeToString(bytes), ContentMeta.binary());
+            return new FieldResult(Base64.getEncoder().encodeToString(bytes), ContentMeta.forBinaryEncoded());
         }
 
         // text path — sb already contains the full decoded string
         String text = sb.toString();
         if (maxValueLength != null && text.length() > maxValueLength) {
-            return new FieldResult(text.substring(0, maxValueLength), ContentMeta.truncated());
+            return new FieldResult(text.substring(0, maxValueLength), ContentMeta.forTextTruncated());
         }
         return new FieldResult(text, null);
+    }
+
+    /** Returns true for C0 control codes except common text whitespace (tab, LF, CR). */
+    private static boolean isExcludedUnicodeC0(int cp) {
+        return cp <= 0x1F && cp != '\t' && cp != '\n' && cp != '\r';
+    }
+
+    /** Returns true for DEL and C1 control codes (0x7F–0x9F). */
+    private static boolean isUnicodeC1(int cp) {
+        return cp >= 0x7F && cp <= 0x9F;
     }
 
     /** Carries the processed string value alongside optional content metadata. */
@@ -487,9 +505,9 @@ public class RecordService {
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static final class ContentMeta {
 
-        private static final ContentMeta BINARY = new ContentMeta("application/octet-stream", "base64", false, false);
-        private static final ContentMeta OMITTED = new ContentMeta("application/octet-stream", null, true, false);
-        private static final ContentMeta TRUNCATED = new ContentMeta("text/plain", null, false, true);
+        private static final ContentMeta BINARY_ENCODED = new ContentMeta("application/octet-stream", "base64", false, false);
+        private static final ContentMeta BINARY_OMITTED = new ContentMeta("application/octet-stream", null, true, false);
+        private static final ContentMeta TEXT_TRUNCATED = new ContentMeta("text/plain", null, false, true);
 
         private final String type;
         @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -505,18 +523,18 @@ public class RecordService {
         }
 
         /** Binary field within size limit — base64-encoded. */
-        public static ContentMeta binary() {
-            return BINARY;
+        public static ContentMeta forBinaryEncoded() {
+            return BINARY_ENCODED;
         }
 
         /** Binary field exceeding size limit — omitted from response. */
-        public static ContentMeta omitted() {
-            return OMITTED;
+        public static ContentMeta forBinaryOmitted() {
+            return BINARY_OMITTED;
         }
 
         /** Text field truncated by maxValueLength. */
-        public static ContentMeta truncated() {
-            return TRUNCATED;
+        public static ContentMeta forTextTruncated() {
+            return TEXT_TRUNCATED;
         }
 
         public String getType() {
