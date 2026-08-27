@@ -145,7 +145,12 @@ public class AuthorizationInterceptor {
         var segmentCount = segments.size();
         UnaryOperator<String> converter = UnaryOperator.identity();
 
-        for (int s = 2; s < segmentCount; s++) {
+        /*
+         * Only the segments up to the sub-resource type (e.g. `topics/records`) are part
+         * of the resource type, any further segments (e.g. the partition and offset of a
+         * single record) identify an instance within the sub-resource and are ignored.
+         */
+        for (int s = 2; s < segmentCount && s <= 4; s++) {
             String segment = segments.get(s).getPath();
 
             if (s == 3) {

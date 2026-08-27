@@ -1,5 +1,6 @@
 package com.github.streamshub.console.api;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import jakarta.ws.rs.core.UriInfo;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.consumer.CloseOptions;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -495,11 +497,38 @@ public class ClientFactory {
         manager.release(context);
     }
 
+    /**
+     * Produces a Kafka Consumer for streaming multiple records.
+     */
     @Produces
     @RequestScoped
-    public Consumer<RecordData, RecordData> consumerSupplier(SecurityIdentity identity, KafkaContext context) {
+    @Named("streamConsumer")
+    public Consumer<RecordData, RecordData> streamConsumerSupplier(SecurityIdentity identity, KafkaContext context) {
+        return consumerSupplier(identity, context, null);
+    }
+
+    /**
+     * Produces a Kafka Consumer optimized to fetch a single record.
+     */
+    @Produces
+    @RequestScoped
+    @Named("singleConsumer")
+    public Consumer<RecordData, RecordData> singleConsumerSupplier(SecurityIdentity identity, KafkaContext context) {
+        return consumerSupplier(identity, context, 1);
+    }
+
+    private Consumer<RecordData, RecordData> consumerSupplier(
+            SecurityIdentity identity,
+            KafkaContext context,
+            Integer pollLimit) {
+
         var configs = maybeAuthenticate(
                 identity.getCredential(SaslJaasConfigCredential.class), context, Consumer.class);
+
+        if (pollLimit != null) {
+            configs = new HashMap<>(configs);
+            configs.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, pollLimit);
+        }
 
         return new KafkaConsumer<>(
                 configs,
@@ -508,7 +537,7 @@ public class ClientFactory {
     }
 
     public void disposeConsumer(@Disposes Consumer<RecordData, RecordData> consumer) {
-        consumer.close();
+        consumer.close(CloseOptions.timeout(Duration.ZERO));
     }
 
     @Produces

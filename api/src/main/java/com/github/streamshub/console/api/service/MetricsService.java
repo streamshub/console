@@ -245,6 +245,6 @@ public class MetricsService {
             buffer.append("<Unknown>");
         }
 
-        return buffer.toString();
+        return buffer.toString().trim();
     }
 }

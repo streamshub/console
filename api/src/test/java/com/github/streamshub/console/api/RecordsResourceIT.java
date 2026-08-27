@@ -3,16 +3,12 @@ package com.github.streamshub.console.api;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.stream.Stream;
@@ -27,12 +23,9 @@ import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.Uuid;
-import org.awaitility.core.ConditionEvaluationListener;
-import org.awaitility.core.EvaluatedCondition;
-import org.awaitility.core.TimeoutEvent;
 import org.eclipse.microprofile.config.Config;
-import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +53,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
+import io.restassured.response.ValidatableResponse;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -69,13 +63,12 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -116,6 +109,13 @@ class RecordsResourceIT {
     @AfterAll
     static void cleanup() {
         logCapture.deregister();
+    }
+
+    @AfterEach
+    void cleanupAfterEach() {
+        if (recordUtils != null) {
+            recordUtils.close();
+        }
     }
 
     @BeforeEach
@@ -161,12 +161,12 @@ class RecordsResourceIT {
                 .schemaRegistryContext().registryClient();
     }
 
-    @Test
-    void testConsumeRecordFromInvalidTopic() {
-        final String topicId = Uuid.randomUuid().toString();
+    private ValidatableResponse getRecord(String topicId, int partition, long offset) {
+        return whenRequesting(req -> req.get("{partition}/{offset}", clusterId1, topicId, partition, offset));
+    }
 
-        whenRequesting(req -> req.get("", clusterId1, topicId))
-            .assertThat()
+    private void assertNotFound(ValidatableResponse response) {
+        response.assertThat()
             .statusCode(is(Status.NOT_FOUND.getStatusCode()))
             .body("errors.size()", is(1))
             .body("errors.status", contains("404"))
@@ -174,299 +174,136 @@ class RecordsResourceIT {
     }
 
     @Test
-    void testConsumeRecordFromInvalidPartition() {
+    void testGetRecord() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
-        whenRequesting(req -> req
-                .queryParam("filter[partition]", -1)
-                .get("", clusterId1, topicIds.get(topicName)))
+        for (int i = 0; i < 3; i++) {
+            recordUtils.produceRecord(topicName, 1, null, Map.of("h1", "h1-value-" + i), "the-key-" + i, "the-value-" + i);
+        }
+
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 3);
+
+        getRecord(topicIds.get(topicName), 1, 1)
             .assertThat()
-            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
-            .body("errors.size()", is(1))
-            .body("errors.status", contains("400"))
-            .body("errors.code", contains("4001"))
-            .body("errors.source.parameter", contains("filter[partition]"));
+            .statusCode(is(Status.OK.getStatusCode()))
+            .header(HttpHeaders.CACHE_CONTROL, is("no-store"))
+            .body("data.type", is("records"))
+            .body("data.attributes.partition", is(1))
+            .body("data.attributes.offset", is(1))
+            .body("data.attributes.key", is("the-key-1"))
+            .body("data.attributes.value", is("the-value-1"))
+            .body("data.attributes.headers.h1", is("h1-value-1"));
     }
 
     @Test
-    void testConsumeRecordFromNonexistentPartition() {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
-
-        whenRequesting(req -> req
-                .queryParam("filter[partition]", 2)
-                .get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(0));
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = { -1, 0, 1001 })
-    void testConsumeRecordWithInvalidPageSize(int pageSize) {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
-
-        whenRequesting(req -> req
-                .queryParam("page[size]", pageSize)
-                .get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
-            .body("errors.size()", is(1))
-            .body("errors.status", contains("400"))
-            .body("errors.code", contains("4001"))
-            .body("errors.source.parameter", contains("page[size]"));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "2000-01-01T00:00:00.000Z, 2000-01-02T00:00:00.000Z, 2000-01-01T00:00:00.000Z, 2",
-        "2000-01-01T00:00:00.000Z, 2000-01-02T00:00:00.000Z, 2000-01-02T00:00:00.000Z, 1",
-        "2000-01-01T00:00:00.000Z, 2000-01-02T00:00:00.000Z, 2000-01-03T00:00:00.000Z, 0"
-    })
-    void testConsumeRecordsAsOfTimestamp(Instant ts1, Instant ts2, Instant tsSearch, int expectedResults) {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 2, Map.of("retention.ms", "-1"));
-        recordUtils.produceRecord(topicName, ts1, null, "the-key1", "the-value1");
-        recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
-
-        await().atMost(10, TimeUnit.SECONDS)
-            .conditionEvaluationListener(new ConditionEvaluationListener<Boolean>() {
-                @Override
-                public void conditionEvaluated(EvaluatedCondition<Boolean> condition) {
-                    // No-op
-                }
-                @Override
-                public void onTimeout(TimeoutEvent timeoutEvent) {
-                    Logger.getLogger(getClass()).warnf("Timed out waiting for number of records to be 2: actual %d", topicUtils.getTopicSize(topicName));
-                }
-            })
-            .until(() -> topicUtils.getTopicSize(topicName) >= 2);
-
-        whenRequesting(req -> req
-                .queryParam("filter[timestamp]", "gte," + tsSearch.toString())
-                .get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(expectedResults));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "2000-01-01T00:00:00.000Z, 2000-01-02T00:00:00.000Z, 2000-01-01T00:00:00.000Z",
-        "2000-01-01T00:00:00.000Z, 2000-01-02T00:00:00.000Z, eq,2000-01-02T00:00:00.000Z",
-        "2000-01-01T00:00:00.000Z, 2000-01-02T00:00:00.000Z, gte,1969-12-31T23:59:59.999Z"
-    })
-    void testConsumeRecordsAsOfInvalidTimestamp(Instant ts1, Instant ts2, String tsSearch) {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 2, Map.of("retention.ms", "-1"));
-        recordUtils.produceRecord(topicName, ts1, null, "the-key1", "the-value1");
-        recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
-
-        await().atMost(10, TimeUnit.SECONDS)
-            .conditionEvaluationListener(new ConditionEvaluationListener<Boolean>() {
-                @Override
-                public void conditionEvaluated(EvaluatedCondition<Boolean> condition) {
-                    // No-op
-                }
-                @Override
-                public void onTimeout(TimeoutEvent timeoutEvent) {
-                    Logger.getLogger(getClass()).warnf("Timed out waiting for number of records to be 2: actual %d", topicUtils.getTopicSize(topicName));
-                }
-            })
-            .until(() -> topicUtils.getTopicSize(topicName) >= 2);
-
-        whenRequesting(req -> req
-                .queryParam("filter[timestamp]", tsSearch)
-                .get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
-            .body("errors.size()", is(1))
-            .body("errors.status", contains("400"))
-            .body("errors.code", contains("4001"))
-            .body("errors.source.parameter", contains("filter[timestamp]"));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "0, 3",
-        "1, 2",
-        "2, 1",
-        "3, 0",
-        "4, 0"
-    })
-    void testConsumeRecordsByStartingOffset(int startingOffset, int expectedResults) {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 1); // single partition
-        for (int i = 0; i < 3; i++) {
-            recordUtils.produceRecord(topicName, null, null, "the-key-" + i, "the-value-" + i);
-        }
-
-        await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> topicUtils.getTopicSize(topicName) >= 3);
-
-        whenRequesting(req -> req
-                .queryParam("filter[partition]", 0)
-                .queryParam("filter[offset]", "gte," + startingOffset)
-                .get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(expectedResults));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "-1",
-        "gte,-1",
-        "eq,2"
-    })
-    void testConsumeRecordsByInvalidStartingOffset(String startingOffset) {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 1); // single partition
-        for (int i = 0; i < 3; i++) {
-            recordUtils.produceRecord(topicName, null, null, "the-key-" + i, "the-value-" + i);
-        }
-
-        await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> topicUtils.getTopicSize(topicName) >= 3);
-
-        whenRequesting(req -> req
-                .queryParam("filter[partition]", 0)
-                .queryParam("filter[offset]", startingOffset)
-                .get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
-            .body("errors.size()", is(1))
-            .body("errors.status", contains("400"))
-            .body("errors.code", contains("4001"))
-            .body("errors.source.parameter", contains("filter[offset]"));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "10",
-        "20",
-        "30",
-        "40",
-        "200"
-    })
-    void testConsumeLatestRecords(int limit) {
-        final String topicName = UUID.randomUUID().toString();
-        final int totalRecords = 100;
-        var topicIds = topicUtils.createTopics(List.of(topicName), 10);
-        List<String> messageValues = new ArrayList<>();
-
-        for (int i = 0; i < totalRecords; i++) {
-            String value = "the-value-" + i;
-            messageValues.add(value);
-            recordUtils.produceRecord(topicName, null, null, "the-key-" + i, value);
-        }
-
-        await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> topicUtils.getTopicSize(topicName) >= totalRecords);
-
-        Collections.reverse(messageValues);
-
-        int resultCount = Math.min(limit, totalRecords);
-
-        whenRequesting(req -> req
-                .queryParam("page[size]", limit)
-                .get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(resultCount))
-            .body("data.findAll { it }.attributes.value", contains(messageValues.subList(0, resultCount).toArray(String[]::new)));
+    void testGetRecordFromInvalidTopic() {
+        assertNotFound(getRecord(Uuid.randomUuid().toString(), 0, 0));
     }
 
     @Test
-    void testConsumeRecordsIncludeOnlyHeaders() {
+    void testGetRecordFromNonexistentPartition() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 2);
-        for (int i = 0; i < 3; i++) {
-            recordUtils.produceRecord(topicName, null, Map.of("h1", "h1-value-" + i), "the-key-" + i, "the-value-" + i);
-        }
+        recordUtils.produceRecord(topicName, 0, null, null, "the-key", "the-value");
 
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> topicUtils.getTopicSize(topicName) >= 3);
+            .until(() -> topicUtils.getTopicSize(topicName) >= 1);
+
+        assertNotFound(getRecord(topicIds.get(topicName), 2, 0));
+    }
+
+    @Test
+    void testGetRecordFromEmptyPartition() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
+
+        assertNotFound(getRecord(topicIds.get(topicName), 0, 0));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "-1,  0",
+        " 0, -1",
+        " 0,  1", // beyond the end of the partition
+        " 0, 10",
+    })
+    void testGetRecordWithMissingPartitionOrOffset(int partition, long offset) {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
+        recordUtils.produceRecord(topicName, null, null, "the-key", "the-value");
+
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 1);
+
+        assertNotFound(getRecord(topicIds.get(topicName), partition, offset));
+    }
+
+    @Test
+    void testGetRecordIncludeOnlyHeaders() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
+        recordUtils.produceRecord(topicName, null, Map.of("h1", "h1-value"), "the-key", "the-value");
+
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 1);
 
         whenRequesting(req -> req
                 .queryParam("fields[records]", "headers")
-                .get("", clusterId1, topicIds.get(topicName)))
+                .get("{partition}/{offset}", clusterId1, topicIds.get(topicName), 0, 0))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(3))
-            .body("data", everyItem(allOf(
+            .body("data", allOf(
                     is(aMapWithSize(3)),
                     hasEntry("type", "records"),
                     hasKey("attributes"),
-                    hasKey("relationships"))))
-            .body("data.attributes.headers", everyItem(hasKey("h1")));
+                    hasKey("relationships")))
+            .body("data.attributes", is(aMapWithSize(1)))
+            .body("data.attributes.headers.h1", is("h1-value"));
     }
 
     @Test
-    void testConsumeRecordWithEmptyValue() {
+    void testGetRecordWithEmptyValue() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
         recordUtils.produceRecord(topicName, null, null, null, "");
 
         await().atMost(10, TimeUnit.SECONDS)
             .until(() -> topicUtils.getTopicSize(topicName) >= 1);
 
-        whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
+        getRecord(topicIds.get(topicName), 0, 0)
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.value", is(equalTo("")));
+            .body("data.attributes.value", is(equalTo("")));
     }
 
     @Test
-    void testConsumeRecordWithBinaryValueWithinLimit() throws NoSuchAlgorithmException {
+    void testGetRecordWithBinaryValue() throws NoSuchAlgorithmException {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
-        final byte[] data = new byte[16];
-        SecureRandom.getInstanceStrong().nextBytes(data);
-        data[15] = (byte) 0xFF; // ensure at least one byte invalid UTF-8
-
-        recordUtils.produceRecord(topicName, null, null, null, data);
-
-        String expectedBase64 = Base64.getEncoder().encodeToString(data);
-
-        whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.value", is(equalTo(expectedBase64)))
-            .body("data[0].meta.content.value.type", is(equalTo("application/octet-stream")))
-            .body("data[0].meta.content.value.encoding", is(equalTo("base64")));
-    }
-
-    @Test
-    void testConsumeRecordWithBinaryValueExceedingLimit() throws NoSuchAlgorithmException {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
-
+        // Large binary values are never omitted or truncated when fetching a single record
         final byte[] data = new byte[512];
         SecureRandom.getInstanceStrong().nextBytes(data);
         data[511] = (byte) 0xFF; // ensure at least one byte invalid UTF-8
 
         recordUtils.produceRecord(topicName, null, null, null, data);
 
-        whenRequesting(req -> req
-                .queryParam("maxValueLength", 100)
-                .get("", clusterId1, topicIds.get(topicName)))
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 1);
+
+        getRecord(topicIds.get(topicName), 0, 0)
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.value", is(nullValue()))
-            .body("data[0].meta.content.value.type", is(equalTo("application/octet-stream")))
-            .body("data[0].meta.content.value.omitted", is(equalTo(true)));
+            .body("data.attributes.value", is(equalTo(Base64.getEncoder().encodeToString(data))))
+            .body("data.meta.content.value.type", is(equalTo("application/octet-stream")))
+            .body("data.meta.content.value.encoding", is(equalTo("base64")));
     }
 
     @Test
-    void testConsumeRecordWithBinaryHeader() throws NoSuchAlgorithmException {
+    void testGetRecordWithBinaryHeader() throws NoSuchAlgorithmException {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
@@ -476,63 +313,40 @@ class RecordsResourceIT {
 
         recordUtils.produceRecord(topicName, null, Map.<String, Object>of("binHeader", binaryHeaderValue), null, (byte[]) null);
 
-        String expectedBase64 = Base64.getEncoder().encodeToString(binaryHeaderValue);
-
-        whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.headers.binHeader", is(equalTo(expectedBase64)))
-            .body("data[0].meta.content.headers.binHeader.type", is(equalTo("application/octet-stream")))
-            .body("data[0].meta.content.headers.binHeader.encoding", is(equalTo("base64")));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "  1,   1, true",
-        "  5,   5, true",
-        " 99,  99, true",
-        "100, 100, false",
-        "101, 100, false",
-        "200, 100, false",
-        "   , 100, false",
-    })
-    void testConsumeRecordWithValueLengthLimit(Integer maxValueLength, int responseValueLength, boolean expectTruncated) {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
-        String h1Value = "h".repeat(100);
-        String key = "k".repeat(100);
-        String value = "v".repeat(100);
-        recordUtils.produceRecord(topicName, null, Map.of("h1", h1Value), key, value);
         await().atMost(10, TimeUnit.SECONDS)
             .until(() -> topicUtils.getTopicSize(topicName) >= 1);
-        Map<String, Object> queryParams = new HashMap<>(1);
-        if (maxValueLength != null) {
-            queryParams.put("maxValueLength", maxValueLength);
-        }
 
-        var response = whenRequesting(req -> req
-                .queryParams(queryParams)
-                .get("", clusterId1, topicIds.get(topicName)))
+        getRecord(topicIds.get(topicName), 0, 0)
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.headers", hasEntry(equalTo("h1"), equalTo(h1Value.subSequence(0, responseValueLength))))
-            .body("data[0].attributes.key", equalTo(key.subSequence(0, responseValueLength)))
-            .body("data[0].attributes.value", equalTo(value.subSequence(0, responseValueLength)));
-
-        if (expectTruncated) {
-            response
-                .body("data[0].meta.content.key.truncated", is(equalTo(true)))
-                .body("data[0].meta.content.value.truncated", is(equalTo(true)))
-                .body("data[0].meta.content.headers.h1.truncated", is(equalTo(true)));
-        } else {
-            response.body("data[0].meta", is(nullValue()));
-        }
+            .body("data.attributes.headers.binHeader", is(equalTo(Base64.getEncoder().encodeToString(binaryHeaderValue))))
+            .body("data.meta.content.headers.binHeader.type", is(equalTo("application/octet-stream")))
+            .body("data.meta.content.headers.binHeader.encoding", is(equalTo("base64")));
     }
 
     @Test
-    void testConsumeRecordWithOffsetBeforeBeginning() {
+    void testGetRecordWithLongValuesNotTruncated() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
+        String h1Value = "h".repeat(5000);
+        String key = "k".repeat(5000);
+        String value = "v".repeat(5000);
+        recordUtils.produceRecord(topicName, null, Map.of("h1", h1Value), key, value);
+
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 1);
+
+        getRecord(topicIds.get(topicName), 0, 0)
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.headers.h1", is(equalTo(h1Value)))
+            .body("data.attributes.key", is(equalTo(key)))
+            .body("data.attributes.value", is(equalTo(value)))
+            .body("data.meta", is(nullValue()));
+    }
+
+    @Test
+    void testGetRecordDeletedBeforeBeginning() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
@@ -547,18 +361,18 @@ class RecordsResourceIT {
         await().atMost(5, TimeUnit.SECONDS)
             .until(() -> topicUtils.getTopicSize(topicName) == 1);
 
-        whenRequesting(req -> req
-                .param("filter[offset]", "gte,0")
-                .get("", clusterId1, topicIds.get(topicName)))
+        // The deleted records are not substituted with the first available record
+        assertNotFound(getRecord(topicIds.get(topicName), 0, 0));
+
+        getRecord(topicIds.get(topicName), 0, 3)
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.offset", is(equalTo(3)))
-            .body("data[0].attributes.value", is(equalTo("fourth")));
+            .body("data.attributes.offset", is(equalTo(3)))
+            .body("data.attributes.value", is(equalTo("fourth")));
     }
 
     @Test
-    void testConsumeRecordMagicByteWithoutRegistry() {
+    void testGetRecordMagicByteWithoutRegistry() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
         var value = "\u0000rest of value";
@@ -569,17 +383,16 @@ class RecordsResourceIT {
 
         whenRequesting(req -> req
                 // Kafka Y has no associated registry
-                .get("", clusterIdY, topicIds.get(topicName)))
+                .get("{partition}/{offset}", clusterIdY, topicIds.get(topicName), 0, 0))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.offset", is(equalTo(0)))
+            .body("data.attributes.offset", is(equalTo(0)))
             // The value is treated as binary data
-            .body("data[0].attributes.value", is(equalTo(Base64.getEncoder().encodeToString(value.getBytes()))));
+            .body("data.attributes.value", is(equalTo(Base64.getEncoder().encodeToString(value.getBytes()))));
     }
 
     @Test
-    void testConsumeRecordWithSchemaNotFound() {
+    void testGetRecordWithSchemaNotFound() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
         var value = "\u0000rest of value";
@@ -588,14 +401,12 @@ class RecordsResourceIT {
         await().atMost(5, TimeUnit.SECONDS)
             .until(() -> topicUtils.getTopicSize(topicName) == 1);
 
-        whenRequesting(req -> req
-                .get("", clusterId1, topicIds.get(topicName)))
+        getRecord(topicIds.get(topicName), 0, 0)
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.offset", is(equalTo(0)))
+            .body("data.attributes.offset", is(equalTo(0)))
             // The value is treated as binary data
-            .body("data[0].attributes.value", is(equalTo(Base64.getEncoder().encodeToString(value.getBytes()))));
+            .body("data.attributes.value", is(equalTo(Base64.getEncoder().encodeToString(value.getBytes()))));
 
         var logs = logCapture.records();
 
@@ -603,47 +414,6 @@ class RecordsResourceIT {
                 // 1919251316 = 64-bit long integer from bytes of `rest` string
                 "Message: No content with id/hash 'contentId-1919251316' was found"
         ))));
-    }
-
-    @Test
-    void testConsumeRecordFromTimestampAcrossPartitions() {
-        final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(List.of(topicName), 3);
-
-        Instant ts1 = Instant.now();
-        recordUtils.produceRecord(topicName, 0, ts1, null, null, "message A");
-        recordUtils.produceRecord(topicName, 1, ts1, null, null, "message A");
-        recordUtils.produceRecord(topicName, 2, ts1, null, null, "message A");
-
-        Instant ts2 = ts1.plusSeconds(1);
-        recordUtils.produceRecord(topicName, 0, ts2, null, null, "message B");
-        recordUtils.produceRecord(topicName, 1, ts2, null, null, "message B");
-        recordUtils.produceRecord(topicName, 2, ts2, null, null, "message B");
-
-        Instant ts3 = ts2.plusSeconds(1);
-        recordUtils.produceRecord(topicName, 0, ts3, null, null, "message C");
-        recordUtils.produceRecord(topicName, 1, ts3, null, null, "message C");
-        recordUtils.produceRecord(topicName, 2, ts3, null, null, "message C");
-
-        await().atMost(5, TimeUnit.SECONDS)
-            .until(() -> topicUtils.getTopicSize(topicName) == 9);
-
-        AtomicInteger offset = new AtomicInteger(0);
-
-        Stream.of(ts1, ts2, ts3).forEach(ts -> {
-            int expectedOffset = offset.getAndIncrement();
-
-            whenRequesting(req -> req
-                    .param("filter[timestamp]", "gte," + ts.toString())
-                    .param("page[size]", 3)
-                    .get("", clusterId1, topicIds.get(topicName)))
-                .assertThat()
-                .statusCode(is(Status.OK.getStatusCode()))
-                .body("data", hasSize(3))
-                .body("data[0].attributes", allOf(hasEntry("partition", 0), hasEntry("offset", expectedOffset)))
-                .body("data[1].attributes", allOf(hasEntry("partition", 1), hasEntry("offset", expectedOffset)))
-                .body("data[2].attributes", allOf(hasEntry("partition", 2), hasEntry("offset", expectedOffset)));
-        });
     }
 
     @Test
@@ -663,6 +433,7 @@ class RecordsResourceIT {
                 .post("", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.CREATED.getStatusCode()))
+            .header(HttpHeaders.LOCATION, endsWith("/topics/" + topicIds.get(topicName) + "/records/0/0"))
             .body("data.attributes.partition", is(0))
             .body("data.attributes.offset", is(0))
             .body("data.attributes.value", is("TEST"));
@@ -850,23 +621,22 @@ class RecordsResourceIT {
                     // fully qualified
                     is("console.avro.name_" + valueArtifactId));
 
-        var recordsResponse = whenRequesting(req -> req.get("", clusterId, topicIds.get(topicName)))
+        var recordsResponse = whenRequesting(req -> req.get("{partition}/{offset}", clusterId, topicIds.get(topicName), 0, 0))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.partition", is(0))
-            .body("data[0].attributes.offset", is(0))
-            .body("data[0].relationships.keySchema.meta.artifactType", is(ArtifactType.AVRO))
-            .body("data[0].relationships.keySchema.meta.name",
+            .body("data.attributes.partition", is(0))
+            .body("data.attributes.offset", is(0))
+            .body("data.relationships.keySchema.meta.artifactType", is(ArtifactType.AVRO))
+            .body("data.relationships.keySchema.meta.name",
                     // fully qualified
                     is("console.avro.name_" + keyArtifactId))
-            .body("data[0].relationships.valueSchema.meta.artifactType", is(ArtifactType.AVRO))
-            .body("data[0].relationships.valueSchema.meta.name",
+            .body("data.relationships.valueSchema.meta.artifactType", is(ArtifactType.AVRO))
+            .body("data.relationships.valueSchema.meta.name",
                     // fully qualified
                     is("console.avro.name_" + valueArtifactId))
-            .body("data[0].attributes.key", is("""
+            .body("data.attributes.key", is("""
                     {"key1":"value-of-key1"}"""))
-            .body("data[0].attributes.value", is("""
+            .body("data.attributes.value", is("""
                     {"value1":"value-of-value1"}"""))
             .extract();
 
@@ -962,19 +732,18 @@ class RecordsResourceIT {
             .body("data.relationships.valueSchema.meta.artifactType", is(ArtifactType.PROTOBUF))
             .body("data.relationships.valueSchema.meta.name", is("name_" + valueArtifactId));
 
-        var recordsResponse = whenRequesting(req -> req.get("", clusterId, topicIds.get(topicName)))
+        var recordsResponse = whenRequesting(req -> req.get("{partition}/{offset}", clusterId, topicIds.get(topicName), 0, 0))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", hasSize(1))
-            .body("data[0].attributes.partition", is(0))
-            .body("data[0].attributes.offset", is(0))
-            .body("data[0].relationships.keySchema.meta.artifactType", is(ArtifactType.PROTOBUF))
-            .body("data[0].relationships.keySchema.meta.name", is("name_" + keyArtifactId))
-            .body("data[0].attributes.key", is("""
+            .body("data.attributes.partition", is(0))
+            .body("data.attributes.offset", is(0))
+            .body("data.relationships.keySchema.meta.artifactType", is(ArtifactType.PROTOBUF))
+            .body("data.relationships.keySchema.meta.name", is("name_" + keyArtifactId))
+            .body("data.attributes.key", is("""
                     {"key1":"value-of-key1"}"""))
-            .body("data[0].relationships.valueSchema.meta.artifactType", is(ArtifactType.PROTOBUF))
-            .body("data[0].relationships.valueSchema.meta.name", is("name_" + valueArtifactId))
-            .body("data[0].attributes.value", is("""
+            .body("data.relationships.valueSchema.meta.artifactType", is(ArtifactType.PROTOBUF))
+            .body("data.relationships.valueSchema.meta.name", is("name_" + valueArtifactId))
+            .body("data.attributes.value", is("""
                     {"value1":"value-of-value1"}"""))
             .extract();
 
@@ -986,7 +755,7 @@ class RecordsResourceIT {
             String expectedValueSchema,
             ExtractableResponse<?> response,
             BiConsumer<String, String> assertion) {
-        String keySchemaLink = response.jsonPath().getString("data[0].relationships.keySchema.links.content");
+        String keySchemaLink = response.jsonPath().getString("data.relationships.keySchema.links.content");
 
         String actualKeySchema = RestAssured.given()
             .basePath(keySchemaLink)
@@ -999,7 +768,7 @@ class RecordsResourceIT {
 
         assertion.accept(expectedKeySchema, actualKeySchema);
 
-        String valueSchemaLink = response.jsonPath().getString("data[0].relationships.valueSchema.links.content");
+        String valueSchemaLink = response.jsonPath().getString("data.relationships.valueSchema.links.content");
 
         String actualValueSchema = RestAssured.given()
             .basePath(valueSchemaLink)

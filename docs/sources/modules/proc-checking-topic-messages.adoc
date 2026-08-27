@@ -19,46 +19,59 @@ Click on a message to view the full message details.
 +
 Click the *Manage columns* icon (represented as two-column icon) to choose the information to display.
 
-. Click the search dropdown menu and select the advanced search options to refine your search.
+. Use the filter above the table to refine the messages that are retrieved.
 +
-Choose to display the latest messages or messages from a specified time or offset. 
-You can display messages for all partitions or a specified partition.
-+
-When you are done, you can click the CSV icon (represented as a CSV file icon) to download the information on the returned messages. 
+Each change to the filter retrieves the messages again.
+Messages appear in the table as they are read from Kafka.
 
-Refining your search:: In this example, search terms, and message, retrieval, and partition options are combined:
-+
-* `messages=timestamp:2024-03-01T00:00:00Z retrieve=50 partition=1 Error on page load where=value`
-+
-The filter searches for the text "Error on page load" in partition 1 as a message value, starting from March 1, 2024, and retrieves up to 50 messages.
+. Check the status below the filter to see how many messages were found and how long the retrieval took.
 
-Search terms:: Enter search terms as text (_has the words_) to find specific matches and define _where_ in a message to look for the term. You can search anywhere in the message or narrow the search to the key, header, or value.  
+Filter options:: The following options are available.
 +
-For example:
-+
---
-* `messages=latest retrieve=100 642-26-1594 where=key`
---
-+
-This example searches the latest 100 messages on message key `642-26-1594`. 
-
-Message options:: Set the starting point for returning messages.
-+
-* *Latest messages* to start from the latest message.
-** `messages=latest`
-* *From offset* to start from an offset in a partition. In some cases, you may want to specify an offset without a partition. 
+* *Partition* to retrieve messages from all partitions or from a specific partition.
+* *Fetch from* to set the starting point for returning messages:
+** *Latest* to start from the latest messages.
+** *Last 5 minutes*, *Last 10 minutes*, or *Last 15 minutes* to start from a time relative to now.
+** *Offset* to start from an offset in a partition. In some cases, you may want to specify an offset without a partition.
 However, the most common scenario is to search by offset within a specific partition.
-** `messages=offset:5600253 partition=0`
-* *From timestamp* to start from an exact time and date in ISO 8601 format.  
-** `messages=timestamp:2024-03-14T00:00:00Z` 
-* *From Unix timestamp* to start from a time and date in Unix format. 
-** `messages=epoch:1`
+** *Timestamp* to start from an exact time and date.
+** *Unix timestamp* to start from a time and date in Unix format.
+* *Limit* to set the maximum number of messages to return, in steps of 50. The default is 50.
 
-Retrieval options:: Set a retrieval option.
+Searching messages:: Enter a search term in the *Search* field to return only the messages that contain it. 
+The search field is available when *Fetch from* is set to anything other than *Latest*.
 +
-* *Number of messages* to return a specified number of messages.
-** `messages=latest retrieve=50`
-* *Continuously* to return the latest messages in real-time. Click the pause button (represented by two vertical lines) to pause the refresh. Unpause to continue the refresh.
-** `retrieve=continuously`
+Choose where to look for the term:
++
+* *Everywhere* to match the key, headers, or value.
+* *Key*, *Headers*, or *Value* to narrow the search to one part of the message.
++
+The search is performed by the console server, which reads records from the starting point and checks each one against the search term.
+The term matches any part of the text and ignores case.
+Use the following wildcards in the term:
++
+* `*` to match any sequence of characters, including none.
+* `?` to match any single character.
++
+For example, `order-*-failed` matches `order-1234-failed`, and `order-?-failed` matches `order-7-failed` but not `order-12-failed`.
+Because the term can match any part of the text, you do not need to add `*` at the start or end.
++
+Because the full key, headers, and value are checked, a message is found even if the matching text is beyond the part shown in the table.
++
+Searching can take time on a topic with many records.
+Choose a narrower starting point, such as a specific partition or a recent time, to search faster.
 
-Partition options:: Choose to run a search against all partitions or a specific partition.
+Retrieval status:: The status below the filter shows progress while messages are being retrieved. 
++
+* While retrieving, the status shows the time the retrieval has been running and the maximum time left, for example `0:12 elapsed, 4:48 left`. 
+During a search, a progress bar estimates how much of the topic has been scanned.
+The maximum time is set by the administrator who deployed the console. 
+The retrieval ends sooner if all records are read or the requested number of messages is found.
+* Click *Cancel* to stop a retrieval. The messages found so far remain in the table.
+* When the retrieval finishes, the status shows the number of messages and how long it took, for example `50 messages in 0:01`. 
+For a search, it shows the number of matches and the number of records scanned, for example `7 matches from 98,765 scanned in 1:23`. 
+A search also shows why it ended:
+** *Scan complete* means all records from the starting point were checked.
+** *Found all requested matches* means the *Limit* was reached. More matches might exist.
+** *Timed out, partial results* means the maximum time ran out before all records were checked. More matches might exist. To find them, narrow the search or ask your administrator to increase the maximum time.
+** *Stopped, partial results* means the retrieval was cancelled.

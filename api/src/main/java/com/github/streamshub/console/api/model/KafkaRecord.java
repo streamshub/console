@@ -18,7 +18,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToOne;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
-import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
 import com.github.streamshub.console.api.support.ErrorCategory;
 
 import io.xlate.validation.constraints.Expression;
@@ -73,13 +72,6 @@ public class KafkaRecord extends JsonApiResource<KafkaRecord.Attributes, KafkaRe
 
         private Fields() {
             // Prevent instances
-        }
-    }
-
-    @Schema(name = "KafkaRecordDataList")
-    public static final class KafkaRecordDataList extends JsonApiRootDataList<KafkaRecord> {
-        public KafkaRecordDataList(List<KafkaRecord> data) {
-            super(data);
         }
     }
 
