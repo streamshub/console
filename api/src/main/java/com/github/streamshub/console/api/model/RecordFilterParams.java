@@ -1,17 +1,28 @@
 package com.github.streamshub.console.api.model;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.QueryParam;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 
 import com.github.streamshub.console.api.support.ErrorCategory;
+import com.github.streamshub.console.api.support.serdes.RecordData;
 
 import io.xlate.validation.constraints.Expression;
 import io.xlate.validation.constraints.Expression.ExceptionalValue;
@@ -22,11 +33,14 @@ import io.xlate.validation.constraints.Expression.ExceptionalValue;
     node = RecordFilterParams.FILTER_OFFSET,
     message = "Parameter `filter[offset]` must not be used when `filter[timestamp]` is present.",
     payload = ErrorCategory.InvalidQueryParameter.class)
-public class RecordFilterParams {
+public class RecordFilterParams extends FilterParams {
 
     static final String FILTER_PARTITION = "filter[partition]";
     static final String FILTER_OFFSET = "filter[offset]";
     static final String FILTER_TIMESTAMP = "filter[timestamp]";
+    static final String FILTER_KEY = "filter[key]";
+    static final String FILTER_VALUE = "filter[value]";
+    static final String FILTER_HEADERS = "filter[headers]";
     static final String PAGE_SIZE = "page[size]";
     static final String MAX_VALUE_LENGTH = "maxValueLength";
 
@@ -143,6 +157,76 @@ public class RecordFilterParams {
         node = FILTER_TIMESTAMP)
     FetchFilter timestamp;
 
+    @QueryParam(FILTER_KEY)
+    @Parameter(
+        description = """
+            Retrieve only messages whose key matches this filter. The format of this
+            parameter's value is `like,<pattern>` where `*` matches any sequence of
+            characters and `?` matches any single character. Binary keys are never matched.
+            """,
+        schema = @Schema(implementation = String[].class, minItems = 2, maxItems = 2),
+        explode = Explode.FALSE)
+    @Expression(
+        when = "self != null",
+        value = "[ 'like', 'ilike' ].contains(self.operator)",
+        message = "unsupported filter operator, supported values: [ 'like', 'ilike' ]",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_KEY)
+    @Expression(
+        when = "self != null",
+        value = "self.operands.size() == 1",
+        message = "exactly 1 operand is required",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_KEY)
+    FetchFilter keyFilter;
+
+    @QueryParam(FILTER_VALUE)
+    @Parameter(
+        description = """
+            Retrieve only messages whose value matches this filter. The format of this
+            parameter's value is `like,<pattern>` where `*` matches any sequence of
+            characters and `?` matches any single character. Binary values are never matched.
+            """,
+        schema = @Schema(implementation = String[].class, minItems = 2, maxItems = 2),
+        explode = Explode.FALSE)
+    @Expression(
+        when = "self != null",
+        value = "[ 'like', 'ilike' ].contains(self.operator)",
+        message = "unsupported filter operator, supported values: [ 'like', 'ilike' ]",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_VALUE)
+    @Expression(
+        when = "self != null",
+        value = "self.operands.size() == 1",
+        message = "exactly 1 operand is required",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_VALUE)
+    FetchFilter valueFilter;
+
+    @QueryParam(FILTER_HEADERS)
+    @Parameter(
+        description = """
+            Retrieve only messages with at least one header value matching this filter.
+            The format of this parameter's value is `like,<pattern>` where `*` matches
+            any sequence of characters and `?` matches any single character. Binary header
+            values are never matched.
+            """,
+        schema = @Schema(implementation = String[].class, minItems = 2, maxItems = 2),
+        explode = Explode.FALSE)
+    @Expression(
+        when = "self != null",
+        value = "[ 'like', 'ilike' ].contains(self.operator)",
+        message = "unsupported filter operator, supported values: [ 'like', 'ilike' ]",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_HEADERS)
+    @Expression(
+        when = "self != null",
+        value = "self.operands.size() == 1",
+        message = "exactly 1 operand is required",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_HEADERS)
+    FetchFilter headersFilter;
+
     @QueryParam(PAGE_SIZE)
     @DefaultValue(ListFetchParams.PAGE_SIZE_DEFAULT + "")
     @Parameter(
@@ -177,6 +261,70 @@ public class RecordFilterParams {
         payload = ErrorCategory.InvalidQueryParameter.class,
         node = MAX_VALUE_LENGTH)
     String maxValueLength;
+
+    /**
+     * Attempts to decode {@code bytes} as UTF-8 text. Returns {@link Optional#empty()}
+     * when the bytes are {@code null}, empty, contain a malformed UTF-8 sequence, or
+     * contain control characters that indicate binary content.
+     */
+    public static Optional<String> decodeText(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return Optional.empty();
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        try (Reader reader = new InputStreamReader(
+                new ByteArrayInputStream(bytes),
+                StandardCharsets.UTF_8
+                    .newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT))) {
+            int cp;
+
+            while ((cp = reader.read()) != -1) {
+                if (isExcludedUnicodeC0(cp) || isUnicodeC1(cp)) {
+                    return Optional.empty();
+                }
+
+                sb.appendCodePoint(cp);
+            }
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+
+        return Optional.of(sb.toString());
+    }
+
+    /** Returns true for C0 control codes except common text whitespace (tab, LF, CR). */
+    public static boolean isExcludedUnicodeC0(int cp) {
+        return cp <= 0x1F && cp != '\t' && cp != '\n' && cp != '\r';
+    }
+
+    /** Returns true for DEL and C1 control codes (0x7F–0x9F). */
+    public static boolean isUnicodeC1(int cp) {
+        return cp >= 0x7F && cp <= 0x9F;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void buildPredicates() {
+        Class<ConsumerRecord<RecordData, RecordData>> recordClass =
+            (Class<ConsumerRecord<RecordData, RecordData>>) (Class<?>) ConsumerRecord.class;
+
+        maybeAddPredicate(keyFilter, recordClass,
+            rec -> decodeText(rec.key() != null ? rec.key().bytes() : null).orElse(null));
+        maybeAddPredicate(valueFilter, recordClass,
+            rec -> decodeText(rec.value() != null ? rec.value().bytes() : null).orElse(null));
+        maybeAddPredicate(headersFilter, recordClass,
+            rec -> StreamSupport.stream(rec.headers().spliterator(), false)
+                .map(Header::value)
+                .map(RecordFilterParams::decodeText)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .reduce((a, b) -> a + "\u0000" + b)
+                .orElse(null));
+    }
 
     public String getRawOffset() {
         return FetchFilter.rawFilter(offset);

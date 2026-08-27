@@ -38,7 +38,7 @@ import {
 } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { KafkaRecord } from '@/api/types';
-import { formatDateTime } from '@/utils/dateTime';
+import { formatDateTime, ZONED_DATETIME_MILLIS } from '@/utils/dateTime';
 import { useTheme } from '@/components/app/ThemeProvider';
 import { useSchemaContent } from '@/api/hooks/useSchemaContent';
 
@@ -50,8 +50,6 @@ interface MessageDetailsProps {
 // Each base64 char represents 6 bits; 65536 chars ≈ 48 KB of output per slice,
 // keeping each slice well under the ~10 ms frame budget on low-end hardware.
 const DECODE_CHUNK_SIZE = 65_536;
-
-const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
 
 export function MessageDetails({ message }: MessageDetailsProps) {
   const { t } = useTranslation();
@@ -68,7 +66,7 @@ export function MessageDetails({ message }: MessageDetailsProps) {
   const formatTimestampLocal = (timestamp: string): string => {
     return formatDateTime({
       value: timestamp,
-      format: MESSAGE_TIMESTAMP_FORMAT,
+      format: ZONED_DATETIME_MILLIS,
     });
   };
 
@@ -76,7 +74,7 @@ export function MessageDetails({ message }: MessageDetailsProps) {
     return formatDateTime({
       value: timestamp,
       timeZone: 'UTC',
-      format: MESSAGE_TIMESTAMP_FORMAT,
+      format: ZONED_DATETIME_MILLIS,
     });
   };
 
@@ -89,7 +87,8 @@ export function MessageDetails({ message }: MessageDetailsProps) {
 
   const formatEpoch = (timestamp: string): string => {
     try {
-      return String(Math.floor(new Date(timestamp).getTime() / 1000));
+      const time = new Date(timestamp).getTime();
+      return `${Math.floor(time / 1000)}.${time % 1000}`;
     } catch {
       return '-';
     }
@@ -396,6 +395,8 @@ export function MessageDetails({ message }: MessageDetailsProps) {
               ) : (
                 <>
                   <ClipboardCopy
+                    // isExpanded is only read on mount, remount when the mode changes
+                    key={valueJson.isJSON ? 'json' : 'text'}
                     isCode
                     isReadOnly
                     hoverTip="Copy"
@@ -461,6 +462,8 @@ export function MessageDetails({ message }: MessageDetailsProps) {
               ) : (
                 <>
                   <ClipboardCopy
+                    // isExpanded is only read on mount, remount when the mode changes
+                    key={keyJson.isJSON ? 'json' : 'text'}
                     isCode
                     isReadOnly
                     hoverTip="Copy"
