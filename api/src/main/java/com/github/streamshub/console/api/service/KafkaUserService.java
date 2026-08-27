@@ -29,12 +29,12 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.user.KafkaUserAuthentication;
 import io.strimzi.api.kafka.model.user.KafkaUserAuthorizationSimple;
 import io.strimzi.api.kafka.model.user.KafkaUserStatus;
-import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
 import io.strimzi.api.kafka.model.user.acl.AclRuleGroupResource;
 import io.strimzi.api.kafka.model.user.acl.AclRuleResource;
 import io.strimzi.api.kafka.model.user.acl.AclRuleTopicResource;
 import io.strimzi.api.kafka.model.user.acl.AclRuleTransactionalIdResource;
+import io.strimzi.api.kafka.model.user.acl.StrimziAclOperation;
 
 @ApplicationScoped
 public class KafkaUserService {
@@ -192,11 +192,11 @@ public class KafkaUserService {
         return null;
     }
 
-    private static List<String> mapOperations(List<AclOperation> operations) {
+    private static List<String> mapOperations(List<StrimziAclOperation> operations) {
         List<String> result = new ArrayList<>();
 
         if (operations != null) {
-            operations.stream().map(AclOperation::toValue).forEach(result::add);
+            operations.stream().map(StrimziAclOperation::toValue).forEach(result::add);
         }
 
         return result;

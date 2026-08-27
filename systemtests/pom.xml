@@ -85,7 +85,6 @@
         <dependency>
             <groupId>io.strimzi</groupId>
             <artifactId>api</artifactId>
-            <version>${strimzi-api.version}</version>
         </dependency>
         <!-- Test Frame used for handling k8s resources -->
         <dependency>

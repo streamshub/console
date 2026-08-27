@@ -2,6 +2,7 @@ package com.github.streamshub.console;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import jakarta.inject.Inject;
 
@@ -37,6 +39,9 @@ import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersion;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersionBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceSubresourceStatus;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.CustomResource;
@@ -46,7 +51,6 @@ import io.fabric8.kubernetes.client.dsl.Deletable;
 import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.Operator;
-import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.common.Constants;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
@@ -54,6 +58,7 @@ import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScra
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationTls;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.user.KafkaUser;
+import io.strimzi.crdgenerator.annotations.Crd;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -158,8 +163,8 @@ abstract class ConsoleReconcilerTestBase {
 
     @BeforeEach
     void setUp(TestInfo testInfo) {
-        apply(client, Crds.kafka());
-        apply(client, Crds.kafkaUser());
+        apply(client, crd(Kafka.class));
+        apply(client, crd(KafkaUser.class));
 
         if (testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
             createRouteCRD();
@@ -278,6 +283,69 @@ abstract class ConsoleReconcilerTestBase {
         createNamespace(CONSOLE_NS);
     }
 
+    // Replace with load of CRDs from Strimzi API module when added in a future release
+    private static CustomResourceDefinition crd(Class<? extends CustomResource<?, ?>> cls) {
+        Crd.Spec spec = getCrdMeta(cls).spec();
+        CustomResourceSubresourceStatus status = new CustomResourceSubresourceStatus();
+
+        List<CustomResourceDefinitionVersion> crVersions = new ArrayList<>(spec.versions().length);
+
+        for (Crd.Spec.Version apiVersion : spec.versions())  {
+            crVersions.add(new CustomResourceDefinitionVersionBuilder()
+                    .withName(apiVersion.name())
+                    .withNewSubresources()
+                        .withStatus(status)
+                    .endSubresources()
+                    .withNewSchema()
+                        .withNewOpenAPIV3Schema()
+                            .withType("object")
+                            .withXKubernetesPreserveUnknownFields(true)
+                        .endOpenAPIV3Schema()
+                    .endSchema()
+                    .withStorage(apiVersion.storage())
+                    .withServed(apiVersion.served())
+                    .build());
+        }
+
+        String group = spec.group();
+        String kind = spec.names().kind();
+        String listKind = Optional.of(spec.names().listKind())
+                .filter(Predicate.not(String::isBlank))
+                .orElse(kind + "List");
+        String plural = spec.names().plural();
+        String singular = Optional.of(spec.names().singular())
+                .filter(Predicate.not(String::isBlank))
+                .orElseGet(kind::toLowerCase);
+
+        return new CustomResourceDefinitionBuilder()
+                .withNewMetadata()
+                    .withName(plural + "." + group)
+                .endMetadata()
+                .withNewSpec()
+                    .withScope(spec.scope())
+                    .withGroup(group)
+                    .withVersions(crVersions)
+                    .withNewNames()
+                        .withSingular(singular)
+                        .withPlural(plural)
+                        .withShortNames(spec.names().shortNames())
+                        .withKind(kind)
+                        .withListKind(listKind)
+                    .endNames()
+                .endSpec()
+                .build();
+    }
+
+    private static Crd getCrdMeta(Class<?> cls) {
+        var crd = cls.getAnnotation(Crd.class);
+
+        if (crd == null) {
+            throw new IllegalArgumentException(cls.getName() + " is not a known Strimzi CRD type");
+        }
+
+        return crd;
+    }
+    
     private void createRouteCRD() {
         client.resource(new CustomResourceDefinitionBuilder()
                 .withNewMetadata()

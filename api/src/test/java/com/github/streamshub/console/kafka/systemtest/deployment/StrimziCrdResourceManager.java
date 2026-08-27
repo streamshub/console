@@ -1,20 +1,36 @@
 package com.github.streamshub.console.kafka.systemtest.deployment;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersion;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersionBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceSubresourceStatus;
 import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.common.Constants;
+import io.strimzi.api.kafka.model.connect.KafkaConnect;
+import io.strimzi.api.kafka.model.connector.KafkaConnector;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2;
+import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
+import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
+import io.strimzi.api.kafka.model.topic.KafkaTopic;
+import io.strimzi.api.kafka.model.user.KafkaUser;
+import io.strimzi.crdgenerator.annotations.Crd;
 
 /**
  * This manager creates the Strimzi CRDs needed by the application prior to the test
@@ -60,6 +76,11 @@ public class StrimziCrdResourceManager implements QuarkusTestResourceLifecycleMa
     }
 
     @Override
+    public void stop() {
+        // No-op
+    }
+
+    @Override
     public Map<String, String> start() {
         Config base = Config.autoConfigure(null);
 
@@ -90,14 +111,14 @@ public class StrimziCrdResourceManager implements QuarkusTestResourceLifecycleMa
             .endConfig()
             .build();
 
-        apply(k8s, Crds.kafka());
-        apply(k8s, Crds.kafkaNodePool());
-        apply(k8s, Crds.kafkaRebalance());
-        apply(k8s, Crds.kafkaTopic());
-        apply(k8s, Crds.kafkaConnect());
-        apply(k8s, Crds.kafkaConnector());
-        apply(k8s, Crds.kafkaMirrorMaker2());
-        apply(k8s, Crds.kafkaUser());
+        apply(k8s, crd(Kafka.class));
+        apply(k8s, crd(KafkaNodePool.class));
+        apply(k8s, crd(KafkaRebalance.class));
+        apply(k8s, crd(KafkaTopic.class));
+        apply(k8s, crd(KafkaConnect.class));
+        apply(k8s, crd(KafkaConnector.class));
+        apply(k8s, crd(KafkaMirrorMaker2.class));
+        apply(k8s, crd(KafkaUser.class));
 
         return Collections.emptyMap();
     }
@@ -112,8 +133,66 @@ public class StrimziCrdResourceManager implements QuarkusTestResourceLifecycleMa
         k8s.resource(crd).serverSideApply();
     }
 
-    @Override
-    public void stop() {
-        // No-op
+    // Replace with load of CRDs from Strimzi API module when added in a future release
+    private static CustomResourceDefinition crd(Class<? extends CustomResource<?, ?>> cls) {
+        Crd.Spec spec = getCrdMeta(cls).spec();
+        CustomResourceSubresourceStatus status = new CustomResourceSubresourceStatus();
+
+        List<CustomResourceDefinitionVersion> crVersions = new ArrayList<>(spec.versions().length);
+
+        for (Crd.Spec.Version apiVersion : spec.versions())  {
+            crVersions.add(new CustomResourceDefinitionVersionBuilder()
+                    .withName(apiVersion.name())
+                    .withNewSubresources()
+                        .withStatus(status)
+                    .endSubresources()
+                    .withNewSchema()
+                        .withNewOpenAPIV3Schema()
+                            .withType("object")
+                            .withXKubernetesPreserveUnknownFields(true)
+                        .endOpenAPIV3Schema()
+                    .endSchema()
+                    .withStorage(apiVersion.storage())
+                    .withServed(apiVersion.served())
+                    .build());
+        }
+
+        String group = spec.group();
+        String kind = spec.names().kind();
+        String listKind = Optional.of(spec.names().listKind())
+                .filter(Predicate.not(String::isBlank))
+                .orElse(kind + "List");
+        String plural = spec.names().plural();
+        String singular = Optional.of(spec.names().singular())
+                .filter(Predicate.not(String::isBlank))
+                .orElseGet(kind::toLowerCase);
+
+        return new CustomResourceDefinitionBuilder()
+                .withNewMetadata()
+                    .withName(plural + "." + group)
+                .endMetadata()
+                .withNewSpec()
+                    .withScope(spec.scope())
+                    .withGroup(group)
+                    .withVersions(crVersions)
+                    .withNewNames()
+                        .withSingular(singular)
+                        .withPlural(plural)
+                        .withShortNames(spec.names().shortNames())
+                        .withKind(kind)
+                        .withListKind(listKind)
+                    .endNames()
+                .endSpec()
+                .build();
+    }
+
+    private static Crd getCrdMeta(Class<?> cls) {
+        var crd = cls.getAnnotation(Crd.class);
+
+        if (crd == null) {
+            throw new IllegalArgumentException(cls.getName() + " is not a known Strimzi CRD type");
+        }
+
+        return crd;
     }
 }

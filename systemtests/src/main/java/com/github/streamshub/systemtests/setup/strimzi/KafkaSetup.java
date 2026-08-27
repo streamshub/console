@@ -1,5 +1,12 @@
 package com.github.streamshub.systemtests.setup.strimzi;
 
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.logs.LogWrapper;
@@ -8,6 +15,7 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
@@ -26,14 +34,8 @@ import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
-import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
-import org.apache.logging.log4j.Logger;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
+import io.strimzi.api.kafka.model.user.acl.StrimziAclOperation;
 
 import static io.skodjob.kubetest4j.KubeTestEnv.USER_PATH;
 
@@ -212,21 +214,21 @@ public class KafkaSetup {
                 .addNewAcl()
                     .withNewAclRuleClusterResource()
                     .endAclRuleClusterResource()
-                    .withOperations(AclOperation.ALL)
+                    .withOperations(StrimziAclOperation.ALL)
                 .endAcl()
                 .addNewAcl()
                     .withNewAclRuleGroupResource()
                         .withName("*")
                         .withPatternType(AclResourcePatternType.LITERAL)
                     .endAclRuleGroupResource()
-                    .withOperations(AclOperation.ALL)
+                    .withOperations(StrimziAclOperation.ALL)
                 .endAcl()
                 .addNewAcl()
                     .withNewAclRuleTopicResource()
                         .withName("*")
                         .withPatternType(AclResourcePatternType.LITERAL)
                     .endAclRuleTopicResource()
-                    .withOperations(AclOperation.ALL)
+                    .withOperations(StrimziAclOperation.ALL)
                 .endAcl()
             .endKafkaUserAuthorizationSimple()
             .endSpec();
