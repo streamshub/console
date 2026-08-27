@@ -1,5 +1,21 @@
 package com.github.streamshub.systemtests.users;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
@@ -17,33 +33,19 @@ import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.KafkaUserTestUtils;
 import com.microsoft.playwright.Locator;
+
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserAuthorizationSimple;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
-import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
 import io.strimzi.api.kafka.model.user.acl.AclRule;
 import io.strimzi.api.kafka.model.user.acl.AclRuleClusterResource;
 import io.strimzi.api.kafka.model.user.acl.AclRuleGroupResource;
 import io.strimzi.api.kafka.model.user.acl.AclRuleTopicResource;
 import io.strimzi.api.kafka.model.user.acl.AclRuleTransactionalIdResource;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
+import io.strimzi.api.kafka.model.user.acl.StrimziAclOperation;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -220,34 +222,34 @@ public class UsersST extends AbstractST {
                     .addNewAcl()
                         .withNewAclRuleClusterResource()
                         .endAclRuleClusterResource()
-                        .withOperations(AclOperation.DELETE)
-                        .withOperations(AclOperation.DESCRIBE)
-                        .withOperations(AclOperation.IDEMPOTENTWRITE)
+                        .withOperations(StrimziAclOperation.DELETE)
+                        .withOperations(StrimziAclOperation.DESCRIBE)
+                        .withOperations(StrimziAclOperation.IDEMPOTENTWRITE)
                     .endAcl()
                     .addNewAcl()
                         .withNewAclRuleGroupResource()
                             .withName("*")
                             .withPatternType(AclResourcePatternType.LITERAL)
                         .endAclRuleGroupResource()
-                        .withOperations(AclOperation.ALL)
+                        .withOperations(StrimziAclOperation.ALL)
                     .endAcl()
                     .addNewAcl()
                         .withNewAclRuleTopicResource()
                             .withName("*")
                             .withPatternType(AclResourcePatternType.LITERAL)
                         .endAclRuleTopicResource()
-                        .withOperations(AclOperation.ALTERCONFIGS)
-                        .withOperations(AclOperation.CLUSTERACTION)
-                        .withOperations(AclOperation.DESCRIBECONFIGS)
+                        .withOperations(StrimziAclOperation.ALTERCONFIGS)
+                        .withOperations(StrimziAclOperation.CLUSTERACTION)
+                        .withOperations(StrimziAclOperation.DESCRIBECONFIGS)
                     .endAcl()
                     .addNewAcl()
                         .withNewAclRuleTransactionalIdResource()
                             .withName("testAclName")
                             .withPatternType(AclResourcePatternType.PREFIX)
                         .endAclRuleTransactionalIdResource()
-                        .withOperations(AclOperation.ALTER)
-                        .withOperations(AclOperation.CREATE)
-                        .withOperations(AclOperation.WRITE)
+                        .withOperations(StrimziAclOperation.ALTER)
+                        .withOperations(StrimziAclOperation.CREATE)
+                        .withOperations(StrimziAclOperation.WRITE)
                     .endAcl()
                 .endKafkaUserAuthorizationSimple()
             .endSpec()
@@ -270,8 +272,8 @@ public class UsersST extends AbstractST {
                             .withName("testAclName")
                             .withPatternType(AclResourcePatternType.LITERAL)
                         .endAclRuleTransactionalIdResource()
-                        .withOperations(AclOperation.ALTER)
-                        .withOperations(AclOperation.DELETE)
+                        .withOperations(StrimziAclOperation.ALTER)
+                        .withOperations(StrimziAclOperation.DELETE)
                     .endAcl()
                 .endKafkaUserAuthorizationSimple()
             .endSpec()
@@ -294,8 +296,8 @@ public class UsersST extends AbstractST {
                             .withName("testAclName")
                             .withPatternType(AclResourcePatternType.PREFIX)
                         .endAclRuleGroupResource()
-                        .withOperations(AclOperation.IDEMPOTENTWRITE)
-                        .withOperations(AclOperation.DESCRIBECONFIGS)
+                        .withOperations(StrimziAclOperation.IDEMPOTENTWRITE)
+                        .withOperations(StrimziAclOperation.DESCRIBECONFIGS)
                     .endAcl()
                 .endKafkaUserAuthorizationSimple()
             .endSpec()

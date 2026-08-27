@@ -35,11 +35,11 @@ import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
-import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
 import io.strimzi.api.kafka.model.user.acl.AclRule;
 import io.strimzi.api.kafka.model.user.acl.AclRuleBuilder;
 import io.strimzi.api.kafka.model.user.acl.AclRuleType;
+import io.strimzi.api.kafka.model.user.acl.StrimziAclOperation;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication.TYPE_SCRAM_SHA_512;
@@ -83,22 +83,22 @@ class KafkaUsersResourceIT {
     Map<String, List<String>> clusterUserNames;
 
     static List<AclRule> commonRules = List.of(
-            clusterRule(AclRuleType.ALLOW, AclOperation.DESCRIBE, AclOperation.DESCRIBECONFIGS),
-            topicRule(AclRuleType.ALLOW, "topic-a", null, AclOperation.ALL),
-            topicRule(AclRuleType.DENY, "topic-x-*", AclResourcePatternType.PREFIX, AclOperation.ALL),
-            groupRule(AclRuleType.ALLOW, "group-a", null, AclOperation.READ),
-            groupRule(AclRuleType.DENY, "group-x-*", AclResourcePatternType.PREFIX, AclOperation.ALL),
-            txRule(AclRuleType.ALLOW, "tx-a", null, AclOperation.IDEMPOTENTWRITE),
-            txRule(AclRuleType.DENY, "tx-x-*", AclResourcePatternType.PREFIX, AclOperation.ALL)
+            clusterRule(AclRuleType.ALLOW, StrimziAclOperation.DESCRIBE, StrimziAclOperation.DESCRIBECONFIGS),
+            topicRule(AclRuleType.ALLOW, "topic-a", null, StrimziAclOperation.ALL),
+            topicRule(AclRuleType.DENY, "topic-x-*", AclResourcePatternType.PREFIX, StrimziAclOperation.ALL),
+            groupRule(AclRuleType.ALLOW, "group-a", null, StrimziAclOperation.READ),
+            groupRule(AclRuleType.DENY, "group-x-*", AclResourcePatternType.PREFIX, StrimziAclOperation.ALL),
+            txRule(AclRuleType.ALLOW, "tx-a", null, StrimziAclOperation.IDEMPOTENTWRITE),
+            txRule(AclRuleType.DENY, "tx-x-*", AclResourcePatternType.PREFIX, StrimziAclOperation.ALL)
     );
 
-    static AclRuleBuilder initRuleBuilder(AclRuleType type, AclOperation... operations) {
+    static AclRuleBuilder initRuleBuilder(AclRuleType type, StrimziAclOperation... operations) {
         return new AclRuleBuilder()
                 .withType(type)
                 .withOperations(operations);
     }
 
-    static AclRule clusterRule(AclRuleType type, AclOperation... operations) {
+    static AclRule clusterRule(AclRuleType type, StrimziAclOperation... operations) {
         var builder = initRuleBuilder(type, operations);
 
         return builder
@@ -107,7 +107,7 @@ class KafkaUsersResourceIT {
                 .build();
     }
 
-    static AclRule topicRule(AclRuleType type, String name, AclResourcePatternType patternType, AclOperation... operations) {
+    static AclRule topicRule(AclRuleType type, String name, AclResourcePatternType patternType, StrimziAclOperation... operations) {
         var builder = initRuleBuilder(type, operations);
         var topicBuilder = builder.withNewAclRuleTopicResource()
                 .withName(name);
@@ -119,7 +119,7 @@ class KafkaUsersResourceIT {
         return topicBuilder.endAclRuleTopicResource().build();
     }
 
-    static AclRule groupRule(AclRuleType type, String name, AclResourcePatternType patternType, AclOperation... operations) {
+    static AclRule groupRule(AclRuleType type, String name, AclResourcePatternType patternType, StrimziAclOperation... operations) {
         var builder = initRuleBuilder(type, operations);
         var groupBuilder = builder.withNewAclRuleGroupResource()
                 .withName(name);
@@ -131,7 +131,7 @@ class KafkaUsersResourceIT {
         return groupBuilder.endAclRuleGroupResource().build();
     }
 
-    static AclRule txRule(AclRuleType type, String name, AclResourcePatternType patternType, AclOperation... operations) {
+    static AclRule txRule(AclRuleType type, String name, AclResourcePatternType patternType, StrimziAclOperation... operations) {
         var builder = initRuleBuilder(type, operations);
         var groupBuilder = builder.withNewAclRuleTransactionalIdResource()
                 .withName(name);
