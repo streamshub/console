@@ -243,7 +243,7 @@ class AuthST extends AbstractST {
      *   <li>Validates the overview and topics pages for the authorized dev Kafka cluster, confirming that all
      *       3 replicated topics are reported as fully replicated and available.</li>
      *   <li>Filters the Topics page by name and confirms the expected 3 replicated topics are returned.</li>
-     *   <li>Verifies that the Nodes page is restricted and displays a "403" message.</li>
+     *   <li>Verifies that the Nodes page is restricted and displays a "Not Authorized" message.</li>
      * </ul>
      *
      * <p>This test ensures that topic-level access control is enforced correctly while restricting
@@ -283,9 +283,9 @@ class AuthST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
         PwUtils.waitForLocatorCount(tcc, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
-        LOGGER.info("Verify Nodes page returns 403 for topics-only user '{}'", AuthTestConstants.USER_TOPICONLY_FRANK);
+        LOGGER.info("Verify Nodes page returns Not Authorized for topics-only user '{}'", AuthTestConstants.USER_TOPICONLY_FRANK);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403", true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify consumer groups page is unavailable");
         String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "unauthorized-groups";
@@ -306,7 +306,7 @@ class AuthST extends AbstractST {
         WaitUtils.waitForClientsSuccess(clients);
         String consumerGroupEncodedName = Identifiers.encode(KafkaNamingUtils.consumerGroupName(newTopicName));
         PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, consumerGroupEncodedName));
-        PwUtils.waitForContainsText(tcc, CssSelectors.BODY_EMPTY_STATE, "403", true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.BODY_EMPTY_STATE, "Not Authorized", true);
 
         // Logout and check user is no longer logged in
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
@@ -327,7 +327,7 @@ class AuthST extends AbstractST {
      *   <li>Verifies that the Kafka overview page reports all topic metrics (fully replicated, under-replicated,
      *       unavailable, total topics, total partitions) as "0" since topic details are not authorized for this user.</li>
      *   <li>Verifies that the Topics page displays a "Not Authorized" message and the Nodes page displays a
-     *       "403 Forbidden" message.</li>
+     *       "Not Authorized" message.</li>
      *   <li>Verifies that the Groups page is accessible and initially shows "No groups available".</li>
      *   <li>Creates a Kafka topic ({@code dev-continuous-msg}) along with producer and consumer clients, then
      *       confirms the new consumer group appears on the Groups page.</li>
@@ -371,9 +371,9 @@ class AuthST extends AbstractST {
         PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
-        LOGGER.info("Verify Nodes page returns 403 Forbidden for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
+        LOGGER.info("Verify Nodes page returns Not Authorized for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "403", true);
+        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
 
         LOGGER.info("Verify Groups page is accessible and initially shows no groups for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
         PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
