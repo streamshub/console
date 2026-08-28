@@ -80,8 +80,8 @@ function KafkaOverviewContent() {
 
   // Fetch nodes to get broker counts and for charts
   const { data: nodesData } = useNodes(kafkaId, {
-    fields: ['roles', 'broker'],
-    pageSize: 100,
+    fields: 'roles,broker',
+    page: { size: 100 },
   });
 
   // Calculate broker counts

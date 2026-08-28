@@ -5,7 +5,7 @@
 import { useQuery } from '@tanstack/react-query';
 import escape from '../utils/escape';
 import { apiClient } from '../client';
-import { ListResponse, Resource } from '../types';
+import { AbstractMeta, ListResponse, Resource } from '../types';
 
 export interface ResourceListPageParams {
   size?: number | null;
@@ -73,14 +73,18 @@ function updatePageParams(page: ResourceListPageParams, searchParams: URLSearchP
   }
 }
 
-export function useResourceList<T extends Resource>(
+export function resourceListQueryKeyPrefix(resourceType: string): string {
+  return resourceType + '-resource-list-query';
+}
+
+export function useResourceList<T extends Resource, M extends AbstractMeta = AbstractMeta>(
   resourceType: string,
   path: string,
   params?: ResourceListParams,
 ) {
   return useQuery({
     queryKey: [
-      resourceType + '-resource-list-query',
+      resourceListQueryKeyPrefix(resourceType),
       path,
       JSON.stringify(params),
     ],
@@ -115,7 +119,7 @@ export function useResourceList<T extends Resource>(
 
       const queryString = searchParams.toString();
       const url = path + (queryString ? `?${queryString}` : '');
-      return apiClient.get<ListResponse<T>>(url);
+      return apiClient.get<ListResponse<T, M>>(url);
     },
     enabled: params?.enabled,
     refetchInterval: params?.refreshInterval,

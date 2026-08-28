@@ -1,5 +1,6 @@
 package com.github.streamshub.console.api.model;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -64,6 +65,7 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         public static final String STATUS = "status";
         public static final String MODE = "mode";
         public static final String BROKERS = "brokers";
+        public static final String BROKER_CAPACITY = "brokerCapacity";
         public static final String GOALS = "goals";
         public static final String SKIP_HARD_GOAL_CHECK = "skipHardGoalCheck";
         public static final String REBALANCE_DISK = "rebalanceDisk";
@@ -75,6 +77,7 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         public static final String REPLICA_MOVEMENT_STRATEGIES = "replicaMovementStrategies";
         public static final String SESSION_ID = "sessionId";
         public static final String OPTIMIZATION_RESULT = "optimizationResult";
+        public static final String OPTIMIZATION_PROPOSAL = "optimizationProposal";
         public static final String CONDITIONS = "conditions";
 
         static final Comparator<KafkaRebalance> ID_COMPARATOR =
@@ -196,6 +199,46 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         String action;
     }
 
+    public static final record BrokerCapacityOverride(
+            @JsonProperty
+            List<Integer> brokers,
+            @JsonProperty
+            String cpu,
+            @JsonProperty
+            String inboundNetwork,
+            @JsonProperty
+            String outboundNetwork
+    ) {
+    }
+
+    public static final record BrokerCapacity(
+            @JsonProperty
+            String cpu,
+            @JsonProperty
+            String inboundNetwork,
+            @JsonProperty
+            String outboundNetwork,
+            @JsonProperty
+            List<BrokerCapacityOverride> overrides
+    ) {
+    }
+
+    public static final record BrokerLoadImpact(
+            @JsonProperty
+            BigDecimal before,
+            @JsonProperty
+            BigDecimal after,
+            @JsonProperty
+            BigDecimal diff
+    ) {
+    }
+
+    public static final record OptimizationProposal(
+            @JsonProperty
+            Map<String, Map<String, BrokerLoadImpact>> brokerImpact
+    ) {
+    }
+
     @JsonFilter("fieldFilter")
     @Schema(name = "KafkaRebalanceAttributes")
     static class Attributes extends KubeAttributes {
@@ -210,6 +253,9 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         @JsonProperty
         @Schema(readOnly = true, nullable = true)
         List<Integer> brokers;
+
+        @JsonProperty
+        BrokerCapacity brokerCapacity;
 
         @JsonProperty
         @Schema(readOnly = true, nullable = true)
@@ -253,7 +299,11 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
 
         @JsonProperty
         @Schema(readOnly = true)
-        Map<String, Object> optimizationResult = new HashMap<>(0);
+        Map<String, Object> optimizationResult = HashMap.newHashMap(0);
+
+        @JsonProperty
+        @Schema(readOnly = true)
+        OptimizationProposal optimizationProposal;
 
         @JsonProperty
         @Schema(readOnly = true)
@@ -317,6 +367,10 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
         attributes.brokers = brokers;
     }
 
+    public void brokerCapacity(BrokerCapacity brokerCapacity) {
+        attributes.brokerCapacity = brokerCapacity;
+    }
+
     public void goals(List<String> goals) {
         attributes.goals = goals;
     }
@@ -359,6 +413,10 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
 
     public Map<String, Object> optimizationResult() {
         return attributes.optimizationResult;
+    }
+
+    public void optimizationProposal(OptimizationProposal optimizationProposal) {
+        attributes.optimizationProposal = optimizationProposal;
     }
 
     public void conditions(List<Condition> conditions) {

@@ -11,7 +11,6 @@
     "create": "Create",
     "search": "Search",
     "filterByName": "Filter by name",
-    "filter": "Filter",
     "clear": "Clear",
     "apply": "Apply",
     "close": "Close",
@@ -32,7 +31,12 @@
     "noResultsFound": "No results found",
     "noResultsFoundDescription": "No results match the filter criteria. Clear all filters and try again.",
     "clearAllFilters": "Clear all filters",
-    "refreshDataTooltip": "Refresh data<br/>Last update: {{lastRefresh}}"
+    "refreshDataTooltip": "Refresh data<br/>Last update: {{lastRefresh}}",
+    "filter": {
+      "label": "Filter",
+      "namePlaceholder": "Filter by name",
+      "statusPlaceholder": "Filter by status"
+    }
   },
   "about": {
     "buttonLabel": "About",
@@ -430,10 +434,10 @@
     "nodePool": "Node Pool",
     "allNodePoolsPlaceholder": "All node pools",
     "roles": "Roles",
-    "status": "Status",
-    "statusPlaceholder": "All statuses",
     "replicas": "Total Replicas",
     "replicasTooltip": "The overall count of partition replicas hosted by the broker. Replicas provide fault tolerance and data availability.",
+    "leaders": "Leader partitions",
+    "leadersTooltip": "The number of partition replicas for which this broker is currently the elected leader. Leaders handle all reads and writes for their partitions.",
     "diskUsage": "Disk usage",
     "kafkaVersion": "Kafka version",
     "leadController": "Lead controller",
@@ -442,6 +446,17 @@
     "nodeRoles": {
       "broker": "Broker",
       "controller": "Controller"
+    },
+    "status": "Status",
+    "filter": {
+      "nodePool": "Node pool",
+      "nodePoolPlaceholder": "Filter by node pool",
+      "nodePoolRoles": "Roles: {{roles}}",
+      "role": "Role",
+      "rolePlaceholder": "Filter by role",
+      "statusPlaceholder": "Filter by status",
+      "brokerStatus": "Broker status",
+      "controllerStatus": "Controller status"
     },
     "brokerStatus": {
       "running": {
@@ -474,67 +489,116 @@
       }
     },
     "controllerStatus": {
-      "quorumLeader": "QuorumLeader",
+      "quorumLeader": "Quorum Leader",
       "quorumLeaderPopoverText": "The leader of the metadata quorum (also known as the Active Controller). It handles all metadata requests from Kafka brokers.",
-      "quorumFollower": "QuorumFollower",
+      "quorumFollower": "Quorum Follower",
       "quorumFollowerPopoverText": "Follower controllers replicate metadata written by the quorum leader (Active Controller) and serve as hot standbys in case of leader failure.",
-      "quorumFollowerLagged": "QuorumFollowerLagged",
+      "quorumFollowerLagged": "Quorum Follower Lagged",
       "quorumFollowerLaggedPopoverText": "Follower controllers replicate metadata written by the quorum leader (Active Controller). This follower is lagging behind the leader. Quorum followers must stay up-to-date to prevent data loss if the leader fails.",
       "unknown": "Unknown",
       "unknownPopoverText": "The controller's state is unknown"
     },
     "tabs": {
       "overview": "Overview",
-      "rebalances": "Rebalances"
+      "rebalances": "Rebalance"
     },
     "distribution": {
-      "title": "Partition distribution",
       "totalNodes": "Total nodes",
       "totalNodesTooltip": "Total number of Kafka nodes across all roles (broker, controller, or combined).",
       "controllerRole": "Controller role",
       "brokerRole": "Broker role",
       "leadController": "Lead controller",
       "leadControllerTooltip": "The Lead Controller (also known as the Active Controller) is the primary metadata manager in a KRaft-based Kafka cluster. It maintains a global view of the cluster, processes metadata updates, and distributes them to all other nodes.",
-      "leadControllerValue": "Node {{leadController}}",
-      "partitionsDistributionOfTotal": "Node Partition Distribution",
-      "partitionsDistributionOfTotalTooltip": "The percentage distribution of partitions across brokers in the cluster. Consider rebalancing if the distribution is uneven to ensure efficient resource utilization.",
-      "distributionToggles": "Distribution filter toggles",
-      "allLabel": "All ({{count}})",
-      "leadersLabel": "Leaders ({{count}})",
-      "followersLabel": "Followers ({{count}})",
-      "distributionChartDescription": "Bar chart showing partition distribution across brokers",
-      "distributionChartTitle": "Partition distribution",
-      "brokerNodeVoronoiFollowers": "Broker {{name}}: {{value}} followers",
-      "brokerNodeVoronoiLeaders": "Broker {{name}}: {{value}} leaders",
-      "brokerNodeVoronoiAll": "Broker {{name}}: {{value}} replicas",
-      "brokerNodeCount": "Broker {{node}}: {{count}} ({{percentage}}%)",
-      "brokerNodeCountMissing": "Broker {{node}}: N/A",
-      "metricsUnavailable": "Metrics are not available for this cluster"
+      "leadControllerValue": "Node {{leadController}}"
     },
     "statusLabels": {
       "healthyTooltip": "Number of healthy nodes",
       "unhealthyTooltip": "Number of unhealthy nodes"
+    },
+    "charts": {
+      "title": "Node charts",
+      "storageUsage": "Node storage usage",
+      "storageUsageSubtitle": "Total storage used per node",
+      "storageUsageTooltip": "Used and available storage per node.",
+      "storageUsageNoData": "No storage usage data available",
+      "storageUsageAriaTitle": "Node storage usage chart",
+      "storageUsageAxisLabel": "Storage",
+      "storageUsageSeriesUsed": "Used",
+      "storageUsageSeriesUsedLabel": "Used {{storageUsed}} ({{storageUsedPct}})% of {{storageTotal}}",
+      "storageUsageSeriesAvailable": "Available",
+      "storageUsageSeriesAvailableLabel": "Available {{storageAvailable}} ({{storageAvailablePct}})% of {{storageTotal}}",
+      "sortBy": {
+        "label": "Order",
+        "nodeId": "Node ID",
+        "usedAsc": "Storage used: low to high",
+        "usedDesc": "Storage used: high to low",
+        "availableAsc": "Storage available: low to high",
+        "availableDesc": "Storage available: high to low"
+      },
+      "partitionDistribution": "Partition distribution",
+      "partitionDistributionSubtitle": "Balance of partition leaders and replicas across brokers",
+      "partitionDistributionTooltip": "Total replicas and leader partitions per broker node.",
+      "partitionDistributionNoData": "No partition data available",
+      "partitionDistributionAriaTitle": "Partition distribution chart",
+      "partitionDistributionAxisLabel": "Partitions",
+      "partitionDistributionSeriesLeaders": "Leaders",
+      "partitionDistributionSeriesReplicas": "Replicas"
     }
   },
   "rebalancing": {
-    "title": "Rebalances",
-    "rebalanceName": "Rebalance",
+    "title": "Rebalance",
+    "rebalanceName": "Name",
     "status": "Status",
     "lastUpdated": "Last updated",
+    "dataToMove": "Data to move",
+    "partitionsToMove": "Partitions to move",
+    "leadershipUpdates": "Leadership updates",
+    "estTimeToComplete": "Est. time to complete",
     "cruiseControlEnabled": "Cruise Control is enabled",
     "learnMoreAboutCruiseControl": "Learn more about Cruise Control enablement",
     "cruiseControlLink": "https://strimzi.io/docs/operators/latest/deploying#cruise-control-concepts-str",
+    "cruiseControlNotEnabled": "Cruise Control is not enabled",
+    "cruiseControlNotEnabledDescription": "Cruise Control is not enabled for this cluster. Add Cruise Control to your Kafka custom resource to get started with rebalancing.",
+    "cruiseControlGetStarted": "Get started",
     "totalRebalances": "Total Rebalances",
     "proposalReady": "Proposal Ready",
     "rebalancing": "Rebalancing",
     "ready": "Ready",
     "stopped": "Stopped",
+    "namespace": "Namespace",
+    "created": "Created",
+    "rebalanceNotFound": "Rebalance not found.",
     "mode": "Mode",
     "rebalanceMode": "Rebalance mode",
+    "goals": "Goals",
     "autoApprovalEnabled": "Auto-approval enabled",
     "approve": "Approve",
     "refresh": "Refresh",
+    "refreshProposal": "Refresh proposal",
     "stop": "Stop",
+    "proposalReadyAlert": {
+      "title": "Proposal ready for review",
+      "description": "Cruise Control has generated a rebalance proposal. Review the before/after state and approve if the changes meet your needs."
+    },
+    "brokerImpact": {
+      "title": "Broker impact",
+      "tableLabel": "Broker impact table",
+      "broker": "Broker",
+      "storageUsageSeriesUsed": "Cruise Control Broker Capacity",
+      "before": "Before",
+      "after": "After",
+      "findBroker": "Find broker",
+      "brokers": "Brokers",
+      "selectBrokers": "Select brokers",
+      "onlyShowDeltas": "Only show deltas",
+      "noData": "No broker impact data available. A proposal must be generated first.",
+      "noResults": "No brokers match the current filters.",
+      "brokerCapacityConfig": "Configured Broker Capacity"
+    },
+    "proposalDetail": {
+      "title": "Proposal detail",
+      "noProposalData": "No proposal data available."
+    },
     "confirm": "Confirm",
     "confirmApproveTitle": "Approve Rebalance Proposal?",
     "confirmApproveDescription": "This will apply the optimization changes. Are you sure you want to proceed?",
@@ -542,7 +606,6 @@
     "confirmStopDescription": "Stopping will halt the current rebalancing process. You can start a new rebalance later. Are you sure you want to proceed?",
     "confirmRefreshTitle": "Refresh Rebalance",
     "confirmRefreshDescription": "Refresh the optimization proposal to the latest cluster metrics. Are you sure you want to proceed?",
-    "crBadge": "CR",
     "broker": "Broker {{b}}",
     "fullMode": "Full",
     "fullModeDescription": "Moves replicas across all brokers. This is the default mode",
@@ -556,6 +619,9 @@
     "noRebalances": "No Kafka cluster rebalances found",
     "noRebalancesDescription": "Configure a KafkaRebalance resource to generate optimization proposals and initiate rebalances for your Kafka cluster.",
     "noRebalancesAction": "Learn more about Kafka rebalancing",
+    "filter": {
+      "modePlaceholder": "Filter by mode"
+    },
     "statuses": {
       "new": {
         "label": "New",
@@ -597,7 +663,7 @@
     "optimizationProposal": {
       "title": "Optimization proposal for KafkaRebalance",
       "description": "A summary of proposed changes based on defined optimization goals, assessed in a specific order of priority.",
-      "dataToMove": "Data To Move MB",
+      "dataToMove": "Data To Move",
       "dataToMoveTooltip": "Total amount of data (in MB) moved across brokers as part of the optimization.",
       "excludedBrokersForLeadership": "Excluded Brokers For Leadership",
       "excludedBrokersForLeadershipTooltip": "Brokers excluded from becoming leaders for any partition.",
@@ -605,15 +671,15 @@
       "excludedBrokersForReplicaMoveTooltip": "Brokers excluded from losing existing replicas or receiving new replicas",
       "excludedTopics": "Excluded Topics",
       "excludedTopicsTooltip": "Topics excluded from partition movements.",
-      "intraBrokerDataToMove": "Intra Broker Data to Move MB",
+      "intraBrokerDataToMove": "Intrabroker Data to Move",
       "intraBrokerDataToMoveTooltip": "Total amount of data (in MB) moved within individual brokers. For example, log directory changes.",
       "monitoredPartitionsPercentage": "Monitored Partitions Percentage",
       "monitoredPartitionsPercentageTooltip": "Percentage of partitions being monitored for optimization. If this percentage is low, it may be necessary to investigate why certain partitions are not being monitored.",
-      "numIntraBrokerReplicaMovements": "Num Intra Broker Replica Movements",
+      "numIntraBrokerReplicaMovements": "Intrabroker Replica Movements",
       "numIntraBrokerReplicaMovementsTooltip": "Number of replica movements within the same broker.",
-      "numLeaderMovements": "Num Leader Movements",
+      "numLeaderMovements": "Leader Movements",
       "numLeaderMovementsTooltip": "Number of leadership changes for partitions.",
-      "numReplicaMovements": "Number Replica Movements",
+      "numReplicaMovements": "Replica Movements",
       "numReplicaMovementsTooltip": "Total number of replica movements across brokers.",
       "onDemandBalancednessScoreAfter": "On Demand Balancedness Score After",
       "onDemandBalancednessScoreAfterTooltip": "Balancedness score of the Kafka cluster after optimization. If all goals are satisfied, the score is 100.",
@@ -621,7 +687,7 @@
       "onDemandBalancednessScoreBeforeTooltip": "Balancedness score of the Kafka cluster before optimization. Scores range from 0 to 100, where lower values indicate greater imbalance.",
       "recentWindows": "Recent Windows",
       "recentWindowsTooltip": "Number of recent monitoring windows used to assess the Kafka cluster's performance for this optimization.",
-      "sessionId": "Session Id",
+      "sessionId": "Session ID",
       "sessionIdTooltip": "Unique identifier for the optimization."
     }
   },

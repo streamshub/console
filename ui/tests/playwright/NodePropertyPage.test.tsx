@@ -8,7 +8,7 @@ test("Node property page", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to node property page", async () => {
     await page.click('text="Kafka Nodes"');
     await expect(page.getByRole('columnheader', { name: 'Node ID' })).toBeVisible();
-    await authenticatedPage.clickFirstLinkInTheTable("nodes-listing");
+    await authenticatedPage.clickFirstLinkInTheTable("nodes-table");
     await expect(page.getByRole('columnheader', { name: 'Property' })).toBeVisible();
   });
   await test.step("Node page should display properties", async () => {
