@@ -40,7 +40,7 @@ export function NodesPage() {
   // Determine active tab from URL
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const lastSegment = pathSegments[pathSegments.length - 1];
-  
+
   // Default to 'overview' if we're at the nodes root or if last segment is 'nodes'
   const activeTab = lastSegment === 'nodes' || lastSegment === kafkaId ? 'overview' : lastSegment;
 
@@ -51,15 +51,17 @@ export function NodesPage() {
   return (
     <>
       <PageSection>
-        <Title headingLevel="h1" size="2xl">
+        <Title headingLevel="h1" size="2xl" ouiaId={"title"}>
           <Split hasGutter style={{ alignItems: 'center', display: 'flex' }}>
-            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>{t('nodes.title')}</SplitItem>
-            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }} data-ouia-component-id={"value"}>
+              {t('nodes.title')}
+            </SplitItem>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }} data-ouia-component-id={"label-total"}>
               <Label icon={isLoading ? <Spinner size="sm" /> : undefined}>
                 {totalNodes}&nbsp;total
               </Label>
             </SplitItem>
-            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }} data-ouia-component-id={"label-healthy"}>
               <Tooltip content={t('nodes.statusLabels.healthyTooltip', 'Number of healthy nodes')}>
                 <Label
                   icon={isLoading ? <Spinner size="sm" /> : <CheckCircleIcon />}
@@ -69,7 +71,7 @@ export function NodesPage() {
                 </Label>
               </Tooltip>
             </SplitItem>
-            <SplitItem style={{ display: 'flex', alignItems: 'center' }}>
+            <SplitItem style={{ display: 'flex', alignItems: 'center' }} data-ouia-component-id={"label-unhealthy"}>
               <Tooltip content={t('nodes.statusLabels.unhealthyTooltip', 'Number of unhealthy nodes')}>
                 <Label
                   icon={isLoading ? <Spinner size="sm" /> : <ExclamationTriangleIcon />}

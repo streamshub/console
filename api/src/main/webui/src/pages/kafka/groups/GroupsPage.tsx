@@ -55,7 +55,7 @@ export function GroupsPage() {
   return (
     <>
       <PageSection>
-        <Title headingLevel="h1" size="2xl">
+        <Title headingLevel="h1" size="2xl" ouiaId={"title"}>
           {t('groups.title')}
         </Title>
       </PageSection>

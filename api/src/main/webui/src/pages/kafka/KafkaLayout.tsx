@@ -135,6 +135,7 @@ export function KafkaLayout() {
   // Determine current page from location
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const currentPage = pathSegments[pathSegments.length - 1];
+  const pageComponentId = pathSegments.slice(2).join("-");
   
   // Check if we're on a topic detail page
   const isTopicDetailPage = !!topicId;
@@ -217,7 +218,7 @@ export function KafkaLayout() {
   };
 
   const breadcrumb = (
-    <Breadcrumb>
+    <Breadcrumb ouiaId={"breadcrumb-trail"}>
       <BreadcrumbItem>
         <Link to="/">
           <HomeIcon />
@@ -364,6 +365,7 @@ export function KafkaLayout() {
 
   return (
     <Page
+      data-ouia-component-id={`${pageComponentId}-page`}
       masthead={
         <AppMasthead
           showSidebarToggle={true}
