@@ -365,8 +365,8 @@ export function GroupsDataView({
       dataFilters={{
         id: {
           type: 'text',
-          title: t('common.name'),
-          placeholder: t('common.filterByName'),
+          title: t('groups.groupId'),
+          placeholder: t('groups.filterByGroupId'),
         },
         type: {
           type: 'checkbox',

@@ -328,6 +328,7 @@
   "groups": {
     "title": "Groups",
     "groupId": "Group ID",
+    "filterByGroupId": "Filter by group ID",
     "state": "State",
     "members": "Members",
     "noGroups": "No groups found",
