@@ -32,12 +32,14 @@ export function UserDropdown({ username, clusterId, anonymous, picture }: UserDr
   return (
     <ToolbarItem>
       <Dropdown
+        ouiaId={'user-session-menu'}
         isOpen={isOpen}
         onSelect={onSelect}
         onOpenChange={setIsOpen}
         popperProps={{ position: 'right' }}
         toggle={(toggleRef) => (
           <MenuToggle
+            ouiaId={'user-session-menu-toggle'}
             ref={toggleRef}
             onClick={onToggle}
             isFullHeight
@@ -55,7 +57,12 @@ export function UserDropdown({ username, clusterId, anonymous, picture }: UserDr
         )}
       >
         <DropdownList>
-          <DropdownItem key="logout" inert={logoutDisabled} isDisabled={logoutDisabled} onClick={() => {
+          <DropdownItem
+            ouiaId={'user-session-logout'}
+            key="logout"
+            inert={logoutDisabled}
+            isDisabled={logoutDisabled}
+            onClick={() => {
               let sessionPath;
 
               if (clusterId) {

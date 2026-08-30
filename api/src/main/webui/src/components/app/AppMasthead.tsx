@@ -149,11 +149,11 @@ export function AppMasthead({
                   </ToolbarItem>
                 )}
               </ToolbarGroup>
-                <UserDropdown
-                  username={userDisplayName}
-                  clusterId={sessionClusterId}
-                  anonymous={isAnonymous}
-                />
+              <UserDropdown
+                username={userDisplayName}
+                clusterId={sessionClusterId}
+                anonymous={isAnonymous}
+              />
             </ToolbarContent>
           </Toolbar>
         </MastheadContent>

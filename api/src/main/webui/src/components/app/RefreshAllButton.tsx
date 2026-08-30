@@ -37,6 +37,7 @@ export function RefreshAllButton({ staticRefresh} : { staticRefresh?: Date; }) {
         onClick={handleRefresh}
         isLoading={isRefreshing}
         icon={<SyncIcon />}
+        ouiaId={"global-data-refresh"}
       />
     </Tooltip>
   );

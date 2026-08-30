@@ -225,7 +225,9 @@ export function GroupsDataView({
       },
       {
         cell: '',
-        props: {},
+        props: {
+          'aria-label': 'Group actions'
+        },
       },
     ],
     [t, handleSort]

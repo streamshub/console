@@ -22,13 +22,14 @@ interface ProposalDetailCardProps {
 interface StatTileProps {
   value: string | number;
   label: string | React.ReactNode;
+  ouiaId: string;
 }
 
-function StatTile({ value, label }: StatTileProps) {
+function StatTile({ value, label, ouiaId }: StatTileProps) {
   return (
     <Card isCompact style={{ flex: '1 1 0', background: 'var(--pf-t--global--background--color--secondary--default)' }}>
       <CardBody style={{ textAlign: 'center' }}>
-        <p style={{
+        <p data-ouia-component-id={ouiaId} style={{
           fontSize: 'var(--pf-t--global--font--size--2xl)',
           fontWeight: 'var(--pf-t--global--font--weight--body--bold)',
           color: 'var(--pf-t--global--color--brand--default)',
@@ -49,13 +50,25 @@ export function ProposalDetailCard({ rebalance }: ProposalDetailCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const opt = rebalance.attributes.optimizationResult;
-  const sessionId = rebalance.attributes.sessionId;
+  const proposalDetails = opt ? {
+    sessionId: rebalance.attributes.sessionId ?? '–',
+    recentWindows: opt.recentWindows ?? '-',
+    onDemandBalancednessScoreBefore: opt.onDemandBalancednessScoreBefore ?? '-',
+    onDemandBalancednessScoreAfter: opt.onDemandBalancednessScoreAfter ?? '-',
+    numIntraBrokerReplicaMovements: opt.numIntraBrokerReplicaMovements ?? '-',
+    intraBrokerDataToMoveMB: opt.intraBrokerDataToMoveMB ? opt.intraBrokerDataToMoveMB + ' MB' : '-',
+    excludedBrokersForReplicaMove: opt.excludedBrokersForReplicaMove?.length ? opt.excludedBrokersForReplicaMove.join(', ') : '–',
+    excludedBrokersForLeadership: opt.excludedBrokersForLeadership?.length ? opt.excludedBrokersForLeadership.join(', ') : '–',
+    excludedTopics: opt.excludedTopics?.length ? opt.excludedTopics.join(', ') : '–',
+    monitoredPartitionsPercentage: opt.monitoredPartitionsPercentage ?? '-',
+  } : undefined;
 
   return (
-    <Card isPlain style={{ border: '1px solid var(--pf-t--global--border--color--default)' }}>
+    <Card isPlain style={{ border: '1px solid var(--pf-t--global--border--color--default)' }} ouiaId={"proposal-detail"}>
       <CardBody style={{ padding: 'var(--pf-t--global--spacer--md)' }}>
         <ExpandableSection
           toggleText={t('rebalancing.proposalDetail.title')}
+          toggleId='rebalance-proposal-detail-toggle'
           isExpanded={isExpanded}
           onToggle={(_e, expanded) => setIsExpanded(expanded)}
         >
@@ -63,6 +76,7 @@ export function ProposalDetailCard({ rebalance }: ProposalDetailCardProps) {
           <Flex gap={{ default: 'gapMd' }} style={{ margin: 'var(--pf-t--global--spacer--md) 0 var(--pf-t--global--spacer--lg)' }}>
             <FlexItem flex={{ default: 'flex_1' }}>
               <StatTile
+                ouiaId="numReplicaMovements"
                 value={opt?.numReplicaMovements ?? '–'}
                 label={
                   <>
@@ -76,6 +90,7 @@ export function ProposalDetailCard({ rebalance }: ProposalDetailCardProps) {
             </FlexItem>
             <FlexItem flex={{ default: 'flex_1' }}>
               <StatTile
+                ouiaId="numLeaderMovements"
                 value={opt?.numLeaderMovements ?? '–'}
                 label={
                   <>
@@ -89,6 +104,7 @@ export function ProposalDetailCard({ rebalance }: ProposalDetailCardProps) {
             </FlexItem>
             <FlexItem flex={{ default: 'flex_1' }}>
               <StatTile
+                ouiaId="dataToMoveMB"
                 value={opt?.dataToMoveMB != null ? `${opt.dataToMoveMB} MB` : '–'}
                 label={
                   <>
@@ -103,7 +119,7 @@ export function ProposalDetailCard({ rebalance }: ProposalDetailCardProps) {
           </Flex>
 
           {/* Detailed description list */}
-          {opt ? (
+          {proposalDetails ? (
             <DescriptionList
               isHorizontal
               horizontalTermWidthModifier={{
@@ -115,130 +131,19 @@ export function ProposalDetailCard({ rebalance }: ProposalDetailCardProps) {
                 '2xl': '35ch',
               }}
             >
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.sessionId')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.sessionIdTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {sessionId ?? '–'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.recentWindows')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.recentWindowsTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.recentWindows ?? '-'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.onDemandBalancednessScoreBefore')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.onDemandBalancednessScoreBeforeTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.onDemandBalancednessScoreBefore ?? '-'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.onDemandBalancednessScoreAfter')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.onDemandBalancednessScoreAfterTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.onDemandBalancednessScoreAfter ?? '-'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.numIntraBrokerReplicaMovements')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.numIntraBrokerReplicaMovementsTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.numIntraBrokerReplicaMovements ?? '-'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.intraBrokerDataToMove')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.intraBrokerDataToMoveTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.intraBrokerDataToMoveMB ? opt.intraBrokerDataToMoveMB + ' MB' : '-'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.excludedBrokersForReplicaMove')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.excludedBrokersForReplicaMoveTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.excludedBrokersForReplicaMove?.length
-                    ? opt.excludedBrokersForReplicaMove.join(', ')
-                    : '–'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.excludedBrokersForLeadership')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.excludedBrokersForLeadershipTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.excludedBrokersForLeadership?.length
-                    ? opt.excludedBrokersForLeadership.join(', ')
-                    : '–'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.excludedTopics')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.excludedTopicsTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.excludedTopics?.length ? opt.excludedTopics.join(', ') : '–'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
-              <DescriptionListGroup>
-                <DescriptionListTerm>
-                  {t('rebalancing.optimizationProposal.monitoredPartitionsPercentage')}{' '}
-                  <Tooltip content={t('rebalancing.optimizationProposal.monitoredPartitionsPercentageTooltip')}>
-                    <HelpIcon />
-                  </Tooltip>
-                </DescriptionListTerm>
-                <DescriptionListDescription>
-                  {opt.monitoredPartitionsPercentage ?? '-'}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-
+              {Object.entries(proposalDetails).map(([key, value]) => (
+                <DescriptionListGroup data-ouia-component-id={key}>
+                  <DescriptionListTerm>
+                    {t(`rebalancing.optimizationProposal.${key}`)}{' '}
+                    <Tooltip content={t(`rebalancing.optimizationProposal.${key}Tooltip`)}>
+                      <HelpIcon />
+                    </Tooltip>
+                  </DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {value}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              ))}
             </DescriptionList>
           ) : (
             <p style={{ color: 'var(--pf-t--global--text--color--subtle)' }}>
