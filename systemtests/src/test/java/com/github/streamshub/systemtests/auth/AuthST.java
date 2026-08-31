@@ -1,11 +1,19 @@
 package com.github.streamshub.systemtests.auth;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.GroupProtocol;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.GroupState;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -20,18 +28,15 @@ import org.junit.jupiter.api.TestMethodOrder;
 import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.clients.KafkaClients;
-import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.AuthTestConstants;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
+import com.github.streamshub.systemtests.locators.ConsoleLocators;
 import com.github.streamshub.systemtests.locators.CssSelectors;
-import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
 import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
@@ -40,7 +45,6 @@ import com.github.streamshub.systemtests.setup.keycloak.KeycloakOperatorSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.Utils;
-import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
@@ -48,11 +52,9 @@ import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtil
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
 
-import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.skodjob.kubetest4j.wait.Wait;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
@@ -285,28 +287,14 @@ class AuthST extends AbstractST {
 
         LOGGER.info("Verify Nodes page returns Not Authorized for topics-only user '{}'", AuthTestConstants.USER_TOPICONLY_FRANK);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
+        PwUtils.waitForContainsText(tcc, ConsoleLocators.of(tcc.page()).nodesOverview().dataView().table().body().locator(), "Not Authorized", true);
 
         LOGGER.info("Verify consumer groups page is unavailable");
         String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "unauthorized-groups";
-        KafkaClients clients = new KafkaClientsBuilder()
-            .withNamespaceName(tcc.namespace())
-            .withTopicName(newTopicName)
-            .withMessageCount(Constants.MESSAGE_COUNT)
-            .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(newTopicName))
-            .withConsumerName(KafkaNamingUtils.consumerName(newTopicName))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(newTopicName))
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
-            .withUsername(KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME), SecurityProtocol.SASL_PLAINTEXT))
-            .build();
-
-        KubeResourceManager.get().createResourceAsyncWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
+        createConsumerGroup(KafkaNamingUtils.consumerGroupName(newTopicName), newTopicName);
         String consumerGroupEncodedName = Identifiers.encode(KafkaNamingUtils.consumerGroupName(newTopicName));
         PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, consumerGroupEncodedName));
-        PwUtils.waitForContainsText(tcc, CssSelectors.BODY_EMPTY_STATE, "Not Authorized", true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.BODY_EMPTY_STATE, "API Error: 403", true);
 
         // Logout and check user is no longer logged in
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
@@ -373,37 +361,70 @@ class AuthST extends AbstractST {
 
         LOGGER.info("Verify Nodes page returns Not Authorized for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
+        PwUtils.waitForContainsText(tcc, ConsoleLocators.of(tcc.page()).nodesOverview().dataView().table().body().locator(), "Not Authorized", true);
 
         LOGGER.info("Verify Groups page is accessible and initially shows no groups for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
         PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_NO_GROUPS_AVAILABLE, "No groups available", true);
+        PwUtils.waitForContainsText(tcc, ConsoleLocators.of(tcc.page()).groups().dataView().table().body().locator(), "No data available", true);
 
         String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "continuous-msg";
         LOGGER.info("Create topic '{}' with producer and consumer clients to generate a new consumer group", newTopicName);
-        KafkaClients clients = new KafkaClientsBuilder()
-            .withNamespaceName(tcc.namespace())
-            .withTopicName(newTopicName)
-            .withMessageCount(Constants.MESSAGE_COUNT)
-            .withDelayMs(100)
-            .withProducerName(KafkaNamingUtils.producerName(newTopicName))
-            .withConsumerName(KafkaNamingUtils.consumerName(newTopicName))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(newTopicName))
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
-            .withUsername(KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME))
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME), SecurityProtocol.SASL_PLAINTEXT))
-            .build();
-
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        createConsumerGroup(KafkaNamingUtils.consumerGroupName(newTopicName), newTopicName);
 
         LOGGER.info("Verify consumer group '{}' appears on the Groups page", KafkaNamingUtils.consumerGroupName(newTopicName));
         PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
-        PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_TABLE, KafkaNamingUtils.consumerGroupName(newTopicName), true);
+        PwUtils.waitForContainsText(tcc, ConsoleLocators.of(tcc.page()).groups().dataView().table().body().locator(), KafkaNamingUtils.consumerGroupName(newTopicName), true);
 
-        LOGGER.info("Wait for producer and consumer clients on topic '{}' to complete successfully", newTopicName);
-        WaitUtils.waitForClientsSuccess(clients);
         // Logout and check user is no longer logged in
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
+    }
+
+    private void createConsumerGroup(String groupName, String topicName) {
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(
+                tcc.namespace(),
+                AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+                List.of(topicName),
+                1, 1, 1);
+
+        try (
+            Producer<String, String> producer = KafkaClientsUtils.createSecureClient(
+                    tcc.namespace(),
+                    AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+                    KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME),
+                    KafkaClientsUtils::stringProducer);
+            Consumer<String, String> consumer = KafkaClientsUtils.createSecureClient(
+                    tcc.namespace(),
+                    AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+                    KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME),
+                    properties -> {
+                        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupName);
+                        properties.setProperty(ConsumerConfig.GROUP_PROTOCOL_CONFIG, GroupProtocol.CLASSIC.name.toLowerCase(Locale.ROOT));
+                        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+                        return KafkaClientsUtils.stringConsumer(properties);
+                    })
+        ) {
+            LOGGER.info("Producing and consuming {} messages to topic {} for group '{}'",
+                    Constants.MESSAGE_COUNT, topicName, groupName);
+
+            for (int i = 0; i < Constants.MESSAGE_COUNT; i++) {
+                producer.send(new ProducerRecord<String, String>(
+                        topicName,
+                        "key-" + i,
+                        "value-" + i
+                ));
+            }
+
+            consumer.subscribe(List.of(topicName));
+            consumer.seekToBeginning(Collections.emptySet());
+
+            int recordsRead = 0;
+            long timeLimit = Instant.now().plusSeconds(20).toEpochMilli();
+
+            while (recordsRead < Constants.MESSAGE_COUNT && System.currentTimeMillis() < timeLimit) {
+                var records = consumer.poll(Duration.ofSeconds(2));
+                recordsRead += records.count();
+            }
+        }
     }
 
     @BeforeAll

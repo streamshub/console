@@ -1,6 +1,5 @@
 package com.github.streamshub.systemtests.utils.resourceutils.kafka;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -8,14 +7,11 @@ import java.util.stream.IntStream;
 
 import org.apache.logging.log4j.Logger;
 
-import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.enums.ConditionStatus;
 import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 
 import io.fabric8.kubernetes.api.model.Pod;
@@ -23,9 +19,6 @@ import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.common.Condition;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
-import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBroker;
-import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 
@@ -185,53 +178,6 @@ public class KafkaUtils {
             LOGGER.debug("Skipping broker scale, cluster {} already has {} replicas", kafkaName, scaledBrokersCount);
             return;
         }
-
-        // Add each new broker host with broker ID into the config
-        GenericKafkaListener currentListenersBrokerConfig = ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName)
-            .getSpec()
-            .getKafka()
-            .getListeners()
-            .stream()
-            .filter(listener -> listener.getName().equals(Constants.SECURE_LISTENER_NAME))
-            .toList()
-            .getFirst();
-
-
-        List<GenericKafkaListenerConfigurationBroker> newBrokerConfigList = new ArrayList<>();
-        String hashedNamespace = Utils.hashStub(namespace);
-
-        if (existingBrokerReplicas < scaledBrokersCount) {
-            LOGGER.debug("Scaling brokers up from: {} to: {}", existingBrokerReplicas, scaledBrokersCount);
-            // Add existing broker listener
-            newBrokerConfigList.addAll(currentListenersBrokerConfig.getConfiguration().getBrokers());
-
-            for (int nodeId : getNewNodePoolNodeIds(namespace, kafkaName, existingBrokerReplicas, scaledBrokersCount)) {
-                LOGGER.debug("Add Kafka listener to broker node ID {}", nodeId);
-                newBrokerConfigList.add(new GenericKafkaListenerConfigurationBrokerBuilder(
-                    new GenericKafkaListenerConfigurationBrokerBuilder()
-                        .withBroker(nodeId)
-                        .withHost(String.join(".", "broker-" + nodeId, hashedNamespace, kafkaName, ClusterUtils.getClusterDomain()))
-                        .build()
-                    ).build());
-            }
-        } else {
-            LOGGER.debug("Scaling brokers down from: {} to: {}", existingBrokerReplicas, scaledBrokersCount);
-            newBrokerConfigList.addAll(currentListenersBrokerConfig.getConfiguration().getBrokers().subList(0, scaledBrokersCount));
-        }
-
-        // Process new broker config listener list
-        KubeResourceManager.get().updateResource(
-            new KafkaBuilder(ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName))
-                .editSpec()
-                    .editKafka()
-                        .editMatchingListener(l -> l.getName().equals(Constants.SECURE_LISTENER_NAME))
-                            .editConfiguration()
-                                .withBrokers(newBrokerConfigList)
-                            .endConfiguration()
-                        .endListener()
-                    .endKafka()
-                .endSpec()
-                .build());
 
         // Edit KNP
         KubeResourceManager.get().updateResource(

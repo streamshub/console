@@ -20,7 +20,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
     @Override
     public void handleTestExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
         LOGGER.error("Test class [{}] failed with exception [{}]",
-            extensionContext.getRequiredTestClass().getSimpleName(), throwable);
+            extensionContext.getRequiredTestClass().getSimpleName(), throwable, throwable);
 
         // In case of test failure, make screenshot of the last page state and save its trace
         Optional<TestCaseConfig> tcc = Utils.findTestCaseConfig(extensionContext);

@@ -35,5 +35,5 @@ release.properties
 
 # Systemtests
 systemtests/screenshots/
-systemtests/config.yaml
+systemtests/config-local.yaml
 systemtests/tracing/

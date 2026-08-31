@@ -1,5 +1,10 @@
 package com.github.streamshub.systemtests.setup.console;
 
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.ConsoleSpecBuilder;
@@ -13,18 +18,13 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakInstanceSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
-import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.keycloak.KeycloakUtils;
-import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 public class ConsoleInstanceSetup {
     private static final Logger LOGGER = LogManager.getLogger(ConsoleInstanceSetup.class);
@@ -45,6 +45,7 @@ public class ConsoleInstanceSetup {
 
     public static ConsoleBuilder getDefaultConsoleInstance(String namespaceName, String instanceName, String kafkaName, String kafkaUserName) {
         LOGGER.debug("Building default Console instance '{}' in namespace '{}' for Kafka cluster '{}' with user '{}'", instanceName, namespaceName, kafkaName, kafkaUserName);
+
         ConsoleBuilder builder = new ConsoleBuilder()
             .withMetadata(new ObjectMetaBuilder()
                 .withName(instanceName)
@@ -70,13 +71,17 @@ public class ConsoleInstanceSetup {
         if (!Environment.CONSOLE_API_IMAGE.isEmpty()) {
             LOGGER.info("Using custom Console API image: {}", Environment.CONSOLE_API_IMAGE);
             builder = builder.editSpec()
-                .editOrNewContainers()
-                    .editOrNewApi()
-                        .editOrNewSpec()
-                            .withImage(Environment.CONSOLE_API_IMAGE)
-                        .endSpec()
-                    .endApi()
-                .endContainers()
+                .withNewDeployment()
+                    .withNewSpec()
+                        .withNewTemplate()
+                            .withNewSpec()
+                                .withNewServerContainer()
+                                    .withImage(Environment.CONSOLE_API_IMAGE)
+                                .endServerContainer()
+                            .endSpec()
+                        .endTemplate()
+                    .endSpec()
+                .endDeployment()
             .endSpec();
         }
 
@@ -88,7 +93,7 @@ public class ConsoleInstanceSetup {
     ) {
         LOGGER.debug("Building OIDC Console instance '{}' in namespace '{}' using Keycloak realm '{}' with {} Kafka cluster(s)",
             consoleInstanceName, namespace, keycloak.realmName(), kafkaConfig.size());
-        ConsoleBuilder builder = new ConsoleBuilder()
+        return new ConsoleBuilder()
             .withMetadata(new ObjectMetaBuilder()
                 .withName(consoleInstanceName)
                 .withNamespace(namespace)
@@ -121,8 +126,6 @@ public class ConsoleInstanceSetup {
                     .addAllToRoles(KeycloakTestConfig.getRoles(roleMapping))
                 .endSecurity()
             .endSpec();
-
-        return builder;
     }
 
     public static List<KafkaCluster> getOidcKafkaClusters(String namespace, List<KeycloakTestConfig.KafkaConfig> kafkaConfig) {
@@ -154,27 +157,5 @@ public class ConsoleInstanceSetup {
                     .build();
             })
             .toList();
-    }
-
-    public static ConsoleBuilder forceNodeJsToAcceptSelfSignedCerts(ConsoleBuilder builder) {
-        if (!ClusterUtils.isOcp()) {
-            return builder;
-        }
-
-        LOGGER.debug("Cluster is OpenShift, forcing Console UI Node.js container to accept self-signed certificates");
-        // Force NextJS to accept self signed certs
-        return builder
-            .editSpec()
-                .editContainers()
-                    .withNewUi()
-                        .editSpec()
-                            .addToEnv(new EnvVarBuilder()
-                                .withName("NODE_TLS_REJECT_UNAUTHORIZED")
-                                .withValue("0")
-                                .build())
-                        .endSpec()
-                    .endUi()
-                .endContainers()
-            .endSpec();
     }
 }

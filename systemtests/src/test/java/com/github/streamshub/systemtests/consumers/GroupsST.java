@@ -41,7 +41,7 @@ import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
-import com.github.streamshub.systemtests.locators.GroupsPageSelectors;
+import com.github.streamshub.systemtests.locators.ConsoleLocators;
 import com.github.streamshub.systemtests.locators.SingleGroupPageSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
@@ -177,9 +177,12 @@ class GroupsST extends AbstractST {
                 // Verify row on groups page
                 LOGGER.info("Verify group '{}' ('{}') is present in groups table", displayName, consumerGroupName);
                 PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
-                PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, "Groups", true);
-                PwUtils.fill(tcc, GroupsPageSelectors.GPS_GROUP_NAME_INPUT, consumerGroupName);
-                PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_RESULT_FIRST_NAME, consumerGroupName, false);
+                var groupsPage = ConsoleLocators.of(tcc.page()).groups();
+                PwUtils.waitForContainsText(tcc, groupsPage.title(), "Groups", true);
+
+                var firstGroupId = groupsPage.dataView().table().body().cell(0, "Group ID");
+                PwUtils.fillTextFilterAndSubmit(groupsPage.dataView().toolbar(), "Group ID", consumerGroupName);
+                PwUtils.waitForContainsText(tcc, firstGroupId, consumerGroupName, false);
 
                 // Verify single group page
                 LOGGER.info("Navigate to single consumer group page for '{}' ('{}')", displayName, consumerGroupName);
@@ -190,10 +193,10 @@ class GroupsST extends AbstractST {
                 // Click through from groups page
                 LOGGER.info("Navigate back to groups page and test click-through for '{}' ('{}')", displayName, consumerGroupName);
                 PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, tcc.kafkaName()));
-                PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_HEADER_TITLE, "Groups", true);
-                PwUtils.fill(tcc, GroupsPageSelectors.GPS_GROUP_NAME_INPUT, consumerGroupName);
-                PwUtils.waitForContainsText(tcc, GroupsPageSelectors.GPS_RESULT_FIRST_NAME, consumerGroupName, false);
-                tcc.page().click(GroupsPageSelectors.GPS_RESULT_FIRST_NAME);
+                PwUtils.waitForContainsText(tcc, groupsPage.title(), "Groups", true);
+                PwUtils.fillTextFilterAndSubmit(groupsPage.dataView().toolbar(), "Group ID", consumerGroupName);
+                PwUtils.waitForContainsText(tcc, firstGroupId, consumerGroupName, false);
+                firstGroupId.locator("a").click();
 
                 PwUtils.waitForUrl(tcc, PwPageUrls.getGroupsMembersPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), true);
                 PwUtils.waitForContainsText(tcc, SingleGroupPageSelectors.SGPS_PAGE_HEADER_NAME, consumerGroupName, true);

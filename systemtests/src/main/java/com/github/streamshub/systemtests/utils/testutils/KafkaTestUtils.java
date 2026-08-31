@@ -1,13 +1,11 @@
 package com.github.streamshub.systemtests.utils.testutils;
 
-import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
-import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.microsoft.playwright.Locator;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
+import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.locators.ConsoleLocators;
+import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 
 public class KafkaTestUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaTestUtils.class);
@@ -24,15 +22,14 @@ public class KafkaTestUtils {
      */
     public static void filterKnpByRole(TestCaseConfig tcc, String roleName) {
         LOGGER.info("Filtering Kafka Node Pool table by role {}", roleName);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_TYPE_ROLE_DROPDOWN_BUTTON);
-        List<Locator> knpItems = tcc.page().locator(NodesPageSelectors.NPS_FILTER_BY_NODEPOOL_ITEMS).all();
-        for (Locator knpItem : knpItems) {
-            if (PwUtils.locatorContainsText(knpItem, roleName, false)) {
-                PwUtils.waitForLocatorAndClick(knpItem);
-                return;
-            }
-        }
-        throw new AssertionError("In the role list there was no role named: " + roleName);
+        var nodesDataView = ConsoleLocators.of(tcc.page()).nodesOverview().dataView();
+        var searchToolbar = nodesDataView.toolbar();
+
+        PwUtils.waitForLocatorAndClick(searchToolbar.filtersToggle());
+        PwUtils.waitForLocatorAndClick(searchToolbar.filterItem("Role"));
+        // Filter is now "Filter by role"
+        PwUtils.waitForLocatorAndClick(searchToolbar.checkboxFilter().toggle());
+        PwUtils.waitForLocatorAndClick(searchToolbar.checkboxFilter().checkbox(roleName));
     }
 
     /**
@@ -44,8 +41,9 @@ public class KafkaTestUtils {
      */
     public static void resetKnpFilters(TestCaseConfig tcc, int defaultNodeCount) {
         LOGGER.info("Clearing all Kafka Node Pool filters, expecting {} nodes to be listed", defaultNodeCount);
-        PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_FILTER_CLEAR_ALL_FILTERS_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, defaultNodeCount, NodesPageSelectors.NPS_TABLE_BODY, true);
+        var nodesDataView = ConsoleLocators.of(tcc.page()).nodesOverview().dataView();
+        PwUtils.waitForLocatorAndClick(nodesDataView.toolbar().clearFilters());
+        PwUtils.waitForLocatorCount(tcc, defaultNodeCount, nodesDataView.table().body().rows().locator(), false);
         PwUtils.reload(tcc);
     }
 }

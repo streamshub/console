@@ -1,9 +1,7 @@
 package com.github.streamshub.systemtests.setup.strimzi;
 
 import java.io.File;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 import org.apache.logging.log4j.Logger;
 
@@ -25,8 +23,6 @@ import io.strimzi.api.kafka.model.common.template.ContainerEnvVarBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerBuilder;
-import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBroker;
-import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
@@ -260,14 +256,7 @@ public class KafkaSetup {
     public static KafkaBuilder getDefaultKafka(String namespaceName, String clusterName, String kafkaVersion, int replicas) {
         // This helps to avoid issues with same-name kafka in different namespace exposing the same hostname
         String hashedNamespace = Utils.hashStub(namespaceName);
-
-        // Set broker hosts dynamically
-        List<GenericKafkaListenerConfigurationBroker> brokerHosts = IntStream.range(0, replicas)
-            .mapToObj(id -> new GenericKafkaListenerConfigurationBrokerBuilder()
-                .withBroker(id)
-                .withHost(String.join(".", "broker-" + id, hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
-                .build())
-            .toList();
+        String hostTemplate = String.join(".", "broker-{nodeId}", hashedNamespace, clusterName, ClusterUtils.getClusterDomain());
 
         return new KafkaBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
@@ -325,7 +314,7 @@ public class KafkaSetup {
                             .withNewBootstrap()
                                 .withHost(String.join(".", "bootstrap", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
                             .endBootstrap()
-                            .withBrokers(brokerHosts)
+                            .withHostTemplate(hostTemplate)
                         .endConfiguration()
                         .build())
                     .withNewJmxPrometheusExporterMetricsConfig()

@@ -1,9 +1,11 @@
 package com.github.streamshub.systemtests;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
@@ -20,10 +22,37 @@ import io.skodjob.kubetest4j.environment.TestEnvironmentVariables;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 
 import static io.skodjob.kubetest4j.KubeTestEnv.USER_PATH;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 
 public class Environment {
     private static final Logger LOGGER = LogWrapper.getLogger(Environment.class);
-    private static final TestEnvironmentVariables ENVS = new TestEnvironmentVariables();
+    private static final TestEnvironmentVariables ENVS_DEFAULT = new TestEnvironmentVariables();
+    private static final TestEnvironmentVariables ENVS;
+
+    static {
+        /*
+         * Allow a local configuration file to take priority over the file saved in git.
+         */
+        String localConfig = Paths.get(System.getProperty("user.dir"), "config-local.yaml").toAbsolutePath().toString();
+
+        ENVS = new TestEnvironmentVariables(singletonMap("ENV_FILE", localConfig), emptyMap()) {
+            @Override
+            public String getOrDefault(String envVarName, String defaultValue) {
+                return super.getOrDefault(envVarName, ENVS_DEFAULT.getOrDefault(envVarName, defaultValue));
+            }
+
+            @Override
+            public <T> T getOrDefault(String envVarName, Function<String, T> converter, T defaultValue) {
+                return super.getOrDefault(
+                        envVarName,
+                        converter,
+                        ENVS_DEFAULT.getOrDefault(envVarName, converter, defaultValue)
+                );
+            }
+        };
+    }
+
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     public static final String CLIENT_TYPE = ENVS.getOrDefault("CLIENT_TYPE", "kubectl");
