@@ -87,7 +87,7 @@ class RecordsResourceIT {
     static LogCapture logCapture = LogCapture.with(logRecord -> logRecord
             .getLoggerName()
             .equals(MultiformatDeserializer.class.getName()),
-            Level.INFO);
+            Level.FINEST);
 
     @Inject
     Config config;
@@ -561,7 +561,8 @@ class RecordsResourceIT {
     void testConsumeRecordMagicByteWithoutRegistry() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
-        recordUtils.produceRecord(topicName, null, null, null, "\u0000rest of value");
+        var value = "\u0000rest of value";
+        recordUtils.produceRecord(topicName, null, null, null, value);
 
         await().atMost(5, TimeUnit.SECONDS)
             .until(() -> topicUtils.getTopicSize(topicName) == 1);
@@ -573,14 +574,16 @@ class RecordsResourceIT {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
             .body("data[0].attributes.offset", is(equalTo(0)))
-            .body("data[0].attributes.value", is(equalTo("\u0000rest of value")));
+            // The value is treated as binary data
+            .body("data[0].attributes.value", is(equalTo(Base64.getEncoder().encodeToString(value.getBytes()))));
     }
 
     @Test
     void testConsumeRecordWithSchemaNotFound() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
-        recordUtils.produceRecord(topicName, null, null, null, "\u0000rest of value");
+        var value = "\u0000rest of value";
+        recordUtils.produceRecord(topicName, null, null, null, value);
 
         await().atMost(5, TimeUnit.SECONDS)
             .until(() -> topicUtils.getTopicSize(topicName) == 1);
@@ -591,10 +594,8 @@ class RecordsResourceIT {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
             .body("data[0].attributes.offset", is(equalTo(0)))
-            // The back-end consumes the NULL magic byte + 4 bytes as the schema ID,
-            // thus the missing "\u0000rest" from the value string. A future enhancement
-            // might "rewind" the byte buffer to keep the entire original value.
-            .body("data[0].attributes.value", is(equalTo(" of value")));
+            // The value is treated as binary data
+            .body("data[0].attributes.value", is(equalTo(Base64.getEncoder().encodeToString(value.getBytes()))));
 
         var logs = logCapture.records();
 
