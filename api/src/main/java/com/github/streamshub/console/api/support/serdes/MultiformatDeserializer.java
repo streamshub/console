@@ -141,11 +141,10 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
 
         try {
             Message msg = protobufDeserializer.readData(cast(schema), buffer, start, length);
-            byte[] data = com.google.protobuf.util.JsonFormat.printer()
+            String stringData = com.google.protobuf.util.JsonFormat.printer()
                     .omittingInsignificantWhitespace()
-                    .print(msg)
-                    .getBytes();
-            result = new RecordData(data);
+                    .print(msg);
+            result = new RecordData(stringData);
             result.meta.put("schema-type", ArtifactType.PROTOBUF);
             result.meta.put("schema-id", ArtifactReferences.toSchemaId(schemaResult.toArtifactReference(), objectMapper));
             result.meta.put("schema-name", msg.getDescriptorForType().getFullName());
