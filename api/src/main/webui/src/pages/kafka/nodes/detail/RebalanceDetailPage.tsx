@@ -123,7 +123,7 @@ export function RebalanceDetailPage() {
       <PageSection>
         <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
           <FlexItem>
-            <Title headingLevel="h1" size="2xl">
+            <Title headingLevel="h1" size="2xl" ouiaId={"title"}>
               {rebalance.attributes.name}
             </Title>
           </FlexItem>

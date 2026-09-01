@@ -71,7 +71,10 @@ export function RebalancesDataView({
     (sortBy, direction, onSort) => [
       {
         // expander column,
-        cell: ''
+        cell: '',
+        props: {
+          'aria-label': 'Row expander',
+        }
       },
       {
         cell: t('rebalancing.rebalanceName'),
@@ -117,7 +120,12 @@ export function RebalancesDataView({
           } as ThProps['sort'],
         },
       },
-      { cell: '' }, // actions column
+      { 
+        cell: '',
+        props: {
+          'aria-label': 'Rebalance actions',
+        }
+      },
     ],
     [t, handleSort],
   );
@@ -207,9 +215,16 @@ export function RebalancesDataView({
                       isDisabled: !canUpdate || !rebalance.meta?.allowedActions?.includes('stop'),
                     },
                   ]}
+                  rowData={{
+                    actionProps: {
+                      ouiaId: 'rebalance-action-dropdown-menu'
+                    }
+                  }}
                 />
               ),
-              props: { isActionCell: true },
+              props: { 
+                isActionCell: true,
+              },
             },
           ],
         },

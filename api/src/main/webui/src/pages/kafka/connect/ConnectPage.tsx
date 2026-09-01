@@ -34,7 +34,7 @@ export function ConnectPage() {
   return (
     <>
       <PageSection>
-        <Title headingLevel="h1" size="2xl">
+        <Title headingLevel="h1" size="2xl" ouiaId={"title"}>
           {t('kafka.connect.title')}
         </Title>
       </PageSection>
@@ -44,13 +44,16 @@ export function ConnectPage() {
           onSelect={handleTabSelect}
           aria-label={t('kafka.connect.title')}
           role="region"
+          ouiaId="kafka-connect-tabs"
         >
           <Tab
+            ouiaId="connectors-tab"
             eventKey="connectors"
             title={<TabTitleText>{t('kafka.connect.connectors')}</TabTitleText>}
             aria-label={t('kafka.connect.connectors')}
           />
           <Tab
+            ouiaId="connect-clusters-tab"
             eventKey="clusters"
             title={<TabTitleText>{t('kafka.connect.connectClusters')}</TabTitleText>}
             aria-label={t('kafka.connect.connectClusters')}

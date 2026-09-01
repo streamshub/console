@@ -96,6 +96,7 @@ export const DataViewFilters = <T extends object>({
 
   const attributeToggle = (
     <MenuToggle
+      ouiaId={`${ouiaId}-toggle`}
       ref={attributeToggleRef}
       onClick={() => setIsAttributeMenuOpen(!isAttributeMenuOpen)}
       isExpanded={isAttributeMenuOpen}
@@ -107,6 +108,7 @@ export const DataViewFilters = <T extends object>({
 
   const attributeMenu = (
     <Menu
+      ouiaId={`${ouiaId}-menu`}
       ref={attributeMenuRef}
       onSelect={(_ev, itemId) => {
         const selectedItem = filterItems.find(item => item.filterId === itemId);

@@ -118,7 +118,7 @@ export function GroupMembersTab() {
       <Table aria-label="Group members" variant="compact">
       <Thead>
         <Tr>
-          <Th />
+          <Th aria-label="Row expander" />
           <Th width={30}>
             Member ID
           </Th>

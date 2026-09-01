@@ -27,6 +27,7 @@ export interface ListResponse<T extends Resource, M extends AbstractMeta = Abstr
     next?: string;
   };
   data?: T[];
+  included?: Resource[];
   errors?: ErrorObject[];
 }
 
@@ -64,14 +65,16 @@ export interface MetaWithPrivileges extends AbstractMeta {
   privileges?: string[];
 }
 
+export type ResourceRelationships = Record<string, {
+  data?: ResourceIdentifier | ResourceIdentifier[] | unknown[] | null;
+  meta?: Record<string, unknown>;
+} | null>;
+
 export interface Resource {
   type: string;
   id: string;
   attributes?: Record<string, unknown>;
-  relationships?: Record<string, {
-    data?: ResourceIdentifier | ResourceIdentifier[] | unknown[];
-    meta?: Record<string, unknown>;
-  } | null>;
+  relationships?: ResourceRelationships;
   meta?: AbstractMeta;
 }
 
@@ -227,8 +230,7 @@ export interface MemberDescription {
   assignments?: PartitionKey[];
 }
 
-export interface Group {
-  id: string;
+export interface Group extends Resource {
   type: 'groups';
   meta?: MetaWithPrivileges & {
     describeAvailable?: boolean;
@@ -595,8 +597,7 @@ export interface Plugin {
   version: string;
 }
 
-export interface Connector {
-  id: string;
+export interface Connector extends Resource {
   type: 'connectors';
   attributes: {
     name: string;
@@ -631,8 +632,7 @@ export interface EnrichedConnector extends Connector {
   replicas: number | null;
 }
 
-export interface ConnectCluster {
-  id: string;
+export interface ConnectCluster extends Resource {
   type: 'connects';
   attributes: {
     name: string;
@@ -755,8 +755,7 @@ export interface Authorization {
   permissionType: string;
 }
 
-export interface KafkaUser {
-  id: string;
+export interface KafkaUser extends Resource {
   type: 'kafkaUsers';
   meta?: MetaWithPrivileges;
   attributes: {
@@ -769,7 +768,6 @@ export interface KafkaUser {
       accessControls: Authorization[];
     } | null;
   };
-  relationships?: Record<string, unknown>;
 }
 
 export interface UsersResponse {

@@ -151,11 +151,13 @@ const TextFilterWrapper: React.FC<TextFilterWrapperProps> = (props) => {
 
 function ToggleFilter({
   filterId,
+  ouiaId,
   filter,
   isChecked,
   onChange,
 }: {
   filterId: string;
+  ouiaId?: string;
   filter: ResourceListToggleFilterConfig;
   isChecked: boolean;
   onChange: (checked: boolean) => void;
@@ -164,6 +166,7 @@ function ToggleFilter({
     <div style={{ display: 'inline-flex', alignSelf: 'center' }}>
       <Switch
         id={`${filterId}-filter-toggle`}
+        ouiaId={ouiaId}
         label={filter.label}
         isChecked={isChecked}
         onChange={(_event, checked) => onChange(checked)}
@@ -577,7 +580,7 @@ export function ResourceListDataView<T extends Resource>({
 
   return (
     <DataViewEventsProvider>
-      <DataView activeState={activeState}>
+      <DataView ouiaId={`${ouiaIdPrefix}-dataview`} activeState={activeState}>
         {/* Toolbar with filters and pagination */}
         <DataViewToolbar
           ouiaId={`${ouiaIdPrefix}-toolbar`}
@@ -585,6 +588,7 @@ export function ResourceListDataView<T extends Resource>({
           filters={serializableFilters.length > 0 && (
             <>
               <DataViewFilters
+                ouiaId={`${ouiaIdPrefix}-filters`}
                 onChange={handleFilterChange}
                 values={filters}>
                 {serializableFilters.map(([name, filter]) => {
@@ -592,6 +596,7 @@ export function ResourceListDataView<T extends Resource>({
                     return (
                       <DataViewCheckboxFilter
                         key={`filter-${name}`}
+                        ouiaId={`${ouiaIdPrefix}-filter-value`}
                         filterId={name}
                         title={filter.title}
                         chipTitle={filter.chipLabel}
@@ -609,6 +614,7 @@ export function ResourceListDataView<T extends Resource>({
                   if (filter.type === 'text') {
                     return <TextFilterWrapper
                       key={`filter-${name}`}
+                      ouiaId={`${ouiaIdPrefix}-filter-value`}
                       filterId={name}
                       title={filter.title}
                       placeholder={filter.placeholder}
@@ -622,6 +628,7 @@ export function ResourceListDataView<T extends Resource>({
               {toggleFilters.map(([name, filter]) => (
                 <ToggleFilter
                   key={`filter-${name}`}
+                  ouiaId={`${ouiaIdPrefix}-filter-${name}-toggle`}
                   filterId={name}
                   filter={filter as ResourceListToggleFilterConfig}
                   isChecked={String(filters[name]) === 'true'}

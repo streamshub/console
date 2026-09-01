@@ -3,94 +3,33 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import escape from '../utils/escape';
 import { apiClient } from '../client';
 import {
   GroupsResponse,
   Group,
-  GroupState,
-  GroupType,
   OffsetResetRequest,
   ApiResponse,
 } from '../types';
+import { ResourceListParams, resourceListQueryKeyPrefix, useResourceList } from './useResourceList';
+
+const groupsPath = (kafkaId?: string) => `/api/kafkas/${kafkaId}/groups`;
 
 /**
  * Fetch groups for a Kafka cluster
  */
 export function useGroups(
   kafkaId: string | undefined,
-  params?: {
-    fields?: string;
-    id?: string;
-    type?: GroupType[];
-    groupState?: GroupState[];
-    pageSize?: number;
-    pageCursor?: string;
-    sort?: string;
-    sortDir?: 'asc' | 'desc';
-  }
+  params?: ResourceListParams
 ) {
-  return useQuery({
-    queryKey: [
-      'groups',
-      kafkaId,
-      params?.fields,
-      params?.id,
-      params?.type,
-      params?.groupState,
-      params?.pageSize,
-      params?.pageCursor,
-      params?.sort,
-      params?.sortDir,
-    ],
-    queryFn: async () => {
-      if (!kafkaId) {
-        throw new Error('Kafka ID is required');
-      }
-
-      const searchParams = new URLSearchParams();
-
-      // Set default fields for groups
-      searchParams.set(
-        'fields[groups]',
-        params?.fields ?? 'groupId,type,protocol,state,simpleConsumerGroup,members,offsets'
-      );
-
-      if (params?.id) {
-        searchParams.set('filter[id]', `like,*${escape(params.id)}*`);
-      }
-
-      if (params?.type && params.type.length > 0) {
-        searchParams.set('filter[type]', `in,${params.type.join(',')}`);
-      }
-
-      if (params?.groupState && params.groupState.length > 0) {
-        searchParams.set('filter[state]', `in,${params.groupState.join(',')}`);
-      }
-
-      if (params?.pageSize) {
-        searchParams.set('page[size]', params.pageSize.toString());
-      }
-
-      if (params?.pageCursor) {
-        if (params.pageCursor.startsWith('after:')) {
-          searchParams.set('page[after]', params.pageCursor.slice(6));
-        } else if (params.pageCursor.startsWith('before:')) {
-          searchParams.set('page[before]', params.pageCursor.slice(7));
-        }
-      }
-
-      if (params?.sort) {
-        const sortPrefix = params.sortDir === 'desc' ? '-' : '';
-        searchParams.set('sort', `${sortPrefix}${params.sort}`);
-      }
-
-      const path = `/api/kafkas/${kafkaId}/groups?${searchParams}`;
-
-      return apiClient.get<GroupsResponse>(path);
-    },
-    enabled: !!kafkaId,
-  });
+  return useResourceList<Group>(
+    'groups',
+    groupsPath(kafkaId),
+    {
+      ...params,
+      fields: params?.fields ?? 'groupId,type,protocol,state,simpleConsumerGroup,members,offsets',
+      enabled: !!kafkaId && (params?.enabled ?? true),
+    }
+  );
 }
 
 /**
@@ -165,7 +104,7 @@ export function useGroup(
   }
 ) {
   return useQuery({
-    queryKey: ['group', kafkaId, groupId, params?.fields],
+    queryKey: ['groups', kafkaId, groupId, params?.fields],
     queryFn: async () => {
       if (!kafkaId || !groupId) {
         throw new Error('Kafka ID and Group ID are required');
@@ -217,9 +156,26 @@ export function useResetGroupOffsets(kafkaId: string, groupId: string) {
     },
     onSuccess: (_data, variables) => {
       if (!variables.dryRun) {
-        // Invalidate group queries to refresh data after successful reset
-        queryClient.invalidateQueries({ queryKey: ['group', kafkaId, groupId] });
-        queryClient.invalidateQueries({ queryKey: ['groups', kafkaId] });
+        // Invalidate group queries to refetch
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            if (key.length > 1) {
+              const listKey = [ resourceListQueryKeyPrefix('groups'), groupsPath(kafkaId) ];
+
+              if (key[0] === listKey[0] && key[1] === listKey[1]) {
+                return true;
+              }
+
+              const singleKeyPrefix = ['groups', kafkaId, groupId];
+
+              if (key.length >= singleKeyPrefix.length && singleKeyPrefix.every((v, i) => v === key[i])) {
+                return true;
+              }
+            }
+            return false;
+          }
+        });
       }
     },
   });

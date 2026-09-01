@@ -77,14 +77,14 @@ export function NodesOverviewTab() {
     <PageSection isFilled>
       <Grid hasGutter>
         <GridItem>
-          <Card style={{ background: 'var(--pf-t--global--background--color--secondary--default)' }}>
+          <Card style={{ background: 'var(--pf-t--global--background--color--secondary--default)' }} ouiaId={"summary"}>
             <CardBody>
               <DescriptionList
                 isCompact
                 isHorizontal
                 columnModifier={{ default: '2Col' }}
               >
-                <DescriptionListGroup>
+                <DescriptionListGroup data-ouia-component-id={"total-node-count"}>
                   <DescriptionListTerm style={{ whiteSpace: 'nowrap' }}>
                     {t('nodes.distribution.totalNodes')}{' '}
                     <Tooltip content={t('nodes.distribution.totalNodesTooltip')}>
@@ -96,7 +96,7 @@ export function NodesOverviewTab() {
                   </DescriptionListDescription>
                 </DescriptionListGroup>
 
-                <DescriptionListGroup>
+                <DescriptionListGroup data-ouia-component-id={"controller-node-count"}>
                   <DescriptionListTerm style={{ whiteSpace: 'nowrap' }}>{t('nodes.distribution.controllerRole')}</DescriptionListTerm>
                   <DescriptionListDescription>
                     {controllersWarning ? (
@@ -108,7 +108,7 @@ export function NodesOverviewTab() {
                   </DescriptionListDescription>
                 </DescriptionListGroup>
 
-                <DescriptionListGroup>
+                <DescriptionListGroup data-ouia-component-id={"lead-controller"}>
                   <DescriptionListTerm style={{ whiteSpace: 'nowrap' }}>
                     {t('nodes.distribution.leadController')}{' '}
                     <Tooltip content={t('nodes.distribution.leadControllerTooltip')}>
@@ -120,7 +120,7 @@ export function NodesOverviewTab() {
                   </DescriptionListDescription>
                 </DescriptionListGroup>
 
-                <DescriptionListGroup>
+                <DescriptionListGroup data-ouia-component-id={"broker-node-count"}>
                   <DescriptionListTerm style={{ whiteSpace: 'nowrap' }}>{t('nodes.distribution.brokerRole')}</DescriptionListTerm>
                   <DescriptionListDescription>
                     {brokersWarning ? (

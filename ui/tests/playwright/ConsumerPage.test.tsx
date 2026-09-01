@@ -22,7 +22,7 @@ test("Consumer page content check", async ({ page, authenticatedPage }) => {
       await expect(
         page.getByRole("columnheader", { name: "Group ID" }),
       ).toBeVisible();
-      await authenticatedPage.clickFirstLinkInTheTable("groups-listing");
+      await authenticatedPage.clickFirstLinkInTheTable("kafka-groups-table");
     });
 
     await test.step("Consumer page should display details table", async () => {

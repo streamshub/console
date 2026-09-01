@@ -2,25 +2,30 @@
  * TanStack Query hooks for Kafka Connect
  */
 
-import { useQuery } from '@tanstack/react-query';
-import escape from '../utils/escape';
+import { useMemo } from 'react';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { apiClient } from '../client';
 import {
-  ConnectorsResponse,
-  ConnectClustersResponse,
   ConnectorDetailResponse,
   ConnectClusterDetailResponse,
   EnrichedConnector,
+  Connector,
+  ConnectCluster,
+  ListResponse,
+  Resource,
 } from '../types';
+import { ResourceListParams, useResourceList } from './useResourceList';
 
 /**
  * Enrich connectors with connect cluster information
  */
 function enrichConnectorsData(
-  connectors: ConnectorsResponse['data'],
-  included: ConnectorsResponse['included']
+  connectors: Connector[],
+  included?: Resource[]
 ): EnrichedConnector[] {
-  const clusterMap = new Map((included ?? []).map((item) => [item.id, item]));
+  const clusterMap = new Map((included ?? [])
+    .filter((item) => item.type === 'connects')
+    .map((item) => [item.id, item as ConnectCluster]));
 
   return connectors.map((connector) => {
     const connectClusterId = connector.relationships?.connectCluster?.data?.id;
@@ -40,72 +45,41 @@ function enrichConnectorsData(
  */
 export function useConnectors(
   kafkaId: string | undefined,
-  params?: {
-    pageSize?: number;
-    pageCursor?: string;
-    sort?: string;
-    sortDir?: 'asc' | 'desc';
-    name?: string;
-  }
+  params?: ResourceListParams
 ) {
-  return useQuery({
-    queryKey: [
-      'connectors',
-      kafkaId,
-      params?.pageSize,
-      params?.pageCursor,
-      params?.sort,
-      params?.sortDir,
-      params?.name,
-    ],
-    queryFn: async () => {
-      if (!kafkaId) {
-        throw new Error('Kafka ID is required');
-      }
+  const result = useResourceList<Connector>(
+    'connectors',
+    '/api/connectors',
+    {
+      ...params,
+      include: 'connectCluster',
+      fields: params?.fields ?? 'name,type,state,connectCluster',
+      filters: {
+        'connectCluster.kafkaClusters': {
+          operator: 'in' as const,
+          value: kafkaId || '',
+        },
+        ...params?.filters,
+      },
+      enabled: !!kafkaId && (params?.enabled ?? true),
+    }
+  );
 
-      const searchParams = new URLSearchParams();
+  const enrichedData = useMemo(() => {
+    if (!result.data) {
+      return undefined;
+    }
+    const enriched = enrichConnectorsData(result.data.data ?? [], result.data.included);
+    return {
+      ...result.data,
+      data: enriched,
+    };
+  }, [result.data]);
 
-      searchParams.set('filter[connectCluster.kafkaClusters]', `in,${kafkaId}`);
-
-      if (params?.name) {
-        searchParams.set('filter[name]', `like,*${escape(params.name)}*`);
-      }
-
-      if (params?.pageSize) {
-        searchParams.set('page[size]', params.pageSize.toString());
-      }
-
-      // Handle cursor-based pagination
-      if (params?.pageCursor) {
-        if (params.pageCursor.startsWith('after:')) {
-          searchParams.set('page[after]', params.pageCursor.slice(6));
-        } else if (params.pageCursor.startsWith('before:')) {
-          searchParams.set('page[before]', params.pageCursor.slice(7));
-        }
-      }
-
-      if (params?.sort) {
-        const sortPrefix = params.sortDir === 'desc' ? '-' : '';
-        searchParams.set('sort', `${sortPrefix}${params.sort}`);
-      }
-
-      searchParams.set('include', 'connectCluster');
-      searchParams.set('fields[connectors]', 'name,type,state,connectCluster');
-
-      const path = `/api/connectors?${searchParams}`;
-
-      const response = await apiClient.get<ConnectorsResponse>(path);
-
-      // Enrich the data with connect cluster information
-      const enrichedData = enrichConnectorsData(response.data, response.included);
-
-      return {
-        ...response,
-        data: enrichedData,
-      };
-    },
-    enabled: !!kafkaId,
-  });
+  return {
+    ...result,
+    data: enrichedData,
+  } as unknown as UseQueryResult<ListResponse<EnrichedConnector>, Error>;
 }
 
 /**
@@ -113,64 +87,25 @@ export function useConnectors(
  */
 export function useConnectClusters(
   kafkaId: string | undefined,
-  params?: {
-    pageSize?: number;
-    pageCursor?: string;
-    sort?: string;
-    sortDir?: 'asc' | 'desc';
-    name?: string;
-  }
+  params?: ResourceListParams
 ) {
-  return useQuery({
-    queryKey: [
-      'connectClusters',
-      kafkaId,
-      params?.pageSize,
-      params?.pageCursor,
-      params?.sort,
-      params?.sortDir,
-      params?.name,
-    ],
-    queryFn: async () => {
-      if (!kafkaId) {
-        throw new Error('Kafka ID is required');
-      }
-
-      const searchParams = new URLSearchParams();
-
-      searchParams.set('filter[kafkaClusters]', `in,${kafkaId}`);
-
-      if (params?.name) {
-        searchParams.set('filter[name]', `like,*${escape(params.name)}*`);
-      }
-
-      if (params?.pageSize) {
-        searchParams.set('page[size]', params.pageSize.toString());
-      }
-
-      // Handle cursor-based pagination
-      if (params?.pageCursor) {
-        if (params.pageCursor.startsWith('after:')) {
-          searchParams.set('page[after]', params.pageCursor.slice(6));
-        } else if (params.pageCursor.startsWith('before:')) {
-          searchParams.set('page[before]', params.pageCursor.slice(7));
-        }
-      }
-
-      if (params?.sort) {
-        const sortPrefix = params.sortDir === 'desc' ? '-' : '';
-        searchParams.set('sort', `${sortPrefix}${params.sort}`);
-      }
-
-      searchParams.set('include', 'connectors');
-      searchParams.set('fields[connects]', 'name,version,replicas,connectors');
-
-      const path = `/api/connects?${searchParams}`;
-
-      return apiClient.get<ConnectClustersResponse>(path);
-    },
-    enabled: !!kafkaId,
-  });
+  return useResourceList<ConnectCluster>(
+    'connects',
+    '/api/connects',
+    {
+      ...params,
+      include: 'connectors',
+      fields: params?.fields ?? 'name,version,replicas,connectors',
+      filters: {
+        'kafkaClusters': {
+          operator: 'in' as const,
+          value: kafkaId || '',
+        },
+        ...params?.filters,
+      },
+      enabled: !!kafkaId && (params?.enabled ?? true),
+    }
+  );
 }
 
 /**

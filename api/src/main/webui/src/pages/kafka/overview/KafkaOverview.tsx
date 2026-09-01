@@ -72,7 +72,9 @@ function KafkaOverviewContent() {
   // Fetch groups count
   const { data: groupsData, isLoading: groupsLoading } = useGroups(kafkaId, {
     fields: 'groupId',
-    pageSize: 1,
+    page: {
+      size: 1,
+    },
   });
 
   // Get viewed topics from localStorage

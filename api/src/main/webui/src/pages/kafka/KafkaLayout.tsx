@@ -26,9 +26,11 @@ import { AppMasthead } from '@/components/app/AppMasthead';
 import { ReconciliationControls } from '@/components/kafka/overview/ReconciliationControls';
 import { useGroup } from '@/api/hooks/useGroups';
 import { KroxyliciousClusterLabel } from '@/components/kafka/KroxyliciousClusterLabel';
+import { useMemo } from 'react';
 
 export function KafkaLayout() {
   const { t } = useTranslation();
+  const params = useParams();
   const {
     kafkaId,
     topicId,
@@ -38,16 +40,7 @@ export function KafkaLayout() {
     userId,
     nodeId,
     rebalanceId,
-  } = useParams<{
-    kafkaId: string;
-    topicId?: string;
-    groupId?: string;
-    connectorId?: string;
-    connectClusterId?: string;
-    userId?: string;
-    nodeId?: string;
-    rebalanceId?: string;
-  }>();
+  } = params;
 
   // Must be called unconditionally before any early returns.
   // Static routes supply handle.title; detail pages call usePageTitle themselves.
@@ -75,7 +68,6 @@ export function KafkaLayout() {
   const { data: groupData } = useGroup(
     kafkaId,
     groupId,
-    { fields: 'groupId' }
   );
 
   const { data: connectorData } = useConnector(
@@ -98,6 +90,23 @@ export function KafkaLayout() {
     rebalanceId ? kafkaId : undefined,
     rebalanceId,
   );
+
+  const pathSegments = useMemo(
+    () => location.pathname.split('/').filter(Boolean),
+    [ location.pathname ]
+  );
+
+  const pageComponentId = useMemo(() => {
+    return pathSegments.slice(2).map(segment => {
+      const decodedSegment = decodeURIComponent(segment);
+
+      if (Object.values(params).some(p => p === decodedSegment)) {
+        return "detail";
+      }
+
+      return segment;
+    }).join("-");
+  }, [params, pathSegments]);
 
   if (isLoading) {
     return (
@@ -133,7 +142,6 @@ export function KafkaLayout() {
   const clusterName = cluster?.attributes.name || kafkaId || '';
 
   // Determine current page from location
-  const pathSegments = location.pathname.split('/').filter(Boolean);
   const currentPage = pathSegments[pathSegments.length - 1];
   
   // Check if we're on a topic detail page
@@ -217,7 +225,7 @@ export function KafkaLayout() {
   };
 
   const breadcrumb = (
-    <Breadcrumb>
+    <Breadcrumb ouiaId={"breadcrumb-trail"}>
       <BreadcrumbItem>
         <Link to="/">
           <HomeIcon />
@@ -364,6 +372,7 @@ export function KafkaLayout() {
 
   return (
     <Page
+      data-ouia-component-id={`${pageComponentId}-page`}
       masthead={
         <AppMasthead
           showSidebarToggle={true}

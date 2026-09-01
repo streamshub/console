@@ -52,6 +52,7 @@ export function RebalanceConfirmationModal({
 
   return (
     <Modal
+      ouiaId={'rebalance-confirmation-modal'}
       variant={ModalVariant.medium}
       isOpen={isOpen}
       onClose={onCancel}
@@ -60,10 +61,10 @@ export function RebalanceConfirmationModal({
       <ModalHeader title={t(getTitleKey())} />
       <ModalBody>{t(getDescriptionKey())}</ModalBody>
       <ModalFooter>
-        <Button key="confirm" variant="primary" onClick={onConfirm}>
+        <Button key="confirm" variant="primary" onClick={onConfirm} ouiaId={'confirm'}>
           {t('rebalancing.confirm')}
         </Button>
-        <Button key="cancel" variant="link" onClick={onCancel}>
+        <Button key="cancel" variant="link" onClick={onCancel} ouiaId={'cancel'}>
           {t('common.cancel')}
         </Button>
       </ModalFooter>
