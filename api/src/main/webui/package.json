@@ -32,7 +32,7 @@
     "react-dom": "^19.2.8",
     "react-i18next": "^17.0.12",
     "react-json-view-lite": "^2.5.0",
-    "react-router": "^8.0.0",
+    "react-router": "^8.3.1",
     "victory": "^37.3.6",
     "zustand": "^5.0.15"
   },
