@@ -132,7 +132,7 @@ export function ProposalDetailCard({ rebalance }: ProposalDetailCardProps) {
               }}
             >
               {Object.entries(proposalDetails).map(([key, value]) => (
-                <DescriptionListGroup data-ouia-component-id={key}>
+                <DescriptionListGroup key={key} data-ouia-component-id={key}>
                   <DescriptionListTerm>
                     {t(`rebalancing.optimizationProposal.${key}`)}{' '}
                     <Tooltip content={t(`rebalancing.optimizationProposal.${key}Tooltip`)}>

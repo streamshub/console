@@ -10,7 +10,9 @@ import {
   OffsetResetRequest,
   ApiResponse,
 } from '../types';
-import { ResourceListParams, useResourceList } from './useResourceList';
+import { ResourceListParams, resourceListQueryKeyPrefix, useResourceList } from './useResourceList';
+
+const groupsPath = (kafkaId?: string) => `/api/kafkas/${kafkaId}/groups`;
 
 /**
  * Fetch groups for a Kafka cluster
@@ -21,7 +23,7 @@ export function useGroups(
 ) {
   return useResourceList<Group>(
     'groups',
-    `/api/kafkas/${kafkaId}/groups`,
+    groupsPath(kafkaId),
     {
       ...params,
       fields: params?.fields ?? 'groupId,type,protocol,state,simpleConsumerGroup,members,offsets',
@@ -102,7 +104,7 @@ export function useGroup(
   }
 ) {
   return useQuery({
-    queryKey: ['group', kafkaId, groupId, params?.fields],
+    queryKey: ['groups', kafkaId, groupId, params?.fields],
     queryFn: async () => {
       if (!kafkaId || !groupId) {
         throw new Error('Kafka ID and Group ID are required');
@@ -154,9 +156,26 @@ export function useResetGroupOffsets(kafkaId: string, groupId: string) {
     },
     onSuccess: (_data, variables) => {
       if (!variables.dryRun) {
-        // Invalidate group queries to refresh data after successful reset
-        queryClient.invalidateQueries({ queryKey: ['group', kafkaId, groupId] });
-        queryClient.invalidateQueries({ queryKey: ['groups', kafkaId] });
+        // Invalidate group queries to refetch
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            if (key.length > 1) {
+              const listKey = [ resourceListQueryKeyPrefix('groups'), groupsPath(kafkaId) ];
+
+              if (key[0] === listKey[0] && key[1] === listKey[1]) {
+                return true;
+              }
+
+              const singleKeyPrefix = ['groups', kafkaId, groupId];
+
+              if (key.length >= singleKeyPrefix.length && singleKeyPrefix.every((v, i) => v === key[i])) {
+                return true;
+              }
+            }
+            return false;
+          }
+        });
       }
     },
   });

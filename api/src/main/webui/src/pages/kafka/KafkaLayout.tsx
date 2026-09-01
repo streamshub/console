@@ -68,7 +68,6 @@ export function KafkaLayout() {
   const { data: groupData } = useGroup(
     kafkaId,
     groupId,
-    { fields: 'groupId' }
   );
 
   const { data: connectorData } = useConnector(
