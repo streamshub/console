@@ -17,8 +17,8 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
+import com.github.streamshub.systemtests.locators.ConsoleLocators;
 import com.github.streamshub.systemtests.locators.CssSelectors;
-import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
@@ -161,6 +161,13 @@ public class PwUtils {
         clickWithRetry(locator);
     }
 
+    public static void fillTextFilterAndSubmit(ConsoleLocators.DataViewToolbar searchToolbar, String filterName, String filterValue) {
+        PwUtils.waitForLocatorAndClick(searchToolbar.filtersToggle());
+        PwUtils.waitForLocatorAndClick(searchToolbar.filterItem(filterName));
+        PwUtils.fill(searchToolbar.textFilter().input(), filterValue);
+        PwUtils.waitForLocatorAndClick(searchToolbar.textFilter().submit());
+    }
+
     // Due to https://github.com/microsoft/playwright/issues/14946
     // some buttons or elements that change their visibility might throw errors onclick action
     public static void clickWithRetry(Locator locator) {
@@ -225,6 +232,22 @@ public class PwUtils {
         waitForContainsText(tcc, selector, text, true, true, waitTime, Constants.DEFAULT_ACTION_RETRIES);
     }
 
+    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload, boolean exactCase, long waitTime, int retries) {
+        waitForContainsText(tcc, tcc.page().locator(selector), text, reload, exactCase, waitTime, retries);
+    }
+
+    public static void waitForContainsText(TestCaseConfig tcc, Locator locator, String text, boolean reload) {
+        waitForContainsText(tcc, locator, text, reload, true, TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT, Constants.DEFAULT_ACTION_RETRIES);
+    }
+
+    public static void waitForContainsText(TestCaseConfig tcc, Locator locator, String text, boolean reload, boolean exactCase) {
+        waitForContainsText(tcc, locator, text, reload, exactCase, TimeConstants.COMPONENT_LOAD_TIMEOUT_SHORT, Constants.DEFAULT_ACTION_RETRIES);
+    }
+
+    public static void waitForContainsText(TestCaseConfig tcc, Locator locator, String text, long waitTime) {
+        waitForContainsText(tcc, locator, text, true, true, waitTime, Constants.DEFAULT_ACTION_RETRIES);
+    }
+
     /**
      * Waits until the given selector contains the specified text.
      *
@@ -234,18 +257,18 @@ public class PwUtils {
      * <p>Optionally reloads the page on each poll if the expected text is not found.</p>
      *
      * @param tcc        {@link TestCaseConfig} instance used to access and optionally reload the page
-     * @param selector   the selector to check for the expected text
+     * @param locator    the locator to check for the expected text
      * @param text       the expected text to wait for
      * @param reload     if {@code true}, reloads the page when the text is not found during polling
      * @param exactCase  if {@code true}, the text must match exactly; if {@code false}, {@link String#contains(CharSequence)} is used
      * @param waitTime   wait interval between retries in milliseconds
      * @param retries    number of retry attempts before failing
      */
-    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload, boolean exactCase, long waitTime, int retries) {
-        LOGGER.debug("Waiting for locator [{}] to contain text [{}]", selector, text);
+    public static void waitForContainsText(TestCaseConfig tcc, Locator locator, String text, boolean reload, boolean exactCase, long waitTime, int retries) {
+        LOGGER.debug("Waiting for locator [{}] to contain text [{}]", locator, text);
         Utils.retryAction("waitForContainsText: " + text,
             () -> {
-                if (locatorContainsText(tcc.page().locator(selector), text, exactCase)) {
+                if (locatorContainsText(locator, text, exactCase)) {
                     screenshot(tcc, "wait-text-success");
                     return true;
                 }
@@ -395,6 +418,10 @@ public class PwUtils {
     // --------------------------
     // Wait for locator count
     // --------------------------
+    public static void waitForLocatorCount(TestCaseConfig tcc, int count, String selector, boolean reload) {
+        waitForLocatorCount(tcc, count, tcc.page().locator(selector), reload);
+    }
+
     /**
      * Waits until the locator resolved by the given selector has the expected number of elements.
      *
@@ -407,11 +434,11 @@ public class PwUtils {
      * @param selector selector used to resolve the {@link Locator}
      * @param reload   if {@code true}, the page is reloaded between retry attempts when the count is incorrect
      */
-    public static void waitForLocatorCount(TestCaseConfig tcc, int count, String selector, boolean reload) {
-        LOGGER.debug("Waiting for locator [{}] to contain item count [{}] reload={}", selector, count, reload);
+    public static void waitForLocatorCount(TestCaseConfig tcc, int count, Locator locator, boolean reload) {
+        LOGGER.debug("Waiting for locator [{}] to contain item count [{}] reload={}", locator, count, reload);
         Utils.retryAction("waitForLocatorCount: " + count,
             () -> {
-                int locatorCount = tcc.page().locator(selector).all().size();
+                int locatorCount = locator.all().size();
                 if (locatorCount == count) {
                     LOGGER.debug("Locator has correct item count {}", count);
                     screenshot(tcc, "wait-count-success");
@@ -638,6 +665,10 @@ public class PwUtils {
         screenshot(tcc, "login-oidc-success");
     }
 
+    public static void logoutUser(TestCaseConfig tcc, String userName, boolean https) {
+        logoutUser(tcc, userName, https, false);
+    }
+
     /**
      * Logs out the specified user from the Console UI, retrying if necessary.
      *
@@ -648,26 +679,30 @@ public class PwUtils {
      * @param tcc the {@link TestCaseConfig} containing the Playwright page and context
      * @param userName the username of the user to log out
      * @param https whether to use HTTPS for constructing the console URL
+     * @param postLogoutDashboard whether the page after logout is the Console dashboard (Kafka cluster list)
      */
-    public static void logoutUser(TestCaseConfig tcc, String userName, boolean https) {
+    public static void logoutUser(TestCaseConfig tcc, String userName, boolean https, boolean postLogoutDashboard) {
         LOGGER.info("Logging out user '{}'", userName);
+        var consoleLocators = ConsoleLocators.of(tcc.page());
+
         Utils.retryAction("Log-out user " + userName, () -> {
             String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), https) + "/";
+            var userSessionMenuToggleButton = consoleLocators.masthead().userSessionMenuToggle();
 
-            // There is a xpath difference between logout button in dashboard and in navbar on other pages
-            if (tcc.page().url().equals(dashboardUrl)) {
-                waitForLocatorAndClick(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON);
-            } else {
-                waitForLocatorAndClick(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON);
+            if (userSessionMenuToggleButton.isVisible()) {
+                waitForLocatorAndClick(userSessionMenuToggleButton);
+                waitForLocatorAndClick(consoleLocators.masthead().userSessionMenu().logout());
             }
 
-            waitForLocatorAndClick(tcc, CssSelectors.PAGES_LOGOUT_BUTTON);
-
-            if (tcc.page().url().equals(dashboardUrl) ||
-                tcc.page().locator(KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON).allInnerTexts().contains(userName)) {
+            if (userSessionMenuToggleButton.isVisible()
+                    && userSessionMenuToggleButton.allInnerTexts().contains(userName)) {
                 LOGGER.warn("User '{}' has not been logged out", userName);
                 screenshot(tcc, "logout-retry");
                 return false;
+            }
+
+            if (tcc.page().url().equals(dashboardUrl) && postLogoutDashboard) {
+                waitForContainsText(tcc, userSessionMenuToggleButton, "Anonymous", false);
             }
 
             LOGGER.info("Successfully logged out user '{}'", userName);

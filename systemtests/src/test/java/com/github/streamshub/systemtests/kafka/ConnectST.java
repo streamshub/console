@@ -18,7 +18,7 @@ import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
-import com.github.streamshub.systemtests.locators.KafkaConnectPageSelectors;
+import com.github.streamshub.systemtests.locators.ConsoleLocators;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaConnectSetup;
@@ -99,59 +99,66 @@ class ConnectST extends AbstractST {
         LOGGER.info("Verifying Kafka Connect connector and cluster name-based filtering for Kafka '{}'", tcc.kafkaName());
         PwUtils.navigate(tcc, PwPageUrls.getKafkaConnectPage(tcc, tcc.kafkaName()));
 
+        var consoleLocators = ConsoleLocators.of(tcc.page());
+        var connectorsPage = consoleLocators.connectConnectors();
+
         LOGGER.debug("Verifying Kafka Connect page header is visible");
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.KCPS_PAGE_TITLE_NAME, "Kafka Connect", true);
+        PwUtils.waitForContainsText(tcc, connectorsPage.title(), "Kafka Connect", true);
+
+        var connectorsTable = connectorsPage.dataView().table();
 
         LOGGER.debug("Waiting for connectors table and verifying initial count (expected: 2)");
-        PwUtils.waitForLocatorVisible(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT);
-        PwUtils.waitForLocatorCount(tcc, 2, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, true);
+        PwUtils.waitForLocatorCount(tcc, 2, connectorsTable.body().rows().locator(), false);
 
         // ---- SRC connector filter ----
         LOGGER.info("Filtering connectors by source connector name: {}", SOURCE_CONNECTOR_NAME);
-        PwUtils.waitForLocatorAndFill(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT, SOURCE_CONNECTOR_NAME);
+        PwUtils.fillTextFilterAndSubmit(connectorsPage.dataView().toolbar(), "Name", SOURCE_CONNECTOR_NAME);
 
         LOGGER.debug("Verifying exactly 1 connector remains, named '{}', on cluster '{}', with type 'Source'", SOURCE_CONNECTOR_NAME, KAFKA_CONNECT_SRC_NAME);
-        PwUtils.waitForLocatorCount(tcc, 1, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, false);
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 1), SOURCE_CONNECTOR_NAME, true);
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 2), KAFKA_CONNECT_SRC_NAME, true);
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 3), "Source", true);
+        PwUtils.waitForLocatorCount(tcc, 1, connectorsTable.body().rows().locator(), false);
+        PwUtils.waitForContainsText(tcc, connectorsTable.body().cell(0, "Name"), SOURCE_CONNECTOR_NAME, true);
+        PwUtils.waitForContainsText(tcc, connectorsTable.body().cell(0, "Connect cluster"), KAFKA_CONNECT_SRC_NAME, true);
+        PwUtils.waitForContainsText(tcc, connectorsTable.body().cell(0, "Type"), "Source", true);
 
         // ---- Sink connector filter ----
         LOGGER.info("Filtering connectors by sink connector name: {}", SINK_CONNECTOR_NAME);
-        PwUtils.waitForLocatorAndFill(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT, SINK_CONNECTOR_NAME);
+        PwUtils.click(connectorsPage.dataView().toolbar().clearFilters());
+        PwUtils.fillTextFilterAndSubmit(connectorsPage.dataView().toolbar(), "Name", SINK_CONNECTOR_NAME);
 
         LOGGER.debug("Verifying exactly 1 connector remains, named '{}', on cluster '{}', with type 'Sink'", SINK_CONNECTOR_NAME, KAFKA_CONNECT_SINK_NAME);
-        PwUtils.waitForLocatorCount(tcc, 1, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, false);
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 1), SINK_CONNECTOR_NAME, true);
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 2), KAFKA_CONNECT_SINK_NAME, true);
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 3), "Sink", true);
+        PwUtils.waitForLocatorCount(tcc, 1, connectorsTable.body().rows().locator(), false);
+        PwUtils.waitForContainsText(tcc, connectorsTable.body().cell(0, "Name"), SINK_CONNECTOR_NAME, true);
+        PwUtils.waitForContainsText(tcc, connectorsTable.body().cell(0, "Connect cluster"), KAFKA_CONNECT_SINK_NAME, true);
+        PwUtils.waitForContainsText(tcc, connectorsTable.body().cell(0, "Type"), "Sink", true);
 
         // Filter connect clusters
         LOGGER.info("Navigating to Kafka Connect clusters page");
-        PwUtils.navigate(tcc, PwPageUrls.getKafkaConnectClusterPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForLocatorAndClick(connectorsPage.tabs().connectClusters());
+        PwUtils.waitForUrl(tcc, PwPageUrls.getKafkaConnectClusterPage(tcc, tcc.kafkaName()), true);
+
+        var clustersPage = consoleLocators.connectClusters();
 
         LOGGER.debug("Verifying Kafka Connect clusters page header");
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.KCPS_PAGE_TITLE_NAME, "Kafka Connect", true);
+        PwUtils.waitForContainsText(tcc, clustersPage.title(), "Kafka Connect", true);
+
+        var clustersTable = clustersPage.dataView().table();
 
         LOGGER.debug("Waiting for clusters table and verifying initial count (expected: 2)");
-        PwUtils.waitForLocatorVisible(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT);
-        PwUtils.waitForLocatorCount(tcc, 2, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, true);
+        PwUtils.waitForLocatorCount(tcc, 2, clustersTable.body().rows().locator(), false);
 
         // ---- Source cluster filter ----
         LOGGER.info("Filtering Kafka Connect clusters by source cluster name: {}", KAFKA_CONNECT_SRC_NAME);
-        PwUtils.waitForLocatorAndFill(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT, KAFKA_CONNECT_SRC_NAME);
-
+        PwUtils.fillTextFilterAndSubmit(clustersPage.dataView().toolbar(), "Name", KAFKA_CONNECT_SRC_NAME);
         LOGGER.debug("Verifying exactly 1 Kafka Connect cluster remains, named '{}'", KAFKA_CONNECT_SRC_NAME);
-        PwUtils.waitForLocatorCount(tcc, 1, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, false);
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 1), KAFKA_CONNECT_SRC_NAME, true);
+        PwUtils.waitForLocatorCount(tcc, 1, clustersTable.body().rows().locator(), false);
+        PwUtils.waitForContainsText(tcc, clustersTable.body().cell(0, "Name"), KAFKA_CONNECT_SRC_NAME, true);
 
         // ---- Sink cluster filter ----
-        LOGGER.info("Filtering Kafka Connect clusters by sink cluster name: {}", KAFKA_CONNECT_SINK_NAME);
-        PwUtils.waitForLocatorAndFill(tcc, KafkaConnectPageSelectors.KCPS_NAME_FILTER_INPUT, KAFKA_CONNECT_SINK_NAME);
-
+        LOGGER.info("Filtering Kafka Connect clusters by source cluster name: {}", KAFKA_CONNECT_SINK_NAME);
+        PwUtils.fillTextFilterAndSubmit(clustersPage.dataView().toolbar(), "Name", KAFKA_CONNECT_SINK_NAME);
         LOGGER.debug("Verifying exactly 1 Kafka Connect cluster remains, named '{}'", KAFKA_CONNECT_SINK_NAME);
-        PwUtils.waitForLocatorCount(tcc, 1, KafkaConnectPageSelectors.KCPS_TABLE_ITEMS, false);
-        PwUtils.waitForContainsText(tcc, KafkaConnectPageSelectors.getTableRowItem(1, 1), KAFKA_CONNECT_SINK_NAME, true);
+        PwUtils.waitForLocatorCount(tcc, 1, clustersTable.body().rows().locator(), false);
+        PwUtils.waitForContainsText(tcc, clustersTable.body().cell(0, "Name"), KAFKA_CONNECT_SINK_NAME, true);
 
         LOGGER.info("Kafka Connect connector and cluster filtering test finished successfully");
     }

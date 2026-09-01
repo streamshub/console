@@ -1,6 +1,8 @@
 package com.github.streamshub.systemtests.kafka;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -18,20 +20,18 @@ import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.CssBuilder;
+import com.github.streamshub.systemtests.locators.ConsoleLocators;
 import com.github.streamshub.systemtests.locators.CssSelectors;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.resourceutils.kafka.KafkaUtils;
 import com.github.streamshub.systemtests.utils.testchecks.KafkaNodePoolChecks;
 import com.github.streamshub.systemtests.utils.testutils.KafkaTestUtils;
@@ -39,19 +39,14 @@ import com.github.streamshub.systemtests.utils.testutils.KafkaTestUtils;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBroker;
-import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
-
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TestTags.REGRESSION)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class KafkaST extends AbstractST {
+class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaST.class);
     private static final String ADDITIONAL_BRK_KNP_NAME = "additional-brk";
     private static final int ADDITIONAL_BRK_NODES = 2;
@@ -229,24 +224,28 @@ public class KafkaST extends AbstractST {
     private void checkNodesPageNodeCounts(int brokerCount) {
         LOGGER.debug("Verify Nodes page header shows total={}, working={}, warning=0",
             brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS, brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_TOTAL_COUNT,
+        var locators = ConsoleLocators.of(tcc.page());
+        PwUtils.waitForContainsText(tcc, locators.nodesOverview().title().labelTotal(),
             Integer.toString(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WORKING_NODES_COUNT,
+        PwUtils.waitForContainsText(tcc, locators.nodesOverview().title().labelHealthy(),
             Integer.toString(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
+        PwUtils.waitForContainsText(tcc, locators.nodesOverview().title().labelUnhealthy(), "0", true);
+
         // Page infobox
         // total nodes
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(1).build(),
+        PwUtils.waitForContainsText(tcc, locators.nodesOverview().summary().totalNodeCount().description(),
             Integer.toString(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         // with controller role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(2).build(),
+        PwUtils.waitForContainsText(tcc, locators.nodesOverview().summary().controllerNodeCount().description(),
             Integer.toString(Constants.REGULAR_CONTROLLER_REPLICAS), true);
         // with broker role
-        PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(),
+        PwUtils.waitForContainsText(tcc, locators.nodesOverview().summary().brokerNodeCount().description(),
             Integer.toString(brokerCount), true);
+
         // Node table
         LOGGER.debug("Verify Nodes page table row count equals {}", brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS);
-        assertEquals(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
+        assertEquals(brokerCount + Constants.REGULAR_CONTROLLER_REPLICAS,
+                locators.nodesOverview().dataView().table().body().rows().locator().all().size());
     }
 
     /**
@@ -328,47 +327,6 @@ public class KafkaST extends AbstractST {
 
         LOGGER.info("Setting up additional broker node pool: {}", ADDITIONAL_BRK_KNP_NAME);
 
-        // Update kafka to accept new brokers
-        Kafka currentKafka = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName());
-
-        // Get existing broker configuration
-        List<GenericKafkaListenerConfigurationBroker> existingBrokers = currentKafka.getSpec().getKafka().getListeners().stream()
-            .filter(l -> l.getName().equals(Constants.SECURE_LISTENER_NAME))
-            .findFirst()
-            .map(l -> l.getConfiguration() != null && l.getConfiguration().getBrokers() != null
-                ? l.getConfiguration().getBrokers()
-                : new java.util.ArrayList<GenericKafkaListenerConfigurationBroker>())
-            .orElse(new java.util.ArrayList<>());
-
-        // Create new broker hosts for additional brokers
-        List<GenericKafkaListenerConfigurationBroker> newBrokerHosts =
-            KafkaUtils.getNewNodePoolNodeIds(tcc.namespace(), tcc.kafkaName(),
-                Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_BROKER_REPLICAS + ADDITIONAL_BRK_NODES)
-                .stream()
-                .sorted()
-                .map(id -> new GenericKafkaListenerConfigurationBrokerBuilder()
-                    .withBroker(id)
-                    .withHost(String.join(".", "broker-" + id, Utils.hashStub(tcc.namespace()), tcc.kafkaName(), ClusterUtils.getClusterDomain()))
-                    .build())
-                .toList();
-
-        // Combine existing and new brokers
-        List<GenericKafkaListenerConfigurationBroker> allBrokers = new java.util.ArrayList<>(existingBrokers);
-        allBrokers.addAll(newBrokerHosts);
-
-        KubeResourceManager.get().updateResource(
-            new KafkaBuilder(currentKafka)
-                .editSpec()
-                    .editKafka()
-                        .editMatchingListener(l -> l.getName().equals(Constants.SECURE_LISTENER_NAME))
-                            .editConfiguration()
-                                .withBrokers(allBrokers)
-                            .endConfiguration()
-                        .endListener()
-                    .endKafka()
-                .endSpec()
-                .build());
-
         KafkaNodePool addedBrokerPool = KafkaSetup.getDefaultBrokerNodePools(tcc.namespace(), tcc.kafkaName(), ADDITIONAL_BRK_NODES)
             .editMetadata()
                 .withName(ADDITIONAL_BRK_KNP_NAME)
@@ -384,8 +342,18 @@ public class KafkaST extends AbstractST {
     void testCaseSetup() {
         tcc = Utils.getTestCaseConfig();
         NamespaceUtils.prepareNamespace(tcc.namespace());
-        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
-        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
+
+        CompletableFuture.allOf(
+                Utils.runAsyncWithContext(() ->
+                        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName())),
+                Utils.runAsyncWithContext(() ->
+                        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(
+                                tcc.namespace(),
+                                tcc.consoleInstanceName(),
+                                tcc.kafkaName(),
+                                tcc.kafkaUserName()).build()))
+        ).join();
+
         PwUtils.login(tcc);
     }
 

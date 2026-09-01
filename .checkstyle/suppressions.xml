@@ -13,4 +13,6 @@
               files="ConfigurationProcessor.java"/>
     <suppress checks="MethodLength"
               files="NodesResourceIT.java"/>
+    <suppress checks="JavaNCSS"
+              files="ConsoleLocators\.java" />
 </suppressions>

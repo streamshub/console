@@ -1,16 +1,19 @@
 package com.github.streamshub.systemtests.utils.testchecks;
 
+import java.util.List;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.NodesPageSelectors;
+import com.github.streamshub.systemtests.locators.ConsoleLocators;
+import com.github.streamshub.systemtests.locators.ConsoleLocators.DataViewTableBody;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
-import org.apache.logging.log4j.Logger;
 
-import java.util.List;
+import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 
 public class KafkaNodePoolChecks {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaNodePoolChecks.class);
@@ -36,12 +39,15 @@ public class KafkaNodePoolChecks {
         checkOverviewPageKafkaBrokerNodes(tcc, brokerIds.size());
         checkNodesPageKafkaNodes(tcc, brokerIds.size() + controllerIds.size());
 
+        var nodesOverviewPage = ConsoleLocators.of(tcc.page()).nodesOverview();
+        var tableBody = nodesOverviewPage.dataView().table().body();
+
         for (int brokerId : brokerIds) {
-            KafkaNodePoolChecks.checkKnpTableRow(tcc, brokerId + 1, brokerId, ProcessRoles.BROKER.toValue());
+            KafkaNodePoolChecks.checkKnpTableRow(tcc, tableBody, brokerId, brokerId, ProcessRoles.BROKER.toValue());
         }
 
         for (int controllerId : controllerIds) {
-            KafkaNodePoolChecks.checkKnpTableRow(tcc, controllerId + 1, controllerId, ProcessRoles.CONTROLLER.toValue());
+            KafkaNodePoolChecks.checkKnpTableRow(tcc, tableBody, controllerId, controllerId, ProcessRoles.CONTROLLER.toValue());
         }
     }
 
@@ -55,7 +61,8 @@ public class KafkaNodePoolChecks {
     public static void checkNodesPageKafkaNodes(TestCaseConfig tcc, int totalNodeCount) {
         LOGGER.info("Checking nodes page shows total node count {}", totalNodeCount);
         PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
-        PwUtils.waitForLocatorCount(tcc, totalNodeCount, NodesPageSelectors.NPS_TABLE_BODY, true);
+        var nodesOverviewPage = ConsoleLocators.of(tcc.page()).nodesOverview();
+        PwUtils.waitForLocatorCount(tcc, totalNodeCount, nodesOverviewPage.dataView().table().body().rows().locator(), true);
     }
 
     /**
@@ -69,9 +76,12 @@ public class KafkaNodePoolChecks {
      */
     public static void checkFilterTypeResults(TestCaseConfig tcc, List<Integer> nodeIds, String expectedRole) {
         LOGGER.info("Verifying kafka node table filtered results for nodeIds {} with expected role [{}]", nodeIds, expectedRole);
-        PwUtils.waitForLocatorCount(tcc, nodeIds.size(), NodesPageSelectors.NPS_TABLE_BODY, true);
-        for (int row = 1; row < nodeIds.size(); row++) {
-            checkKnpTableRow(tcc, row, nodeIds.get(row - 1), expectedRole);
+        var nodesOverviewPage = ConsoleLocators.of(tcc.page()).nodesOverview();
+        var tableBody = nodesOverviewPage.dataView().table().body();
+        PwUtils.waitForLocatorCount(tcc, nodeIds.size(), tableBody.rows().locator(), true);
+
+        for (int row = 0; row < nodeIds.size(); row++) {
+            checkKnpTableRow(tcc, tableBody, row, nodeIds.get(row), expectedRole);
         }
     }
 
@@ -84,9 +94,10 @@ public class KafkaNodePoolChecks {
      * @param expectedNodeId the expected Kafka node ID
      * @param expectedRole   the expected node role (e.g. Broker or Controller)
      */
-    public static void checkKnpTableRow(TestCaseConfig tcc, int nthRow, int expectedNodeId, String expectedRole) {
+    private static void checkKnpTableRow(TestCaseConfig tcc, DataViewTableBody tableBody, int nthRow, int expectedNodeId, String expectedRole) {
         LOGGER.debug("Checking kafka node table row {} contains nodeId {} with role [{}]", nthRow, expectedNodeId, expectedRole);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.getNodeTableRowItem(nthRow, 2), String.valueOf(expectedNodeId), false, false);
-        PwUtils.waitForContainsText(tcc, NodesPageSelectors.getNodeTableRowItem(nthRow, 3), expectedRole, false, false);
+        var row = tableBody.row(nthRow);
+        PwUtils.waitForContainsText(tcc, row.cell("Node ID"), String.valueOf(expectedNodeId), false, false);
+        PwUtils.waitForContainsText(tcc, row.cell("Roles"), expectedRole, false, false);
     }
 }
