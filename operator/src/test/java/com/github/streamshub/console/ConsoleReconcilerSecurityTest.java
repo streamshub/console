@@ -369,10 +369,11 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
             stateSecret.set(secret);
         });
 
-        console = client.resource(console).get();
-        console.getMetadata().setManagedFields(null);
-
-        client.resource(new ConsoleBuilder(console)
+        // Enable PKCE
+        client.resources(Console.class)
+            .inNamespace(console.getMetadata().getNamespace())
+            .withName(console.getMetadata().getName())
+            .edit(c -> new ConsoleBuilder(c)
                     .editSpec()
                         .editSecurity()
                             .editOidc()
@@ -380,8 +381,7 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
                             .endOidc()
                         .endSecurity()
                     .endSpec()
-                .build())
-            .serverSideApply();
+                .build());
 
         assertConsoleConfig(consoleConfig -> {
             var securityConfig = consoleConfig.getSecurity();
