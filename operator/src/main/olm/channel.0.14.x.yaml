@@ -4,5 +4,5 @@ name: 0.14.x
 package: streamshub-console-operator
 properties: []
 entries:
-  - name: streamshub-console-operator.v0.14.0-snapshot
+  - name: streamshub-console-operator.v0.14.0
     replaces: streamshub-console-operator.v0.13.0
