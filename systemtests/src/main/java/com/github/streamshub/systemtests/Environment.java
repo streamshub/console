@@ -73,7 +73,7 @@ public class Environment {
     // YAML bundle
     public static final String CONSOLE_OPERATOR_BUNDLE_URL = ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "");
 
-    public static final String OLD_CONSOLE_OPERATOR_VERSION = ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_VERSION", "0.13.0");
+    public static final String OLD_CONSOLE_OPERATOR_VERSION = ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_VERSION", "0.14.0");
     public static final String OLD_CONSOLE_OPERATOR_CRDS_URL = ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_CRDS_URL",
         "https://github.com/streamshub/console/releases/download/" + OLD_CONSOLE_OPERATOR_VERSION + "/streamshub-console-operator.yaml");
     public static final String NEW_CONSOLE_OPERATOR_CRDS_URL = ENVS.getOrDefault("NEW_CONSOLE_OPERATOR_CRDS_URL", "");
