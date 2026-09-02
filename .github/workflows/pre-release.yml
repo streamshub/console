@@ -16,21 +16,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure old operator version was bumped
-        run: |
-          CHANGED=$(git diff \
-            ${{ github.event.pull_request.base.sha }} \
-            ${{ github.event.pull_request.head.sha }} \
-            -- systemtests/src/main/java/com/github/streamshub/systemtests/Environment.java \
-            | grep -E "^[+-].*OLD_CONSOLE_OPERATOR_VERSION" || true)
-
-          if [ -z "$CHANGED" ]; then
-            echo "❌[ERROR]: OLD_CONSOLE_OPERATOR_VERSION in Environment.java was not modified in this PR, exiting the flow."
-            exit 1
-          fi
-
-          echo "✔️ OLD_CONSOLE_OPERATOR_VERSION change detected: $CHANGED"
-
       - name: Retrieve Project Metadata
         uses: smallrye/project-metadata-action@62527b4a896343d4c0c6b2a61eff07f6b59fcbd8
         id: metadata

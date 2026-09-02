@@ -1,13 +1,29 @@
 package com.github.streamshub.systemtests;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonValue.ValueType;
 
 import org.apache.logging.log4j.Logger;
 
@@ -15,6 +31,7 @@ import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.zafarkhaja.semver.Version;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.skodjob.kubetest4j.enums.InstallType;
@@ -88,7 +105,7 @@ public class Environment {
     // YAML bundle
     public static final String CONSOLE_OPERATOR_BUNDLE_URL = ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "");
 
-    public static final String OLD_CONSOLE_OPERATOR_VERSION = ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_VERSION", "0.14.1");
+    public static final String OLD_CONSOLE_OPERATOR_VERSION = getPreviousConsoleOperatorVersion();
     public static final String OLD_CONSOLE_OPERATOR_CRDS_URL = ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_CRDS_URL",
         "https://github.com/streamshub/console/releases/download/" + OLD_CONSOLE_OPERATOR_VERSION + "/streamshub-console-operator.yaml");
     public static final String NEW_CONSOLE_OPERATOR_CRDS_URL = ENVS.getOrDefault("NEW_CONSOLE_OPERATOR_CRDS_URL", "");
@@ -179,6 +196,69 @@ public class Environment {
                 var version = System.getProperty("operator.version", "");
                 return systemPropertyTransformer.apply(version);
             });
+    }
+
+    private static String getPreviousConsoleOperatorVersion() {
+        return Optional.of(ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_VERSION", ""))
+            .filter(Predicate.not(String::isBlank))
+            .or(() -> {
+                var versionPattern = Pattern.compile("^(\\d+)\\.(\\d+)\\.\\d+");
+                var matcher = versionPattern.matcher(System.getProperty("operator.version", ""));
+
+                if (matcher.find()) {
+                    int[] ver = {
+                            Integer.parseInt(matcher.group(1)),
+                            Integer.parseInt(matcher.group(2))
+                    };
+
+                    /* 
+                     * For the purposes of finding the previous version, we will use the initial
+                     * release of the current minor version. E.g., if the current version is 0.10.5,
+                     * we will look for the latest version earlier than 0.10.0.
+                     */
+                    Version currentMinor = Version.of(ver[0], ver[1], 0);
+                    NavigableSet<Version> versions = findGitHubReleases();
+
+                    if (versions.isEmpty()) {
+                        return Optional.empty();
+                    }
+
+                    var previous = versions.lower(currentMinor);
+                    return Optional.of(previous.toString());
+                }
+
+                return Optional.empty();
+            })
+            .orElseThrow(() -> new IllegalStateException("""
+                    Environment variable OLD_CONSOLE_OPERATOR_VERSION is not set \
+                    and could not be derived from `operator.version` property and GitHub releases."""));
+    }
+
+    private static NavigableSet<Version> findGitHubReleases() {
+        JsonArray releases;
+
+        try (var client = HttpClient.newBuilder().build()) {
+            var request = HttpRequest
+                    .newBuilder(URI.create("https://api.github.com/repos/streamshub/console/releases"))
+                    .GET()
+                    .build();
+
+            releases = client.sendAsync(request, BodyHandlers.ofInputStream())
+                    .thenApply(HttpResponse::body)
+                    .thenApply(Json::createReader)
+                    .thenApply(JsonReader::readArray)
+                    .join();
+        } catch (Exception e) {
+            LOGGER.error("Failed to obtain list of releases from GitHub", e);
+            return Collections.emptyNavigableSet();
+        }
+
+        return releases.stream()
+            .filter(v -> ValueType.OBJECT.equals(v.getValueType()))
+            .map(JsonValue::asJsonObject)
+            .map(release -> release.getString("tag_name"))
+            .map(Version::parse)
+            .collect(Collectors.toCollection(() -> new TreeSet<>()));
     }
 
     public static boolean isTestClientsPullSecretPresent() {
