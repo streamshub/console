@@ -5,7 +5,6 @@ import {
   ChartBar,
   ChartLegend,
   ChartStack,
-  ChartThemeColor,
   ChartTooltip,
 } from '@patternfly/react-charts/victory';
 import { Alert } from '@patternfly/react-core';
@@ -55,6 +54,11 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
     { name: t('nodes.charts.partitionDistributionSeriesLeaders') },
   ];
 
+  const chartColors = [
+    '#876FD4', // replicas
+    '#63993D' // leaders
+  ];
+
   // Configure custom spacing dimensions
   const barWidth = 20;     // Thickness of each individual bar
   const innerPadding = 16;  // Distance between bars in pixels
@@ -87,11 +91,10 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
         ariaTitle={t('nodes.charts.partitionDistributionAriaTitle')}
         legendPosition="bottom-left"
         legendComponent={
-          <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} />
+          <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} colorScale={chartColors} />
         }
         padding={padding}
         domainPadding={{ x: [edgePadding, edgePadding] }}
-        themeColor={ChartThemeColor.multiOrdered}
         width={width}
         height={calculatedChartHeight}
         legendAllowWrap={true}
@@ -108,7 +111,7 @@ export function ChartPartitionDistribution({ nodes }: ChartPartitionDistribution
           horizontal
         />
         <ChartAxis />
-        <ChartStack>
+        <ChartStack colorScale={chartColors}>
           <ChartBar
             data={replicasData}
             barWidth={barWidth}

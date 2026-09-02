@@ -5,7 +5,6 @@ import {
   ChartBar,
   ChartLegend,
   ChartStack,
-  ChartThemeColor,
   ChartTooltip,
 } from '@patternfly/react-charts/victory';
 import {
@@ -91,6 +90,11 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
   const legendData = [
     { name: t('nodes.charts.storageUsageSeriesUsed') },
     { name: t('nodes.charts.storageUsageSeriesAvailable') },
+  ];
+
+  const chartColors = [
+    '#E5B27F', // used
+    '#7FB2E5' // available
   ];
 
   // Compute 5 evenly-spaced, round tick values from 0 to maxCapacity.
@@ -182,11 +186,10 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
         ariaTitle={t('nodes.charts.storageUsageAriaTitle')}
         legendPosition="bottom-left"
         legendComponent={
-          <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} />
+          <ChartLegend orientation="horizontal" data={legendData} itemsPerRow={2} colorScale={chartColors} />
         }
         padding={padding}
         domainPadding={{ x: [edgePadding, edgePadding] }}
-        themeColor={ChartThemeColor.multiOrdered}
         width={width}
         height={calculatedChartHeight}
         legendAllowWrap={true}
@@ -209,6 +212,7 @@ export function ChartNodeStorageUsage({ nodes }: ChartNodeStorageUsageProps) {
         <ChartAxis />
         <ChartStack
           labelComponent={<ChartTooltip constrainToVisibleArea />}
+          colorScale={chartColors}
         >
           <ChartBar
             data={usedData}
