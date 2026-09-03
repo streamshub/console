@@ -10,8 +10,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import jakarta.inject.Inject;
 
@@ -37,6 +39,7 @@ import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.Status;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersion;
@@ -544,5 +547,29 @@ abstract class ConsoleReconcilerTestBase {
                 .inNamespace(consoleCR.getMetadata().getNamespace())
                 .withName("%s-console-secret".formatted(consoleCR.getMetadata().getName()))
                 .get();
+    }
+
+    <T extends HasMetadata> T edit(T resource, UnaryOperator<T> editor) {
+        @SuppressWarnings("unchecked")
+        Class<T> resourceType = (Class<T>) resource.getClass();
+
+        return await()
+            .atMost(5, TimeUnit.SECONDS)
+            .ignoreExceptionsMatching(thrown -> {
+                if (thrown instanceof KubernetesClientException kce) {
+                    return Optional.ofNullable(kce.getStatus())
+                        .map(Status::getCode)
+                        .map(Integer.valueOf(409)::equals)
+                        .orElse(false);
+                }
+
+                return false;
+            })
+            .until(
+                () -> client.resources(resourceType)
+                    .inNamespace(resource.getMetadata().getNamespace())
+                    .withName(resource.getMetadata().getName())
+                    .edit(editor),
+                Objects::nonNull);
     }
 }
