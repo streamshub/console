@@ -90,9 +90,13 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <!--
+                    Management required to avoid downgrade by Quarkus.
+                    This must be equal to or newer than the version used by Apicurio
+                -->
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-bom</artifactId>
-                <version>4.35.1</version>
+                <version>4.36.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
