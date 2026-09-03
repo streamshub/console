@@ -28,7 +28,7 @@
         <kroxy-api.version>0.23.0</kroxy-api.version>
 
         <!-- Plugin Versions -->
-        <maven.compiler.version>3.15.0</maven.compiler.version>
+        <maven.compiler.version>3.16.0</maven.compiler.version>
         <maven.dependency.version>3.11.0</maven.dependency.version>
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
