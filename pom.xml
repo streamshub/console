@@ -19,7 +19,7 @@
         <quarkus.platform.version>3.33.3.1</quarkus.platform.version>
         <strimzi-api.version>1.2.0</strimzi-api.version>
         <strimzi-oauth.version>0.18.0</strimzi-oauth.version>
-        <apicurio-registry.version>3.3.1</apicurio-registry.version>
+        <apicurio-registry.version>3.3.2</apicurio-registry.version>
         <kiota-http-jdk.version>0.0.38</kiota-http-jdk.version>
         <kafka.version>4.3.1</kafka.version>
 
@@ -90,9 +90,13 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <!--
+                    Management required to avoid downgrade by Quarkus.
+                    This must be equal to or newer than the version used by Apicurio
+                -->
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-bom</artifactId>
-                <version>4.35.1</version>
+                <version>4.36.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
