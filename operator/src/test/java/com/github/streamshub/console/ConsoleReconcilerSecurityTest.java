@@ -370,18 +370,15 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
         });
 
         // Enable PKCE
-        client.resources(Console.class)
-            .inNamespace(console.getMetadata().getNamespace())
-            .withName(console.getMetadata().getName())
-            .edit(c -> new ConsoleBuilder(c)
-                    .editSpec()
-                        .editSecurity()
-                            .editOidc()
-                                .withPkceRequired()
-                            .endOidc()
-                        .endSecurity()
-                    .endSpec()
-                .build());
+        edit(console, c -> new ConsoleBuilder(c)
+                .editSpec()
+                    .editSecurity()
+                        .editOidc()
+                            .withPkceRequired(true)
+                        .endOidc()
+                    .endSecurity()
+                .endSpec()
+            .build());
 
         assertConsoleConfig(consoleConfig -> {
             var securityConfig = consoleConfig.getSecurity();
@@ -390,18 +387,16 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
             assertEquals(stateSecret.get(), oidc.getStateSecret());
         });
 
-        console = client.resource(console).get();
-        client.resource(console).edit(c -> {
-            return new ConsoleBuilder(c)
-                    .editSpec()
-                        .editSecurity()
-                            .editOidc()
-                                .withPkceRequired(false)
-                            .endOidc()
-                        .endSecurity()
-                    .endSpec()
-                    .build();
-        });
+        // Disable PKCE
+        edit(console, c -> new ConsoleBuilder(c)
+                .editSpec()
+                    .editSecurity()
+                        .editOidc()
+                            .withPkceRequired(false)
+                        .endOidc()
+                    .endSecurity()
+                .endSpec()
+            .build());
 
         assertConsoleConfig(consoleConfig -> {
             var securityConfig = consoleConfig.getSecurity();
