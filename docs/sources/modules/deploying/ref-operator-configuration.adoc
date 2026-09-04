@@ -1,0 +1,115 @@
+:_mod-docs-content-type: REFERENCE
+
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='ref-operator-configuration-{context}']
+= Configuring the console operator
+
+[role="_abstract"]
+You can configure the console operator's runtime behaviour by setting environment variables on the operator `Deployment`.
+These settings apply globally across all `Console` instances managed by the operator and must be applied by a cluster administrator.
+
+How you set these variables depends on how the operator was installed:
+
+* **OLM installations** — add a `spec.config.env` block to the `Subscription` resource.
+* **Non-OLM installations** — add entries to the `env` list of the operator container in the `Deployment` manifest before applying it to the cluster.
+
+Changes to these environment variables take effect after the operator pod restarts.
+
+== Default API image
+
+The operator uses a built-in default API container image when a `Console` instance does not specify one explicitly.
+This image is set at build time and corresponds to the version of the operator being run.
+
+`CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE`::
+Overrides the built-in default API container image used when a `Console` custom resource does not specify `spec.deployment.spec.template.spec.serverContainer.image`.
++
+The value must be a fully qualified image reference, including registry, repository, and tag or digest.
+For example: `quay.io/my-org/console-api:1.0.0`.
++
+This is most useful when running a custom or mirrored build of the console API in an environment where the standard `quay.io/streamshub/` images are not accessible.
+If you set this variable, ensure the new default image's registry prefix is also included in `CONSOLE_DEPLOYMENT_ALLOWED_IMAGE_PREFIXES`, or leave the allowlist unset so it is derived automatically from the new default.
+
+== Permitted container image prefixes
+
+By default, the operator allows `Console` instances to reference any API container image whose registry path begins with the same prefix as the operator's built-in default image (`quay.io/streamshub/`).
+You can broaden or restrict this set by configuring an explicit allowlist of permitted image prefixes.
+
+=== Configuration
+
+`CONSOLE_DEPLOYMENT_ALLOWED_IMAGE_PREFIXES`::
+A comma-separated list of image reference prefixes.
+When a `Console` custom resource specifies an API container image (via `spec.deployment.spec.template.spec.serverContainer.image`), the operator checks that the image begins with at least one entry in this list.
+If the image does not match, the operator sets an `ERROR` condition on the `Console` resource and does not create or update the console `Deployment`.
++
+When this variable is not set, the operator derives a single permitted prefix from its built-in default image by taking everything up to and including the last `/`.
+For a standard release, that is `quay.io/streamshub/`.
+
+=== Important considerations
+
+* **Prefix matching uses literal string comparison.**
+An image is permitted if its full reference begins with any entry in the list — no wildcards or patterns are supported.
+Include the trailing `/` in each prefix to prevent unintended matches across similarly-named organisations.
+For example, `quay.io/my-org/` permits `quay.io/my-org/console-api:latest` but not `quay.io/my-org-other/image:latest`.
+
+* **The explicit list replaces the default entirely.**
+Once `CONSOLE_DEPLOYMENT_ALLOWED_IMAGE_PREFIXES` is set, the operator no longer applies the derived default.
+If the configured list does not include the prefix of the default API image, any `Console` instance that omits an image override — and therefore falls back to the default — will be rejected at reconcile time.
+The operator logs a warning at startup when this condition is detected.
++
+To avoid this, either include the default image's prefix in the list, or update `CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE` to point to an image whose prefix is already in the list.
+
+* **Validation occurs during reconciliation, not at resource creation.**
+A rejected image surfaces as an `ERROR` condition on the `Console` resource with `reason: RECONCILIATION_EXCEPTION` and a message that includes both the rejected image and the configured prefixes.
+The `Console` resource remains in `Ready=False` until the image reference is corrected or the operator is reconfigured and restarted.
+No console `Deployment` is created or modified while the validation error is present.
+
+* **An operator restart is required for changes to take effect.**
+The allowlist is loaded once when the operator starts.
+Updating the environment variable on the `Subscription` or `Deployment` triggers a pod rollout; new restrictions apply once the operator pod is running again.
+
+=== Example: restrict images to a private registry
+
+The following examples configure the operator to permit only images from a private organisation's registry, and update the default API image to one in that registry.
+
+.OLM installation — `Subscription` resource
+[source,yaml]
+----
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: streamshub-console-sub
+spec:
+  name: streamshub-console-operator
+  channel: alpha
+  source: streamshub-console-catalog
+  sourceNamespace: ${NAMESPACE}
+  config:
+    env:
+      - name: CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE
+        value: "quay.io/my-org/console-api:1.0.0"
+      - name: CONSOLE_DEPLOYMENT_ALLOWED_IMAGE_PREFIXES
+        value: "quay.io/my-org/"
+----
+
+.Non-OLM installation — operator `Deployment` manifest
+[source,yaml]
+----
+containers:
+  - name: streamshub-console-operator
+    env:
+      - name: CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE
+        value: "quay.io/my-org/console-api:1.0.0"
+      - name: CONSOLE_DEPLOYMENT_ALLOWED_IMAGE_PREFIXES
+        value: "quay.io/my-org/"
+----
+
+To permit images from multiple registries without changing the default, provide a comma-separated list that includes the default image's prefix:
+
+[source,yaml]
+----
+- name: CONSOLE_DEPLOYMENT_ALLOWED_IMAGE_PREFIXES
+  value: "quay.io/my-org/,quay.io/streamshub/"
+----
