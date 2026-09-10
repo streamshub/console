@@ -34,7 +34,7 @@
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <jandex-maven-plugin.version>3.6.0</jandex-maven-plugin.version>
         <spotbugs.version>4.10.4</spotbugs.version>
-        <surefire-plugin.version>3.5.6</surefire-plugin.version>
+        <surefire-plugin.version>3.6.0</surefire-plugin.version>
 
         <!-- Sonar settings -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
