@@ -187,7 +187,7 @@
             <dependency>
                 <groupId>io.xlate</groupId>
                 <artifactId>validators</artifactId>
-                <version>1.5.0</version>
+                <version>1.5.2</version>
             </dependency>
             <dependency>
                 <groupId>io.sundr</groupId>
