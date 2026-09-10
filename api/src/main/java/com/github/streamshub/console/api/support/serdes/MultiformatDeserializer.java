@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.ws.rs.core.Response;
+
 import org.apache.avro.Schema;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -47,6 +49,7 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
     private static final SchemaLookupResult<Object> NO_SCHEMA_ID = SchemaLookupResult.builder().build();
     private static final SchemaLookupResult<Object> RESOLVER_MISSING = SchemaLookupResult.builder().build();
     private static final SchemaLookupResult<Object> LOOKUP_FAILURE = SchemaLookupResult.builder().build();
+    private static final SchemaLookupResult<Object> SCHEMA_NOT_FOUND = SchemaLookupResult.builder().build();
 
     AvroDeserializer avroDeserializer;
     ProtobufDeserializer protobufDeserializer;
@@ -138,11 +141,10 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
 
         try {
             Message msg = protobufDeserializer.readData(cast(schema), buffer, start, length);
-            byte[] data = com.google.protobuf.util.JsonFormat.printer()
+            String stringData = com.google.protobuf.util.JsonFormat.printer()
                     .omittingInsignificantWhitespace()
-                    .print(msg)
-                    .getBytes();
-            result = new RecordData(data);
+                    .print(msg);
+            result = new RecordData(stringData);
             result.meta.put("schema-type", ArtifactType.PROTOBUF);
             result.meta.put("schema-id", ArtifactReferences.toSchemaId(schemaResult.toArtifactReference(), objectMapper));
             result.meta.put("schema-name", msg.getDescriptorForType().getFullName());
@@ -158,18 +160,23 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
         byte[] bytes = new byte[length];
         System.arraycopy(buffer.array(), start, bytes, 0, length);
         RecordData result = new RecordData(bytes);
+        final String title = "Schema resolution error";
+        final String attributeName = isKey() ? "Key" : "Value";
 
         if (schemaResult == RESOLVER_MISSING) {
             result.error = new com.github.streamshub.console.api.model.jsonapi.JsonApiError(
-                    "Schema resolution error",
-                    "%s encoded, but no schema registry is configured"
-                        .formatted(isKey() ? "Key" : "Value"),
+                    title,
+                    "%s encoded, but no schema registry is configured".formatted(attributeName),
+                    null);
+        } else if (schemaResult == SCHEMA_NOT_FOUND) {
+            result.error = new com.github.streamshub.console.api.model.jsonapi.JsonApiError(
+                    title,
+                    "%s references an unknown schema".formatted(attributeName),
                     null);
         } else if (schemaResult == LOOKUP_FAILURE) {
             result.error = new com.github.streamshub.console.api.model.jsonapi.JsonApiError(
-                    "Schema resolution error",
-                    "Schema could not be retrieved from registry to decode %s"
-                        .formatted(isKey() ? "Key" : "Value"),
+                    title,
+                    "Schema could not be retrieved from registry to decode %s".formatted(attributeName),
                     null);
         }
 
@@ -206,7 +213,15 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
             buffer = BaseSerde.getByteBuffer(data);
             artifactReference = idHandler.readId(buffer);
             schema = resolve(artifactReference);
-            length = buffer.limit() - idHandler.idSize() - 1;
+
+            if (schema == SCHEMA_NOT_FOUND || schema == LOOKUP_FAILURE || schema == RESOLVER_MISSING) {
+                // Make sure the entire buffer is returned without skipping the 
+                // (possibly invalid) schema ID.
+                buffer = ByteBuffer.wrap(data);
+                length = buffer.limit();
+            } else {
+                length = buffer.limit() - idHandler.idSize() - 1;
+            }
         } else {
             buffer = ByteBuffer.wrap(data);
             // Empty schema
@@ -249,7 +264,12 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
             Throwable cause = RootCause.of(e).orElse(e);
 
             if (cause instanceof io.apicurio.registry.rest.client.v2.models.Error clientError) {
-                LOG.infof("Schema could not be resolved: %s. Message: %s", artifactReference, clientError.getMessageEscaped());
+                if (clientError.getResponseStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
+                    LOG.debugf("Schema not found: %s. Message: %s", artifactReference, clientError.getMessageEscaped());
+                    return SCHEMA_NOT_FOUND;
+                } else {
+                    LOG.infof("Schema could not be resolved: %s. Message: %s", artifactReference, clientError.getMessageEscaped());
+                }
             } else if (LOG.isDebugEnabled()) {
                 /*
                  * Only log the stack trace at debug level. Schema resolution will be attempted

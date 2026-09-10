@@ -31,7 +31,7 @@ public class AvroDatumProvider extends DefaultAvroDatumProvider<RecordData> {
             @Override
             public void write(RecordData data, org.apache.avro.io.Encoder out) throws IOException {
                 final DatumReader<GenericRecord> reader = new GenericDatumReader<>(schema);
-                final InputStream dataStream = new ByteArrayInputStream(data.data);
+                final InputStream dataStream = new ByteArrayInputStream(data.bytes());
                 final Decoder jsonDecoder = DecoderFactory.get().jsonDecoder(schema, dataStream);
                 final Object datum = reader.read(null, jsonDecoder);
                 writer.write(datum, out);
@@ -45,7 +45,7 @@ public class AvroDatumProvider extends DefaultAvroDatumProvider<RecordData> {
                 final Encoder jsonEncoder = EncoderFactory.get().jsonEncoder(schema, buffer);
                 writer.write(datum, jsonEncoder);
                 jsonEncoder.flush();
-                data.data = buffer.toByteArray();
+                data.bytes(buffer.toByteArray());
             }
 
             @Override

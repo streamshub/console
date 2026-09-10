@@ -16,6 +16,7 @@ interface GetMessagesParams {
   epoch?: number;
   query?: string;
   where?: 'key' | 'headers' | 'value';
+  maxValueLength?: number;
 }
 
 /**
@@ -32,12 +33,17 @@ export async function getMessages(params: GetMessagesParams): Promise<KafkaRecor
     epoch,
     query,
     where,
+    maxValueLength,
   } = params;
 
   const searchParams = new URLSearchParams({
     'fields[records]': 'partition,offset,timestamp,timestampType,headers,key,keySchema,value,valueSchema,size',
     'page[size]': String(pageSize),
   });
+
+  if (maxValueLength !== undefined) {
+    searchParams.append('maxValueLength', String(maxValueLength));
+  }
 
   if (partition !== undefined) {
     searchParams.append('filter[partition]', String(partition));
@@ -124,6 +130,7 @@ export function useMessages(
       params.epoch,
       params.query,
       params.where,
+      params.maxValueLength,
     ],
     queryFn: () => getMessages(params),
     ...options,
