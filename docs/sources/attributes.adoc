@@ -7,7 +7,7 @@
 :idprefix:
 :imagesdir: images
 :numbered:
-:sectanchors!:
+:sectanchors:
 :sectnums:
 :source-highlighter: highlightjs
 :toc: left
