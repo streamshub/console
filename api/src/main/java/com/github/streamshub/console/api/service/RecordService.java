@@ -1,9 +1,16 @@
 package com.github.streamshub.console.api.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -39,6 +46,7 @@ import org.apache.kafka.common.header.Headers;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.streamshub.console.api.model.KafkaRecord;
 import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToOne;
@@ -138,7 +146,8 @@ public class RecordService {
                 .collect(Collectors.toCollection(() -> limitSet))
                 .stream()
                 .map(rec -> getItems(rec, topicId, include, maxValueLength))
-                .toList();    }
+                .toList();
+    }
 
     public KafkaRecord produceRecord(String topicId, KafkaRecord input) {
         String topicName = topicNameForId(topicId);
@@ -208,14 +217,9 @@ public class RecordService {
             result.timestamp(Instant.ofEpochMilli(meta.timestamp()));
         }
 
-        result.key(key.dataString(null));
-        result.value(value.dataString(null));
-        result.headers(Arrays.stream(request.headers().toArray())
-                .collect(
-                        // Duplicate headers will be overwritten
-                        LinkedHashMap::new,
-                        (map, hdr) -> map.put(hdr.key(), headerValue(hdr, null)),
-                        HashMap::putAll));
+        result.key(input.key());
+        result.value(input.value());
+        result.headers(input.headers());
         result.size(sizeOf(meta, request.headers()));
 
         schemaRelationship(key).ifPresent(result::keySchema);
@@ -320,15 +324,41 @@ public class RecordService {
 
     KafkaRecord getItems(ConsumerRecord<RecordData, RecordData> rec, String topicId, List<String> include, Integer maxValueLength) {
         KafkaRecord item = new KafkaRecord(topicId);
+        Map<String, Object> contentMeta = new LinkedHashMap<>();
 
         setProperty(KafkaRecord.Fields.PARTITION, include, rec::partition, item::partition);
         setProperty(KafkaRecord.Fields.OFFSET, include, rec::offset, item::offset);
         setProperty(KafkaRecord.Fields.TIMESTAMP, include, () -> Instant.ofEpochMilli(rec.timestamp()), item::timestamp);
         setProperty(KafkaRecord.Fields.TIMESTAMP_TYPE, include, rec.timestampType()::name, item::timestampType);
-        setProperty(KafkaRecord.Fields.KEY, include, rec::key, k -> item.key(k.dataString(maxValueLength)));
-        setProperty(KafkaRecord.Fields.VALUE, include, rec::value, v -> item.value(v.dataString(maxValueLength)));
-        setProperty(KafkaRecord.Fields.HEADERS, include, () -> headersToMap(rec.headers(), maxValueLength), item::headers);
+        if (include.contains(KafkaRecord.Fields.KEY)) {
+            FieldResult keyResult = encodeField(rec.key() != null ? rec.key().bytes() : null, maxValueLength);
+            item.key(keyResult.value());
+            if (keyResult.meta() != null) {
+                contentMeta.put(KafkaRecord.Fields.KEY, keyResult.meta());
+            }
+        }
+
+        if (include.contains(KafkaRecord.Fields.VALUE)) {
+            FieldResult valueResult = encodeField(rec.value() != null ? rec.value().bytes() : null, maxValueLength);
+            item.value(valueResult.value());
+            if (valueResult.meta() != null) {
+                contentMeta.put(KafkaRecord.Fields.VALUE, valueResult.meta());
+            }
+        }
+
+        if (include.contains(KafkaRecord.Fields.HEADERS)) {
+            HeadersResult headersResult = headersToResult(rec.headers(), maxValueLength);
+            item.headers(headersResult.values());
+            if (!headersResult.contentMeta().isEmpty()) {
+                contentMeta.put(KafkaRecord.Fields.HEADERS, headersResult.contentMeta());
+            }
+        }
+
         setProperty(KafkaRecord.Fields.SIZE, include, () -> sizeOf(rec), item::size);
+
+        if (!contentMeta.isEmpty()) {
+            item.addMeta("content", contentMeta);
+        }
 
         schemaRelationship(rec.key()).ifPresent(item::keySchema);
         schemaRelationship(rec.value()).ifPresent(item::valueSchema);
@@ -376,28 +406,19 @@ public class RecordService {
         }
     }
 
-    Map<String, String> headersToMap(Headers headers, Integer maxValueLength) {
-        Map<String, String> headerMap = new LinkedHashMap<>();
-        headers.iterator().forEachRemaining(h -> headerMap.put(h.key(), headerValue(h, maxValueLength)));
-        return headerMap;
-    }
+    private record HeadersResult(Map<String, String> values, Map<String, ContentMeta> contentMeta) { }
 
-    static String headerValue(Header header, Integer maxValueLength) {
-        byte[] value = header.value();
-
-        if (value != null) {
-            int length;
-
-            if (maxValueLength == null) {
-                length = value.length;
-            } else {
-                length = Integer.min(maxValueLength, value.length);
+    HeadersResult headersToResult(Headers headers, Integer maxValueLength) {
+        Map<String, String> valueMap = new LinkedHashMap<>();
+        Map<String, ContentMeta> metaMap = new LinkedHashMap<>();
+        headers.iterator().forEachRemaining(h -> {
+            FieldResult result = encodeField(h.value(), maxValueLength);
+            valueMap.put(h.key(), result.value());
+            if (result.meta() != null) {
+                metaMap.put(h.key(), result.meta());
             }
-
-            return new String(value, 0, length);
-        }
-
-        return null;
+        });
+        return new HeadersResult(valueMap, metaMap);
     }
 
     static long sizeOf(RecordMetadata meta, Headers headers) {
@@ -412,6 +433,125 @@ public class RecordService {
         return keySize + valueSize + Arrays.stream(headers.toArray())
                 .mapToLong(h -> h.key().length() + (h.value() != null ? h.value().length : 0))
                 .sum();
+    }
+
+    /**
+     * Inspects {@code bytes} for binary content and returns a {@link FieldResult}
+     * pairing the appropriate string value with an optional {@link ContentMeta}.
+     */
+    private FieldResult encodeField(byte[] bytes, Integer maxValueLength) {
+        if (bytes == null) {
+            return new FieldResult(null, null);
+        }
+        if (bytes.length == 0) {
+            return new FieldResult("", null);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        boolean binary = false;
+
+        try (Reader reader = new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8
+                .newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT))) {
+            int cp;
+
+            while ((cp = reader.read()) != -1) {
+                if (isExcludedUnicodeC0(cp) || isUnicodeC1(cp)) {
+                    /*
+                     * Consider NUL, C0 controls (except common text whitespace), DEL,
+                     * and C1 controls to be indicative of "binary data" that will not 
+                     * be displayed as text in the UI.
+                     */
+                    binary = true;
+                    break;
+                }
+
+                sb.appendCodePoint(cp);
+            }
+        } catch (IOException e) {
+            binary = true;
+        }
+
+        if (binary) {
+            if (maxValueLength != null && bytes.length > maxValueLength) {
+                return new FieldResult(null, ContentMeta.forBinaryOmitted());
+            }
+            return new FieldResult(Base64.getEncoder().encodeToString(bytes), ContentMeta.forBinaryEncoded());
+        }
+
+        // text path — sb already contains the full decoded string
+        String text = sb.toString();
+        if (maxValueLength != null && text.length() > maxValueLength) {
+            return new FieldResult(text.substring(0, maxValueLength), ContentMeta.forTextTruncated());
+        }
+        return new FieldResult(text, null);
+    }
+
+    /** Returns true for C0 control codes except common text whitespace (tab, LF, CR). */
+    private static boolean isExcludedUnicodeC0(int cp) {
+        return cp <= 0x1F && cp != '\t' && cp != '\n' && cp != '\r';
+    }
+
+    /** Returns true for DEL and C1 control codes (0x7F–0x9F). */
+    private static boolean isUnicodeC1(int cp) {
+        return cp >= 0x7F && cp <= 0x9F;
+    }
+
+    /** Carries the processed string value alongside optional content metadata. */
+    private record FieldResult(String value, ContentMeta meta) { }
+
+    /** Describes the content type and encoding of a single record field. */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    public static final class ContentMeta {
+
+        private static final ContentMeta BINARY_ENCODED = new ContentMeta("application/octet-stream", "base64", false, false);
+        private static final ContentMeta BINARY_OMITTED = new ContentMeta("application/octet-stream", null, true, false);
+        private static final ContentMeta TEXT_TRUNCATED = new ContentMeta("text/plain", null, false, true);
+
+        private final String type;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private final String encoding;
+        private final boolean omitted;
+        private final boolean truncated;
+
+        private ContentMeta(String type, String encoding, boolean omitted, boolean truncated) {
+            this.type = type;
+            this.encoding = encoding;
+            this.omitted = omitted;
+            this.truncated = truncated;
+        }
+
+        /** Binary field within size limit — base64-encoded. */
+        public static ContentMeta forBinaryEncoded() {
+            return BINARY_ENCODED;
+        }
+
+        /** Binary field exceeding size limit — omitted from response. */
+        public static ContentMeta forBinaryOmitted() {
+            return BINARY_OMITTED;
+        }
+
+        /** Text field truncated by maxValueLength. */
+        public static ContentMeta forTextTruncated() {
+            return TEXT_TRUNCATED;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getEncoding() {
+            return encoding;
+        }
+
+        public boolean isOmitted() {
+            return omitted;
+        }
+
+        public boolean isTruncated() {
+            return truncated;
+        }
     }
 
     static UnknownTopicIdException noSuchTopic(String topicId) {

@@ -258,6 +258,12 @@
       "noResultsTitle": "No messages data",
       "tableAriaLabel": "Messages table",
       "schema": "Schema",
+      "noKey": "No key",
+      "noValue": "No value",
+      "noHeaders": "No headers",
+      "binaryDataNotDisplayed": "Binary data not displayed",
+      "binaryDataOmitted": "Binary data not displayed (omitted)",
+      "downloadButton": "Save to file",
       "field": {
         "epoch": "Unix timestamp",
         "headers": "Headers",
