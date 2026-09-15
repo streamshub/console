@@ -1,15 +1,24 @@
 package com.github.streamshub.systemtests.utils.resourceutils;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.UnaryOperator;
+
+import org.apache.logging.log4j.Logger;
+import org.awaitility.Awaitility;
+
 import com.github.streamshub.systemtests.logs.LogWrapper;
+
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.LabelSelector;
+import io.fabric8.kubernetes.api.model.Status;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 public class ResourceUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(ResourceUtils.class);
@@ -26,6 +35,27 @@ public class ResourceUtils {
     public static <T extends HasMetadata> T getKubeResource(Class<T> resourceClass, String namespaceName, String resourceName) {
         LOGGER.trace("Fetching {} {}/{}", resourceClass.getSimpleName(), namespaceName, resourceName);
         return getKubeResourceClient(resourceClass).inNamespace(namespaceName).withName(resourceName).get();
+    }
+
+    public static <T extends HasMetadata> T editKubeResource(Class<T> resourceClass, String namespaceName, String resourceName, UnaryOperator<T> editor) {
+        LOGGER.trace("Editing {} {}/{}", resourceClass.getSimpleName(), namespaceName, resourceName);
+        var client = getKubeResourceClient(resourceClass).inNamespace(namespaceName).withName(resourceName);
+
+        return Awaitility.await()
+                .atMost(5, TimeUnit.SECONDS)
+                .ignoreExceptionsMatching(thrown -> {
+                    if (thrown instanceof KubernetesClientException kce) {
+                        return Optional.ofNullable(kce.getStatus())
+                            .map(Status::getCode)
+                            .map(Integer.valueOf(409)::equals)
+                            .orElse(false);
+                    }
+
+                    return false;
+                })
+                .until(
+                    () -> client.edit(editor),
+                    Objects::nonNull);
     }
 
     public static <T extends HasMetadata> T getKubeResource(Class<T> resourceClass, String resourceName) {

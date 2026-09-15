@@ -39,6 +39,7 @@ import com.github.streamshub.console.dependents.ConsoleIngress;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleRoute;
 import com.github.streamshub.console.dependents.ConsoleSecret;
+import com.github.streamshub.console.dependents.ConsoleServiceAccount;
 import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
 import com.github.streamshub.console.dependents.PrometheusDeployment;
@@ -491,6 +492,14 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .build();
 
         client.resource(consoleCR).create();
+        grantConsoleServiceAccountSecretAccess(
+                null,
+                "ServiceAccount",
+                CONSOLE_NAME + "-console-serviceaccount",
+                CONSOLE_NS,
+                KAFKA_NS,
+                "ku1"
+        );
 
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
             var console = client.resources(Console.class)
@@ -560,6 +569,15 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .build();
 
         client.resource(consoleCR).create();
+
+        grantConsoleServiceAccountSecretAccess(
+                null,
+                "ServiceAccount",
+                CONSOLE_NAME + "-console-serviceaccount",
+                CONSOLE_NS,
+                KAFKA_NS,
+                "ku1"
+        );
 
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
             var console = client.resources(Console.class)
@@ -634,6 +652,15 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
         client.resource(consoleCR).create();
 
+        grantConsoleServiceAccountSecretAccess(
+                null,
+                "ServiceAccount",
+                CONSOLE_NAME + "-console-serviceaccount",
+                CONSOLE_NS,
+                KAFKA_NS,
+                "ku1"
+        );
+
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
             var console = client.resources(Console.class)
                     .inNamespace(consoleCR.getMetadata().getNamespace())
@@ -660,6 +687,94 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals("keystore-key-value", properties.get(SslConfigs.SSL_KEYSTORE_KEY_CONFIG));
 
             assertEquals("keystore-certs-value", properties.get(SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG));
+        });
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "                         , ServiceAccount, " + CONSOLE_NAME + "-" + ConsoleServiceAccount.NAME + ", " + CONSOLE_NS,
+        "rbac.authorization.k8s.io, Group,           system:serviceaccounts:" + CONSOLE_NS + ",",
+        "rbac.authorization.k8s.io, Group,           system:serviceaccounts,",
+    })
+    void testConsoleReconciliationWithKafkaUserSecretPermittedBySAR(
+            String subjectApiGroup,
+            String subjectKind,
+            String subjectName,
+            String subjectNamespace
+    ) {
+        KafkaUser userCR = new KafkaUserBuilder()
+                .withNewMetadata()
+                    .withName("ku1")
+                    .withNamespace(KAFKA_NS)
+                .endMetadata()
+                .withNewSpec()
+                    .withAuthentication(new KafkaUserScramSha512ClientAuthentication())
+                .endSpec()
+                .withNewStatus()
+                    .withSecret("ku1")
+                .endStatus()
+                .build();
+
+        userCR = apply(client, userCR);
+
+        Secret userSecret = new SecretBuilder()
+                .withNewMetadata()
+                    .withName("ku1")
+                    .withNamespace(KAFKA_NS)
+                    .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+                .endMetadata()
+                .addToData(SaslConfigs.SASL_JAAS_CONFIG, Base64.getEncoder().encodeToString("jaas-config-value".getBytes()))
+                .build();
+
+        client.resource(userSecret).create();
+
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(CONSOLE_NAME)
+                        .withNamespace(CONSOLE_NS)
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withNewCredentials()
+                            .withNewKafkaUser()
+                                .withName(userCR.getMetadata().getName())
+                            .endKafkaUser()
+                        .endCredentials()
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        grantConsoleServiceAccountSecretAccess(subjectApiGroup, subjectKind, subjectName, subjectNamespace, KAFKA_NS, "ku1");
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME)
+                    .get();
+
+            var consoleSecret = client.secrets().inNamespace(CONSOLE_NS).withName(CONSOLE_NAME + "-" + ConsoleSecret.NAME).get();
+            assertNotNull(consoleSecret, "ConsoleSecret must exist when SAR is permitted");
+
+            String configEncoded = consoleSecret.getData().get("console-config.yaml");
+            assertNotNull(configEncoded, "console-config.yaml must be present in ConsoleSecret");
+
+            byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
+            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
+            assertEquals("jaas-config-value",
+                    consoleConfig.getKafka().getClusters().get(0).getProperties().get(SaslConfigs.SASL_JAAS_CONFIG),
+                    "JAAS config must be written to ConsoleSecret when SAR is permitted");
+
+            // No ERROR condition should be present
+            console.getStatus().getConditions().stream()
+                    .filter(c -> Condition.Types.ERROR.equals(c.getType()))
+                    .findFirst()
+                    .ifPresent(err -> assertTrue(false, "Unexpected ERROR condition: " + err));
         });
     }
 
@@ -701,6 +816,14 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .build();
 
         client.resource(consoleCR).create();
+        grantConsoleServiceAccountSecretAccess(
+                null,
+                "ServiceAccount",
+                CONSOLE_NAME + "-console-serviceaccount",
+                CONSOLE_NS,
+                KAFKA_NS,
+                "ku1"
+        );
 
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
             var console = client.resources(Console.class)
