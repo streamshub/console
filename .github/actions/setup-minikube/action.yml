@@ -27,6 +27,7 @@ runs:
       id: minikube
       uses: medyagh/setup-minikube@latest
       with:
+        minikube-version: 1.38.1
         cpus: ${{ inputs.CPUS }}
         memory: ${{ inputs.MEM }}
         addons: registry,ingress,ingress-dns
