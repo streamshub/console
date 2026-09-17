@@ -30,7 +30,7 @@
     "i18next": "^26.4.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-i18next": "^17.0.13",
+    "react-i18next": "^17.0.14",
     "react-json-view-lite": "^2.5.0",
     "react-router": "^8.3.1",
     "victory": "^37.3.6",
