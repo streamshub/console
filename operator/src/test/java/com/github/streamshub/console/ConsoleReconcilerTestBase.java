@@ -37,6 +37,11 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
+import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
+import io.fabric8.kubernetes.api.model.rbac.Role;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
+import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Deletable;
@@ -59,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 abstract class ConsoleReconcilerTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTestBase.class);
+    static final Map<String, String> TEST_MANAGEMENT_LABEL = Map.of("app.kubernetes.io/managed-by", "console-operator-test");
 
     protected static final Duration LIMIT = Duration.ofSeconds(10);
     protected static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
@@ -180,9 +186,12 @@ abstract class ConsoleReconcilerTestBase {
         var allConfigMaps = client.resources(ConfigMap.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allIngresses = client.resources(Ingress.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
+        var allRoleBindings = client.rbac().roleBindings().inAnyNamespace().withLabels(TEST_MANAGEMENT_LABEL);
+        var allRoles = client.rbac().roles().inAnyNamespace().withLabels(TEST_MANAGEMENT_LABEL);
 
         delete(allConsoles, allKafkas, allKafkaUsers);
         delete(allDeployments, allConfigMaps, allSecrets, allIngresses);
+        delete(allRoleBindings, allRoles);
 
         operator.start();
 
@@ -285,6 +294,58 @@ abstract class ConsoleReconcilerTestBase {
         kafkaCR = apply(client, kafkaCR);
 
         createNamespace(CONSOLE_NS);
+    }
+
+    /**
+     * Grants {@code get} access to the provided subject (field pipe-delimited) on the named
+     * Secret in the given namespace, simulating what an admin must do before the SAR gate will
+     * pass.
+     */
+    void grantConsoleServiceAccountSecretAccess(
+            String subjectApiGroup,
+            String subjectKind,
+            String subjectName,
+            String subjectNamespace,
+            String secretNamespace,
+            String secretName) {
+
+        String roleName = "test-kafkauser-secret-" + secretName;
+
+        Role role = new RoleBuilder()
+                .withNewMetadata()
+                    .withName(roleName)
+                    .withNamespace(secretNamespace)
+                    .withLabels(TEST_MANAGEMENT_LABEL)
+                .endMetadata()
+                .addToRules(new PolicyRuleBuilder()
+                        .withApiGroups("")
+                        .withResources("secrets")
+                        .withResourceNames(secretName)
+                        .withVerbs("get")
+                        .build())
+                .build();
+
+        RoleBinding binding = new RoleBindingBuilder()
+                .withNewMetadata()
+                    .withName(roleName)
+                    .withNamespace(secretNamespace)
+                    .withLabels(TEST_MANAGEMENT_LABEL)
+                .endMetadata()
+                .withNewRoleRef()
+                    .withApiGroup("rbac.authorization.k8s.io")
+                    .withKind("Role")
+                    .withName(roleName)
+                .endRoleRef()
+                .addNewSubject()
+                    .withApiGroup(subjectApiGroup)
+                    .withKind(subjectKind)
+                    .withName(subjectName)
+                    .withNamespace(subjectNamespace)
+                .endSubject()
+                .build();
+
+        client.resource(role).serverSideApply();
+        client.resource(binding).serverSideApply();
     }
 
     Console createConsole(ConsoleBuilder builder, String namespace) {

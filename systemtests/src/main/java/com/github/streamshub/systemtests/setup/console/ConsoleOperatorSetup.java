@@ -1,11 +1,20 @@
 package com.github.streamshub.systemtests.setup.console;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.function.UnaryOperator;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import org.apache.logging.log4j.Logger;
+import io.fabric8.kubernetes.client.readiness.Readiness;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
 
 public class ConsoleOperatorSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsoleOperatorSetup.class);
@@ -57,5 +66,37 @@ public class ConsoleOperatorSetup {
         }
 
         installConfig.install();
+    }
+
+    /**
+     * Edit the operator's environment variables using the provided EnvVar list editor.
+     * The actual list of EnvVars will be updated on either an OLM Subscription or directly
+     * on the Deployment depending on how the operator has been deployed.
+     * 
+     * This method will wait until the deployment is Ready=True and the expected EnvVars
+     * are present.
+     */
+    public void editEnv(UnaryOperator<List<EnvVar>> editor) {
+        var expectedEnv = installConfig.editEnv(editor);
+        var k8s = KubeResourceManager.get().kubeClient().getClient();
+
+        LOGGER.info("Waiting for operator deployment to have updated envs and be ready");
+        k8s.apps().deployments()
+            .inNamespace(installConfig.getDeploymentNamespace())
+            .withName(installConfig.getDeploymentName())
+            .waitUntilCondition(
+                    deployment -> {
+                        if (Readiness.isDeploymentReady(deployment)) {
+                            var actualEnv = deployment.getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+                            if (actualEnv.containsAll(expectedEnv)) {
+                                LOGGER.info("Operator deployment updated and ready: {}", actualEnv);
+                                return true;
+                            }
+                            return false;
+                        }
+
+                        return false;
+                    },
+                    60, TimeUnit.SECONDS);
     }
 }

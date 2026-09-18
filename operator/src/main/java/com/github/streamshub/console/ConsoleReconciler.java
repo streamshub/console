@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
@@ -25,6 +27,7 @@ import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.ConsoleServiceAccount;
+import com.github.streamshub.console.dependents.ConsoleServiceAccountAccessReview;
 import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
 import com.github.streamshub.console.dependents.PrometheusConfigMap;
@@ -47,6 +50,7 @@ import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.Workflow;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
+import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.WorkflowReconcileResult;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations;
@@ -64,8 +68,17 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 @Workflow(
         dependents = {
             @Dependent(
+                    name = ConsoleServiceAccount.NAME,
+                    type = ConsoleServiceAccount.class),
+            @Dependent(
+                    name = ConsoleServiceAccountAccessReview.NAME,
+                    type = ConsoleServiceAccountAccessReview.class,
+                    dependsOn = ConsoleServiceAccount.NAME,
+                    readyPostcondition = ConsoleServiceAccountAccessReview.Postcondition.class),
+            @Dependent(
                     name = ConfigurationProcessor.NAME,
                     type = ConfigurationProcessor.class,
+                    dependsOn = ConsoleServiceAccountAccessReview.NAME,
                     readyPostcondition = ConfigurationProcessor.Postcondition.class),
             @Dependent(
                     name = PrometheusClusterRole.NAME,
@@ -112,23 +125,14 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     type = ConsoleClusterRole.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
-                    name = ConsoleServiceAccount.NAME,
-                    type = ConsoleServiceAccount.class,
-                    dependsOn = ConfigurationProcessor.NAME),
-            @Dependent(
                     name = ConsoleClusterRoleBinding.NAME,
                     type = ConsoleClusterRoleBinding.class,
-                    dependsOn = {
-                        ConsoleClusterRole.NAME,
-                        ConsoleServiceAccount.NAME
-                    }),
+                    dependsOn = ConsoleClusterRole.NAME),
             @Dependent(
                     name = ConsoleMonitoringClusterRoleBinding.NAME,
                     type = ConsoleMonitoringClusterRoleBinding.class,
                     reconcilePrecondition = ConsoleMonitoringClusterRoleBinding.Precondition.class,
-                    dependsOn = {
-                        ConsoleServiceAccount.NAME
-                    }),
+                    dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = ConsoleSecret.NAME,
                     type = ConsoleSecret.class,
@@ -226,6 +230,7 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
             Context<Console> context,
             Exception e) {
 
+        Logger.getLogger(getClass()).debug("Exception during reconcile", e);
         var result = context.managedWorkflowAndDependentResourceContext().getWorkflowReconcileResult();
         determineConditions(resource, result, e);
 
@@ -268,7 +273,7 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
             if (notReadyResources.isEmpty()) {
                 readyCondition.setReason(Condition.Reasons.RECONCILIATION_EXCEPTION);
                 readyCondition.setMessage("One or more exceptions occurred during Console reconciliation");
-            } else if (notReadyResources.stream().anyMatch(ConfigurationProcessor.class::isInstance)) {
+            } else if (notReadyResources.stream().anyMatch(evaluatesConfiguration())) {
                 readyCondition.setReason(Condition.Reasons.INVALID_CONFIGURATION);
                 readyCondition.setMessage("Console resource configuration is invalid");
             } else {
@@ -314,6 +319,12 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
         );
 
         status.clearStaleConditions();
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static Predicate<? super DependentResource> evaluatesConfiguration() {
+        return ((Predicate<? super DependentResource>) ConfigurationProcessor.class::isInstance)
+                .or(ConsoleServiceAccountAccessReview.class::isInstance);
     }
 
     /**
