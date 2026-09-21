@@ -87,7 +87,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
           export QUARKUS_KUBERNETES_VERSION="${{ env.PROJECT_VERSION }}"
 
-          mvn verify -P container-image -B --no-transfer-progress -DskipTests \
+          mvn verify -P container-image -B --no-transfer-progress -DskipTests -DskipITs \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
             -Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}
 
