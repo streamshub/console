@@ -167,7 +167,7 @@ jobs:
 
       - name: Build project
         run: |
-          mvn install -B -DskipTests --no-transfer-progress
+          mvn install -B -DskipTests -DskipITs --no-transfer-progress
 
       - name: Prepare systemtest ENV
         run: ./.github/actions/systemtests/prepare-systemtests-env.sh

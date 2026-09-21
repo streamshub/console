@@ -26,13 +26,13 @@ export QUARKUS_KUBERNETES_VERSION=${VERSION}
 export QUARKUS_DOCKER_ADDITIONAL_ARGS ?= --platform=${PLATFORMS}
 
 container-image-api:
-	mvn package -am -pl api -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
+	mvn package -am -pl api -Pcontainer-image -DskipTests -DskipITs -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
 
 container-image-api-push: container-image-api
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_API_IMAGE) docker://$(CONSOLE_API_IMAGE)
 
 container-image-operator:
-	mvn package -am -pl operator -Pcontainer-image -DskipTests -Dquarkus.kubernetes.namespace='$${NAMESPACE}' -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
+	mvn package -am -pl operator -Pcontainer-image -DskipTests -DskipITs -Dquarkus.kubernetes.namespace='$${NAMESPACE}' -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
 	operator/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)" "PLATFORMS=$(PLATFORMS)"
 	operator/bin/generate-catalog.sh operator/target/bundle/streamshub-console-operator
 	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile

@@ -75,7 +75,7 @@ jobs:
           export QUARKUS_KUBERNETES_VERSION="${{ env.NEXT_VERSION }}"
 
           # Build and push the snapshot images
-          mvn -B -P container-image verify --no-transfer-progress -DskipTests \
+          mvn -B -P container-image verify --no-transfer-progress -DskipTests -DskipITs \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
             '-Dquarkus.container-image.labels."quay.expires-after"=${{ env.IMAGE_EXPIRATION }}' \
             -Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}
