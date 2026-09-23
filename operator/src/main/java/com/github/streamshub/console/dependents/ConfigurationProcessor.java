@@ -22,14 +22,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Validator;
 
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.jboss.logging.Logger;
@@ -123,6 +127,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     public static final String NAME = "ConfigurationProcessor"; // NOSONAR
 
     private static final Logger LOGGER = Logger.getLogger(ConfigurationProcessor.class);
+    private static final Set<String> ILLEGAL_KAFKA_PROPERTIES = Set.of(AbstractConfig.CONFIG_PROVIDERS_CONFIG);
     private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
     private static final String OIDC_PROVIDER_TRUST_NAME = "oidc-provider";
     private static final String CONFIG_KEY = "console-config.yaml";
@@ -245,9 +250,9 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     }
 
     private boolean valid(Console primary, Context<Console> context, ConsoleConfig consoleConfig) {
-        var violations = validator.validate(consoleConfig);
         boolean missingHost = false;
 
+        // Check if the hostname is required and present
         if (!resourceSupported(context, Route.class)) {
             String host = primary.getSpec().getHostname();
 
@@ -257,21 +262,50 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             }
         }
 
-        if (missingHost || !violations.isEmpty()) {
-            for (var violation : violations) {
-                StringBuilder message = new StringBuilder();
-                if (!violation.getPropertyPath().toString().isBlank()) {
-                    message.append(violation.getPropertyPath().toString());
-                    message.append(' ');
-                }
-                message.append(violation.getMessage());
-                addErrorCondition(primary, message.toString());
-            }
+        // Run bean validation against the configuration model and handle violations
+        var violations = validator.validate(consoleConfig);
 
-            return false;
+        for (var violation : violations) {
+            StringBuilder message = new StringBuilder();
+            if (!violation.getPropertyPath().toString().isBlank()) {
+                message.append(violation.getPropertyPath().toString());
+                message.append(' ');
+            }
+            message.append(violation.getMessage());
+            addErrorCondition(primary, message.toString());
         }
 
-        return true;
+        // Determine if any illegal Kafka configuration properties are specified
+        var illegalProperties = getIllegalKafkaPropertiesMessage(consoleConfig);
+
+        if (!illegalProperties.isEmpty()) {
+            addErrorCondition(primary, illegalProperties);
+        }
+
+        return !missingHost && violations.isEmpty() && illegalProperties.isEmpty();
+    }
+
+    private String getIllegalKafkaPropertiesMessage(ConsoleConfig consoleConfig) {
+        return consoleConfig.getKafka().getClusters().stream()
+            .map(k -> {
+                var illegalProperties = Stream.of(k.getProperties(),
+                        k.getAdminProperties(),
+                        k.getConsumerProperties(),
+                        k.getProducerProperties())
+                    .map(Map::keySet)
+                    .flatMap(Collection::stream)
+                    .filter(ILLEGAL_KAFKA_PROPERTIES::contains)
+                    .toList();
+
+                if (!illegalProperties.isEmpty()) {
+                    return "Kafka cluster %s uses illegal configuration properties: %s".formatted(
+                            k.clusterKey(),
+                            illegalProperties);
+                }
+                return null;
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining("; "));
     }
 
     private static void addErrorCondition(Console primary, String message) {
