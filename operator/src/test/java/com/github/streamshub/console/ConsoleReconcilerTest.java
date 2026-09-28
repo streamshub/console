@@ -1423,4 +1423,60 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertThat(errorMessages, hasItem(containsString(CONSOLE_NAME + '-' + PrometheusDeployment.NAME)));
         });
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "properties", "adminProperties", "consumerProperties", "producerProperties" })
+    void testConsoleReconciliationWithIllegalKafkaProperty(String propertyMap) {
+        var kafkaClusterBuilder = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(CONSOLE_NAME)
+                        .withNamespace(CONSOLE_NS)
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName());
+
+        // Inject the illegal property into whichever map is under test
+        switch (propertyMap) {
+            case "properties" -> kafkaClusterBuilder
+                    .withNewProperties()
+                        .addNewValue().withName("config.providers").withValue("env").endValue()
+                    .endProperties();
+            case "adminProperties" -> kafkaClusterBuilder
+                    .withNewAdminProperties()
+                        .addNewValue().withName("config.providers").withValue("env").endValue()
+                    .endAdminProperties();
+            case "consumerProperties" -> kafkaClusterBuilder
+                    .withNewConsumerProperties()
+                        .addNewValue().withName("config.providers").withValue("env").endValue()
+                    .endConsumerProperties();
+            case "producerProperties" -> kafkaClusterBuilder
+                    .withNewProducerProperties()
+                        .addNewValue().withName("config.providers").withValue("env").endValue()
+                    .endProducerProperties();
+            default -> throw new IllegalArgumentException("Unknown property map: " + propertyMap);
+        }
+
+        Console consoleCR = kafkaClusterBuilder
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        String expectedClusterKey = KAFKA_NS + "/" + KAFKA_NAME;
+        assertInvalidConfiguration(consoleCR, conditions -> {
+            assertEquals(1, conditions.size());
+            var errorCondition = conditions.get(0);
+            assertEquals(Condition.Types.ERROR, errorCondition.getType(), errorCondition::toString);
+            assertEquals("True", errorCondition.getStatus(), errorCondition::toString);
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, errorCondition.getReason(), errorCondition::toString);
+            assertThat(errorCondition.getMessage(), containsString(expectedClusterKey));
+            assertThat(errorCondition.getMessage(), containsString("config.providers"));
+            assertThat(errorCondition.getMessage(), containsString("illegal configuration properties"));
+        });
+    }
 }

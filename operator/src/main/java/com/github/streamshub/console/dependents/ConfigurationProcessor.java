@@ -22,14 +22,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Validator;
 
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.jboss.logging.Logger;
@@ -119,6 +123,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     public static final String NAME = "ConfigurationProcessor"; // NOSONAR
 
     private static final Logger LOGGER = Logger.getLogger(ConfigurationProcessor.class);
+    private static final Set<String> ILLEGAL_KAFKA_PROPERTIES = Set.of(AbstractConfig.CONFIG_PROVIDERS_CONFIG);
     private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
     private static final String OIDC_PROVIDER_TRUST_NAME = "oidc-provider";
     private static final Random RANDOM = new SecureRandom();
@@ -214,35 +219,72 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             Map<String, String> data) {
 
         var consoleConfig = buildConfig(primary, context);
+
+        if (valid(primary, consoleConfig)) {
+            try {
+                var yaml = objectMapper.copyWith(YAMLFactory.builder().build());
+                data.put("console-config.yaml", encodeString(yaml.writeValueAsString(consoleConfig)));
+            } catch (JsonProcessingException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+
+    private boolean valid(Console primary, ConsoleConfig consoleConfig) {
+        // Run bean validation against the configuration model and handle violations
         var violations = validator.validate(consoleConfig);
 
-        if (!violations.isEmpty()) {
-            for (var violation : violations) {
-                StringBuilder message = new StringBuilder();
-                if (!violation.getPropertyPath().toString().isBlank()) {
-                    message.append(violation.getPropertyPath().toString());
-                    message.append(' ');
-                }
-                message.append(violation.getMessage());
-
-                primary.getStatus().updateCondition(new ConditionBuilder()
-                        .withType(Types.ERROR)
-                        .withStatus("True")
-                        .withLastTransitionTime(Instant.now().toString())
-                        .withReason(Reasons.INVALID_CONFIGURATION)
-                        .withMessage(message.toString())
-                        .build());
+        for (var violation : violations) {
+            StringBuilder message = new StringBuilder();
+            if (!violation.getPropertyPath().toString().isBlank()) {
+                message.append(violation.getPropertyPath().toString());
+                message.append(' ');
             }
-
-            return;
+            message.append(violation.getMessage());
+            addErrorCondition(primary, message.toString());
         }
 
-        try {
-            var yaml = objectMapper.copyWith(YAMLFactory.builder().build());
-            data.put("console-config.yaml", encodeString(yaml.writeValueAsString(consoleConfig)));
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
+        // Determine if any illegal Kafka configuration properties are specified
+        var illegalProperties = getIllegalKafkaPropertiesMessage(consoleConfig);
+
+        if (!illegalProperties.isEmpty()) {
+            addErrorCondition(primary, illegalProperties);
         }
+
+        return violations.isEmpty() && illegalProperties.isEmpty();
+    }
+
+    private String getIllegalKafkaPropertiesMessage(ConsoleConfig consoleConfig) {
+        return consoleConfig.getKafka().getClusters().stream()
+            .map(k -> {
+                var illegalProperties = Stream.of(k.getProperties(),
+                        k.getAdminProperties(),
+                        k.getConsumerProperties(),
+                        k.getProducerProperties())
+                    .map(Map::keySet)
+                    .flatMap(Collection::stream)
+                    .filter(ILLEGAL_KAFKA_PROPERTIES::contains)
+                    .toList();
+
+                if (!illegalProperties.isEmpty()) {
+                    return "Kafka cluster %s uses illegal configuration properties: %s".formatted(
+                            k.clusterKey(),
+                            illegalProperties);
+                }
+                return null;
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining("; "));
+    }
+
+    private static void addErrorCondition(Console primary, String message) {
+        primary.getStatus().updateCondition(new ConditionBuilder()
+                .withType(Types.ERROR)
+                .withStatus("True")
+                .withLastTransitionTime(Instant.now().toString())
+                .withReason(Reasons.INVALID_CONFIGURATION)
+                .withMessage(message)
+                .build());
     }
 
     /**
