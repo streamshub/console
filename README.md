@@ -152,6 +152,12 @@ With the operator resources created, you may create a `Console` resource like th
 
 ## Running locally
 
+> **Contributors:** for day-to-day development (frontend, backend, or operator) there is a
+> one-command toolkit that provisions a local kind cluster + Strimzi + Kafka (and optional
+> metrics / schema registry / OIDC / Kafka Connect) and launches the `quarkus:dev` loop for you.
+> See [`dev/README.md`](./dev/README.md). The instructions below describe the manual
+> `compose.yaml` path.
+
 Running the console locally requires configuration of any Apache Kafka<sup>®</sup> clusters that will be accessed from the console and (optionally) the use of a Kubernetes cluster that hosts the Strimzi Kafka operator. To get started, you will need to provide a console configuration file and (optionally) credentials to connect to the Kubernetes cluster where Strimzi is operating.
 
 1. Using the [console-config.yaml](./examples/console-config.yaml) file as an example, create your own configuration
