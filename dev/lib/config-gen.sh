@@ -50,6 +50,10 @@ security:
       include: [ developers ]
       roleNames: [ developers ]
   roles:
+    # NOTE: resource '*' is accepted by config validation but is NOT expanded at
+    # runtime — PermissionCache matches the possessed resource string against the
+    # required one by exact equality, so '*' matches nothing and denies everything.
+    # Always list resources explicitly ('*' is only meaningful for privileges).
     - name: administrators
       rules:
         - resources: [ kafkas ]
@@ -96,15 +100,15 @@ EOF
 cat <<EOF
       security:
         roles:
+          # Explicit resource lists (see note above — '*' resources match nothing
+          # at runtime). 'users' must be listed for the Kafka Users view to work.
           - name: administrators
             rules:
-              - resources: [ topics, topics/records, topics/metrics, groups, groups/configs, nodes, nodes/configs, nodes/metrics, rebalances ]
-                privileges: [ GET, LIST ]
-              - resources: [ groups, rebalances ]
-                privileges: [ UPDATE ]
+              - resources: [ topics, topics/records, topics/metrics, groups, groups/configs, nodes, nodes/configs, nodes/metrics, rebalances, users ]
+                privileges: [ '*' ]
           - name: developers
             rules:
-              - resources: [ topics, topics/records, groups, rebalances ]
+              - resources: [ topics, topics/records, topics/metrics, groups, nodes, rebalances ]
                 privileges: [ GET, LIST ]
 EOF
     fi
