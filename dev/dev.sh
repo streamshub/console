@@ -137,10 +137,39 @@ cmd_frontend() {
   exec mvn -am -pl api quarkus:dev -Dconsole.config-path="${GEN_DIR}/console-config.yaml"
 }
 
+CONSOLE_CRD_NAME="consoles.console.streamshub.github.com"
+
+# Pre-install the Console CRD before launching the operator. The Quarkus Operator
+# SDK's %dev profile applies the CRD on startup but starts its informer without
+# waiting for the API server to register the new CRD's REST endpoint — on a fresh
+# cluster the first LIST 404s and the operator aborts. Installing the CRD (and
+# waiting for it to be Established) up front removes that race.
+ensure_console_crd() {
+  if kubectl get crd "${CONSOLE_CRD_NAME}" >/dev/null 2>&1; then
+    step "Console CRD already present"
+  else
+    local crd
+    crd="$(ls "${REPO_ROOT}"/operator/target/kubernetes/${CONSOLE_CRD_NAME}-v1.yml 2>/dev/null | head -1 || true)"
+    if [ -n "${crd}" ]; then
+      step "Installing Console CRD from $(basename "${crd}")"
+      kubectl apply -f "${crd}" >/dev/null
+    else
+      warn "Console CRD not found and not yet generated (operator not built).
+  The operator will apply it on startup; if startup fails with a 'consoles ...
+  Not Found' informer error, just re-run 'dev.sh operator' — the CRD will exist
+  by then. To avoid this, build the operator once first: mvn -pl operator -am install -DskipTests"
+      return 0
+    fi
+  fi
+  kubectl wait --for=condition=established --timeout=60s "crd/${CONSOLE_CRD_NAME}" >/dev/null 2>&1 || true
+}
+
 cmd_operator() {
   ensure_context
   info "Generating Console CR for operator mode"
   generate_console_cr
+  info "Ensuring the Console CRD is installed"
+  ensure_console_crd
   info "The operator will run locally and reconcile the Console CR into the cluster."
   echo "  console-api image: ${CONSOLE_API_IMAGE}"
   echo "  The Console CR is applied automatically once the operator registers its CRD."
@@ -148,7 +177,7 @@ cmd_operator() {
   # user just sees it get reconciled. Runs in the background; mvn runs foreground.
   (
     for _ in $(seq 1 90); do
-      if kubectl get crd consoles.console.streamshub.github.com >/dev/null 2>&1; then
+      if kubectl get crd "${CONSOLE_CRD_NAME}" >/dev/null 2>&1; then
         kubectl apply -n "${KAFKA_NAMESPACE}" -f "${GEN_DIR}/console-cr.yaml" >/dev/null 2>&1 && break
       fi
       sleep 2
