@@ -164,7 +164,7 @@ dev/dev.sh operator            # operator runs on host, reconciles into the clus
 - Watch it reconcile and open the console:
   ```bash
   kubectl get console -A -w
-  # console comes up at:
+  # console comes up at (open in a browser — `open` on macOS, `xdg-open` on Linux):
   open https://example-console.127.0.0.1.nip.io
   ```
 - Edit a reconciler or dependent resource under `operator/` — Quarkus live-reloads and
@@ -178,10 +178,15 @@ dev/dev.sh operator            # operator runs on host, reconciles into the clus
 
 ## Container engines
 
-`dev.sh` defaults to **docker via Colima** — the most reliable path on macOS for the full
-Kafka + Console workload. **podman is fully supported**; set `CONTAINER_ENGINE=podman`.
+`dev.sh` defaults to **docker** — via Colima on macOS, via the native daemon on Linux —
+the most reliable path for the full Kafka + Console workload. **podman is fully
+supported**; set `CONTAINER_ENGINE=podman`.
 
-### Colima (default)
+> **On macOS** follow the Colima / podman-machine notes below. **On Linux** docker and
+> podman run natively (no VM); see the [On Linux](#on-linux) section for the two
+> environment tweaks that can be needed.
+
+### Colima (default, macOS)
 
 ```bash
 colima start --cpus 6 --memory 16 --disk 60
@@ -224,25 +229,72 @@ aggressive on a 36 GB host. Cap it so the host stays responsive:
 PODMAN_MACHINE_MEMORY=16000 CONTAINER_ENGINE=podman dev/dev.sh up ...
 ```
 
+### On Linux
+
+Both docker and podman run **natively** on Linux — there is no VM, so the Colima /
+`podman machine` steps above don't apply (and `podman machine ...` commands don't exist).
+Start the docker daemon the usual way (`sudo systemctl start docker`) and make sure your
+user can reach it (be in the `docker` group, or use rootless docker). Two Linux-specific
+things can trip up first-time setup:
+
+1. **Privileged ports 80/443 with a rootless engine.** The cluster maps ingress onto host
+   ports 80 and 443. The **rootful** docker daemon (the distro default) binds these
+   without ceremony. A **rootless** docker/podman cannot bind ports below 1024 unless you
+   lower the threshold once:
+   ```bash
+   sudo sysctl net.ipv4.ip_unprivileged_port_start=80
+   # persist: echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/99-kind-ingress.conf
+   ```
+   Alternatively point ingress at high ports and adjust the domain accordingly:
+   ```bash
+   INGRESS_HTTP_PORT=8080 INGRESS_HTTPS_PORT=8443 dev/dev.sh up ...
+   ```
+   (URLs then include the port, e.g. `https://example-console.127.0.0.1.nip.io:8443`.)
+
+2. **`nip.io` and DNS-rebind protection.** The stack relies on `*.127.0.0.1.nip.io`
+   resolving to `127.0.0.1`. Some Linux resolvers (systemd-resolved, or a local dnsmasq)
+   treat a public name resolving to loopback as a rebind attack and drop it. If name
+   resolution fails, either disable rebind protection for `nip.io`, or add the hosts you
+   use to `/etc/hosts`, e.g.:
+   ```
+   127.0.0.1 bootstrap.console-kafka.127.0.0.1.nip.io example-console.127.0.0.1.nip.io \
+             prometheus.127.0.0.1.nip.io registry.127.0.0.1.nip.io \
+             keycloak.127.0.0.1.nip.io connect.127.0.0.1.nip.io
+   ```
+
+Rootless podman on Linux additionally needs the host's `ip_tables` kernel module loaded;
+`dev.sh up` fails fast with the exact fix if it's missing. The PID-limit workaround from
+the podman section applies to Linux too, but you set it directly on the host
+(`/etc/containers/containers.conf`) — there is no machine to `ssh` into.
+
 ---
 
-## Resource guidance (36 GB host)
+## Resource guidance
 
-| Configuration | Approx. cluster memory | Suggested VM memory |
-| --- | --- | --- |
-| Lean Kafka, no profiles | ~3–4 GB | `--memory 8` |
-| Lean Kafka + all four profiles | ~7–9 GB | `--memory 16` |
-| `--full` (3-broker) Kafka + all profiles | ~12–14 GB | `--memory 20` |
+Memory sizing depends on your engine:
 
-The suggested VM sizes leave ~16–28 GB for the host so it stays responsive while the
-stack runs.
+| Configuration | Approx. cluster memory | macOS Colima / podman VM | Native Linux |
+| --- | --- | --- | --- |
+| Lean Kafka, no profiles | ~3–4 GB | `--memory 8` | no tuning |
+| Lean Kafka + all four profiles | ~7–9 GB | `--memory 16` | no tuning |
+| `--full` (3-broker) Kafka + all profiles | ~12–14 GB | `--memory 20` | no tuning |
+
+On macOS the VM is a hard cap, so size it to leave ~16–28 GB for the host on a 36 GB
+machine. On native Linux there is no VM — containers draw directly from host RAM — so a
+36 GB host runs any of these comfortably with no sizing needed.
 
 ---
 
 ## Troubleshooting
 
-- **`docker`/daemon not found** — install the docker client (`brew install docker`) and
-  start Colima (`colima start ...`), or switch engines with `CONTAINER_ENGINE=podman`.
+- **`docker`/daemon not found** — on macOS install the docker client (`brew install docker`)
+  and start Colima (`colima start ...`); on Linux start the daemon
+  (`sudo systemctl start docker`) and ensure your user can use it. Or switch engines with
+  `CONTAINER_ENGINE=podman`.
+- **Cluster create fails binding port 80/443 on Linux** — you're likely on a rootless
+  engine; see [On Linux](#on-linux) (privileged ports).
+- **`*.127.0.0.1.nip.io` won't resolve on Linux** — DNS-rebind protection; see
+  [On Linux](#on-linux).
 - **Kafka never becomes Ready** — the first run pulls images and can take several minutes.
   Check progress with `dev/dev.sh status` and `kubectl -n kafka get pods`. Persistent
   crash-loops on podman usually mean the PID-limit/rootful workarounds above are needed.

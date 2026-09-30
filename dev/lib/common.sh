@@ -34,9 +34,13 @@ export KEYCLOAK_IMAGE="${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.7}"
 # isn't published). Override with CONSOLE_API_IMAGE to test a specific build.
 CONSOLE_API_IMAGE="${CONSOLE_API_IMAGE:-quay.io/streamshub/console-api:0.14.1}"
 
+# --- Host OS ----------------------------------------------------------------
+OS_NAME="$(uname -s)"   # Darwin | Linux
+
 # --- Container engine -------------------------------------------------------
-# Default to docker (Colima on macOS) — the repo's verified-reliable path for
-# the full Kafka+Console workload. podman is fully supported as an alternative.
+# Default to docker (Colima on macOS, the native daemon on Linux) — the repo's
+# verified-reliable path for the full Kafka+Console workload. podman is fully
+# supported as an alternative.
 if [ -z "${CONTAINER_ENGINE:-}" ]; then
   if command -v docker >/dev/null 2>&1; then
     CONTAINER_ENGINE="docker"
@@ -76,19 +80,32 @@ check_prereqs() {
   case "${CONTAINER_ENGINE}" in
     docker)
       if ! command -v docker >/dev/null 2>&1; then
-        die "CONTAINER_ENGINE=docker but the 'docker' CLI isn't installed.
+        if [ "${OS_NAME}" = "Darwin" ]; then
+          die "CONTAINER_ENGINE=docker but the 'docker' CLI isn't installed.
   On macOS with Colima you still need the docker client: brew install docker
   Then start the VM: colima start --cpus 6 --memory 16 --disk 60
   Or switch engines: CONTAINER_ENGINE=podman ./dev.sh ..."
+        else
+          die "CONTAINER_ENGINE=docker but the 'docker' CLI isn't installed.
+  Install Docker Engine for your distro (https://docs.docker.com/engine/install/),
+  or switch engines: CONTAINER_ENGINE=podman ./dev.sh ..."
+        fi
       fi
       if ! docker info >/dev/null 2>&1; then
-        die "The docker daemon isn't reachable.
+        if [ "${OS_NAME}" = "Darwin" ]; then
+          die "The docker daemon isn't reachable.
   If you use Colima: colima start --cpus 6 --memory 16 --disk 60
   See dev/README.md (Container engines) for sizing guidance."
+        else
+          die "The docker daemon isn't reachable.
+  Start it (sudo systemctl start docker) and ensure your user can use it
+  (add yourself to the 'docker' group, or run rootless docker).
+  See dev/README.md (Container engines / On Linux) for details."
+        fi
       fi
       ;;
     podman)
-      require_cmd podman "Install with: brew install podman"
+      require_cmd podman "Install with: brew install podman (macOS) or your distro's package manager"
       ;;
     *)
       die "Unsupported CONTAINER_ENGINE=${CONTAINER_ENGINE} (expected 'docker' or 'podman')"
