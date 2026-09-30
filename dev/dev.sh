@@ -179,13 +179,26 @@ cmd_status() {
 cmd_urls() {
   load_state
   local d="${CONSOLE_CLUSTER_DOMAIN}"
-  info "URLs"
-  echo "  console (frontend/backend, local):  http://localhost:8080"
-  echo "  console (operator mode, in-cluster): https://example-console.${d}"
-  has_profile metrics  && echo "  prometheus:                         http://prometheus.${d}"
-  has_profile registry && echo "  apicurio registry (UI):             http://registry.${d}/ui"
-  has_profile keycloak && echo "  keycloak (admin/admin):             http://keycloak.${d}  (users: admin-user/admin123, dev-user/dev123)"
-  has_profile connect  && echo "  kafka connect REST:                 http://connect.${d}"
+  # Is the host-run API (frontend/backend mode) currently up on :8080?
+  local api_state="run 'dev.sh backend' or 'dev.sh frontend' first"
+  if curl -s -m 2 -o /dev/null "http://localhost:8080/" 2>/dev/null; then
+    api_state="live now"
+  fi
+  # Is a console deployed in-cluster (operator mode)?
+  local op_state="run 'dev.sh operator' first"
+  if kubectl get console -A >/dev/null 2>&1 && [ -n "$(kubectl get console -A --no-headers 2>/dev/null)" ]; then
+    op_state="live now"
+  fi
+
+  info "Console (only reachable while its mode is running)"
+  echo "  frontend/backend (runs on your host):  http://localhost:8080          [${api_state}]"
+  echo "  operator (runs in the cluster):        https://example-console.${d}   [${op_state}]"
+  echo ""
+  info "Supporting services (up whenever the environment is)"
+  has_profile metrics  && echo "  prometheus:              http://prometheus.${d}"
+  has_profile registry && echo "  apicurio registry (UI):  http://registry.${d}/ui"
+  has_profile keycloak && echo "  keycloak (admin/admin):  http://keycloak.${d}  (users: admin-user/admin123, dev-user/dev123)"
+  has_profile connect  && echo "  kafka connect REST:      http://connect.${d}"
 }
 
 cmd_down() {
