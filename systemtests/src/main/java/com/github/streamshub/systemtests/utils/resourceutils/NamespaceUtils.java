@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.Environment;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.fabric8.kubernetes.api.model.Namespace;
@@ -8,6 +9,7 @@ import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import io.skodjob.kubetest4j.utils.KubeUtils;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
@@ -34,6 +36,11 @@ public class NamespaceUtils {
                 .build());
         } else {
             LOGGER.debug("Namespace: {} already exists", namespaceName);
+            // Namespace already exists (e.g. created by CI infra outside KubeResourceManager,
+            // or by an earlier test class run on the shared cluster), so the create callback that
+            // normally applies this label never fired. Without it, TestLogCollector's
+            // label-selector based failure dumps silently skip this namespace.
+            KubeUtils.labelNamespace(namespaceName, Labels.COLLECT_ST_LOGS, "true");
         }
 
         copyTestClientsImagePullSecret(namespaceName);
