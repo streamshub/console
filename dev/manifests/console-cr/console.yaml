@@ -1,0 +1,48 @@
+#
+# REFERENCE ONLY — this file documents the "everything" Console CR for operator
+# mode. dev.sh does NOT apply this file directly; it generates a profile-accurate
+# CR at dev/.gen/console-cr.yaml (only wiring the profiles you actually deployed)
+# and applies that. Read this to understand the shape; edit .gen/console-cr.yaml
+# (or the generator in lib/config-gen.sh) to change what gets applied.
+#
+# The console runs IN-CLUSTER in operator mode, so it uses the `plain` internal
+# listener (no credentials) and internal Service DNS for its dependencies.
+#
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.127.0.0.1.nip.io
+
+  # metrics profile
+  metricsSources:
+    - name: dev-prometheus
+      type: standalone
+      url: http://console-prometheus.metrics.svc:9090
+
+  # registry profile
+  schemaRegistries:
+    - name: dev-registry
+      url: http://apicurio-registry.registry.svc:8080/apis/registry/v2/
+
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: plain            # internal, no-auth listener for in-cluster access
+      metricsSource: dev-prometheus
+      schemaRegistry: dev-registry
+
+  # connect profile
+  kafkaConnectClusters:
+    - name: dev-connect
+      url: http://console-connect-connect-api.kafka.svc:8083
+      kafkaClusters:
+        - kafka/console-kafka
+
+  # OIDC (keycloak profile) is intentionally NOT wired here. An in-cluster
+  # console validates the token issuer against the same URL the browser uses
+  # (http://keycloak.127.0.0.1.nip.io/...), which an in-cluster pod can't reach
+  # by that name without extra DNS wiring. Use `dev.sh frontend` / `dev.sh
+  # backend` to exercise the Keycloak login flow. See dev/README.md.
