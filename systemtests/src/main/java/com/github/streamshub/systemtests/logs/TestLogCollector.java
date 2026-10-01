@@ -64,7 +64,9 @@ public class TestLogCollector {
             HasMetadata.getKind(ConfigMap.class),
             HasMetadata.getKind(Secret.class),
             HasMetadata.getKind(Deployment.class),
-            HasMetadata.getKind(Console.class),
+            // Fully-qualified: bare "Console" is ambiguous with OpenShift's own
+            // config.openshift.io/v1 Console singleton and resolves to the wrong one.
+            HasMetadata.getFullResourceName(Console.class),
             Kafka.RESOURCE_KIND,
             KafkaConnect.RESOURCE_KIND,
             KafkaConnector.RESOURCE_KIND,
