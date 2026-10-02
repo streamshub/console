@@ -26,7 +26,7 @@ import {
   Tooltip,
 } from '@patternfly/react-core';
 import { ExclamationCircleIcon, ColumnsIcon } from '@patternfly/react-icons';
-import { useMessages } from '@/api/hooks/useMessages';
+import { useMessages, useMessage } from '@/api/hooks/useMessages';
 import { useTopic } from '@/api/hooks/useTopics';
 import { ApiError } from '@/api/client';
 import { KafkaRecord, SearchParams } from '@/api/types';
@@ -91,6 +91,7 @@ export function TopicMessagesTab() {
       offset,
       timestamp,
       epoch,
+      maxValueLength: 500,
     },
     {
       enabled: !!kafkaId && !!topicId,
@@ -99,8 +100,9 @@ export function TopicMessagesTab() {
   );
 
   const selectedMessageId = useMemo(() => searchParams.get('selected'), [searchParams]);
+
   // Derive selected message directly from URL + messages — no separate state needed.
-  const selectedMessage = useMemo(() => {
+  const selectedMessageFromList = useMemo(() => {
     if (!selectedMessageId) return undefined;
     const [partStr, offsetStr] = selectedMessageId.split(':');
     const part = parseInt(partStr);
@@ -109,6 +111,29 @@ export function TopicMessagesTab() {
       m => m.attributes.partition === part && m.attributes.offset === off
     );
   }, [selectedMessageId, messages]);
+
+  // If any field was truncated or omitted in the list response, fetch the full record.
+  const isTruncated = (m: typeof selectedMessageFromList) => {
+    if (!m) return false;
+    const c = m.meta?.content;
+    return !!(
+      c?.key?.truncated || c?.key?.omitted ||
+      c?.value?.truncated || c?.value?.omitted ||
+      (c?.headers && Object.values(c.headers).some(h => h.truncated || h.omitted))
+    );
+  };
+
+  const needsFullFetch = isTruncated(selectedMessageFromList);
+
+  const { data: fullMessage } = useMessage(
+    kafkaId!,
+    topicId!,
+    selectedMessageFromList?.attributes.partition,
+    selectedMessageFromList?.attributes.offset,
+    { enabled: needsFullFetch }
+  );
+
+  const selectedMessage = needsFullFetch ? (fullMessage ?? selectedMessageFromList) : selectedMessageFromList;
 
   const handleSearch = useCallback((params: SearchParams) => {
     const newParams = new URLSearchParams();
