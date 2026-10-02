@@ -103,6 +103,10 @@ export function MessagesTable({
   const [defaultTab, setDefaultTab] =
     useState<MessageDetailsProps["defaultTab"]>("value");
   const [chosenColumns, setChosenColumns] = useState<Column[]>(defaultColumns);
+  const [sort, setSort] = useState<{
+    index: number;
+    direction: "asc" | "desc";
+  }>();
 
   const columnTooltips: Record<Column, any> = {
     "offset-partition": undefined,
@@ -133,9 +137,29 @@ export function MessagesTable({
     }
   }, []);
 
+  const sortedMessages =
+    sort === undefined
+      ? messages
+      : [...messages].sort((a, b) => {
+          const factor = sort.direction === "asc" ? 1 : -1;
+          switch (chosenColumns[sort.index]) {
+            case "offset-partition":
+              return factor * (a.attributes.offset - b.attributes.offset);
+            case "timestamp":
+            case "timestampUTC":
+              return (
+                factor *
+                (new Date(a.attributes.timestamp).getTime() -
+                  new Date(b.attributes.timestamp).getTime())
+              );
+            default:
+              return 0;
+          }
+        });
+
   const parentRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
-    count: messages.length,
+    count: sortedMessages.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 34,
     overscan: 20,
@@ -181,7 +205,7 @@ export function MessagesTable({
                   ariaLabel={t("table_aria_label")}
                   columns={chosenColumns}
                   data={virtualizer.getVirtualItems()}
-                  expectedLength={messages.length}
+                  expectedLength={sortedMessages.length}
                   renderHeader={({ colIndex, column, key }) => (
                     <Th
                       key={key}
@@ -194,12 +218,14 @@ export function MessagesTable({
                           ? {
                               columnIndex: colIndex,
                               sortBy: {
-                                index: colIndex,
+                                index: sort?.index ?? colIndex,
                                 direction:
-                                  filterOffset || filterTimestamp || filterEpoch
-                                    ? "asc"
+                                  sort?.index === colIndex
+                                    ? sort.direction
                                     : "desc",
                               },
+                              onSort: (_event, index, direction) =>
+                                setSort({ index, direction }),
                             }
                           : undefined
                       }
@@ -209,7 +235,7 @@ export function MessagesTable({
                     </Th>
                   )}
                   renderCell={({ column, row: vrow, colIndex, Td, key }) => {
-                    const row = messages[vrow.index];
+                    const row = sortedMessages[vrow.index];
                     const empty = <NoData />;
 
                     function Cell({ children }: PropsWithChildren) {
@@ -363,14 +389,14 @@ export function MessagesTable({
                     };
                   }}
                   isRowSelected={({ row: vrow }) => {
-                    const row = messages[vrow.index];
+                    const row = sortedMessages[vrow.index];
                     return (
                       selectedMessage !== undefined &&
                       isSameMessage(row, selectedMessage)
                     );
                   }}
                   onRowClick={({ row: vrow }) => {
-                    const row = messages[vrow.index];
+                    const row = sortedMessages[vrow.index];
                     setDefaultTab("value");
                     onSelectMessage(row);
                   }}
