@@ -1,6 +1,5 @@
 package com.github.streamshub.systemtests.logs;
 
-import com.github.streamshub.systemtests.Environment;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -19,11 +18,13 @@ public class LogWrapper {
 
     private LogWrapper() {}
 
-    static {
-        forceLoggingConfiguration();
-    }
-
-    private static void forceLoggingConfiguration() {
+    /**
+     * Configures the console/file appenders. Takes its settings as parameters rather than
+     * reading them from {@code Environment} directly, so that {@code Environment} controls when
+     * this runs (after its own env-derived fields are resolved) instead of this class reaching
+     * back into a class that is likely still in the middle of its own static initialization.
+     */
+    public static void configure(String testLogDir, String buildId, String consoleLogLevel, String fileLogLevel) {
         LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         Configuration config = ctx.getConfiguration();
 
@@ -37,8 +38,8 @@ public class LogWrapper {
 
         RollingFileAppender rollingAppender = RollingFileAppender.newBuilder()
                 .setName(ROLLING_FILE)
-                .setFileName(Environment.TEST_LOG_DIR + "/streamshub-debug-" + Environment.BUILD_ID + ".log")
-                .setFilePattern(Environment.TEST_LOG_DIR + "/streamshub-debug-%d{yyyy-MM-dd-HH-mm-ss}-%i.log.gz")
+                .setFileName(testLogDir + "/streamshub-debug-" + buildId + ".log")
+                .setFilePattern(testLogDir + "/streamshub-debug-%d{yyyy-MM-dd-HH-mm-ss}-%i.log.gz")
                 .setPolicy(SizeBasedTriggeringPolicy.createPolicy("100MB"))
                 .setStrategy(DefaultRolloverStrategy.newBuilder().setMax("5").build())
                 .setLayout(PatternLayout.newBuilder().setPattern("%d{yyyy-MM-dd HH:mm:ss}{GMT} %-5p [%c{1}:%L] %m%n").build())
@@ -47,8 +48,8 @@ public class LogWrapper {
 
         LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
 
-        loggerConfig.addAppender(consoleAppender, Level.toLevel(Environment.TEST_CONSOLE_LOG_LEVEL, Level.INFO), null);
-        loggerConfig.addAppender(rollingAppender, Level.toLevel(Environment.TEST_FILE_LOG_LEVEL, Level.DEBUG), null);
+        loggerConfig.addAppender(consoleAppender, Level.toLevel(consoleLogLevel, Level.INFO), null);
+        loggerConfig.addAppender(rollingAppender, Level.toLevel(fileLogLevel, Level.DEBUG), null);
 
         // Add a specific logger config to silence Netty’s internal debug
         LoggerConfig nettyLoggerConfig = new LoggerConfig("io.netty", Level.WARN, true);
