@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -17,10 +16,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import jakarta.json.Json;
-import jakarta.json.JsonArray;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
 import jakarta.json.JsonValue.ValueType;
@@ -218,13 +215,15 @@ public class Environment {
                      */
                     Version currentMinor = Version.of(ver[0], ver[1], 0);
                     NavigableSet<Version> versions = findGitHubReleases();
+                    LOGGER.debug("OLD_CONSOLE_OPERATOR_VERSION was not set, found GitHub releases: {}", versions);
 
                     if (versions.isEmpty()) {
                         return Optional.empty();
                     }
 
                     var previous = versions.lower(currentMinor);
-                    return Optional.of(previous.toString());
+                    LOGGER.info("Latest minor release earlier than {} from GitHub API: {}", currentMinor, previous);
+                    return Optional.ofNullable(previous).map(Version::toString);
                 }
 
                 return Optional.empty();
@@ -234,31 +233,45 @@ public class Environment {
                     and could not be derived from `operator.version` property and GitHub releases."""));
     }
 
-    private static NavigableSet<Version> findGitHubReleases() {
-        JsonArray releases;
+    /* test */ static NavigableSet<Version> findGitHubReleases() {
+        String url = "https://api.github.com/repos/streamshub/console/releases";
+        NavigableSet<Version> releases = new TreeSet<>();
+        // used to parse the "next" page URL from the "Link" header
+        Pattern nextLink = Pattern.compile("<([^>]*)>\\s*;\\s*rel=\"next\"");
 
         try (var client = HttpClient.newBuilder().build()) {
-            var request = HttpRequest
-                    .newBuilder(URI.create("https://api.github.com/repos/streamshub/console/releases"))
-                    .GET()
-                    .build();
+            while (url != null) {
+                var request = HttpRequest
+                        .newBuilder(URI.create(url))
+                        .GET()
+                        .build();
 
-            releases = client.sendAsync(request, BodyHandlers.ofInputStream())
-                    .thenApply(HttpResponse::body)
-                    .thenApply(Json::createReader)
-                    .thenApply(JsonReader::readArray)
-                    .join();
+                var response = client.send(request, BodyHandlers.ofInputStream());
+
+                url = response.headers()
+                        .firstValue("Link")
+                        .map(nextLink::matcher)
+                        .map(linkMatcher -> linkMatcher.find() ? linkMatcher.group(1) : null)
+                        .orElse(null);
+
+                try (JsonReader reader = Json.createReader(response.body())) {
+                    reader.readArray().stream()
+                            .filter(v -> ValueType.OBJECT.equals(v.getValueType()))
+                            .map(JsonValue::asJsonObject)
+                            .map(release -> release.getString("tag_name"))
+                            .map(Version::parse)
+                            .forEach(releases::add);
+                }
+            }
+        } catch (InterruptedException e) {
+            LOGGER.warn("Interrupted while trying to obtain list of releases from GitHub", e);
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             LOGGER.error("Failed to obtain list of releases from GitHub", e);
             return Collections.emptyNavigableSet();
         }
 
-        return releases.stream()
-            .filter(v -> ValueType.OBJECT.equals(v.getValueType()))
-            .map(JsonValue::asJsonObject)
-            .map(release -> release.getString("tag_name"))
-            .map(Version::parse)
-            .collect(Collectors.toCollection(() -> new TreeSet<>()));
+        return releases;
     }
 
     public static boolean isTestClientsPullSecretPresent() {
