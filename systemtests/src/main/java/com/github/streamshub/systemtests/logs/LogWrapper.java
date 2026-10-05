@@ -19,10 +19,9 @@ public class LogWrapper {
     private LogWrapper() {}
 
     /**
-     * Configures the console/file appenders. Takes its settings as parameters rather than
+     * Configures the file appenders. Takes its settings as parameters rather than
      * reading them from {@code Environment} directly, so that {@code Environment} controls when
-     * this runs (after its own env-derived fields are resolved) instead of this class reaching
-     * back into a class that is likely still in the middle of its own static initialization.
+     * this runs
      */
     public static void configure(String testLogDir, String buildId, String consoleLogLevel, String fileLogLevel) {
         LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
