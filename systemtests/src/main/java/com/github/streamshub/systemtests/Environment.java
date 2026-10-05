@@ -28,6 +28,11 @@ import static java.util.Collections.singletonMap;
 public class Environment {
     private static final TestEnvironmentVariables ENVS_DEFAULT = new TestEnvironmentVariables();
     private static final TestEnvironmentVariables ENVS;
+    static final String BUILD_ID;
+    public static final String TEST_LOG_DIR;
+    public static final String TEST_FILE_LOG_LEVEL;
+    public static final String TEST_CONSOLE_LOG_LEVEL;
+    private static final Logger LOGGER;
 
     static {
         /*
@@ -50,24 +55,22 @@ public class Environment {
                 );
             }
         };
+
+        // These envs need to be Resolved first and passed explicitly into LogWrapper.configure(), that way the Environment.java can use loger even for itself
+        BUILD_ID = ENVS.getOrDefault("BUILD_ID", "0");
+        TEST_LOG_DIR = ENVS.getOrDefault("TEST_LOG_DIR",  USER_PATH + "/target/logs/");
+        TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL", "DEBUG");
+        TEST_CONSOLE_LOG_LEVEL = ENVS.getOrDefault("TEST_CONSOLE_LOG_LEVEL", "INFO");
+
+        LogWrapper.configure(TEST_LOG_DIR, BUILD_ID, TEST_CONSOLE_LOG_LEVEL, TEST_FILE_LOG_LEVEL);
+        // Get logger after the configure is called
+        LOGGER = LogWrapper.getLogger(Environment.class);
+        // Now the logger can be used in this class
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // These envs need to be Resolved first and passed explicitly into LogWrapper.configure(), that way the Environment.java can use loger even for itself
-    static final String BUILD_ID = ENVS.getOrDefault("BUILD_ID", "0");
-    public static final String TEST_LOG_DIR = ENVS.getOrDefault("TEST_LOG_DIR",  USER_PATH + "/target/logs/");
-    public static final String TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL", "DEBUG");
-    public static final String TEST_CONSOLE_LOG_LEVEL = ENVS.getOrDefault("TEST_CONSOLE_LOG_LEVEL", "INFO");
-
-    static {
-        LogWrapper.configure(TEST_LOG_DIR, BUILD_ID, TEST_CONSOLE_LOG_LEVEL, TEST_FILE_LOG_LEVEL);
-    }
-    // Get logger after the configure is called
-    private static final Logger LOGGER = LogWrapper.getLogger(Environment.class);
-    // Now the logger can be used in this class
 
     public static final String CLIENT_TYPE = ENVS.getOrDefault("CLIENT_TYPE", "kubectl");
-    public static final boolean CLEANUP_ENVIRONMENT = ENVS.getOrDefault("CLEANUP_ENVIRONMENT", Boolean::parseBoolean, true);
 
     // Strimzi
     public static final String STRIMZI_OPERATOR_NAME = ENVS.getOrDefault("STRIMZI_OPERATOR_NAME", "strimzi-cluster-operator");
@@ -98,6 +101,7 @@ public class Environment {
     public static final String CONSOLE_OLM_CATALOG_SOURCE_IMAGE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_IMAGE", "");
 
     // Logs and debug
+    public static final boolean CLEANUP_ENVIRONMENT = ENVS.getOrDefault("CLEANUP_ENVIRONMENT", Boolean::parseBoolean, true);
     public static final String SCREENSHOTS_BASE_DIR_PATH = ENVS.getOrDefault("SCREENSHOTS_DIR_PATH", USER_PATH + "/screenshots");
     public static final String TRACING_BASE_DIR_PATH = ENVS.getOrDefault("TRACING_DIR_PATH", USER_PATH + "/tracing");
     // Each test run gets its own timestamped subfolder under the base dirs above, so consecutive
