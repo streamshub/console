@@ -96,7 +96,7 @@ export function ChartIncomingOutgoing({
   const padding = getPadding(legendData.length / itemsPerRow);
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} data-ouia-component-id="topic-bytes-chart">
       <Chart
         ariaTitle="Topics bytes incoming and outgoing"
         containerComponent={

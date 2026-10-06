@@ -92,7 +92,7 @@ export function ChartDiskUsage({
   const padding = getPadding(legendData.length / itemsPerRow);
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} data-ouia-component-id="disk-usage-chart">
       <Chart
         ariaTitle="Used disk space"
         containerComponent={
