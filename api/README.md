@@ -40,7 +40,7 @@ Before proceeding, please make sure the [prerequisites listed in the main README
 ### Start Console API in Development Mode
 
 Start the API in development mode from the repository root directory. Ensure that the config-path given points to a
-valid `console-config.yaml`. See [console-config-example.yaml](../examples/console/010-Console-example.yaml) for an example.
+valid `console-config.yaml`. See [console-config-example.yaml](../examples/console-config.yaml) for an example.
 
 ```shell
 mvn -am -pl api quarkus:dev -Dconsole.config-path=$(pwd)/console-config.yaml
