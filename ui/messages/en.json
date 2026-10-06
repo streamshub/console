@@ -278,7 +278,8 @@
       "timestamp_toggle_time_menu": "Toggle time menu"
     },
     "tooltip": {
-      "size": "The serialized size of the key and value. Calculated from the key/value/headers and does not include any overhead associated with the record in the physical log segment within Kafka."
+      "size": "The serialized size of the key and value. Calculated from the key/value/headers and does not include any overhead associated with the record in the physical log segment within Kafka.",
+      "ordering": "Messages are shown in the order they are read from the consumer. These columns are not sortable in the browser."
     },
     "limit_label": "Limit",
     "message": "Message",
