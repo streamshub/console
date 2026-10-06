@@ -40,7 +40,7 @@ Before proceeding, please make sure the [prerequisites listed in the main README
 ### Start Console API in Development Mode
 
 Start the API in development mode from the repository root directory. Ensure that the config-path given points to a
-valid `console-config.yaml`. See [console-config-example.yaml](../console-config-example.yaml) for an example.
+valid `console-config.yaml`. See [console-config-example.yaml](../examples/console/010-Console-example.yaml) for an example.
 
 ```shell
 mvn -am -pl api quarkus:dev -Dconsole.config-path=$(pwd)/console-config.yaml
@@ -49,6 +49,7 @@ mvn -am -pl api quarkus:dev -Dconsole.config-path=$(pwd)/console-config.yaml
 ### Using the Instance API
 
 Once all steps above have been completed, you can interact with the Kafka Instance API. The server will start the following interfaces:
+
 - REST API on [http://localhost:8080](http://localhost:8080)
 - Metrics at [http://localhost:8080/metrics](http://localhost:8080/metrics)
 - Health status at [http://localhost:8080/health](http://localhost:8080/health)
@@ -56,6 +57,7 @@ Once all steps above have been completed, you can interact with the Kafka Instan
 - Swagger UI at [http://localhost:8080/swagger-ui](http://localhost:8080/swagger-ui)
 
 ## Logging Configuration Override
+
 The container image built from this repository includes support for providing an additional logging configuration at run time (without requiring a restart).
 Configuration property `logging.config.override` (or environment variable `LOGGING_CONFIG_OVERRIDE`) must be provided to the server at startup with a path to
 the logging configuration override file that _may_ exist during run time. When created, the file may contain any valid Quarkus [log category level configurations](https://quarkus.io/guides/logging#logging-categories).
