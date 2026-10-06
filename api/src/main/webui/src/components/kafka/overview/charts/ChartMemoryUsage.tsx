@@ -66,7 +66,7 @@ export function ChartMemoryUsage({ usages, duration }: ChartMemoryUsageProps) {
   const padding = getPadding(legendData.length / itemsPerRow);
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} data-ouia-component-id="memory-usage-chart">
       <Chart
         ariaTitle="Memory usage"
         containerComponent={

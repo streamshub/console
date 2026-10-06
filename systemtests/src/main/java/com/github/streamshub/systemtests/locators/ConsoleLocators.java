@@ -42,6 +42,10 @@ public record ConsoleLocators(Page page) {
         return new ConnectClustersPage(page.locator(ouiaId("connect-clusters-page")));
     }
 
+    public ClusterOverviewPage clusterOverview() {
+        return new ClusterOverviewPage(page.locator(ouiaId("overview-page")));
+    }
+
     public record Masthead(Locator locator) {
 
         public Locator userSessionMenuToggle() {
@@ -256,6 +260,27 @@ public record ConsoleLocators(Page page) {
 
         public DataView dataView() {
             return new DataView(locator, "kafka-connect-clusters");
+        }
+    }
+
+    /**
+     * Cluster Overview Page Model
+     */
+    public record ClusterOverviewPage(Locator locator) {
+        public Locator diskUsageChart() {
+            return locator.locator(ouiaId("disk-usage-chart"));
+        }
+
+        public Locator cpuUsageChart() {
+            return locator.locator(ouiaId("cpu-usage-chart"));
+        }
+
+        public Locator memoryUsageChart() {
+            return locator.locator(ouiaId("memory-usage-chart"));
+        }
+
+        public Locator topicBytesChart() {
+            return locator.locator(ouiaId("topic-bytes-chart"));
         }
     }
 

@@ -72,7 +72,7 @@ export function ChartCpuUsage({ usages, duration }: ChartCpuUsageProps) {
   const padding = getPadding(legendData.length / itemsPerRow);
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} data-ouia-component-id="cpu-usage-chart">
       <Chart
         ariaTitle="CPU usage"
         containerComponent={

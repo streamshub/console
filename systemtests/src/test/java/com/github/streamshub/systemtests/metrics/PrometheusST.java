@@ -8,7 +8,7 @@ import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
-import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
+import com.github.streamshub.systemtests.locators.ConsoleLocators;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.prometheus.PrometheusInstanceSetup;
@@ -77,25 +77,27 @@ public class PrometheusST extends AbstractST {
         LOGGER.info("Navigating to Kafka Cluster Overview page for cluster '{}'", tcc.kafkaName());
         PwUtils.navigate(tcc, PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
 
+        var clusterOverview = ConsoleLocators.of(tcc.page()).clusterOverview();
+
         LOGGER.info("Verifying disk space usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // Disk
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
+        PwUtils.waitForContainsText(tcc, clusterOverview.diskUsageChart(), "Node 0", true);
+        PwUtils.waitForContainsText(tcc, clusterOverview.diskUsageChart(), "Node 5", true);
 
         LOGGER.info("Verifying CPU usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // CPU
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
+        PwUtils.waitForContainsText(tcc, clusterOverview.cpuUsageChart(), "Node 0", true);
+        PwUtils.waitForContainsText(tcc, clusterOverview.cpuUsageChart(), "Node 5", true);
 
         LOGGER.info("Verifying memory usage chart contains per-node series for 'Node 0' and 'Node 5'");
         // Memory
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 0", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS, "Node 5", true);
+        PwUtils.waitForContainsText(tcc, clusterOverview.memoryUsageChart(), "Node 0", true);
+        PwUtils.waitForContainsText(tcc, clusterOverview.memoryUsageChart(), "Node 5", true);
 
         LOGGER.info("Verifying topic bytes chart contains incoming and outgoing bytes series for topic '{}'", Constants.REPLICATED_TOPICS_PREFIX);
         // Topics
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Incoming bytes", true);
-        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS, "Outgoing bytes", true);
+        PwUtils.waitForContainsText(tcc, clusterOverview.topicBytesChart(), "Incoming bytes", true);
+        PwUtils.waitForContainsText(tcc, clusterOverview.topicBytesChart(), "Outgoing bytes", true);
     }
 
     @BeforeAll
