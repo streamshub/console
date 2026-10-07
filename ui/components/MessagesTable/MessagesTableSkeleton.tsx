@@ -6,6 +6,11 @@ import { columns } from "./components/ColumnsModal";
 import { MessagesTableToolbar } from "./components/MessagesTableToolbar";
 import { MessagesTableProps } from "./MessagesTable";
 
+// Upper bound on the number of skeleton rows rendered while loading. Matches the
+// records API page size cap (ListFetchParams.PAGE_SIZE_MAX), the most messages a
+// request can return — without it a large `retrieve` value froze the browser.
+const MAX_SKELETON_ROWS = 1000;
+
 export function MessagesTableSkeleton({
   filterLimit,
   filterQuery,
@@ -51,7 +56,11 @@ export function MessagesTableSkeleton({
         ariaLabel={t("table_aria_label")}
         columns={columns}
         data={undefined}
-        expectedLength={typeof filterLimit === "number" ? filterLimit : 50}
+        expectedLength={
+          typeof filterLimit === "number"
+            ? Math.min(filterLimit, MAX_SKELETON_ROWS)
+            : 50
+        }
         renderCell={({ Td, key }) => <Td key={key}></Td>}
         renderHeader={({ key }) => <Th key={key}></Th>}
       />
