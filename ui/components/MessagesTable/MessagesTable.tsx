@@ -12,6 +12,7 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import {
+  ArrowsAltVIcon,
   ExclamationTriangleIcon,
   HelpIcon,
 } from "@/libs/patternfly/react-icons";
@@ -182,30 +183,29 @@ export function MessagesTable({
                   columns={chosenColumns}
                   data={virtualizer.getVirtualItems()}
                   expectedLength={messages.length}
-                  renderHeader={({ colIndex, column, key }) => (
+                  renderHeader={({ column, key }) => (
                     <Th
                       key={key}
                       width={columnWidths[column]}
                       modifier={"truncate"}
-                      sort={
-                        column === "timestamp" ||
-                        column === "timestampUTC" ||
-                        column === "offset-partition"
-                          ? {
-                              columnIndex: colIndex,
-                              sortBy: {
-                                index: colIndex,
-                                direction:
-                                  filterOffset || filterTimestamp || filterEpoch
-                                    ? "asc"
-                                    : "desc",
-                              },
-                            }
-                          : undefined
-                      }
                     >
                       {columnLabels[column]}
                       {columnTooltips[column] ?? ""}
+                      {(column === "timestamp" ||
+                        column === "timestampUTC" ||
+                        column === "offset-partition") && (
+                        <Tooltip content={t("tooltip.ordering")}>
+                          <ArrowsAltVIcon
+                            style={{
+                              color:
+                                "var(--pf-t--global--text--color--subtle)",
+                              marginInlineStart:
+                                "var(--pf-t--global--spacer--sm)",
+                            }}
+                            aria-hidden
+                          />
+                        </Tooltip>
+                      )}
                     </Th>
                   )}
                   renderCell={({ column, row: vrow, colIndex, Td, key }) => {
