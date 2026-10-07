@@ -1,7 +1,7 @@
 #
 # REFERENCE ONLY — this file documents the "everything" Console CR for operator
 # mode. dev.sh does NOT apply this file directly; it generates a profile-accurate
-# CR at dev/.gen/console-cr.yaml (only wiring the profiles you actually deployed)
+# CR at devtools/.gen/console-cr.yaml (only wiring the profiles you actually deployed)
 # and applies that. Read this to understand the shape; edit .gen/console-cr.yaml
 # (or the generator in lib/config-gen.sh) to change what gets applied.
 #
@@ -45,4 +45,4 @@ spec:
   # console validates the token issuer against the same URL the browser uses
   # (http://keycloak.127.0.0.1.nip.io/...), which an in-cluster pod can't reach
   # by that name without extra DNS wiring. Use `dev.sh frontend` / `dev.sh
-  # backend` to exercise the Keycloak login flow. See dev/README.md.
+  # backend` to exercise the Keycloak login flow. See devtools/README.md.

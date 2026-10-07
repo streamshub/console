@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cluster + infrastructure orchestration for the dev/ toolkit. Source, don't
+# Cluster + infrastructure orchestration for the devtools/ toolkit. Source, don't
 # execute. Depends on common.sh already being sourced.
 
 STATE_FILE="${GEN_DIR}/state.env"

@@ -16,7 +16,7 @@ generate_console_config() {
   local pw domain https_port bootstrap cfg
   pw="$(kubectl -n "${KAFKA_NAMESPACE}" get secret "${KAFKA_USER}" -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || true)"
   [ -n "${pw}" ] || die "SCRAM secret '${KAFKA_USER}' not found in namespace '${KAFKA_NAMESPACE}'.
-  Is the environment up and Kafka Ready? Run: ${DEV_DIR}/dev.sh up"
+  Is the environment up and Kafka Ready? Run: ./dev up"
 
   # NOTE: we deliberately do NOT configure ssl.truststore here. With
   # kubernetes.enabled the console discovers the Strimzi Kafka resource and
@@ -131,7 +131,7 @@ EOF
 # `plain` internal listener (no credentials needed) and internal Service DNS
 # for Prometheus/Apicurio/Connect. OIDC is intentionally omitted here — an
 # in-cluster console needs the Keycloak issuer URL to resolve to the ingress,
-# which needs extra DNS wiring (see dev/README.md); use frontend/backend mode
+# which needs extra DNS wiring (see devtools/README.md); use frontend/backend mode
 # to exercise the login flow.
 generate_console_cr() {
   load_state

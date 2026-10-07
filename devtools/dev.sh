@@ -3,7 +3,7 @@
 #
 # Provisions a kind cluster + Strimzi + Kafka (+ optional metrics/registry/
 # keycloak/connect profiles) and launches whichever of the three dev modes you
-# want: frontend, backend, or operator. See dev/README.md for the full guide.
+# want: frontend, backend, or operator. See devtools/README.md for the full guide.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -132,7 +132,7 @@ cmd_frontend() {
   generate_console_config
   info "Starting API + UI (quarkus:dev). Open http://localhost:8080"
   echo "  React edits under api/src/main/webui hot-reload via Quinoa (HMR)."
-  echo "  Standalone Vite / Storybook: see dev/README.md (frontend workflow)."
+  echo "  Standalone Vite / Storybook: see devtools/README.md (frontend workflow)."
   cd "${REPO_ROOT}"
   exec mvn -am -pl api quarkus:dev -Dconsole.config-path="${GEN_DIR}/console-config.yaml"
 }

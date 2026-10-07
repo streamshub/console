@@ -1,6 +1,6 @@
-# Local development environment (`dev/`)
+# Local development environment (`devtools/`)
 
-A single script, `dev/dev.sh`, that stands up everything you need to work on the
+A single script, `./dev`, that stands up everything you need to work on the
 console locally and launches whichever of the three development modes you want:
 
 | Mode | You edit | What runs where |
@@ -44,17 +44,17 @@ colima start --cpus 6 --memory 16 --disk 60
 
 ```bash
 # 1. Provision the cluster + all optional features (lean single-node Kafka):
-dev/dev.sh up --profile all
+./dev up --profile all
 
 # 2. Launch your mode of choice:
-dev/dev.sh frontend     # or: backend / operator
+./dev frontend     # or: backend / operator
 
 # 3. See where everything lives:
-dev/dev.sh urls
+./dev urls
 
 # 4. Tear down when done:
-dev/dev.sh down                 # deletes the whole cluster
-dev/dev.sh down --keep-cluster  # keeps the cluster + ingress, drops the workloads
+./dev down                 # deletes the whole cluster
+./dev down --keep-cluster  # keeps the cluster + ingress, drops the workloads
 ```
 
 `up` is idempotent — re-running it reuses an existing cluster and only fills in
@@ -122,8 +122,8 @@ Keycloak's own admin console is `admin` / `admin`.
 ### Frontend
 
 ```bash
-dev/dev.sh up --profile all
-dev/dev.sh frontend            # API+UI on http://localhost:8080
+./dev up --profile all
+./dev frontend            # API+UI on http://localhost:8080
 ```
 
 - Edit any component under `api/src/main/webui` — Quinoa's Vite dev server hot-reloads
@@ -141,8 +141,8 @@ dev/dev.sh frontend            # API+UI on http://localhost:8080
 ### Backend
 
 ```bash
-dev/dev.sh up --profile all
-dev/dev.sh backend             # API+UI on http://localhost:8080, debug on :5005
+./dev up --profile all
+./dev backend             # API+UI on http://localhost:8080, debug on :5005
 ```
 
 - Edit any Java under `api/` — Quarkus live-reloads on the next request.
@@ -150,17 +150,17 @@ dev/dev.sh backend             # API+UI on http://localhost:8080, debug on :5005
 - Handy endpoints: `http://localhost:8080/swagger-ui`, `/openapi`, `/q/health`, `/metrics`.
 - The API reaches the in-cluster Kafka over its TLS ingress listener using a SCRAM
   password and cluster CA that `dev.sh` pulls straight from the live cluster into
-  `dev/.gen/console-config.yaml` (regenerated every run — inspect it to see the exact wiring).
+  `devtools/.gen/console-config.yaml` (regenerated every run — inspect it to see the exact wiring).
 
 ### Operator
 
 ```bash
-dev/dev.sh up --profile all
-dev/dev.sh operator            # operator runs on host, reconciles into the cluster
+./dev up --profile all
+./dev operator            # operator runs on host, reconciles into the cluster
 ```
 
 - `dev.sh operator` runs `mvn -am -pl operator quarkus:dev`. Once the operator registers
-  its CRD, the generated `Console` CR (`dev/.gen/console-cr.yaml`) is applied automatically.
+  its CRD, the generated `Console` CR (`devtools/.gen/console-cr.yaml`) is applied automatically.
 - Watch it reconcile and open the console:
   ```bash
   kubectl get console -A -w
@@ -170,7 +170,7 @@ dev/dev.sh operator            # operator runs on host, reconciles into the clus
 - Edit a reconciler or dependent resource under `operator/` — Quarkus live-reloads and
   re-reconciles against the cluster.
 - The operator deploys a **released** `console-api` image (the current `-SNAPSHOT` isn't
-  published). Point it at a specific build with `CONSOLE_API_IMAGE=... dev/dev.sh operator`.
+  published). Point it at a specific build with `CONSOLE_API_IMAGE=... ./dev operator`.
 - Operator mode uses Kafka's internal `plain` listener and in-cluster service DNS, so no
   host credentials are involved.
 
@@ -198,7 +198,7 @@ checks for it and for a reachable daemon, with guidance if either is missing.
 ### podman (alternative)
 
 ```bash
-CONTAINER_ENGINE=podman dev/dev.sh up --profile all
+CONTAINER_ENGINE=podman ./dev up --profile all
 ```
 
 On macOS podman runs inside a VM ("machine"). Two workarounds are needed for the full
@@ -226,7 +226,7 @@ The toolkit auto-sizes a new podman machine to *(host memory − 4 GB)*, which i
 aggressive on a 36 GB host. Cap it so the host stays responsive:
 
 ```bash
-PODMAN_MACHINE_MEMORY=16000 CONTAINER_ENGINE=podman dev/dev.sh up ...
+PODMAN_MACHINE_MEMORY=16000 CONTAINER_ENGINE=podman ./dev up ...
 ```
 
 ### On Linux
@@ -247,7 +247,7 @@ things can trip up first-time setup:
    ```
    Alternatively point ingress at high ports and adjust the domain accordingly:
    ```bash
-   INGRESS_HTTP_PORT=8080 INGRESS_HTTPS_PORT=8443 dev/dev.sh up ...
+   INGRESS_HTTP_PORT=8080 INGRESS_HTTPS_PORT=8443 ./dev up ...
    ```
    (URLs then include the port, e.g. `https://example-console.127.0.0.1.nip.io:8443`.)
 
@@ -296,23 +296,23 @@ machine. On native Linux there is no VM — containers draw directly from host R
 - **`*.127.0.0.1.nip.io` won't resolve on Linux** — DNS-rebind protection; see
   [On Linux](#on-linux).
 - **Kafka never becomes Ready** — the first run pulls images and can take several minutes.
-  Check progress with `dev/dev.sh status` and `kubectl -n kafka get pods`. Persistent
+  Check progress with `./dev status` and `kubectl -n kafka get pods`. Persistent
   crash-loops on podman usually mean the PID-limit/rootful workarounds above are needed.
 - **Ingress returns 503 briefly** — normal right after a component starts or during a
   live-reload; retry once the pod is Ready.
 - **TLS/hostname errors from the host-run API** — the broker cert covers the `nip.io`
-  hosts, so this usually means a stale `dev/.gen/` from a previous cluster. Regenerate
-  with `dev/dev.sh config` (or just re-run the mode command, which regenerates).
+  hosts, so this usually means a stale `devtools/.gen/` from a previous cluster. Regenerate
+  with `./dev config` (or just re-run the mode command, which regenerates).
 - **Wrong kube context** — `dev.sh` guards every cluster operation to the
   `kind-console-local` context and refuses to touch anything else.
-- **Start over cleanly** — `dev/dev.sh down` deletes the cluster and the generated
-  `dev/.gen/` artefacts.
+- **Start over cleanly** — `./dev down` deletes the cluster and the generated
+  `devtools/.gen/` artefacts.
 
 ---
 
 ## What's generated
 
-Everything the toolkit generates lives in `dev/.gen/` (git-ignored):
+Everything the toolkit generates lives in `devtools/.gen/` (git-ignored):
 
 - `console-config.yaml` — config for the host-run API (frontend/backend modes). The
   console trusts the Kafka TLS listener automatically via the discovered Strimzi cluster
@@ -320,6 +320,6 @@ Everything the toolkit generates lives in `dev/.gen/` (git-ignored):
 - `console-cr.yaml` — the `Console` CR applied in operator mode.
 - `state.env` — records which topology/profiles the running environment was brought up with.
 
-`dev/manifests/console-cr/console.yaml` is a reference document showing the full
+`devtools/manifests/console-cr/console.yaml` is a reference document showing the full
 operator-mode CR shape; it is **not** applied directly — `dev.sh` generates a
-profile-accurate CR at `dev/.gen/console-cr.yaml`.
+profile-accurate CR at `devtools/.gen/console-cr.yaml`.

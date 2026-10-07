@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Shared configuration and helpers for the dev/ toolkit. Source, don't execute.
+# Shared configuration and helpers for the devtools/ toolkit. Source, don't execute.
 #
 # Every tunable below can be overridden from the environment, e.g.
-#   CONTAINER_ENGINE=podman CONSOLE_CLUSTER_DOMAIN=127.0.0.1.nip.io ./dev.sh up
+#   CONTAINER_ENGINE=podman CONSOLE_CLUSTER_DOMAIN=127.0.0.1.nip.io ./dev up
 
 # --- Paths ------------------------------------------------------------------
-# LIB_DIR = dev/lib, DEV_DIR = dev, REPO_ROOT = repository root.
+# LIB_DIR = devtools/lib, DEV_DIR = devtools, REPO_ROOT = repository root.
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEV_DIR="$(cd "${LIB_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${DEV_DIR}/.." && pwd)"
@@ -84,23 +84,23 @@ check_prereqs() {
           die "CONTAINER_ENGINE=docker but the 'docker' CLI isn't installed.
   On macOS with Colima you still need the docker client: brew install docker
   Then start the VM: colima start --cpus 6 --memory 16 --disk 60
-  Or switch engines: CONTAINER_ENGINE=podman ./dev.sh ..."
+  Or switch engines: CONTAINER_ENGINE=podman ./dev ..."
         else
           die "CONTAINER_ENGINE=docker but the 'docker' CLI isn't installed.
   Install Docker Engine for your distro (https://docs.docker.com/engine/install/),
-  or switch engines: CONTAINER_ENGINE=podman ./dev.sh ..."
+  or switch engines: CONTAINER_ENGINE=podman ./dev ..."
         fi
       fi
       if ! docker info >/dev/null 2>&1; then
         if [ "${OS_NAME}" = "Darwin" ]; then
           die "The docker daemon isn't reachable.
   If you use Colima: colima start --cpus 6 --memory 16 --disk 60
-  See dev/README.md (Container engines) for sizing guidance."
+  See devtools/README.md (Container engines) for sizing guidance."
         else
           die "The docker daemon isn't reachable.
   Start it (sudo systemctl start docker) and ensure your user can use it
   (add yourself to the 'docker' group, or run rootless docker).
-  See dev/README.md (Container engines / On Linux) for details."
+  See devtools/README.md (Container engines / On Linux) for details."
         fi
       fi
       ;;
@@ -117,7 +117,7 @@ check_prereqs() {
 # so we never touch a real cluster by accident.
 ensure_context() {
   kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}" \
-    || die "kind cluster '${CLUSTER_NAME}' doesn't exist yet. Run: ${DEV_DIR}/dev.sh up"
+    || die "kind cluster '${CLUSTER_NAME}' doesn't exist yet. Run: ./dev up"
   kubectl config use-context "${KUBECONTEXT}" >/dev/null \
     || die "kube context '${KUBECONTEXT}' not found"
 }
