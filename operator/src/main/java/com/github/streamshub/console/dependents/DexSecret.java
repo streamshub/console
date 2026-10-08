@@ -1,0 +1,43 @@
+package com.github.streamshub.console.dependents;
+
+import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import com.github.streamshub.console.api.v1alpha1.Console;
+
+import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.javaoperatorsdk.operator.api.config.informer.Informer;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
+import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
+
+@ApplicationScoped
+@KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
+public class DexSecret extends BaseSecret {
+
+    public static final String NAME = "dex-secret";
+    static final String CONFIG_KEY = "config.yaml";
+
+    public DexSecret() {
+        super(NAME);
+    }
+
+    @Override
+    protected Secret desired(Console primary, Context<Console> context) {
+        @SuppressWarnings("unchecked")
+        Map<String, String> data = context.managedWorkflowAndDependentResourceContext()
+                .getMandatory("DexSecretData", Map.class);
+
+        updateDigest(context, "dex-digest", data);
+
+        return new SecretBuilder()
+                .withNewMetadata()
+                    .withName(instanceName(primary))
+                    .withNamespace(primary.getMetadata().getNamespace())
+                    .withLabels(commonLabels("dex"))
+                .endMetadata()
+                .withData(data)
+                .build();
+    }
+}

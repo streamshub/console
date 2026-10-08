@@ -23,6 +23,7 @@ import org.junit.jupiter.api.TestInfo;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
+import com.github.streamshub.console.kafka.systemtest.deployment.KeycloakResourceManager;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
 import com.github.streamshub.console.test.TestHelper;
 
@@ -100,7 +101,7 @@ class SessionResourceIT {
         // the well-known endpoint, which is then used for the redirect.
         var authEndpoint = UriBuilder
                 .fromUri(URI.create(config.getValue("console.test.oidc-url", String.class)))
-                .port(8443)
+                .port(KeycloakResourceManager.HTTPS_PORT)
                 .build()
                 .toString();
 
@@ -156,7 +157,7 @@ class SessionResourceIT {
     void testLogoutOIDCWithRPInitiatedFlow() throws Exception {
         var authEndpoint = UriBuilder
                 .fromUri(URI.create(config.getValue("console.test.oidc-url", String.class)))
-                .port(8443)
+                .port(KeycloakResourceManager.HTTPS_PORT)
                 .build()
                 .toString();
         var expectedPostLogoutUri = UriBuilder.fromUri(testUri)

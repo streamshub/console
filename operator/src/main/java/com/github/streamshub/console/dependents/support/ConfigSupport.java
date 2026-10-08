@@ -20,6 +20,7 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretEnvSource;
 import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 
 public class ConfigSupport {
@@ -183,4 +184,44 @@ public class ConfigSupport {
         return resource;
     }
 
+    public static boolean dexIntegrationEnabled(Console primary) {
+        var security = primary.getSpec().getSecurity();
+
+        if (security == null) {
+            return false;
+        }
+
+        return security.getOpenshift() != null || security.getLdap() != null;
+    }
+
+    public static boolean dexOpenshiftIntegrationEnabled(Console primary) {
+        var security = primary.getSpec().getSecurity();
+
+        if (security == null) {
+            return false;
+        }
+
+        return security.getOpenshift() != null;
+    }
+
+    /**
+     * Check whether user-provided pass-through TLS is in effect for the Console CR.
+     * This is the case when the TLS certificate has been provided in the CR and Dex
+     * is not enabled (i.e. there is no need to have two routes with pass-based
+     * routing and re-encrypt TLS).
+     */
+    public static boolean userProvidedPassthroughTLS(Console primary) {
+        return !dexIntegrationEnabled(primary) && primary.getSpec().getTls() != null;
+    }
+
+    /**
+     * Check whether an OpenShift Route with re-encrypt TLS is in effect for the Console
+     * CR. This will be used when the operator is running in OpenShift and either Dex is
+     * enabled (we need to re-encrypt for path-based routing) or not user-provided TLS 
+     * certificate is available (we re-encrypt the backend where the user-facing ingress
+     * is using the OpenShift provided certificate).
+     */
+    public static boolean servingCertificateReencryptTLS(Console primary, Context<Console> context) {
+        return !userProvidedPassthroughTLS(primary) && resourceSupported(context, Route.class);
+    }
 }
