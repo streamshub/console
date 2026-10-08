@@ -7,8 +7,8 @@ import jakarta.inject.Inject;
 
 import com.github.streamshub.console.config.ConsoleConfig;
 
-import io.quarkus.tls.runtime.KeyStoreAndKeyCertOptions;
-import io.quarkus.tls.runtime.KeyStoreProvider;
+import io.quarkus.tls.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.KeyStoreProvider;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.PemKeyCertOptions;
