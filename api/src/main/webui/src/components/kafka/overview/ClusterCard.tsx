@@ -66,13 +66,16 @@ export function ClusterCard({
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  const status = cluster?.attributes.status ??
+  const status =
+    cluster?.attributes.status ??
     (brokersOnline === brokersTotal ? 'Ready' : 'Not Available');
 
   const isManaged = cluster?.meta?.managed;
   const isReconciliationPaused = cluster?.meta?.reconciliationPaused ?? false;
   const canUpdate = hasPrivilege('UPDATE', cluster);
-  const { mutate: patchKafkaCluster, isPending } = usePatchKafkaCluster(cluster?.id);
+  const { mutate: patchKafkaCluster, isPending } = usePatchKafkaCluster(
+    cluster?.id
+  );
 
   const onConfirmReconciliation = () => {
     patchKafkaCluster(!isReconciliationPaused, {
@@ -89,7 +92,8 @@ export function ClusterCard({
     return conditions
       .filter((c) => c.type !== 'Ready')
       .map((c) => ({
-        variant: c.type === 'Error' ? ('danger' as const) : ('warning' as const),
+        variant:
+          c.type === 'Error' ? ('danger' as const) : ('warning' as const),
         subject: {
           type: c.type || '',
           name: cluster?.attributes.name || '',
@@ -122,7 +126,9 @@ export function ClusterCard({
             <FlexItem>
               <Button
                 variant="link"
-                icon={isReconciliationPaused ? <PlayIcon /> : <PauseCircleIcon />}
+                icon={
+                  isReconciliationPaused ? <PlayIcon /> : <PauseCircleIcon />
+                }
                 onClick={() => setIsModalOpen(true)}
                 isDisabled={isPending}
               >
@@ -133,8 +139,11 @@ export function ClusterCard({
             </FlexItem>
           )}
         </Flex>
-        
-        <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsMd' }}>
+
+        <Flex
+          direction={{ default: 'column' }}
+          spaceItems={{ default: 'spaceItemsMd' }}
+        >
           <Flex
             flexWrap={{ default: 'wrap', sm: 'nowrap' }}
             spaceItems={{ default: 'spaceItemsMd' }}
@@ -176,9 +185,7 @@ export function ClusterCard({
               </FlexItem>
             </Flex>
 
-            <Divider
-              orientation={{ default: 'horizontal', sm: 'vertical' }}
-            />
+            <Divider orientation={{ default: 'horizontal', sm: 'vertical' }} />
 
             {/* Metrics Section */}
             <Flex
@@ -251,7 +258,9 @@ export function ClusterCard({
                             {!isManaged && (
                               <>
                                 {' '}
-                                <Tooltip content={t('ClustersTable.version_derived')}>
+                                <Tooltip
+                                  content={t('ClustersTable.version_derived')}
+                                >
                                   <HelpIcon />
                                 </Tooltip>
                               </>
@@ -345,23 +354,29 @@ export function ClusterCard({
                                   <div className="pf-v6-u-display-none pf-v6-u-display-block-on-md">
                                     <Truncate
                                       content={
-                                        m.subject.type === 'ReconciliationPaused'
-                                          ? t('reconciliation.reconciliation_paused_warning')
+                                        m.subject.type ===
+                                        'ReconciliationPaused'
+                                          ? t(
+                                              'reconciliation.reconciliation_paused_warning'
+                                            )
                                           : m.message
                                       }
                                     />
-                                    {isReconciliationPaused && m.subject.type === 'ReconciliationPaused' && (
-                                      <>
-                                        &nbsp;
-                                        <Button
-                                          variant="link"
-                                          isInline
-                                          onClick={() => setIsModalOpen(true)}
-                                        >
-                                          {t('reconciliation.resume')}
-                                        </Button>
-                                      </>
-                                    )}
+                                    {isReconciliationPaused &&
+                                      canUpdate &&
+                                      m.subject.type ===
+                                        'ReconciliationPaused' && (
+                                        <>
+                                          &nbsp;
+                                          <Button
+                                            variant="link"
+                                            isInline
+                                            onClick={() => setIsModalOpen(true)}
+                                          >
+                                            {t('reconciliation.resume')}
+                                          </Button>
+                                        </>
+                                      )}
                                   </div>
                                   <div className="pf-v6-u-display-block pf-v6-u-display-none-on-md">
                                     {m.message}
