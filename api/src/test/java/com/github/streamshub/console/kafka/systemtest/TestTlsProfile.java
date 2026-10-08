@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.github.streamshub.console.test.TlsHelper;
 
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTestProfile;
 
 /**
@@ -21,11 +21,6 @@ import io.quarkus.test.junit.QuarkusTestProfile;
  */
 public class TestTlsProfile implements QuarkusTestProfile {
 
-    /** TLS material generated once per JVM for this profile. */
-    public static final TlsHelper TLS = TlsHelper.newInstance("localhost");
-
-    private static final Path CONFIG_FILE = writeTempConfig();
-
     @Override
     public String getConfigProfile() {
         // Re-use the "testplain" profile so dev-services and Keycloak are still disabled,
@@ -35,26 +30,51 @@ public class TestTlsProfile implements QuarkusTestProfile {
 
     @Override
     public List<TestResourceEntry> testResources() {
-        return Collections.emptyList();
+        return List.of(new TestResourceEntry(TlsTestResource.class));
     }
 
     @Override
     public Map<String, String> getConfigOverrides() {
-        return Map.of(
-                "console.config-path", CONFIG_FILE.toAbsolutePath().toString(),
-                // Kubernetes dev-services not needed for a pure TLS binding test
-                "quarkus.kubernetes-client.devservices.enabled", "false");
+        // Kubernetes dev-services not needed for a pure TLS binding test
+        return Map.of("quarkus.kubernetes-client.devservices.enabled", "false");
+    }
+
+    public static class TlsTestResource implements QuarkusTestResourceLifecycleManager {
+        private TlsHelper tls;
+        private Path configFile;
+
+        @Override
+        public Map<String, String> start() {
+            tls = TlsHelper.newInstance("localhost");
+            configFile = writeTempConfig(tls);
+
+            return Map.of("console.config-path", configFile.toAbsolutePath().toString());
+        }
+
+        @Override
+        public void stop() {
+            try {
+                Files.deleteIfExists(configFile);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        @Override
+        public void inject(TestInjector testInjector) {
+            testInjector.injectIntoFields(tls, field -> field.getType().equals(TlsHelper.class));
+        }
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static Path writeTempConfig() {
+    private static Path writeTempConfig(TlsHelper tls) {
         try {
             // Escape PEM newlines for inline YAML block scalar
-            String certPem = TLS.getServerCertificatePem();
-            String keyPem  = TLS.getServerPrivateKeyPem();
+            String certPem = tls.getServerCertificatePem();
+            String keyPem  = tls.getServerPrivateKeyPem();
 
             // Use YAML literal block scalars (|) so multi-line PEM content is preserved exactly
             String yaml = """
