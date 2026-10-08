@@ -83,6 +83,7 @@ import com.github.streamshub.console.config.security.RuleConfigBuilder;
 import com.github.streamshub.console.config.security.SecurityConfig;
 import com.github.streamshub.console.config.security.SubjectConfigBuilder;
 import com.github.streamshub.console.dependents.support.ConfigSupport;
+import com.github.streamshub.console.dependents.support.DexConfig;
 import com.github.streamshub.console.support.KafkaConfigs;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -91,7 +92,6 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
-import io.javaoperatorsdk.operator.api.reconciler.dependent.NameSetter;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.ReconcileResult;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -122,7 +122,7 @@ import static com.github.streamshub.console.dependents.support.ConfigSupport.set
  * VolumeMounts) that will be used later in the reconciliation process.
  */
 @ApplicationScoped
-public class ConfigurationProcessor implements DependentResource<HasMetadata, Console>, NameSetter, ConsoleResource<HasMetadata> {
+public class ConfigurationProcessor extends BaseVirtualResource {
 
     public static final String NAME = "ConfigurationProcessor"; // NOSONAR
 
@@ -140,9 +140,16 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     ObjectMapper objectMapper;
 
     @Inject
-    PrometheusService prometheusService;
+    ConsoleSecret consoleSecret;
 
-    private String instanceName;
+    @Inject
+    DexService dexService;
+
+    @Inject
+    DexServiceAccount dexServiceAccount;
+
+    @Inject
+    PrometheusService prometheusService;
 
     public static class Postcondition implements Condition<HasMetadata, Console> {
         @Override
@@ -154,14 +161,8 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
     }
 
-    @Override
-    public String name() {
-        return instanceName;
-    }
-
-    @Override
-    public void setName(String name) {
-        this.instanceName = name;
+    public ConfigurationProcessor() {
+        super(NAME);
     }
 
     @Override
@@ -182,24 +183,15 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return ReconcileResult.noOperation(primary);
     }
 
-    @Override
-    public Class<HasMetadata> resourceType() {
-        return HasMetadata.class;
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
-    }
-
     private boolean buildSecretData(Console primary, Context<Console> context) {
         ConsoleStatus status = primary.getOrCreateStatus();
         Map<String, String> desiredData = new LinkedHashMap<>();
-        Map<String, String> currentData = context.getSecondaryResource(Secret.class)
+        Map<String, String> currentData = consoleSecret.getSecondaryResource(primary, context)
                 .map(Secret::getData)
                 .orElseGet(Collections::emptyMap);
 
         try {
+            buildDexSecretData(primary, context);
             buildConsoleConfig(primary, context, currentData, desiredData);
             buildClientSecrets(primary, context, desiredData);
         } catch (Exception e) {
@@ -217,6 +209,56 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
         context.managedWorkflowAndDependentResourceContext().put("ConsoleSecretData", desiredData);
         return !status.hasActiveCondition(Types.ERROR);
+    }
+
+    /**
+     * Builds the hostname-independent portion of the Dex config.yaml and stores it
+     * in the workflow context under {@code "DexSecretData"} for {@code DexSecret} to
+     * finalise once the console hostname is known.
+     * <p>
+     * Called only when {@code spec.security.openshift} or {@code spec.security.ldap}
+     * is present; otherwise the context key is not set.
+     */
+    private void buildDexSecretData(Console primary, Context<Console> context) {
+        if (!ConfigSupport.dexIntegrationEnabled(primary)) {
+            return;
+        }
+
+        var security = primary.getSpec().getSecurity();
+        String host = getAttribute(context, "host", String.class);
+        boolean openShiftTls = resourceSupported(context, Route.class);
+        String namespace = primary.getMetadata().getNamespace();
+        DexConfig dexConfig;
+
+        if (security.getOpenshift() != null) {
+            String apiServerUrl = context.getClient().getMasterUrl().toString();
+            // Strip trailing slash that getMasterUrl() may include
+            if (apiServerUrl.endsWith("/")) {
+                apiServerUrl = apiServerUrl.substring(0, apiServerUrl.length() - 1);
+            }
+            String saClientId = "system:serviceaccount:" + namespace + ":" + dexServiceAccount.instanceName(primary);
+            dexConfig = DexConfig.forOpenshift(host, openShiftTls, security.getOpenshift(), apiServerUrl, saClientId);
+        } else {
+            var ldap = security.getLdap();
+            String bindPW = Optional.ofNullable(ldap.getBindSecret())
+                    .map(bindSecret -> getValue(context, namespace, bindSecret))
+                    .map(secret -> new String(secret, StandardCharsets.UTF_8))
+                    .orElse(null);
+            dexConfig = DexConfig.forLdap(host, ldap, bindPW);
+        }
+
+        String configYaml;
+
+        try {
+            configYaml = objectMapper.copyWith(YAMLFactory.builder().build()).writeValueAsString(dexConfig);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        Map<String, String> dexData = new LinkedHashMap<>();
+        dexData.put(DexSecret.CONFIG_KEY, encodeString(configYaml));
+
+        context.managedWorkflowAndDependentResourceContext().put("DexSecretData", dexData);
     }
 
     private void buildConsoleConfig(Console primary, Context<Console> context,
@@ -324,13 +366,16 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
      * access the secret entries.
      */
     private void buildClientSecrets(Console primary, Context<Console> context, Map<String, String> data) {
-        var tls = primary.getSpec().getTls();
-        if (tls != null) {
-            String namespace = primary.getMetadata().getNamespace();
-            maybePutSecretEntry(data, "console-tls-certificate.txt",
-                getValue(context, namespace, tls.getCertificate()));
-            maybePutSecretEntry(data, "console-tls-key.txt",
-                getValue(context, namespace, tls.getKey()));
+        if (!ConfigSupport.dexIntegrationEnabled(primary)) {
+            var tls = primary.getSpec().getTls();
+
+            if (tls != null) {
+                String namespace = primary.getMetadata().getNamespace();
+                maybePutSecretEntry(data, "console-tls-certificate.txt",
+                    getValue(context, namespace, tls.getCertificate()));
+                maybePutSecretEntry(data, "console-tls-key.txt",
+                    getValue(context, namespace, tls.getKey()));
+            }
         }
 
         Optional.ofNullable(primary.getSpec().getSecurity())
@@ -503,11 +548,24 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     private ConsoleConfig buildConfig(Console primary, Context<Console> context, ConsoleConfig currentConfig) {
         ConsoleConfig config = new ConsoleConfig();
 
-        var tls = primary.getSpec().getTls();
-        if (tls != null) {
+        if (ConfigSupport.userProvidedPassthroughTLS(primary)) {
+            var tls = primary.getSpec().getTls();
+
+            // On plain Kubernetes or when Dex is not enabled the route uses passthrough
+            // termination: the user provided a cert/key and the pod serves TLS directly.
+            // Values are stored in the console secret and referenced by path under /deployments/config.
             config.setTls(new TlsConfigBuilder()
                 .withCertificate(mapValue(tls.getCertificate(), "console-tls-certificate"))
                 .withKey(mapValue(tls.getKey(), "console-tls-key"))
+                .build());
+        } else if (ConfigSupport.servingCertificateReencryptTLS(primary, context)) {
+            // On OpenShift the route uses reencrypt termination: the service CA controller
+            // issues a serving cert for the pod, mounted at /etc/tls by ConsoleDeployment.
+            // Any user-provided cert/key applies only to the edge (browser-facing) TLS on
+            // the route itself, not to the pod's serving cert.
+            config.setTls(new TlsConfigBuilder()
+                .withCertificate(new ValueBuilder().withValueFrom("/etc/tls/tls.crt").build())
+                .withKey(new ValueBuilder().withValueFrom("/etc/tls/tls.key").build())
                 .build());
         }
 
@@ -534,7 +592,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return config;
     }
 
-    private void addSecurity(Console primary, ConsoleConfig config, 
+    private void addSecurity(Console primary, ConsoleConfig config,
             ConsoleConfig currentConfig, Context<Console> context) {
 
         var security = primary.getSpec().getSecurity();
@@ -564,9 +622,38 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     // PKCE is required. Otherwise, the secret is removed.
                     .withStateSecret(currentOrNewStateSecret(oidc, currentConfig))
                     // Indicates to Quarkus OIDC to perform redirects using HTTPS. The created
-                    // ingress or route uses Edge TLS termination, making the OIDC framework unaware 
+                    // ingress or route uses Edge TLS termination, making the OIDC framework unaware
                     // of TLS being used by the client's browser.
                     .withForceRedirectHttpsScheme(Boolean.TRUE)
+                    .build());
+        } else if (ConfigSupport.dexIntegrationEnabled(primary)) {
+            // Auto-wire the Console OIDC config to point at the Dex broker.
+            // No clientSecret — the Dex client is public and PKCE secures the flow.
+            // On OpenShift, Dex serves HTTPS with a service CA certificate, trusted
+            // via the CA bundle mounted from ConsoleTrustBundle.
+            boolean dexTls = resourceSupported(context, Route.class);
+            var dexTrustStore = dexTls
+                    ? new TrustStoreConfigBuilder()
+                        .withType(TrustStoreConfig.Type.PEM)
+                        .withNewContent()
+                            .withValueFrom("%s/%s".formatted(
+                                    ConsoleTrustBundle.MOUNT_PATH,
+                                    ConsoleTrustBundle.CA_BUNDLE_KEY))
+                        .endContent()
+                        .build()
+                    : null;
+
+            securityConfig.setOidc(new OidcConfigBuilder()
+                    .withAuthServerUrl("%s://%s.%s.svc.cluster.local:5556/dex".formatted(
+                            dexTls ? "https" : "http",
+                            dexService.instanceName(primary),
+                            primary.getMetadata().getNamespace()))
+                    .withTrustStore(dexTrustStore)
+                    .withClientId("streamshub-console")
+                    .withPkceRequired(Boolean.TRUE)
+                    .withStateSecret(currentOrNewStateSecret(currentConfig))
+                    .withForceRedirectHttpsScheme(Boolean.TRUE)
+                    .withOverrideDiscoveredEndpoints(Boolean.TRUE)
                     .build());
         }
 
@@ -613,12 +700,16 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private String currentOrNewStateSecret(Oidc oidc, ConsoleConfig currentConfig) {
         if (!Boolean.FALSE.equals(oidc.isPkceRequired())) { // true by default
-            return Optional.ofNullable(currentConfig.getSecurity())
-                    .map(GlobalSecurityConfig::getOidc)
-                    .map(OidcConfig::getStateSecret)
-                    .orElseGet(() -> generateRandomBase64EncodedSecret(32));
+            return currentOrNewStateSecret(currentConfig);
         }
         return null;
+    }
+    
+    private String currentOrNewStateSecret(ConsoleConfig currentConfig) {
+        return Optional.ofNullable(currentConfig.getSecurity())
+                .map(GlobalSecurityConfig::getOidc)
+                .map(OidcConfig::getStateSecret)
+                .orElseGet(() -> generateRandomBase64EncodedSecret(32));
     }
 
     private void addSecurity(Security source, SecurityConfig target) {
@@ -819,7 +910,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private com.github.streamshub.console.config.Value mapValue(Value value, String name) {
         if (value != null) {
-            return new com.github.streamshub.console.config.ValueBuilder()
+            return new ValueBuilder()
                 .withValueFrom("/deployments/config/%s.txt".formatted(name))
                 .build();
         }
