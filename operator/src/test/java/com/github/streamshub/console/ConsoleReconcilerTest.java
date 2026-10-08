@@ -39,6 +39,7 @@ import com.github.streamshub.console.dependents.ConsoleIngress;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleRoute;
 import com.github.streamshub.console.dependents.ConsoleSecret;
+import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.ConsoleServiceAccount;
 import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
@@ -111,12 +112,16 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         awaitReady(consoleCR);
     }
 
-    @Test
     @Tag(REQUIRES_OPENSHIFT_ROUTE)
-    void testBasicConsoleReconciliationWithRoute() {
+    @ParameterizedTest
+    @CsvSource({
+        "'example.com', 'example.com'",
+        "             , 'my-console-generated.example.com'"
+    })
+    void testBasicConsoleReconciliationWithRoute(String consoleHostname, String routeHostname) {
         Console consoleCR = createConsole(new ConsoleBuilder()
                 .withNewSpec()
-                    .withHostname("example.com")
+                    .withHostname(consoleHostname)
                     .addNewKafkaCluster()
                         .withName(kafkaCR.getMetadata().getName())
                         .withNamespace(kafkaCR.getMetadata().getNamespace())
@@ -124,13 +129,20 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .endKafkaCluster()
                 .endSpec());
 
+        awaitDependentsNotReady(consoleCR, "ConsoleTrustBundle");
+        setConsoleTrustBundleContent(consoleCR);
+
+        awaitDependentsNotReady(consoleCR, "ConsoleRoute");
+        setConsoleRouteReady(consoleCR, routeHostname);
+
+        awaitDependentsNotReady(consoleCR, "ConsoleService");
+        createServingCertContent(consoleCR, ConsoleService.NAME);
+
         awaitDependentsNotReady(consoleCR, "ConsoleDeployment", "PrometheusDeployment");
         setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
         awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
 
         var consoleDeployment = setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
-        awaitDependentsNotReady(consoleCR, "ConsoleRoute");
-        setConsoleRouteReady(consoleCR);
         // Images were not set in CR, so assert that the defaults were used
         var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
 
@@ -1812,10 +1824,15 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .endKafkaCluster()
                 .endSpec());
 
+        awaitDependentsNotReady(consoleCR, "ConsoleTrustBundle");
+        setConsoleTrustBundleContent(consoleCR);
+
         awaitDependentsNotReady(consoleCR, "ConsoleDeployment", "PrometheusDeployment");
         setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
+
         awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
         setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+
         awaitDependentsNotReady(consoleCR, ConsoleRoute.NAME);
 
         // Verify the Route uses passthrough TLS termination (no insecureEdgeTerminationPolicy)

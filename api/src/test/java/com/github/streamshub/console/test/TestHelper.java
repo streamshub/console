@@ -202,6 +202,14 @@ public class TestHelper {
                 .withClientId("console-client")
                 .withClientSecret("console-client-secret")
                 .withAuthServerUrl(config.getValue("console.test.oidc-url", String.class))
+                /*
+                 * Forces the API server to use the base authServerUrl for JWKS and token end
+                 * points, regardless of what is returned from the discover end point. Since
+                 * Keycloak in these tests uses dynamic backchannel hostname/port, the override
+                 * in OidcDiscoveryResponseFilter is effectively a no-op, but nonetheless it
+                 * exercises the functionality.
+                 */
+                .withOverrideDiscoveredEndpoints()
                 .withIssuer(config.getValue("console.test.oidc-issuer", String.class))
                 // PKCE adds a code_verifier that must be carried through the redirect
                 // chain; disable it in tests to simplify the auth-code flow helper.

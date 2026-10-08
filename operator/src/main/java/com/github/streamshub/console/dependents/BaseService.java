@@ -46,6 +46,16 @@ abstract class BaseService extends CRUDKubernetesDependentResource<Service, Cons
             .build();
     }
 
+    /**
+     * Returns the name of the Secret that the OpenShift service CA controller
+     * will create for this Service's serving certificate, i.e.
+     * {@code <serviceInstanceName>-tls}. Matches the value set in the
+     * {@code service.beta.openshift.io/serving-cert-secret-name} annotation.
+     */
+    public String servingCertSecretName(Console primary) {
+        return instanceName(primary) + "-tls";
+    }
+
     protected abstract String appName(Console primary);
 
 }

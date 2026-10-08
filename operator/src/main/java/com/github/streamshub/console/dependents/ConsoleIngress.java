@@ -9,7 +9,10 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.dependents.support.ConfigSupport;
 
+import io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressPath;
+import io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressPathBuilder;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressLoadBalancerStatus;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressStatus;
@@ -32,6 +35,9 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     @Inject
     ConsoleService service;
 
+    @Inject
+    DexService dexService;
+
     public ConsoleIngress() {
         super(Ingress.class);
     }
@@ -48,7 +54,7 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
         int servicePort = tls ? 443 : 80;
         String serviceName = service.instanceName(primary);
 
-        return load(context, "console.ingress.yaml", Ingress.class)
+        var builder = load(context, "console.ingress.yaml", Ingress.class)
             .edit()
             .editMetadata()
                 .withName(instanceName(primary))
@@ -80,7 +86,27 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                                     .endPort()
                                 .endService()
                             .endBackend()
-                        .endPath()
+                        .endPath();
+
+        // When Dex is configured, add a /dex prefix path routing to the Dex service
+        if (ConfigSupport.dexIntegrationEnabled(primary)) {
+            HTTPIngressPath dexPath = new HTTPIngressPathBuilder()
+                    .withPath("/dex")
+                    .withPathType("Prefix")
+                    .withNewBackend()
+                        .withNewService()
+                            .withName(dexService.instanceName(primary))
+                            .withNewPort()
+                                .withNumber(5556)
+                            .endPort()
+                        .endService()
+                    .endBackend()
+                    .build();
+
+            builder = builder.addToPaths(dexPath);
+        }
+
+        return builder
                     .endHttp()
                 .endRule()
             .endSpec()
