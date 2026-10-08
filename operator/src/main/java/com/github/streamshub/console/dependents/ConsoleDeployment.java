@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,10 +35,15 @@ import com.github.streamshub.console.api.v1alpha1.spec.template.PodTemplate;
 import com.github.streamshub.console.api.v1alpha1.status.Condition.Reasons;
 import com.github.streamshub.console.api.v1alpha1.status.Condition.Types;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
+import com.github.streamshub.console.dependents.support.ConfigSupport;
 
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.IntOrString;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
+import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
@@ -50,6 +56,7 @@ public class ConsoleDeployment extends BaseDeployment {
 
     public static final String NAME = "console-deployment";
     static final String ALLOWED_IMAGE_PREFIXES = "console.deployment.allowed-image-prefixes";
+    private static final Predicate<ContainerBuilder> API_CONTAINER = c -> "console-api".equals(c.getName());
 
     @Inject
     Logger logger;
@@ -59,6 +66,12 @@ public class ConsoleDeployment extends BaseDeployment {
 
     @Inject
     ConsoleSecret secret;
+
+    @Inject
+    ConsoleTrustBundle trustBundle;
+
+    @Inject
+    ConsoleService service;
 
     @Inject
     @ConfigProperty(name = "console.deployment.default-api-image")
@@ -147,12 +160,15 @@ public class ConsoleDeployment extends BaseDeployment {
                 .or(() -> templateAPI.map(ContainerSpec::getResources))
                 .orElse(null);
 
-        boolean tls = primary.getSpec().getTls() != null;
+        // On OpenShift the service CA issues a serving cert for the API Service,
+        // enabling re-encrypt TLS termination. The pod must serve HTTPS in that case.
+        boolean servingCert = ConfigSupport.servingCertificateReencryptTLS(primary, context);
+        boolean tls = servingCert || ConfigSupport.userProvidedPassthroughTLS(primary);
         String portName = tls ? "https" : "http";
         int containerPort = tls ? 8443 : 8080;
         String probeScheme = tls ? "HTTPS" : "HTTP";
 
-        return desired.edit()
+        var edit = desired.edit()
             .editMetadata()
                 .withName(name)
                 .withNamespace(primary.getMetadata().getNamespace())
@@ -198,7 +214,7 @@ public class ConsoleDeployment extends BaseDeployment {
                             .endSecret()
                         .endVolume()
                         // Set API container image and port options
-                        .editMatchingContainer(c -> "console-api".equals(c.getName()))
+                        .editMatchingContainer(API_CONTAINER)
                             .withImage(image)
                             .withImagePullPolicy(imagePullPolicy)
                             .withResources(containerResources)
@@ -234,10 +250,65 @@ public class ConsoleDeployment extends BaseDeployment {
                         .endContainer()
                     .endSpec()
                 .endTemplate()
-            .endSpec()
-            .build();
+            .endSpec();
+
+        // On OpenShift, mount the service-CA-issued serving cert so Quarkus can
+        // terminate TLS for re-encrypt. The cert/key live at /etc/tls and are
+        // referenced by Quarkus TLS configuration. The CA bundle is mounted so the
+        // console can trust the (re-encrypt) HTTPS endpoint of Dex.
+        if (servingCert) {
+            edit = mountTrustBundle(primary, mountServingCert(primary, edit));
+        }
+
+        return edit.build();
     }
 
+    private DeploymentBuilder mountTrustBundle(Console primary, DeploymentBuilder edit) {
+        return edit
+                .editSpec()
+                .editTemplate()
+                    .editSpec()
+                        .addToVolumes(new VolumeBuilder()
+                            .withName("service-ca")
+                            .withNewConfigMap()
+                                .withName(trustBundle.instanceName(primary))
+                            .endConfigMap()
+                            .build())
+                        .editMatchingContainer(API_CONTAINER)
+                            .addToVolumeMounts(new VolumeMountBuilder()
+                                .withName("service-ca")
+                                .withMountPath(ConsoleTrustBundle.MOUNT_PATH)
+                                .withReadOnly(true)
+                                .build())
+                        .endContainer()
+                    .endSpec()
+                .endTemplate()
+            .endSpec();
+    }
+
+    private DeploymentBuilder mountServingCert(Console primary, DeploymentBuilder edit) {
+        return edit
+                .editSpec()
+                .editTemplate()
+                    .editSpec()
+                        .addToVolumes(new VolumeBuilder()
+                            .withName("tls")
+                            .withNewSecret()
+                                .withSecretName(service.servingCertSecretName(primary))
+                            .endSecret()
+                            .build())
+                        .editMatchingContainer(API_CONTAINER)
+                            .addToVolumeMounts(new VolumeMountBuilder()
+                                .withName("tls")
+                                .withMountPath("/etc/tls")
+                                .withReadOnly(true)
+                                .build())
+                        .endContainer()
+                    .endSpec()
+                .endTemplate()
+            .endSpec();
+    }
+    
     private static Map<String, String> merge(Map<String, String> required, Optional<Map<String, String>> configured) {
         Map<String, String> result = new LinkedHashMap<>(required);
         configured.ifPresent(values -> values.forEach(result::putIfAbsent));

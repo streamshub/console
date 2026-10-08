@@ -31,14 +31,19 @@ import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
+import com.github.streamshub.console.dependents.ConsoleTrustBundle;
+import com.github.streamshub.console.dependents.conditions.ServingCertReadyCondition;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.DeletionPropagation;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.Status;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
@@ -55,8 +60,8 @@ import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.dsl.Deletable;
 import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
+import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.Operator;
 import io.strimzi.api.kafka.model.common.Constants;
@@ -126,7 +131,7 @@ abstract class ConsoleReconcilerTestBase {
         Namespace ns = client.resource(new NamespaceBuilder()
                 .withNewMetadata()
                     .withName(name)
-                    .withLabels(Map.of("streamshub-operator/test", "true"))
+                    .withLabels(TEST_MANAGEMENT_LABEL)
                 .endMetadata()
                 .build())
             .serverSideApply();
@@ -139,7 +144,7 @@ abstract class ConsoleReconcilerTestBase {
 
     @SafeVarargs
     static void delete(FilterWatchListDeletable<?, ? extends KubernetesResourceList<?>, ?>... clients) {
-        Arrays.asList(clients).forEach(Deletable::delete);
+        Arrays.asList(clients).forEach(client -> client.withPropagationPolicy(DeletionPropagation.BACKGROUND).delete());
 
         try {
             await().atMost(Duration.ofSeconds(30)).until(() -> allItems(clients).isEmpty());
@@ -190,16 +195,19 @@ abstract class ConsoleReconcilerTestBase {
         var allKafkaUsers = client.resources(KafkaUser.class).inAnyNamespace();
         var allDeployments = client.resources(Deployment.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allConfigMaps = client.resources(ConfigMap.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
-        var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
+        var managedSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
+        var testSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(TEST_MANAGEMENT_LABEL);
+        var allServices = client.resources(Service.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allIngresses = client.resources(Ingress.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allRoleBindings = client.rbac().roleBindings().inAnyNamespace().withLabels(TEST_MANAGEMENT_LABEL);
         var allRoles = client.rbac().roles().inAnyNamespace().withLabels(TEST_MANAGEMENT_LABEL);
 
         delete(allConsoles, allKafkas, allKafkaUsers);
-        delete(allDeployments, allConfigMaps, allSecrets, allIngresses);
+        delete(allDeployments, allConfigMaps, managedSecrets, allServices, allIngresses);
+        delete(testSecrets);
         delete(allRoleBindings, allRoles);
 
-        if (!testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
+        if (testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
             try {
                 delete(client.resources(Route.class).inAnyNamespace());
             } catch (KubernetesClientException e) {
@@ -451,7 +459,9 @@ abstract class ConsoleReconcilerTestBase {
 
         builder = builder.withMetadata(meta);
 
-        return client.resource(builder.build()).create();
+        var resource = builder.build();
+        LOGGER.infof("Creating Console CR: %s", Cache.metaNamespaceKeyFunc(resource));
+        return client.resource(resource).create();
     }
 
     Console createConsole(ConsoleBuilder builder) {
@@ -537,6 +547,49 @@ abstract class ConsoleReconcilerTestBase {
         });
     }
 
+    void setConsoleTrustBundleContent(Console consoleCR) {
+        var name = "%s-%s".formatted(consoleCR.getMetadata().getName(), ConsoleTrustBundle.NAME);
+        var trustBundle = client.resources(ConfigMap.class)
+                .inNamespace(consoleCR.getMetadata().getNamespace())
+                .withName(name)
+                .get()
+                .edit()
+                .withData(Map.of(ConsoleTrustBundle.CA_BUNDLE_KEY, "ca-bundle content"))
+                .build();
+
+        client.resource(trustBundle).patch();
+        LOGGER.infof("Added %s entry to %s", ConsoleTrustBundle.CA_BUNDLE_KEY, name);
+    }
+
+    void createServingCertContent(Console consoleCR, String serviceName) {
+        var name = "%s-%s".formatted(consoleCR.getMetadata().getName(), serviceName);
+        var service = client.resources(Service.class)
+                .inNamespace(consoleCR.getMetadata().getNamespace())
+                .withName(name)
+                .get();
+
+        Map<String, String> annotations = service.getMetadata().getAnnotations();
+        String secretName = annotations != null ? annotations.get(ServingCertReadyCondition.ANNOTATION) : null;
+        Secret tlsSecret = new SecretBuilder()
+                .withNewMetadata()
+                    .withNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(secretName)
+                    .withLabels(TEST_MANAGEMENT_LABEL)
+                    .addNewOwnerReference()
+                        .withApiVersion(service.getApiVersion())
+                        .withKind(service.getKind())
+                        .withName(secretName)
+                        .withUid(service.getMetadata().getUid())
+                    .endOwnerReference()
+                .endMetadata()
+                .addToStringData("tls.crt", "serving TLS certificate")
+                .addToStringData("tls.key", "serving TLS private key")
+                .build();
+
+        client.resource(tlsSecret).create();
+        LOGGER.infof("Added TLS certificate and key to %s", name);
+    }
+
     void setConsoleIngressReady(Console consoleCR) {
         var consoleIngress = client.network().v1().ingresses()
                 .inNamespace(consoleCR.getMetadata().getNamespace())
@@ -557,6 +610,10 @@ abstract class ConsoleReconcilerTestBase {
     }
 
     void setConsoleRouteReady(Console consoleCR) {
+        setConsoleRouteReady(consoleCR, consoleCR.getSpec().getHostname());
+    }
+
+    void setConsoleRouteReady(Console consoleCR, String hostname) {
         var consoleRoute = client.resources(Route.class)
                 .inNamespace(consoleCR.getMetadata().getNamespace())
                 .withName("%s-console-route".formatted(consoleCR.getMetadata().getName()))
@@ -565,6 +622,7 @@ abstract class ConsoleReconcilerTestBase {
         consoleRoute = consoleRoute.edit()
                     .editOrNewStatus()
                         .addNewIngress()
+                            .withHost(hostname)
                             .addNewCondition()
                                 .withType("Admitted")
                                 .withStatus("True")
@@ -572,6 +630,7 @@ abstract class ConsoleReconcilerTestBase {
                         .endIngress()
                     .endStatus()
                     .build();
+
         client.resource(consoleRoute).patchStatus();
         LOGGER.info("Set route status for Console route");
     }
