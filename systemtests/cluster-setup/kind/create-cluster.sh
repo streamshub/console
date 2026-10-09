@@ -4,7 +4,7 @@
 # the whole exposure path actually works with a throwaway smoke test before
 # declaring success.
 #
-# This is the macOS-safe alternative to systemtests/scripts/setup-minikube.sh:
+# This is the macOS-safe alternative to minikube's ingress addon:
 # Docker Desktop / Podman Desktop / Colima all run the container engine
 # inside a VM, so a minikube node's IP (used by CI's `$(minikube ip).nip.io`)
 # isn't routable from the host. kind's extraPortMappings + ingress-nginx
@@ -14,7 +14,7 @@
 # fallback strategy if this ever stops working on a given machine.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./lib/env.sh
+source ./env.sh
 
 check_linux_rootless_podman_ip_tables
 
@@ -68,10 +68,10 @@ kubectl -n ingress-nginx wait --for=condition=ready pod \
   --selector=app.kubernetes.io/component=controller --timeout=600s
 
 # Strimzi's TLS-terminating "secure" Kafka listener needs SSL passthrough on
-# the ingress controller (matches systemtests/scripts/setup-minikube.sh) —
-# without it, ingress-nginx's worker processes crash once a Kafka secure
-# listener Ingress shows up (nginx.conf becomes invalid: "worker process
-# exited with fatal code 2 and cannot be respawned").
+# the ingress controller — without it, ingress-nginx's worker processes
+# crash once a Kafka secure listener Ingress shows up (nginx.conf becomes
+# invalid: "worker process exited with fatal code 2 and cannot be
+# respawned").
 if [ "$(kubectl get deployment -n ingress-nginx ingress-nginx-controller -ojson | \
         jq -r '.spec.template.spec.containers[0].args | index("--enable-ssl-passthrough")')" = "null" ]; then
   echo "Enabling SSL passthrough on ingress-nginx (required for Kafka's secure listener)..."

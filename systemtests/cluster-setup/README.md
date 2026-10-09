@@ -1,12 +1,15 @@
 # Cluster setup (local Kubernetes for systemtests)
 
 Provisions a local Kubernetes cluster for running the `console-operator`
-systemtests outside CI. Built primarily for macOS, where
-`systemtests/scripts/setup-minikube.sh` doesn't work (Docker Desktop /
-Podman Desktop / Colima all run the container engine inside a hidden VM, so
-a minikube node's IP — used by CI's `$(minikube ip).nip.io` — isn't
-reachable from the host), but the scripts themselves are OS-agnostic and
-work on Linux too.
+systemtests, for local dev and CI alike, on both macOS and Linux. Originally
+built as a macOS-only alternative to the project's old
+`systemtests/scripts/setup-minikube.sh` (Docker Desktop / Podman Desktop /
+Colima all run the container engine inside a hidden VM, so a minikube
+node's IP — used by CI's `$(minikube ip).nip.io` — wasn't reachable from
+the host there), it has since absorbed that script's role entirely: CI now
+calls directly into these scripts too, branching internally
+(`NEEDS_LOCAL_PORT_FORWARD` in `common/common.sh`) between macOS's
+port-forward-based exposure and Linux's direct node-IP access.
 
 **Container engine / driver**: auto-detected, and `kind/` and `minikube/`
 pick differently:
@@ -26,7 +29,7 @@ option — in practice it's needed real workarounds (the `ip_tables` kernel
 module requirement on Linux, PID-limit crashes under a full
 Kafka+Console workload, and rootless-mode failures reported directly
 against minikube). The podman-machine VM setup (`ensure_podman_machine`
-in `lib/env.sh`) only runs on macOS, where podman needs a VM to run
+in `common/common.sh`) only runs on macOS, where podman needs a VM to run
 containers at all — it's a no-op on Linux, which doesn't need one.
 
 ## Use kind
@@ -61,15 +64,16 @@ cluster-setup/
     setup-registry.sh      # local image registry, reachable from host and cluster
     load-images.sh         # push locally-built Console images to that registry
     delete-cluster.sh      # teardown (full, or --keep-cluster)
-    lib/env.sh             # shared config + podman-machine helpers
+    env.sh                 # shared config (sources common/common.sh)
   minikube/                # alternative
     create-cluster.sh      # create/reuse cluster + ingress addon, verify with a smoke test
     setup-registry.sh      # local image registry, reachable from host and cluster
     load-images.sh         # push locally-built Console images to that registry
     enable-tunnel.sh       # switch to portless access (needs sudo once)
     delete-cluster.sh      # teardown (full, or --keep-cluster)
-    lib/env.sh             # shared config + podman-machine helpers
+    env.sh                 # shared config (sources common/common.sh)
   common/                  # cluster-agnostic — works against either
+    common.sh                    # shared OS detection + podman-machine helpers (used by kind/minikube's env.sh)
     build-console.sh             # build Console images (API, operator, bundle, catalog) locally
     setup-catalogsource.sh       # install OLM + a CatalogSource
     deploy-example-console.sh    # Strimzi + Kafka + Console operator + Console instance
@@ -113,7 +117,10 @@ common/deploy-example-console.sh --catalog-image localhost:5000/streamshub/conso
 `create-cluster.sh` prints instead (e.g.
 `https://example-console.127.0.0.1.nip.io:8443/`). Run it if you want
 portless URLs, e.g. to match kind's behavior or for OIDC/auth flows that
-assume no port in the redirect URI.
+assume no port in the redirect URI. (This whole port-forward dance is
+macOS-only — on Linux, `minikube/create-cluster.sh` uses the minikube
+node's real IP directly, no port-forward and no `enable-tunnel.sh` needed;
+URLs are portless out of the box there.)
 
 Teardown: `./minikube/delete-cluster.sh` (or `--keep-cluster`).
 
@@ -131,7 +138,7 @@ and curling it over HTTP/HTTPS to confirm the whole path actually works
 before declaring the cluster ready — if that check fails, the script exits
 non-zero instead of claiming success.
 
-Env vars (all optional, see `kind/lib/env.sh`): `CONTAINER_ENGINE`
+Env vars (all optional, see `kind/env.sh`): `CONTAINER_ENGINE`
 (`podman`/`docker`), `CLUSTER_NAME`, `INGRESS_HTTP_PORT`/`INGRESS_HTTPS_PORT`,
 `CONSOLE_CLUSTER_DOMAIN`, `PODMAN_MACHINE_CPUS`/`PODMAN_MACHINE_MEMORY`
 (podman only, auto-sized from host resources on first-time machine init).
@@ -139,12 +146,22 @@ Env vars (all optional, see `kind/lib/env.sh`): `CONTAINER_ENGINE`
 ### `minikube/create-cluster.sh`
 
 Creates (or reuses) a minikube cluster with the `ingress` addon, patches in
-`--enable-ssl-passthrough`, then exposes it via a persistent background
-`kubectl port-forward` on non-privileged local ports (default
-`8080`/`8443`, override via `LOCAL_HTTP_PORT`/`LOCAL_HTTPS_PORT`) and
-verifies it the same way as kind's script. If the port-forward process
-dies, just re-run `create-cluster.sh` — it detects the dead PID and
-restarts it. Same env vars as kind's script.
+`--enable-ssl-passthrough`, then exposes it. On Linux, that means using the
+minikube node's real IP directly — no port-forward needed, since (unlike
+macOS's hidden-VM container engines) the node is directly reachable from
+the host. On macOS, it exposes it via a persistent background `kubectl
+port-forward` on non-privileged local ports (default `8080`/`8443`,
+override via `LOCAL_HTTP_PORT`/`LOCAL_HTTPS_PORT`); if that port-forward
+process dies, just re-run `create-cluster.sh` — it detects the dead PID and
+restarts it. Either way, it verifies the exposure path the same way as
+kind's script. Same env vars as kind's script, plus (for CI-style resource
+sizing — all optional, no-op unless set): `MINIKUBE_CPU_COUNT`,
+`MINIKUBE_MEMORY`, `MINIKUBE_DISK_SIZE`, `MINIKUBE_EXTRA_ADDONS`
+(comma-separated, appended to the base `ingress` addon),
+`MINIKUBE_INSECURE_REGISTRY`, and `MINIKUBE_EXTRA_CONFIG` (passed through
+to one or more `--extra-config` flags — **semicolon**-separated, not
+comma-separated, since a single `--extra-config` value like
+`apiserver.authorization-mode=RBAC,Node` legitimately contains a comma).
 
 ### `kind/setup-registry.sh` / `minikube/setup-registry.sh [--registry-port 5000]`
 
@@ -159,8 +176,7 @@ be genuinely pullable.
   pattern](https://kind.sigs.k8s.io/docs/user/local-registry/) — a
   `registry:2` container on the kind network, with each node's containerd
   pointed at it via a dropped-in `hosts.toml`.
-- `minikube/`: enables the built-in `registry` addon (same one
-  `systemtests/scripts/setup-minikube.sh` uses — its `registry-proxy`
+- `minikube/`: enables the built-in `registry` addon (its `registry-proxy`
   DaemonSet already makes `localhost:5000` resolve from every node) and
   exposes it to the host via a persistent `kubectl port-forward`, the same
   no-sudo approach `create-cluster.sh` uses for ingress.
@@ -169,8 +185,7 @@ be genuinely pullable.
 
 Pushes the images `common/build-console.sh` just built to the registry
 `setup-registry.sh` set up, via `skopeo copy --preserve-digests
---dest-tls-verify=false` (same mechanism `setup-minikube.sh` already uses).
-Two things that matter and aren't obvious:
+--dest-tls-verify=false`. Two things that matter and aren't obvious:
 
 - `--dest-tls-verify=false`, not `docker push`/`podman push`: the registry
   is plain HTTP, and getting a container engine to trust that for an
@@ -215,7 +230,8 @@ mechanism (port-forward or tunnel) is currently running.
 Builds the Console images (`console-api`, `console-operator`,
 `console-operator-bundle`, `console-operator-catalog`) from local source via
 Maven + the bundle/catalog build scripts under `operator/bin/` — mirrors the
-build half of `systemtests/scripts/setup-minikube.sh`. Nothing is pushed
+build half of the project's old `systemtests/scripts/setup-minikube.sh`.
+Nothing is pushed
 anywhere; images are tagged `<registry>/<group>/<image>:<tag>` and left in
 the local docker/podman daemon for `kind/load-images.sh` or
 `minikube/load-images.sh` to push on from there. `<tag>` defaults to the
@@ -231,7 +247,7 @@ adds the `--load` flag itself) and by passing `--load` directly on its own
 `docker build` calls for the bundle/catalog images. Podman isn't affected
 (no buildx involved).
 
-### `common/setup-catalogsource.sh --image <image> [--namespace olm] [--name strimzi-source]`
+### `common/setup-catalogsource.sh --image <image> [--namespace olm] [--name streamshub-console-catalog]`
 
 Installs OLM v0.45.0 if needed, then creates a `CatalogSource` pointed at
 `--image` and waits for it to report `READY`. Cluster-agnostic — works
@@ -239,18 +255,26 @@ against whatever context is currently active.
 
 ### `common/deploy-example-console.sh --catalog-image <image> [options]`
 
-Deploys everything else in one shot: Strimzi (Helm), the Console operator
-(via the CatalogSource from `setup-catalogsource.sh`), a Kafka cluster, and
-a Console instance — using the project's own `examples/kafka/*.yaml` and
+Deploys everything else in one shot: Strimzi (via an OLM Subscription,
+channel derived from this repo's `strimzi-api.version` — same mechanism
+`playwright-tests.yml` uses, not Helm), the Console operator (via the
+CatalogSource from `setup-catalogsource.sh`), a Kafka cluster, and a
+Console instance — using the project's own `examples/kafka/*.yaml` and
 `examples/console/010-Console-example.yaml` quickstart manifests. Options:
 
 ```
 --catalog-image        (required)
 --catalog-namespace    default: olm
---catalog-name         default: strimzi-source
+--catalog-name         default: streamshub-console-catalog
 --channel              default: alpha
---operator-namespace   default: co-namespace
---strimzi-version      default: 0.51.0   (must match your console-operator build)
---kafka-namespace      default: kafka
---listener             default: scramplain
+--operator-namespace   default: operators
+--kafka-namespace      default: console-namespace
+--listener             default: scramplain  (macOS only — see below)
 ```
+
+On Linux, Console talks to Kafka over the example's default `secure`
+ingress listener directly (the node IP is reachable in-cluster, same as
+the host). On macOS, Console is instead pointed at an internal listener
+(`--listener`, patched in alongside the Kafka cluster) since the `secure`
+listener's hostname is only reachable from the host's port-forward, not
+from pods running inside the cluster.

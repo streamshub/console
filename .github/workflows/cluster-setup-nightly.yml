@@ -1,0 +1,121 @@
+name: Nightly Cluster Setup Smoke Test
+
+# Runs smoketest script steps:
+# * Build Console images from source
+# * Load them into a local registry
+# * Deploy Strimzi + Kafka + the Console operator + a Console instance
+
+# So that the regression in these scripts (or the build scripts they call from operator/bin/)
+# is caught overnight instead of the next time someone reaches for them.
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  minikube-smoke-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CONTAINER_ENGINE: docker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set Up JDK
+        uses: actions/setup-java@v6
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven Packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Fetch Operator Framework Utilities (operator-sdk, opm)
+        run: ./operator/bin/fetch-operator-utilities.sh
+
+      - name: Create minikube cluster
+        working-directory: systemtests/cluster-setup
+        env:
+          MINIKUBE_CPU_COUNT: '2'
+          MINIKUBE_MEMORY: '2g'
+        run: ./minikube/create-cluster.sh
+
+      - name: Set up local registry
+        working-directory: systemtests/cluster-setup
+        run: ./minikube/setup-registry.sh
+
+      - name: Build Console images from source
+        working-directory: systemtests/cluster-setup
+        run: ./common/build-console.sh
+
+      - name: Load images into registry
+        working-directory: systemtests/cluster-setup
+        run: ./minikube/load-images.sh
+
+      - name: Deploy Strimzi, Console operator, Kafka, and Console instance
+        working-directory: systemtests/cluster-setup
+        run: |
+          TAG=$(cd ../.. && mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
+          ./common/deploy-example-console.sh --catalog-image "localhost:5000/streamshub/console-operator-catalog:${TAG}"
+
+      - name: Verify pods are healthy
+        run: |
+          set -euo pipefail
+          failed=0
+          for ns in operators console-namespace olm; do
+            echo "=== Pods in ${ns} ==="
+            kubectl get pods -n "${ns}" -o wide
+
+            unhealthy=$(kubectl get pods -n "${ns}" -o json | jq -r '
+              .items[]
+              | select(
+                  (.status.phase != "Running" and .status.phase != "Succeeded")
+                  or ((.status.containerStatuses // []) | any(.ready == false))
+                )
+              | .metadata.name')
+
+            if [ -n "${unhealthy}" ]; then
+              echo "Unhealthy pod(s) in ${ns}: ${unhealthy}" >&2
+              failed=1
+            fi
+          done
+          exit "${failed}"
+
+      - name: Check Console UI is reachable
+        working-directory: systemtests/cluster-setup
+        run: |
+          set -euo pipefail
+          source minikube/.cluster-env
+          url="https://example-console.${CONSOLE_CLUSTER_DOMAIN}/"
+          echo "Checking ${url}"
+          status=$(curl -sk -o /tmp/console.html -w '%{http_code}' --max-time 15 "${url}")
+          echo "HTTP status: ${status}"
+          [ "${status}" = "200" ]
+          grep -q "StreamsHub Console" /tmp/console.html
+
+      - name: Collect diagnostics on failure
+        if: failure()
+        run: |
+          echo "=== All pods ==="
+          kubectl get pods -A -o wide || true
+          echo "=== Recent events ==="
+          kubectl get events -A --sort-by=.lastTimestamp || true
+          for ns in operators console-namespace olm; do
+            echo "=== Pod descriptions in ${ns} ==="
+            kubectl describe pods -n "${ns}" || true
+            echo "=== Pod logs in ${ns} ==="
+            for pod in $(kubectl get pods -n "${ns}" -o name 2>/dev/null); do
+              echo "--- ${pod} ---"
+              kubectl logs -n "${ns}" "${pod}" --all-containers --tail=200 || true
+            done
+          done
