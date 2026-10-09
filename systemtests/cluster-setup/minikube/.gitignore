@@ -3,3 +3,5 @@
 .port-forward.log
 .tunnel.pid
 .tunnel.log
+.registry-port-forward.pid
+.registry-port-forward.log
