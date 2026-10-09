@@ -34,6 +34,10 @@ if [ "${KEEP_CLUSTER}" = false ]; then
   echo "Deleting kind cluster '${CLUSTER_NAME}' (full teardown)..."
   kind delete cluster --name "${CLUSTER_NAME}"
   rm -f "${CLUSTER_ENV_FILE}"
+  if "${CONTAINER_ENGINE}" inspect "${CLUSTER_NAME}-registry" >/dev/null 2>&1; then
+    echo "Removing registry container '${CLUSTER_NAME}-registry'..."
+    "${CONTAINER_ENGINE}" rm -f "${CLUSTER_NAME}-registry" >/dev/null
+  fi
   echo "Done."
   exit 0
 fi
