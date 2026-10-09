@@ -54,6 +54,8 @@ PORT_FORWARD_PID_FILE="${CLUSTER_ROOT}/.port-forward.pid"
 PORT_FORWARD_LOG_FILE="${CLUSTER_ROOT}/.port-forward.log"
 TUNNEL_PID_FILE="${CLUSTER_ROOT}/.tunnel.pid"
 TUNNEL_LOG_FILE="${CLUSTER_ROOT}/.tunnel.log"
+REGISTRY_PORT_FORWARD_PID_FILE="${CLUSTER_ROOT}/.registry-port-forward.pid"
+REGISTRY_PORT_FORWARD_LOG_FILE="${CLUSTER_ROOT}/.registry-port-forward.log"
 
 # Podman machine sizing (only relevant on macOS, where podman needs a VM to
 # run containers at all — native Linux podman doesn't). Same logic as

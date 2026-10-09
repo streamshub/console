@@ -135,7 +135,7 @@ if [[ -n "$SKIP_RANGE" ]]; then
     ${YQ} eval -o yaml -i ".metadata.annotations.[\"olm.skipRange\"] = \"${SKIP_RANGE}\"" "${CSV_FILE_PATH}"
 fi
 
-${YQ} -i '.spec.icon = [{ "base64data": "'$(base64 -w0 ${SCRIPT_PATH}/../src/main/olm/icon.png)'", "mediatype": "image/png" }]' "${CSV_FILE_PATH}"
+${YQ} -i '.spec.icon = [{ "base64data": "'$(base64 < ${SCRIPT_PATH}/../src/main/olm/icon.png | tr -d '\n')'", "mediatype": "image/png" }]' "${CSV_FILE_PATH}"
 
 # Remove route.openshift.io from nativeAPIs - it's an optional OpenShift-only API
 # and must not be a hard OLM install requirement on plain Kubernetes

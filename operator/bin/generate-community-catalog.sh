@@ -46,7 +46,7 @@ main () {
 
         CSV_FILE_PATH="${COMMUNITY_CATALOG_PATH}/${VERSION}/manifests/*.clusterserviceversion.yaml"
         ${YQ} -i '.spec.replaces = "'$(replaces ${CSV_NAME})'"' ${CSV_FILE_PATH}
-        ${YQ} -i '.spec.icon = [{ "base64data": "'$(base64 -w0 ${SCRIPT_PATH}/../src/main/olm/icon.png)'", "mediatype": "image/png" }]' ${CSV_FILE_PATH}
+        ${YQ} -i '.spec.icon = [{ "base64data": "'$(base64 < ${SCRIPT_PATH}/../src/main/olm/icon.png | tr -d '\n')'", "mediatype": "image/png" }]' ${CSV_FILE_PATH}
         ${YQ} -i '.annotations["operators.operatorframework.io.bundle.channels.v1"] = "'$(channels ${CSV_NAME})'"' ${COMMUNITY_CATALOG_PATH}/${VERSION}/metadata/annotations.yaml
         operator-sdk bundle validate "${COMMUNITY_CATALOG_PATH}/${VERSION}" --select-optional name=operatorhub
     done

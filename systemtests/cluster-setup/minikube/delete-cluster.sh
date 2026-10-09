@@ -37,6 +37,14 @@ if [ -f "${PORT_FORWARD_PID_FILE}" ]; then
   rm -f "${PORT_FORWARD_PID_FILE}" "${PORT_FORWARD_LOG_FILE}"
 fi
 
+if [ -f "${REGISTRY_PORT_FORWARD_PID_FILE}" ]; then
+  pid=$(cat "${REGISTRY_PORT_FORWARD_PID_FILE}")
+  if kill "${pid}" 2>/dev/null; then
+    echo "Stopped registry port-forward (pid ${pid})"
+  fi
+  rm -f "${REGISTRY_PORT_FORWARD_PID_FILE}" "${REGISTRY_PORT_FORWARD_LOG_FILE}"
+fi
+
 if [ -f "${TUNNEL_PID_FILE}" ]; then
   pid=$(cat "${TUNNEL_PID_FILE}")
   # The tunnel runs as root (via sudo), so a plain `kill` from this
