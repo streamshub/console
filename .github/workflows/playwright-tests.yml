@@ -32,97 +32,53 @@ jobs:
       - name: Fetch Operator Framework Utilities
         run: ./operator/bin/fetch-operator-utilities.sh
 
-      - name: Setup Minikube Environment
+      - name: Install skopeo
         run: |
-          # Needed for skopeo in setup-minikube.sh script
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          
-          # Needed to copy locally built images to minikube registry
-          sudo apt-get install -y socat
-          
-          # Execute the setup
-          MINIKUBE_CPU_COUNT=2 MINIKUBE_MEMORY=8g MINIKUBE_DRIVER=docker ./systemtests/scripts/setup-minikube.sh
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+      - name: Install minikube
+        run: |
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/minikube
+
+      - name: Create minikube cluster
+        working-directory: systemtests/cluster-setup
+        env:
+          MINIKUBE_CPU_COUNT: '2'
+          MINIKUBE_MEMORY: '8g'
+          MINIKUBE_EXTRA_ADDONS: 'storage,ingress-dns,metrics-server'
+          MINIKUBE_INSECURE_REGISTRY: 'localhost:5000,10.0.0.0/24'
+          MINIKUBE_EXTRA_CONFIG: 'kubeadm.ignore-preflight-errors=SystemVerification;apiserver.authorization-mode=RBAC,Node'
+        run: ./minikube/create-cluster.sh
+
+      - name: Set up local registry
+        working-directory: systemtests/cluster-setup
+        run: ./minikube/setup-registry.sh
+
+      - name: Build Console images from source
+        working-directory: systemtests/cluster-setup
+        run: ./common/build-console.sh
+
+      - name: Load images into registry
+        working-directory: systemtests/cluster-setup
+        run: ./minikube/load-images.sh
 
       - name: Set Dynamic Environment Vars
         run: |
           echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          echo "CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
-          echo "CONSOLE_URL=https://example-console.$(minikube ip).nip.io" >> $GITHUB_ENV
+          source systemtests/cluster-setup/minikube/.cluster-env
+          echo "CLUSTER_DOMAIN=${CONSOLE_CLUSTER_DOMAIN}" >> $GITHUB_ENV
+          echo "CONSOLE_URL=https://example-console.${CONSOLE_CLUSTER_DOMAIN}" >> $GITHUB_ENV
 
-      # replace with resources in docs PR
-      - name: Install Operators
+      - name: Deploy Strimzi, Console operator, Kafka, and Console instance
+        working-directory: systemtests/cluster-setup
         run: |
-          set -x
-          # Create the namespace for the test resources
-          kubectl create namespace $TARGET_NAMESPACE
-
-          # Create the CatalogSource with the Console operator bundle
-          yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
-            ./install/operator/olm/010-CatalogSource-console-operator-catalog.yaml \
-            | kubectl apply -n olm -f -
-
-          kubectl wait catalogsource/streamshub-console-catalog -n olm \
-            --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
-            --timeout=180s
-
-          STRIMZI_CHANNEL="strimzi-$(mvn help:evaluate -Dexpression=strimzi-api.version -q -DforceStdout | awk -F. '{ print $1"."$2 }').x"
-
-          # Install Strimzi Operator
-          echo '---
-            apiVersion: operators.coreos.com/v1alpha1
-            kind: Subscription
-            metadata:
-              name: strimzi-kafka-operator
-            spec:
-              channel: '${STRIMZI_CHANNEL}'
-              name: strimzi-kafka-operator
-              source: operatorhubio-catalog
-              sourceNamespace: olm' | kubectl apply -n operators -f -
-
-          # Install Console Operator
-          yq ea '.spec.sourceNamespace = "olm"' ./install/operator/olm/020-Subscription-console-operator.yaml \
-            | kubectl apply -n operators -f -
-
-          wait_operator() {
-            local OPERATOR=${1}
-
-            while [ $(kubectl get deployment --selector=operators.coreos.com/${OPERATOR}.operators -n operators -o name | wc -l) -lt 1 ] ; do
-              echo "Waiting for Deployment ${OPERATOR} to be present"
-              sleep 5
-            done
-
-            local OPERATOR_DEPLOYMENT=$(kubectl get deployment --selector=operators.coreos.com/${OPERATOR}.operators -n operators -o name | tail -1)
-            echo "Found Operator Deployment: ${OPERATOR_DEPLOYMENT}, waiting for condition 'Available'"
-            kubectl wait ${OPERATOR_DEPLOYMENT} --for=condition=available --timeout=180s -n operators
-          }
-
-          export -f wait_operator
-          timeout 300s bash -c 'wait_operator "strimzi-kafka-operator"'
-          timeout 300s bash -c 'wait_operator "streamshub-console-operator"'
-
-      # replace with resources in docs PR
-      - name: Deploy Kafka Cluster & Console
-        run: |
-          set -x
-
-          export LISTENER_TYPE=ingress
-          cat examples/kafka/*.yaml | envsubst | kubectl apply -n ${TARGET_NAMESPACE} -f -
-
-          kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
-          kubectl wait kafkauser/console-kafka-user1 --for=condition=Ready --timeout=60s -n $TARGET_NAMESPACE
-
-          # Display the resource
-          export KAFKA_NAMESPACE="${TARGET_NAMESPACE}"
-
-          cat examples/console/010-Console-example.yaml | envsubst && echo
-
-          # Apply the resource
-          cat examples/console/010-Console-example.yaml | envsubst | kubectl apply -n ${TARGET_NAMESPACE} -f -
-
-          kubectl wait console/example --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
-
-          # Sleep to ensure ingress fully available
-          sleep 10
+          ./common/deploy-example-console.sh \
+            --catalog-image "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}" \
+            --kafka-namespace "${TARGET_NAMESPACE}"
 
       - name: Console Smoke Test
         run: |

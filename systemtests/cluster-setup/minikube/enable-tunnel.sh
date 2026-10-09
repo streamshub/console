@@ -15,7 +15,7 @@
 # Usage: ./enable-tunnel.sh
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./lib/env.sh
+source ./env.sh
 
 if [ -f "${PORT_FORWARD_PID_FILE}" ]; then
   pid=$(cat "${PORT_FORWARD_PID_FILE}")
