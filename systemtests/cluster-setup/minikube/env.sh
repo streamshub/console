@@ -3,6 +3,37 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/common.sh"
 
+# Installs minikube from the official release binary for the detected
+# OS/arch. Used by ensure_installed below so every minikube/*.sh script
+# self-installs minikube on first use, matching what CI used to do as a
+# separate "Install minikube" step.
+install_minikube() {
+  local os arch url
+
+  case "${OS_NAME}" in
+    Darwin) os=darwin ;;
+    Linux)  os=linux ;;
+  esac
+
+  case "$(uname -m)" in
+    arm64|aarch64) arch=arm64 ;;
+    x86_64|amd64)  arch=amd64 ;;
+    *)
+      echo "Unsupported architecture for minikube auto-install: $(uname -m)." >&2
+      echo "Install minikube manually: https://minikube.sigs.k8s.io/docs/start/" >&2
+      exit 1
+      ;;
+  esac
+
+  url="https://storage.googleapis.com/minikube/releases/latest/minikube-${os}-${arch}"
+  echo "Downloading minikube from ${url}..."
+  curl -Lo /tmp/minikube "${url}"
+  chmod +x /tmp/minikube
+  sudo mv /tmp/minikube /usr/local/bin/minikube
+}
+
+ensure_installed minikube install_minikube
+
 # Auto-detect the minikube driver if not explicitly set. Minikube's own
 # driver docs (https://minikube.sigs.k8s.io/docs/drivers/) list docker as
 # preferred on both platforms; podman is still marked experimental on

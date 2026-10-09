@@ -20,6 +20,7 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 source ./env.sh
+ensure_installed skopeo install_skopeo
 
 REGISTRY="${IMAGE_REGISTRY:-localhost:5000}"
 GROUP="${IMAGE_GROUP:-streamshub}"

@@ -54,6 +54,38 @@ detect_default_memory_mb() {
 PODMAN_MACHINE_CPUS="${PODMAN_MACHINE_CPUS:-$(detect_default_cpus)}"
 PODMAN_MACHINE_MEMORY="${PODMAN_MACHINE_MEMORY:-$(detect_default_memory_mb)}"
 
+# Checks whether a command is available in PATH; if not, runs the given
+# installer function. Generic by design — callers provide their own
+# tool-specific installer (see install_skopeo below, or minikube/env.sh's
+# install_minikube).
+ensure_installed() {
+  local bin="$1" installer="$2"
+  if command -v "${bin}" >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "'${bin}' not found in PATH, installing..."
+  "${installer}"
+}
+
+# Installs skopeo — needed by both kind/load-images.sh and
+# minikube/load-images.sh to push built images into the local registry.
+# On Linux, also applies the AppArmor tweak skopeo needs to actually work
+# on Ubuntu 24.04+ runners (restricts unprivileged user namespaces, which
+# skopeo uses) — folded in here rather than left as a separate CI step,
+# since it's specifically a "make skopeo work" concern, not a general one.
+install_skopeo() {
+  case "${OS_NAME}" in
+    Darwin)
+      brew install skopeo
+      ;;
+    Linux)
+      sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      sudo apt-get update
+      sudo apt-get install -y skopeo
+      ;;
+  esac
+}
+
 # Ensures a podman machine exists and is running — but only on macOS.
 # Native Linux podman talks to the local system directly; there's no VM to
 # create or manage, so this is a no-op there regardless of CONTAINER_ENGINE.

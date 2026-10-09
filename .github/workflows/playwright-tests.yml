@@ -32,18 +32,6 @@ jobs:
       - name: Fetch Operator Framework Utilities
         run: ./operator/bin/fetch-operator-utilities.sh
 
-      - name: Install skopeo
-        run: |
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          sudo apt-get update
-          sudo apt-get install -y skopeo
-
-      - name: Install minikube
-        run: |
-          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          chmod +x minikube
-          sudo mv minikube /usr/local/bin/minikube
-
       - name: Create minikube cluster
         working-directory: systemtests/cluster-setup
         env:
