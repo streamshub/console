@@ -289,10 +289,18 @@
       "partitionPlaceholder": "All partitions",
       "partitionOption": "Partition {{value}}",
       "selectPartitionAriaLabel": "Specify partition",
+      "fetchFrom": {
+        "latest": "Latest",
+        "last5": "Last 5 minutes",
+        "last10": "Last 10 minutes",
+        "last15": "Last 15 minutes",
+        "offset": "Offset",
+        "timestamp": "Timestamp"
+      },
       "advancedSearch": {
         "dialogLabel": "Search messages",
         "hasTheWords": "Has the words",
-        "queryHelper": "Enter your search terms to find matches within the selected field. Wildcards and regular expressions are not required or supported.",
+        "queryHelper": "Enter search term...",
         "inPartition": "In partition",
         "search": "Search",
         "reset": "Reset",
