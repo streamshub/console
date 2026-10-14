@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests.kroxylicious;
 
+import com.github.streamshub.console.config.ClusterKind;
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
@@ -112,6 +113,7 @@ public class KroxyST extends AbstractST {
                         .withId(tcc.virtualKafkaClusterName())
                         .withName(tcc.virtualKafkaClusterName())
                         .withNamespace(tcc.namespace())
+                        .withKind(ClusterKind.KROXYLICIOUS_VIRTUAL_KAFKA_CLUSTER)
                         .withNewProperties()
                             .addNewValue()
                                 .withName(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)

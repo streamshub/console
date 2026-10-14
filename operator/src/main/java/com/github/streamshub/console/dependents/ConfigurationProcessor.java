@@ -833,6 +833,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         kcConfig.setNamespace(namespace);
         kcConfig.setName(name);
         kcConfig.setListener(listenerName);
+        kcConfig.setKind(kafkaRef.getKind());
         kcConfig.setSchemaRegistry(kafkaRef.getSchemaRegistry());
 
         if (kafkaRef.getMetricsSource() == null) {

@@ -26,6 +26,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.authentication.OIDC;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
+import com.github.streamshub.console.config.ClusterKind;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.TrustStoreConfig;
@@ -736,6 +737,44 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals("x-admin-prop-value", kafkaConfig.getAdminProperties().get("x-admin-prop-name"));
             assertEquals("x-consumer-prop-value", kafkaConfig.getConsumerProperties().get("extra-x-consumer-prop-name"));
             assertEquals("x-producer-prop-value", kafkaConfig.getProducerProperties().get("x-producer-prop-name"));
+        });
+    }
+
+    @Test
+    void testConsoleReconciliationPropagatesClusterKind() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName("virtual-cluster")
+                        .withKind(ClusterKind.KROXYLICIOUS_VIRTUAL_KAFKA_CLUSTER)
+                        .withNewProperties()
+                            .addNewValue()
+                                .withName(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
+                                .withValue("virtual-cluster-bootstrap.example.com:9292")
+                            .endValue()
+                        .endProperties()
+                    .endKafkaCluster()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        assertConsoleConfig(consoleConfig -> {
+            var clusters = consoleConfig.getKafka().getClusters();
+            // The virtual cluster carries the kind set on the CR...
+            assertEquals(ClusterKind.KROXYLICIOUS_VIRTUAL_KAFKA_CLUSTER, clusters.get(0).getKind());
+            // ...while a cluster with no kind set remains null (and is omitted from the YAML).
+            assertNull(clusters.get(1).getKind());
         });
     }
 
