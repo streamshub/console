@@ -24,6 +24,7 @@ import {
   ToolbarContent,
   ToolbarItem,
   Tooltip,
+  ToolbarGroup,
 } from '@patternfly/react-core';
 import { ExclamationCircleIcon, ColumnsIcon } from '@patternfly/react-icons';
 import { useMessages } from '@/api/hooks/useMessages';
@@ -34,7 +35,7 @@ import { MessagesTable } from '@/components/kafka/topics/MessagesTable';
 import { MessageDetails } from '@/components/kafka/topics/MessageDetails';
 import { AdvancedSearch } from '@/components/kafka/topics/AdvancedSearch';
 import { Column, ColumnsModal } from '@/components/kafka/topics/ColumnsModal';
-import { FromOptions } from '@/components/kafka/topics/TopicsFilter/FetchFromSelector';
+import { FromOptions } from '@/components/kafka/topics/MessageFilter/FetchFromSelector';
 
 const defaultColumns: Column[] = [
   'offset-partition',
@@ -84,6 +85,7 @@ export function TopicMessagesTab() {
   const epochParam = searchParams.get('epoch');
   const epoch = epochParam ? parseInt(epochParam) : undefined;
   const [showColumnsModal, setShowColumnsModal] = useState(false);
+  const [resetCount, setResetCount] = useState(0);
 
   // Fetch topic info to get partition count
   const { data: topic, isLoading: isLoadingTopic } = useTopic(
@@ -192,6 +194,7 @@ export function TopicMessagesTab() {
 
   const handleReset = useCallback(() => {
     setSearchParams(new URLSearchParams());
+    setResetCount((c) => c + 1);
   }, [setSearchParams]);
 
   // Load saved column preferences from localStorage
@@ -270,19 +273,25 @@ export function TopicMessagesTab() {
 
               <Toolbar>
                 <ToolbarContent>
-                  <ToolbarItem style={{ flex: 1, maxWidth: '700px' }}>
-                    <AdvancedSearch
-                      partitions={partitions}
-                      filterQuery={query}
-                      filterWhere={where}
-                      filterPartition={partition}
-                      filterOffset={offset}
-                      filterLimit={limit}
-                      filterFrom={filterFrom}
-                      onSearch={handleSearch}
-                    />
-                  </ToolbarItem>
                   <ToolbarItem>
+                    <ToolbarGroup>
+                      <AdvancedSearch
+                        partitions={partitions}
+                        filterQuery={query}
+                        filterWhere={where}
+                        filterPartition={partition}
+                        filterOffset={offset}
+                        filterLimit={limit}
+                        filterFrom={filterFrom}
+                        onSearch={handleSearch}
+                        key={resetCount}
+                        filterTimestamp={
+                          filterFrom === 'timestamp' ? timestamp : undefined
+                        }
+                      />
+                    </ToolbarGroup>
+                  </ToolbarItem>
+                  <ToolbarItem alignItems="end">
                     <Tooltip content={t('topics.messages.manage_columns')}>
                       <Button
                         variant="plain"

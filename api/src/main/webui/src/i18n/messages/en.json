@@ -272,6 +272,12 @@
         "valueFormat": "Value format"
       },
       "filter": {
+        "hasTheWords": "Has the words",
+        "partition": "Partition",
+        "fetchFrom": "Fetch from",
+        "limit": "limit",
+        "search": "Search",
+        "timestamp": "Timestamp",
         "epoch": "From Unix timestamp",
         "epochAriaLabel": "Specify Unix timestamp",
         "epochPlaceholder": "Specify Unix timestamp",
@@ -279,7 +285,6 @@
         "offset": "From offset",
         "offsetAriaLabel": "Specify offset",
         "offsetPlaceholder": "Specify offset",
-        "timestamp": "From timestamp",
         "timestampAriaLabel": "Specify timestamp"
       },
       "tooltip": {
@@ -299,7 +304,6 @@
       },
       "advancedSearch": {
         "dialogLabel": "Search messages",
-        "hasTheWords": "Has the words",
         "queryHelper": "Enter search term...",
         "inPartition": "In partition",
         "search": "Search",
