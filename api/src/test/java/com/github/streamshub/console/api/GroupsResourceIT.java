@@ -108,6 +108,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @QuarkusTest
@@ -303,11 +304,13 @@ class GroupsResourceIT {
 
     @Test
     void testListConsumerGroupsWithTwoAssignments() {
-        String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
 
-        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+        try (var consumer = groupUtils.consume(group1, client1, 2, 1)) {
+            await().atMost(10, TimeUnit.SECONDS)
+                .until(() -> GroupState.STABLE == groupUtils.consumerGroupState(group1));
+
             whenRequesting(req -> req
                     .param("fields[groups]", "simpleConsumerGroup,"
                             + "state,"
@@ -320,7 +323,7 @@ class GroupsResourceIT {
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(1))
-                .body("data[0].attributes.state", is(notNullValue(String.class)))
+                .body("data[0].attributes.state", is("STABLE"))
                 .body("data[0].attributes.simpleConsumerGroup", is(notNullValue(Boolean.class)))
                 .body("data[0].attributes.coordinator.id", is("0"))
                 .body("data[0].attributes.authorizedOperations.size()", is(greaterThanOrEqualTo(1)))
@@ -574,7 +577,7 @@ class GroupsResourceIT {
             KafkaFutureImpl<Map<TopicPartition, OffsetAndMetadata>> failure = new KafkaFutureImpl<>();
             failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
 
-            ListConsumerGroupOffsetsResult resultMock = Mockito.mock(ListConsumerGroupOffsetsResult.class);
+            ListConsumerGroupOffsetsResult resultMock = mock(ListConsumerGroupOffsetsResult.class);
 
             doAnswer(partitionsToOffsetAndMetadataArgs -> failure)
                 .when(resultMock)
@@ -614,7 +617,7 @@ class GroupsResourceIT {
             KafkaFutureImpl<Map<TopicPartition, SharePartitionOffsetInfo>> failure = new KafkaFutureImpl<>();
             failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
 
-            ListShareGroupOffsetsResult resultMock = Mockito.mock(ListShareGroupOffsetsResult.class);
+            ListShareGroupOffsetsResult resultMock = mock(ListShareGroupOffsetsResult.class);
 
             doAnswer(partitionsToOffsetInfoArgs -> failure)
                 .when(resultMock)
@@ -659,7 +662,7 @@ class GroupsResourceIT {
             KafkaFutureImpl<Map<TopicPartition, OffsetAndMetadata>> failure = new KafkaFutureImpl<>();
             failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
 
-            ListStreamsGroupOffsetsResult result = Mockito.mock(ListStreamsGroupOffsetsResult.class);
+            ListStreamsGroupOffsetsResult result = mock(ListStreamsGroupOffsetsResult.class);
             when(result.partitionsToOffsetAndMetadata(group1)).thenReturn(failure);
             return result;
         };
@@ -710,6 +713,9 @@ class GroupsResourceIT {
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+            await().atMost(10, TimeUnit.SECONDS)
+                .until(() -> GroupState.STABLE == groupUtils.consumerGroupState(group1));
+
             whenRequesting(req -> req
                     .param("fields[groups]", "offsets")
                     .get("{groupId}", clusterId1, group1Id))

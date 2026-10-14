@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -400,6 +401,19 @@ public class ConsumerUtils {
                 .clientId(clientId)
                 .messagesPerTopic(1)
                 .autoClose(autoClose)
+                .consume()
+                .consumer();
+    }
+
+    @SuppressWarnings("unchecked")
+    public Consumer<String, String> consume(String groupId, String clientId, int numPartitions, int messagesPerPartition) {
+        String topicName = "t1-" + UUID.randomUUID().toString();
+        return (Consumer<String, String>) request(ConsumerType.CLASSIC)
+                .groupId(groupId)
+                .topic(topicName, numPartitions)
+                .clientId(clientId)
+                .messagesPerTopic(numPartitions * messagesPerPartition)
+                .autoClose(false)
                 .consume()
                 .consumer();
     }
