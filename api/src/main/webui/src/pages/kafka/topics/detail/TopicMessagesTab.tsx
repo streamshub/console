@@ -34,6 +34,7 @@ import { MessagesTable } from '@/components/kafka/topics/MessagesTable';
 import { MessageDetails } from '@/components/kafka/topics/MessageDetails';
 import { AdvancedSearch } from '@/components/kafka/topics/AdvancedSearch';
 import { Column, ColumnsModal } from '@/components/kafka/topics/ColumnsModal';
+import { FromOptions } from '@/components/kafka/topics/TopicsFilter/FetchFromSelector';
 
 const defaultColumns: Column[] = [
   'offset-partition',
@@ -53,6 +54,20 @@ export function TopicMessagesTab() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Parse search params
+  const fromParam = searchParams.get('from');
+  const validFromOptions: FromOptions[] = [
+    'latest',
+    'last5',
+    'last10',
+    'last15',
+    'offset',
+    'timestamp',
+  ];
+
+  const filterFrom: FromOptions | undefined =
+    fromParam && validFromOptions.includes(fromParam as FromOptions)
+      ? (fromParam as FromOptions)
+      : undefined;
   const retrieveParam = searchParams.get('retrieve');
   const limit =
     retrieveParam === 'continuously'
@@ -119,11 +134,15 @@ export function TopicMessagesTab() {
   }, [selectedMessageId, messages]);
 
   const handleSearch = useCallback(
-    (params: SearchParams) => {
+    (params: SearchParams, selectedFrom: FromOptions) => {
       const newParams = new URLSearchParams();
+
+      // Preserve the selected Fetch From option.
+      newParams.set('from', selectedFrom);
 
       if (params.query?.value) {
         newParams.set('query', params.query.value);
+
         if (params.query.where !== 'everywhere') {
           newParams.set('where', params.query.where);
         }
@@ -148,8 +167,6 @@ export function TopicMessagesTab() {
       }
 
       setSearchParams(newParams, { replace: true });
-      // Always refetch explicitly — if the params haven't changed the query key
-      // is identical and TanStack Query won't issue a new request otherwise.
       refetch();
     },
     [setSearchParams, refetch]
@@ -261,6 +278,7 @@ export function TopicMessagesTab() {
                       filterPartition={partition}
                       filterOffset={offset}
                       filterLimit={limit}
+                      filterFrom={filterFrom}
                       onSearch={handleSearch}
                     />
                   </ToolbarItem>

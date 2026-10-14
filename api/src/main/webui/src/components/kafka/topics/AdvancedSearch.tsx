@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { SearchParams } from '@/api/types';
 import { WhereOption } from './TopicsFilter/whereSelector';
 import { FromOptions } from './TopicsFilter/FetchFromSelector';
-import { NewFilter } from './TopicsFilter/MessageTableFilter';
+import { MessageTableFilter } from './TopicsFilter/MessageTableFilter';
 
 interface AdvancedSearchProps {
   partitions: number;
@@ -11,7 +11,8 @@ interface AdvancedSearchProps {
   filterPartition?: number;
   filterOffset?: number;
   filterLimit?: number | 'continuously';
-  onSearch: (params: SearchParams) => void;
+  filterFrom?: FromOptions;
+  onSearch: (params: SearchParams, selectedFrom: FromOptions) => void;
 }
 
 const DEFAULT_LIMIT = 50;
@@ -73,20 +74,26 @@ export function AdvancedSearch({
   filterPartition,
   filterOffset,
   filterLimit,
+  filterFrom,
   onSearch,
 }: AdvancedSearchProps) {
   const [partition, setPartition] = useState<number | undefined>(
     filterPartition
   );
   const [from, setFrom] = useState<FromOptions>(
-    filterOffset !== undefined ? 'offset' : 'latest'
+    filterFrom ?? (filterOffset !== undefined ? 'offset' : 'latest')
   );
   const [offset, setOffset] = useState<number | undefined>(filterOffset);
   const [limit, setLimit] = useState<number>(
     typeof filterLimit === 'number' ? filterLimit : DEFAULT_LIMIT
   );
   const [query, setQuery] = useState(filterQuery ?? '');
+  const [appliedQuery, setAppliedQuery] = useState(filterQuery ?? '');
   const [where, setWhere] = useState<WhereOption>(filterWhere);
+
+  const [offsetInput, setOffsetInput] = useState(
+    filterOffset?.toString() ?? ''
+  );
 
   // NewFilter wants the list of partitions; callers still pass a count
   const partitionList = useMemo(
@@ -103,10 +110,36 @@ export function AdvancedSearch({
   // Run the search whenever the selection changes (debounced for typing).
   // The initial selection is not searched: the page already loaded it.
   const lastSearchedKey = useRef<string | null>(null);
-  const key = JSON.stringify({ partition, from, offset, limit, query, where });
+  const key = JSON.stringify({
+    partition,
+    from,
+    offset,
+    limit,
+    query: appliedQuery,
+    where,
+  });
   if (lastSearchedKey.current === null) {
     lastSearchedKey.current = key;
   }
+
+  const commitOffset = () => {
+    const trimmed = offsetInput.trim();
+
+    if (trimmed === '') {
+      setOffset(undefined);
+      return;
+    }
+
+    const parsed = Number(trimmed);
+
+    if (Number.isInteger(parsed) && parsed >= 0) {
+      setOffset(parsed);
+    }
+  };
+
+  const commitQuery = () => {
+    setAppliedQuery(query.trim());
+  };
 
   useEffect(() => {
     if (key === lastSearchedKey.current) {
@@ -120,27 +153,36 @@ export function AdvancedSearch({
     const timer = setTimeout(() => {
       lastSearchedKey.current = key;
       onSearchRef.current(
-        buildSearchParams({ partition, from, offset, limit, query, where })
+        buildSearchParams({
+          partition,
+          from,
+          offset,
+          limit,
+          query: appliedQuery,
+          where,
+        }),
+        from
       );
     }, SEARCH_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [key, partition, from, offset, limit, query, where]);
+  }, [key, partition, from, offset, limit, appliedQuery, where]);
 
   const handleFromChange = (next: FromOptions) => {
     setFrom(next);
     if (next !== 'offset') {
       setOffset(undefined);
+      setOffsetInput('');
     }
     if (next === 'latest') {
-      // The search box is hidden for "latest", so don't keep a hidden filter
       setQuery('');
+      setAppliedQuery('');
       setWhere(undefined);
     }
   };
 
   return (
-    <NewFilter
+    <MessageTableFilter
       partitions={partitionList}
       selectedPartition={partition}
       onPartitionChange={setPartition}
@@ -148,12 +190,16 @@ export function AdvancedSearch({
       onFromChange={handleFromChange}
       offset={offset}
       onOffsetChange={setOffset}
+      offsetInput={offsetInput}
+      onOffsetInputChange={setOffsetInput}
+      onOffsetCommit={commitOffset}
       limit={limit}
       onLimitChange={setLimit}
       query={query}
       onQueryChange={setQuery}
       where={where}
       onWhereChange={setWhere}
+      onQueryCommit={commitQuery}
     />
   );
 }

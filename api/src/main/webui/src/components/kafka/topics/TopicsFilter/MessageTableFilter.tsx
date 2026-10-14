@@ -12,7 +12,7 @@ import { LimitSelect } from './LimitSelector';
 import { WhereOption, WhereSelector } from './whereSelector';
 import { useTranslation } from 'react-i18next';
 
-interface NewFilterProps {
+interface MessageTableFilterProps {
   partitions: number[];
   selectedPartition?: number;
   onPartitionChange: (partition?: number) => void;
@@ -26,6 +26,10 @@ interface NewFilterProps {
   onWhereChange: (where: WhereOption) => void;
   offset?: number;
   onOffsetChange: (offset?: number) => void;
+  offsetInput: string;
+  onOffsetInputChange: (value: string) => void;
+  onOffsetCommit: () => void;
+  onQueryCommit: () => void;
 }
 
 function FilterSection({
@@ -45,7 +49,7 @@ function FilterSection({
   );
 }
 
-export function NewFilter({
+export function MessageTableFilter({
   partitions,
   selectedPartition,
   onPartitionChange,
@@ -57,9 +61,11 @@ export function NewFilter({
   onQueryChange,
   where,
   onWhereChange,
-  offset,
-  onOffsetChange,
-}: NewFilterProps) {
+  offsetInput,
+  onOffsetInputChange,
+  onOffsetCommit,
+  onQueryCommit,
+}: MessageTableFilterProps) {
   const showSearch = selectedFrom !== 'latest';
   const { t } = useTranslation();
 
@@ -86,10 +92,14 @@ export function NewFilter({
               <FlexItem>
                 <TextInput
                   type="number"
-                  value={offset?.toString() ?? ''}
-                  onChange={(_, value) =>
-                    onOffsetChange(value ? parseInt(value, 10) : undefined)
-                  }
+                  value={offsetInput}
+                  onChange={(_, value) => onOffsetInputChange(value)}
+                  onBlur={onOffsetCommit}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      onOffsetCommit();
+                    }
+                  }}
                   placeholder={t('topics.messages.filter.offsetPlaceholder')}
                   aria-label={t('topics.messages.filter.offsetAriaLabel')}
                 />
@@ -116,6 +126,12 @@ export function NewFilter({
                     placeholder={t(
                       'topics.messages.advancedSearch.queryHelper'
                     )}
+                    onBlur={onQueryCommit}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        onQueryCommit();
+                      }
+                    }}
                     style={{ width: '260px' }}
                   />
                 </FlexItem>

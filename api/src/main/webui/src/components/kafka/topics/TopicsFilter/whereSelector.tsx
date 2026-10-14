@@ -16,6 +16,8 @@ interface WhereSelectorProps {
   ouiaId?: string;
 }
 
+type WhereValue = 'everywhere' | 'key' | 'headers' | 'value';
+
 export function WhereSelector({
   where,
   onWhereChange,
@@ -24,40 +26,56 @@ export function WhereSelector({
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const labels: Record<'everywhere' | 'key' | 'headers' | 'value', string> = {
-    everywhere: 'Anywhere',
-    key: t('topics.messages.advancedSearch.whereKey'),
-    headers: t('topics.messages.advancedSearch.whereHeaders'),
-    value: t('topics.messages.advancedSearch.whereValue'),
-  };
+  const options: { value: WhereValue; label: string }[] = [
+    {
+      value: 'everywhere',
+      label: t('topics.messages.advancedSearch.whereEverywhere'),
+    },
+    {
+      value: 'key',
+      label: t('topics.messages.advancedSearch.whereKey'),
+    },
+    {
+      value: 'headers',
+      label: t('topics.messages.advancedSearch.whereHeaders'),
+    },
+    {
+      value: 'value',
+      label: t('topics.messages.advancedSearch.whereValue'),
+    },
+  ];
+
+  const selected = where ?? 'everywhere';
+  const selectedLabel =
+    options.find((option) => option.value === selected)?.label ??
+    options[0].label;
 
   return (
     <Select
       isOpen={isOpen}
       onOpenChange={setIsOpen}
-      selected={where ?? 'everywhere'}
-      onSelect={(_, value) => {
-        onWhereChange(
-          value === 'everywhere' ? undefined : (value as WhereOption)
-        );
+      selected={selected}
+      onSelect={(_, selection) => {
+        const value = selection as WhereValue;
+        onWhereChange(value === 'everywhere' ? undefined : value);
         setIsOpen(false);
       }}
       toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
         <MenuToggle
           ref={toggleRef}
           ouiaId={ouiaId}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setIsOpen((open) => !open)}
           isExpanded={isOpen}
           style={{ width: '140px' }}
         >
-          {labels[where ?? 'everywhere']}
+          {selectedLabel}
         </MenuToggle>
       )}
     >
       <SelectList>
-        {(Object.keys(labels) as Array<keyof typeof labels>).map((key) => (
-          <SelectOption key={key} value={key}>
-            {labels[key]}
+        {options.map(({ value, label }) => (
+          <SelectOption key={value} value={value}>
+            {label}
           </SelectOption>
         ))}
       </SelectList>
