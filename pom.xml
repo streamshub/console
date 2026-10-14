@@ -29,7 +29,6 @@
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.16.0</maven.compiler.version>
-        <maven.dependency.version>3.11.0</maven.dependency.version>
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <jandex-maven-plugin.version>3.6.0</jandex-maven-plugin.version>
@@ -230,11 +229,6 @@
                     <groupId>${quarkus.platform.group-id}</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${quarkus.platform.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>${maven.dependency.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
