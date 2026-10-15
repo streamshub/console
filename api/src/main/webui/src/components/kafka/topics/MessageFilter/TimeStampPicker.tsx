@@ -18,91 +18,16 @@ import {
   TextInput,
 } from '@patternfly/react-core';
 import OutlinedClockIcon from '@patternfly/react-icons/dist/esm/icons/outlined-clock-icon';
-
-type Zone = 'UTC' | 'local';
-
-const TIMESTAMP_REGEX =
-  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z|[+-]\d{2}:\d{2})$/;
-
-const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)\.(\d{3})$/;
-
-const TIME_LOOSE =
-  /^([01]?\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,3}))?)?$/;
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
-function normalizeTime(raw: string) {
-  const trimmed = raw.trim();
-
-  // Default to midnight when no time is entered.
-  if (!trimmed) return '00:00:00.000';
-
-  const match = TIME_LOOSE.exec(trimmed);
-  if (!match) return undefined;
-
-  const [, h, min, s = '00', ms = ''] = match;
-
-  return `${pad(+h)}:${min}:${s}.${ms.padEnd(3, '0')}`;
-}
-
-function formatOffset(minutes: number) {
-  const sign = minutes >= 0 ? '+' : '-';
-  const abs = Math.abs(minutes);
-  return `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
-}
-
-/** Builds yyyy-MM-ddTHH:mm:ss.SSS±HH:mm from the popover fields. */
-function buildTimestamp(date: Date, rawTime: string, zone: Zone) {
-  const time = normalizeTime(rawTime);
-  if (!time) return undefined;
-
-  const match = TIME_REGEX.exec(time);
-  if (!match) return undefined;
-
-  const [, hh, mm, ss, ms] = match;
-  const y = date.getFullYear();
-  const mo = date.getMonth();
-  const d = date.getDate();
-
-  const offset =
-    zone === 'UTC'
-      ? '+00:00'
-      : formatOffset(
-          -new Date(
-            y,
-            mo,
-            d,
-            Number(hh),
-            Number(mm),
-            Number(ss)
-          ).getTimezoneOffset()
-        );
-
-  const result =
-    `${y}-${pad(mo + 1)}-${pad(d)}` + `T${hh}:${mm}:${ss}.${ms}${offset}`;
-
-  return Number.isNaN(Date.parse(result)) ? undefined : result;
-}
-/** Splits an existing timestamp back into popover fields. */
-function parseTimestamp(text: string) {
-  const m = TIMESTAMP_REGEX.exec(text.trim());
-  if (!m || Number.isNaN(Date.parse(text))) return undefined;
-  const [, y, mo, d, hh, mm, ss, ms, off] = m;
-  return {
-    date: new Date(+y, +mo - 1, +d),
-    time: `${hh}:${mm}:${ss}.${ms}`,
-    zone: (off === 'Z' || off === '+00:00' ? 'UTC' : 'local') as Zone,
-  };
-}
-
-function nowParts() {
-  const now = new Date();
-  return {
-    date: new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    time: now.toISOString().slice(11, 23), // HH:mm:ss.SSS in UTC
-    zone: 'UTC' as Zone,
-  };
-}
+import {
+  buildTimestamp,
+  defaultDraft,
+  Draft,
+  normalizeTimestamp,
+  parseTime,
+  stripOffset,
+  toDraft,
+  Zone,
+} from '@/utils/timestamp';
 
 interface TimestampPickerProps {
   value?: string;
@@ -112,24 +37,23 @@ interface TimestampPickerProps {
 export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
   const [text, setText] = useState(value ?? '');
   const [prevValue, setPrevValue] = useState(value);
+
+  const [draft, setDraft] = useState<Draft>(defaultDraft);
+
   const [isOpen, setIsOpen] = useState(false);
   const [isZoneOpen, setIsZoneOpen] = useState(false);
-  const [pickedDate, setPickedDate] = useState(() => nowParts().date);
-  const [time, setTime] = useState('');
-  const [zone, setZone] = useState<Zone>('UTC');
-  const [timeTouched, setTimeTouched] = useState(false);
-  const [textTouched, setTextTouched] = useState(false);
+
+  const [textError, setTextError] = useState(false);
+  const [timeError, setTimeError] = useState(false);
 
   const triggerRef = useRef<HTMLDivElement>(null);
   const popperRef = useRef<HTMLDivElement>(null);
 
-  // Applied value changed from outside (reset, URL): sync during render
   if (value !== prevValue) {
     setPrevValue(value);
     setText(value ?? '');
   }
 
-  // Close on outside click or Escape
   useEffect(() => {
     if (!isOpen) return;
     const onClick = (e: MouseEvent) => {
@@ -152,29 +76,49 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
     };
   }, [isOpen]);
 
+  const patchDraft = (patch: Partial<Draft>) =>
+    setDraft((d) => ({ ...d, ...patch }));
+
+  const commit = (next: string | undefined) => {
+    setText(next ?? '');
+    onCommit(next);
+  };
+
   const openPicker = () => {
-    const parts = parseTimestamp(text) ?? nowParts();
-    setTimeTouched(false);
-    setPickedDate(parts.date);
-    setTime(parts.time);
-    setZone(parts.zone);
+    setDraft(toDraft(text) ?? defaultDraft());
+    setTimeError(false);
     setIsOpen(true);
   };
 
-  const result = buildTimestamp(pickedDate, time, zone);
-  const textInvalid = textTouched && text !== '' && !parseTimestamp(text);
-
-  const confirm = () => {
-    if (!result) return;
-    setText(result);
-    setTextTouched(false);
-    onCommit(result);
-    setIsOpen(false);
+  const changeZone = (zone: Zone) => {
+    patchDraft({
+      zone,
+      time: zone === 'UTC' ? stripOffset(draft.time) : draft.time,
+    });
+    setTimeError(false);
   };
 
   const commitText = () => {
-    if (text.trim() === '') onCommit(undefined);
-    else if (!textInvalid) onCommit(text.trim());
+    const trimmed = text.trim();
+    if (trimmed === '') return commit(undefined);
+
+    const normalized = normalizeTimestamp(trimmed);
+    if (normalized) commit(normalized);
+    else setTextError(true);
+  };
+
+  const result = buildTimestamp(draft);
+
+  const confirm = () => {
+    if (!result) return;
+    commit(result);
+    setIsOpen(false);
+  };
+
+  const normalizeTimeField = () => {
+    const parsed = parseTime(draft.time, draft.zone);
+    setTimeError(!parsed);
+    if (parsed) patchDraft({ time: `${parsed.time}${parsed.offset ?? ''}` });
   };
 
   const trigger = (
@@ -195,24 +139,17 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
             <InputGroupItem isFill>
               <TextInput
                 value={text}
-                validated={
-                  textTouched && text !== '' && !parseTimestamp(text)
-                    ? 'error'
-                    : 'default'
-                }
+                validated={textError ? 'error' : 'default'}
                 placeholder="yyyy-MM-ddTHH:mm:ss.SSS±HH:mm"
                 aria-label="Timestamp"
                 onChange={(_, next) => {
                   setText(next);
-                  setTextTouched(false);
+                  setTextError(false);
                 }}
-                onBlur={() => setTextTouched(true)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setTextTouched(true);
-                    commitText();
-                  }
-                }}
+                onBlur={() =>
+                  setTextError(text.trim() !== '' && !normalizeTimestamp(text))
+                }
+                onKeyDown={(e) => e.key === 'Enter' && commitText()}
               />
             </InputGroupItem>
           </FlexItem>
@@ -230,9 +167,9 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
               isOpen={isZoneOpen}
               onOpenChange={setIsZoneOpen}
               popperProps={{ appendTo: 'inline' }}
-              selected={zone}
+              selected={draft.zone}
               onSelect={(_, selection) => {
-                setZone(selection as Zone);
+                changeZone(selection as Zone);
                 setIsZoneOpen(false);
               }}
               toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
@@ -242,7 +179,7 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
                   isExpanded={isZoneOpen}
                   onClick={() => setIsZoneOpen((o) => !o)}
                 >
-                  {zone === 'UTC' ? 'UTC' : 'Local time'}
+                  {draft.zone === 'UTC' ? 'UTC' : 'Local time'}
                 </MenuToggle>
               )}
             >
@@ -253,26 +190,33 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
             </Select>
 
             <CalendarMonth
-              date={pickedDate}
-              onChange={(_, date) => setPickedDate(date)}
+              date={draft.date}
+              onChange={(_, date) => patchDraft({ date })}
             />
 
-            <label htmlFor="timestamp-time">Time (optional)</label>
-            <TextInput
-              id="timestamp-time"
-              value={time}
-              validated={
-                timeTouched && time !== '' && !normalizeTime(time)
-                  ? 'error'
-                  : 'default'
-              }
-              placeholder="HH:mm:ss.SSS"
-              onChange={(_, next) => {
-                setTime(next);
-                setTimeTouched(false);
-              }}
-              onBlur={() => setTimeTouched(true)}
-            />
+            <Flex direction={{ default: 'column' }}>
+              <FlexItem>
+                <label htmlFor="timestamp-time">Time (optional)</label>
+              </FlexItem>
+              <FlexItem>
+                <TextInput
+                  id="timestamp-time"
+                  value={draft.time}
+                  validated={timeError ? 'error' : 'default'}
+                  placeholder={
+                    draft.zone === 'local'
+                      ? 'HH:mm:ss.SSS±HH:mm'
+                      : 'HH:mm:ss.SSS'
+                  }
+                  onChange={(_, time) => {
+                    patchDraft({ time });
+                    setTimeError(false);
+                  }}
+                  onBlur={normalizeTimeField}
+                />
+              </FlexItem>
+            </Flex>
+
             <div style={{ marginTop: 'var(--pf-t--global--spacer--md)' }}>
               <Button
                 variant="secondary"
