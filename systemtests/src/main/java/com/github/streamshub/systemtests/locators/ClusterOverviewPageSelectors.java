@@ -21,6 +21,12 @@ public class ClusterOverviewPageSelectors {
         .build();
 
     public static final String COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex:nth-of-type(1) > div:nth-of-type(2) > button.pf-v6-c-button";
+    public static final String COPS_CLUSTER_HEADER_VIRTUAL_LABEL = new CssBuilder()
+        .withAttributeSelector("data-ouia-component-id", "=", "breadcrumb-trail")
+        .withDesc()
+        .withComponentLabel()
+        .build();
+
     public static final String COPS_CLUSTER_CARD_KAFKA_NAME = "body > div > div.pf-v6-c-page > div.pf-v6-c-page__main-container:nth-of-type(2) > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content:nth-of-type(1) > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex:nth-of-type(2) > div.pf-v6-l-flex:nth-of-type(1) > div.pf-v6-l-flex:nth-of-type(1) > div > h2.pf-v6-c-title";
 
     public static final String COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT = "body > div#root > div.pf-v6-c-page > div.pf-v6-c-page__main-container > main.pf-v6-c-page__main > div.pf-v6-c-drawer > div.pf-v6-c-drawer__main > div.pf-v6-c-drawer__content > div.pf-v6-c-drawer__body > section.pf-v6-c-page__main-section:nth-of-type(2) > div.pf-v6-c-page__main-body > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > div.pf-v6-l-flex > div:nth-of-type(1) > div.pf-v6-c-card > div.pf-v6-c-card__body > div.pf-v6-l-flex:nth-of-type(2) > div.pf-v6-l-flex > div.pf-v6-l-flex:nth-of-type(2) > div.pf-v6-l-grid > div.pf-v6-l-grid__item:nth-of-type(1) > a";

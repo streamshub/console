@@ -56,8 +56,11 @@ public class KroxyST extends AbstractST {
      *     <li>Default Kafka cluster overview displays correct name, version, and broker count.</li>
      *     <li>Total available Kafka cluster count is correct.</li>
      *     <li>Kafka cluster selection dropdown contains both physical and virtual clusters.</li>
+     *     <li>The "Virtual" badge is shown for the virtual cluster and not the physical cluster
+     *         in the cluster selection dropdown.</li>
      *     <li>After switching to the virtual cluster, its overview displays
      *         the correct name, normalized version, and broker count.</li>
+     *     <li>The "Virtual" badge is shown in the virtual cluster overview header.</li>
      * </ul>
      */
     @Test
@@ -73,6 +76,7 @@ public class KroxyST extends AbstractST {
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "2", true);
         PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_NAV_KAFKA_SELECT_BUTTON);
         KroxyChecks.checkKafkaClusterDropdownContains(tcc, List.of(tcc.kafkaName(), tcc.virtualKafkaClusterName()));
+        KroxyChecks.checkVirtualClusterBadgeInDropdown(tcc, tcc.virtualKafkaClusterName(), tcc.kafkaName());
 
         LOGGER.info("Verify virtual kafka from kroxy");
         PwUtils.login(tcc, tcc.virtualKafkaClusterName());
@@ -83,6 +87,7 @@ public class KroxyST extends AbstractST {
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION, virtualClusterVersion, true);
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, true);
+        KroxyChecks.checkVirtualClusterBadgeOnOverviewHeader(tcc);
 
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "2", true);
         PwUtils.waitForLocatorAndClick(tcc, CssSelectors.PAGES_NAV_KAFKA_SELECT_BUTTON);
