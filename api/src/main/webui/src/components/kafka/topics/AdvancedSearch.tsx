@@ -7,7 +7,7 @@ import {
   DEFAULT_LIMIT,
   FilterState,
   isSameFilter,
-} from './MessageFilter/messageFIlter';
+} from './MessageFilter/messageFilter';
 import { MessageTableFilter } from './MessageFilter/MessageTableFilter';
 
 interface AdvancedSearchProps {

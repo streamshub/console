@@ -5,7 +5,7 @@ import { FetchFromSelector } from './FetchFromSelector';
 import { LimitSelect } from './LimitSelector';
 import { WhereSelector } from './whereSelector';
 import { CommitInput } from './CommitInput';
-import { FilterState, isValidOffset, parseOffset } from './messageFIlter';
+import { FilterState, isValidOffset, parseOffset } from './messageFilter';
 import { TimestampPicker } from './TimeStampPicker';
 
 interface MessageTableFilterProps {
