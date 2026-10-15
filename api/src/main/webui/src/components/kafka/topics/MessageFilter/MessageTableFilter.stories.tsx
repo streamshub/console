@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { MessageTableFilter } from './MessageTableFilter';
-import type { FilterState } from './messageFIlter';
+import { FilterState } from './messageFilter';
 
 const meta: Meta<typeof MessageTableFilter> = {
   component: MessageTableFilter,
