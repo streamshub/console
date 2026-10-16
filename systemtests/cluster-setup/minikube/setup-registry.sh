@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Sets up a local image registry for the minikube cluster, using minikube's
-# own `registry` addon (same one systemtests/scripts/setup-minikube.sh
-# uses). The addon's registry-proxy DaemonSet binds hostNetwork port 5000 on
-# every node, so "localhost:5000" already resolves correctly *from inside
-# the cluster* with zero extra config. What's missing is reaching it *from
-# the host* to push into — exposed here via a persistent `kubectl
-# port-forward`, the same non-privileged, no-sudo approach create-cluster.sh
-# already uses for ingress (direct node-IP access doesn't reliably work on
-# macOS; see ../README.md).
+# own `registry` addon. The addon's registry-proxy DaemonSet binds
+# hostNetwork port 5000 on every node, so "localhost:5000" already resolves
+# correctly *from inside the cluster* with zero extra config. What's
+# missing is reaching it *from the host* to push into — exposed here via a
+# persistent `kubectl port-forward`, the same non-privileged, no-sudo
+# approach create-cluster.sh already uses for ingress (direct node-IP
+# access doesn't reliably work on macOS; see ../README.md).
 #
 # Needed because OLM's CatalogSource controller hardcodes
 # `imagePullPolicy: Always` on the registry pod it creates — kubelet always
@@ -19,7 +18,7 @@
 #   ./setup-registry.sh [--registry-port 5000]
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./lib/env.sh
+source ./env.sh
 
 REGISTRY_PORT="${IMAGE_REGISTRY_PORT:-5000}"
 

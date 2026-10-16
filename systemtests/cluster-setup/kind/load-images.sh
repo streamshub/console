@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Pushes the images built by ../common/build-console.sh to the local
-# registry set up by ./setup-registry.sh, via skopeo (same mechanism
-# systemtests/scripts/setup-minikube.sh already uses, parameterized here).
+# registry set up by ./setup-registry.sh, via skopeo.
 #
 # Why skopeo and not `docker push`/`podman push`: the registry is plain
 # HTTP, and getting a container engine to trust that for an arbitrary local
@@ -20,7 +19,8 @@
 #   ./load-images.sh [--registry localhost:5000] [--group streamshub] [--tag <tag>]
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./lib/env.sh
+source ./env.sh
+ensure_installed skopeo install_skopeo
 
 REGISTRY="${IMAGE_REGISTRY:-localhost:5000}"
 GROUP="${IMAGE_GROUP:-streamshub}"
