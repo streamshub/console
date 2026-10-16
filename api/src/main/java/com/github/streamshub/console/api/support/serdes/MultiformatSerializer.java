@@ -87,6 +87,12 @@ public class MultiformatSerializer extends MultiformatSerdeBase
 
         Map<String, Object> avroConfigs = new HashMap<>(serConfigs);
         avroConfigs.put(AvroSerdeConfig.AVRO_DATUM_PROVIDER, AvroDatumProvider.class);
+        /*
+         * TODO: Determine whether we can derive a structure schema from the input record
+         * to take advantage of the (enabled by default) validation added in
+         * https://github.com/Apicurio/apicurio-registry/pull/9125
+         */
+        avroConfigs.put(AvroSerdeConfig.AVRO_VALIDATE_WRITER_SCHEMA, false);
         avroConfigs.put(SchemaResolverConfig.FIND_LATEST_ARTIFACT, Boolean.TRUE);
         avroSerializer.configure(new SerdeConfig(avroConfigs), isKey);
 
