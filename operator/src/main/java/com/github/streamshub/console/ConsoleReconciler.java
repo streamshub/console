@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -17,6 +18,7 @@ import org.jboss.logging.Logger;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
+import com.github.streamshub.console.api.v1alpha1.status.Condition.Types;
 import com.github.streamshub.console.dependents.ConfigurationProcessor;
 import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
@@ -28,6 +30,15 @@ import com.github.streamshub.console.dependents.ConsoleRoute;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.ConsoleServiceAccount;
+import com.github.streamshub.console.dependents.ConsoleTrustBundle;
+import com.github.streamshub.console.dependents.DexClusterRole;
+import com.github.streamshub.console.dependents.DexClusterRoleBinding;
+import com.github.streamshub.console.dependents.DexDeployment;
+import com.github.streamshub.console.dependents.DexRoute;
+import com.github.streamshub.console.dependents.DexSecret;
+import com.github.streamshub.console.dependents.DexService;
+import com.github.streamshub.console.dependents.DexServiceAccount;
+import com.github.streamshub.console.dependents.HostnameAvailableGate;
 import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
 import com.github.streamshub.console.dependents.PrometheusConfigMap;
@@ -35,7 +46,10 @@ import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
+import com.github.streamshub.console.dependents.conditions.DexPrecondition;
+import com.github.streamshub.console.dependents.conditions.OpenShiftPrecondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
+import com.github.streamshub.console.dependents.conditions.ServingCertReadyCondition;
 import com.github.streamshub.console.support.RootCause;
 
 import io.javaoperatorsdk.operator.AggregatedOperatorException;
@@ -49,6 +63,7 @@ import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.Workflow;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
+import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.WorkflowReconcileResult;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations;
@@ -65,48 +80,50 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 )
 @Workflow(
         dependents = {
+            // Level 0 — no dependencies
+            @Dependent(
+                    name = ConsoleTrustBundle.NAME,
+                    type = ConsoleTrustBundle.class,
+                    activationCondition = OpenShiftPrecondition.class,
+                    readyPostcondition = ConsoleTrustBundle.Postcondition.class),
+
+            // Level 1
+            @Dependent(
+                    name = ConsoleRoute.NAME,
+                    type = ConsoleRoute.class,
+                    activationCondition = OpenShiftPrecondition.class,
+                    readyPostcondition = ConsoleRoute.Postcondition.class,
+                    dependsOn = ConsoleTrustBundle.NAME),
+            @Dependent(
+                    // No dependencies, but will not become ready until either the
+                    // Route has a host name, or one was given in the Console CR.
+                    name = HostnameAvailableGate.NAME,
+                    type = HostnameAvailableGate.class,
+                    readyPostcondition = HostnameAvailableGate.Postcondition.class),
+
+            // Level 2
             @Dependent(
                     name = ConfigurationProcessor.NAME,
                     type = ConfigurationProcessor.class,
-                    readyPostcondition = ConfigurationProcessor.Postcondition.class),
+                    readyPostcondition = ConfigurationProcessor.Postcondition.class,
+                    dependsOn = HostnameAvailableGate.NAME),
+
+            // Level 3 — depend on ConfigurationProcessor
             @Dependent(
                     name = PrometheusClusterRole.NAME,
                     type = PrometheusClusterRole.class,
-                    dependsOn = ConfigurationProcessor.NAME,
-                    reconcilePrecondition = PrometheusPrecondition.class),
+                    reconcilePrecondition = PrometheusPrecondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = PrometheusServiceAccount.NAME,
                     type = PrometheusServiceAccount.class,
-                    dependsOn = ConfigurationProcessor.NAME,
-                    reconcilePrecondition = PrometheusPrecondition.class),
-            @Dependent(
-                    name = PrometheusClusterRoleBinding.NAME,
-                    type = PrometheusClusterRoleBinding.class,
                     reconcilePrecondition = PrometheusPrecondition.class,
-                    dependsOn = {
-                        ConfigurationProcessor.NAME,
-                        PrometheusClusterRole.NAME,
-                        PrometheusServiceAccount.NAME
-                    }),
+                    dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = PrometheusConfigMap.NAME,
                     type = PrometheusConfigMap.class,
-                    dependsOn = ConfigurationProcessor.NAME,
-                    reconcilePrecondition = PrometheusPrecondition.class),
-            @Dependent(
-                    name = PrometheusDeployment.NAME,
-                    type = PrometheusDeployment.class,
                     reconcilePrecondition = PrometheusPrecondition.class,
-                    dependsOn = {
-                        PrometheusClusterRoleBinding.NAME,
-                        PrometheusConfigMap.NAME
-                    },
-                    readyPostcondition = DeploymentReadyCondition.class),
-            @Dependent(
-                    name = PrometheusService.NAME,
-                    type = PrometheusService.class,
-                    reconcilePrecondition = PrometheusPrecondition.class,
-                    dependsOn = PrometheusDeployment.NAME),
+                    dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = ConsoleClusterRole.NAME,
                     type = ConsoleClusterRole.class,
@@ -115,6 +132,41 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     name = ConsoleServiceAccount.NAME,
                     type = ConsoleServiceAccount.class,
                     dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = ConsoleSecret.NAME,
+                    type = ConsoleSecret.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = ConsoleService.NAME,
+                    type = ConsoleService.class,
+                    readyPostcondition = ServingCertReadyCondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = DexServiceAccount.NAME,
+                    type = DexServiceAccount.class,
+                    reconcilePrecondition = DexPrecondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = DexClusterRole.NAME,
+                    type = DexClusterRole.class,
+                    reconcilePrecondition = DexPrecondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = DexService.NAME,
+                    type = DexService.class,
+                    reconcilePrecondition = DexPrecondition.class,
+                    readyPostcondition = ServingCertReadyCondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+
+            // Level 4
+            @Dependent(
+                    name = PrometheusClusterRoleBinding.NAME,
+                    type = PrometheusClusterRoleBinding.class,
+                    reconcilePrecondition = PrometheusPrecondition.class,
+                    dependsOn = {
+                        PrometheusClusterRole.NAME,
+                        PrometheusServiceAccount.NAME
+                    }),
             @Dependent(
                     name = ConsoleClusterRoleBinding.NAME,
                     type = ConsoleClusterRoleBinding.class,
@@ -128,21 +180,57 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     reconcilePrecondition = ConsoleMonitoringClusterRoleBinding.Precondition.class,
                     dependsOn = ConsoleServiceAccount.NAME),
             @Dependent(
-                    name = ConsoleSecret.NAME,
-                    type = ConsoleSecret.class,
-                    dependsOn = ConfigurationProcessor.NAME),
+                    name = DexClusterRoleBinding.NAME,
+                    type = DexClusterRoleBinding.class,
+                    reconcilePrecondition = DexPrecondition.class,
+                    dependsOn = {
+                        DexClusterRole.NAME,
+                        DexServiceAccount.NAME
+                    }),
+
+            // Level 5
             @Dependent(
-                    name = ConsoleService.NAME,
-                    type = ConsoleService.class,
-                    dependsOn = ConfigurationProcessor.NAME),
+                    name = PrometheusDeployment.NAME,
+                    type = PrometheusDeployment.class,
+                    reconcilePrecondition = PrometheusPrecondition.class,
+                    dependsOn = {
+                        PrometheusClusterRoleBinding.NAME,
+                        PrometheusConfigMap.NAME
+                    },
+                    readyPostcondition = DeploymentReadyCondition.class),
             @Dependent(
                     name = ConsoleDeployment.NAME,
                     type = ConsoleDeployment.class,
                     dependsOn = {
                         ConsoleClusterRoleBinding.NAME,
-                        ConsoleSecret.NAME
+                        ConsoleSecret.NAME,
+                        ConsoleService.NAME
                     },
                     readyPostcondition = DeploymentReadyCondition.class),
+            @Dependent(
+                    name = DexSecret.NAME,
+                    type = DexSecret.class,
+                    reconcilePrecondition = DexPrecondition.class,
+                    dependsOn = {
+                        ConfigurationProcessor.NAME,
+                        DexClusterRoleBinding.NAME
+                    }),
+            @Dependent(
+                    name = DexRoute.NAME,
+                    type = DexRoute.class,
+                    activationCondition = OpenShiftPrecondition.class,
+                    reconcilePrecondition = DexRoute.Precondition.class,
+                    dependsOn = {
+                        ConsoleTrustBundle.NAME,
+                        DexService.NAME
+                    }),
+
+            // Level 6
+            @Dependent(
+                    name = PrometheusService.NAME,
+                    type = PrometheusService.class,
+                    reconcilePrecondition = PrometheusPrecondition.class,
+                    dependsOn = PrometheusDeployment.NAME),
             // Only one of ingress or route will be active for Kubernetes/OpenShift cluster.
             @Dependent(
                     name = ConsoleIngress.NAME,
@@ -151,11 +239,15 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     readyPostcondition = ConsoleIngress.Postcondition.class,
                     dependsOn = ConsoleDeployment.NAME),
             @Dependent(
-                    name = ConsoleRoute.NAME,
-                    type = ConsoleRoute.class,
-                    activationCondition = ConsoleRoute.Precondition.class,
-                    readyPostcondition = ConsoleRoute.Postcondition.class,
-                    dependsOn = ConsoleDeployment.NAME),
+                    name = DexDeployment.NAME,
+                    type = DexDeployment.class,
+                    reconcilePrecondition = DexPrecondition.class,
+                    readyPostcondition = DeploymentReadyCondition.class,
+                    dependsOn = {
+                        DexClusterRoleBinding.NAME,
+                        DexSecret.NAME,
+                        DexService.NAME
+                    }),
         })
 @CSVMetadata(
         provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"),
@@ -210,6 +302,17 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
         })
 public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> {
 
+    private static final Logger LOGGER = Logger.getLogger(ConsoleReconciler.class);
+
+    private static final Set<Class<?>> RESCHEDULABLE_RESOURCES = Set.of(
+            // Waits for OpenShift to assign a host name
+            HostnameAvailableGate.class,
+            // Waits for OpenShift to create a serving certificate secret
+            ConsoleService.class,
+            // Waits for OpenShift to create a serving certificate secret
+            DexService.class
+    );
+
     @Override
     public UpdateControl<Console> reconcile(Console resource, Context<Console> context) {
         var result = context.managedWorkflowAndDependentResourceContext().getWorkflowReconcileResult();
@@ -221,7 +324,13 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
             resource.getStatus().setObservedGeneration(generation);
         }
 
-        return UpdateControl.patchStatus(resource);
+        var updateControl = UpdateControl.patchStatus(resource);
+
+        if (reschedule(result)) {
+            updateControl.rescheduleAfter(Duration.ofMillis(500));
+        }
+
+        return updateControl;
     }
 
     @Override
@@ -272,13 +381,16 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
             if (notReadyResources.isEmpty()) {
                 readyCondition.setReason(Condition.Reasons.RECONCILIATION_EXCEPTION);
                 readyCondition.setMessage("One or more exceptions occurred during Console reconciliation");
-            } else if (notReadyResources.stream().anyMatch(ConfigurationProcessor.class::isInstance)) {
+            } else if (status.hasActiveCondition(Types.ERROR) 
+                    && notReadyResources.stream().anyMatch(evaluatesConfiguration())) {
                 readyCondition.setReason(Condition.Reasons.INVALID_CONFIGURATION);
                 readyCondition.setMessage("Console resource configuration is invalid");
             } else {
                 readyCondition.setReason(Condition.Reasons.DEPENDENTS_NOT_READY);
                 readyCondition.setMessage("Resources not ready: %s"
                         .formatted(notReadyResources.stream()
+                                // Do not report the virtual resources in the status
+                                .filter(Predicate.not(evaluatesConfiguration()))
                                 .map(ConsoleResource.class::cast)
                                 .map(r -> "%s[%s]".formatted(r.getClass().getSimpleName(), r.instanceName(resource)))
                                 .collect(Collectors.joining("; "))));
@@ -318,6 +430,33 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
         );
 
         status.clearStaleConditions();
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static Predicate<? super DependentResource> evaluatesConfiguration() {
+        return ((Predicate<? super DependentResource>) ConfigurationProcessor.class::isInstance)
+                .or(HostnameAvailableGate.class::isInstance);
+    }
+
+    /**
+     * Check if any of the known "not ready" resources is a resource that depends on
+     * a third party/external action (e.g. OpenShift) where the action will not
+     * itself trigger a reconcile cycle via a watch. When true, a new reconcile pass
+     * will be scheduled after a short time period.
+     */
+    private boolean reschedule(Optional<WorkflowReconcileResult> result) {
+        var notReadyResources = result.map(r -> r.getNotReadyDependents()).filter(Predicate.not(Collection::isEmpty));
+
+        if (notReadyResources.isPresent()) {
+            var notReady = notReadyResources.get();
+
+            if (RESCHEDULABLE_RESOURCES.stream().anyMatch(r -> notReady.stream().anyMatch(r::isInstance))) {
+                LOGGER.debugf("Rescheduling due to reschedulable not ready resources: %s", notReady);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -4,11 +4,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.Trustable;
 
 import io.sundr.builder.annotations.Buildable;
 
+@JsonInclude(Include.NON_NULL)
 @Buildable(editableEnabled = false)
 public class OidcConfig implements Trustable {
 
@@ -27,6 +30,14 @@ public class OidcConfig implements Trustable {
     private Boolean pkceRequired;
     private String stateSecret;
     private Boolean forceRedirectHttpsScheme;
+    /**
+     * Whether the discovered OIDC endpoints used by the Console itself should be
+     * overridden with the scheme, user info, host, and port of the
+     * {@link #authServerUrl}. This is useful, for example, when the Console will
+     * access the OIDC provider using a Kubernetes service while the end user will
+     * access the provider using a public ingress/route domain.
+     */
+    private Boolean overrideDiscoveredEndpoints;
 
     @Override
     @JsonIgnore
@@ -114,5 +125,13 @@ public class OidcConfig implements Trustable {
 
     public void setForceRedirectHttpsScheme(Boolean forceRedirectHttpsScheme) {
         this.forceRedirectHttpsScheme = forceRedirectHttpsScheme;
+    }
+
+    public Boolean isOverrideDiscoveredEndpoints() {
+        return overrideDiscoveredEndpoints;
+    }
+
+    public void setOverrideDiscoveredEndpoints(Boolean overrideDiscoveredEndpoints) {
+        this.overrideDiscoveredEndpoints = overrideDiscoveredEndpoints;
     }
 }

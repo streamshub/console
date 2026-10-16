@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console-dex
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {}
+  template:
+    metadata:
+      labels: {}
+    spec:
+      serviceAccountName: console-dex
+      volumes:
+        - name: config
+          secret:
+            secretName: placeholder
+        - name: work
+          emptyDir: {}
+        - name: openshift-ca
+          configMap:
+            name: kube-root-ca.crt
+            items:
+              - key: ca.crt
+                path: openshift.pem
+      containers:
+        - name: dex
+          image: ghcr.io/dexidp/dex:v2.45.1
+          command: [ 'dex', 'serve', '/etc/dex/cfg/config.yaml' ]
+          ports:
+            - name: https
+              containerPort: 5556
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dex/cfg
+              readOnly: true
+            - name: work
+              mountPath: /tmp
+            - name: openshift-ca
+              mountPath: /etc/ssl/openshift.pem
+              subPath: openshift.pem
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /dex/healthz
+              port: 5556
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /dex/healthz
+              port: 5556
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            runAsNonRoot: true
+            # This may vary depending on the image
+            runAsUser: 1001
+            capabilities:
+              drop:
+                - ALL
