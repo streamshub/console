@@ -30,7 +30,7 @@ export function toISOWithLocalOffset(datetimeLocal: string): string {
 export function formatDateTime({
   value,
   timeZone,
-  format = 'yyyy-MM-dd HH:mm:ss.SSSXXX',
+  format = 'yyyy-MM-dd HH:mm:ssXXX',
 }: {
   value: number | string | Date | undefined;
   timeZone?: string;

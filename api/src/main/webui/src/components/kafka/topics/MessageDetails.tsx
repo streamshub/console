@@ -21,7 +21,12 @@ import {
   CodeBlockCode,
 } from '@patternfly/react-core';
 import { HelpIcon } from '@patternfly/react-icons';
-import { allExpanded, darkStyles, defaultStyles, JsonView } from 'react-json-view-lite';
+import {
+  allExpanded,
+  darkStyles,
+  defaultStyles,
+  JsonView,
+} from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { KafkaRecord } from '@/api/types';
 import { formatDateTime } from '@/utils/dateTime';
@@ -31,6 +36,7 @@ import { useSchemaContent } from '@/api/hooks/useSchemaContent';
 interface MessageDetailsProps {
   message: KafkaRecord;
 }
+const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
 
 export function MessageDetails({ message }: MessageDetailsProps) {
   const { t } = useTranslation();
@@ -41,6 +47,7 @@ export function MessageDetails({ message }: MessageDetailsProps) {
   const formatTimestampLocal = (timestamp: string): string => {
     return formatDateTime({
       value: timestamp,
+      format: MESSAGE_TIMESTAMP_FORMAT,
     });
   };
 
@@ -48,6 +55,7 @@ export function MessageDetails({ message }: MessageDetailsProps) {
     return formatDateTime({
       value: timestamp,
       timeZone: 'UTC',
+      format: MESSAGE_TIMESTAMP_FORMAT,
     });
   };
 
@@ -66,7 +74,9 @@ export function MessageDetails({ message }: MessageDetailsProps) {
     }
   };
 
-  const maybeJson = (value: string | null): { parsed: object; isJSON: boolean } => {
+  const maybeJson = (
+    value: string | null
+  ): { parsed: object; isJSON: boolean } => {
     if (!value) return { parsed: {}, isJSON: false };
     try {
       const parsed = JSON.parse(value);
@@ -84,7 +94,8 @@ export function MessageDetails({ message }: MessageDetailsProps) {
   const headers = Object.entries(message.attributes.headers ?? {});
 
   const keySchemaContentUrl = message.relationships.keySchema?.links?.content;
-  const valueSchemaContentUrl = message.relationships.valueSchema?.links?.content;
+  const valueSchemaContentUrl =
+    message.relationships.valueSchema?.links?.content;
   const { data: keySchemaContent } = useSchemaContent(keySchemaContentUrl);
   const { data: valueSchemaContent } = useSchemaContent(valueSchemaContentUrl);
 
@@ -92,14 +103,18 @@ export function MessageDetails({ message }: MessageDetailsProps) {
     <DrawerPanelBody>
       <DescriptionList isHorizontal isCompact>
         <DescriptionListGroup>
-          <DescriptionListTerm>{t('topics.messages.field.partition')}</DescriptionListTerm>
+          <DescriptionListTerm>
+            {t('topics.messages.field.partition')}
+          </DescriptionListTerm>
           <DescriptionListDescription>
             {message.attributes.partition}
           </DescriptionListDescription>
         </DescriptionListGroup>
 
         <DescriptionListGroup>
-          <DescriptionListTerm>{t('topics.messages.field.offset')}</DescriptionListTerm>
+          <DescriptionListTerm>
+            {t('topics.messages.field.offset')}
+          </DescriptionListTerm>
           <DescriptionListDescription>
             {message.attributes.offset}
           </DescriptionListDescription>
@@ -118,35 +133,45 @@ export function MessageDetails({ message }: MessageDetailsProps) {
         </DescriptionListGroup>
 
         <DescriptionListGroup>
-          <DescriptionListTerm>{t('topics.messages.field.timestamp')}</DescriptionListTerm>
+          <DescriptionListTerm>
+            {t('topics.messages.field.timestamp')}
+          </DescriptionListTerm>
           <DescriptionListDescription>
             {formatTimestampLocal(message.attributes.timestamp)}
           </DescriptionListDescription>
         </DescriptionListGroup>
 
         <DescriptionListGroup>
-          <DescriptionListTerm>{t('topics.messages.field.timestampUTC')}</DescriptionListTerm>
+          <DescriptionListTerm>
+            {t('topics.messages.field.timestampUTC')}
+          </DescriptionListTerm>
           <DescriptionListDescription>
             {formatTimestampUTC(message.attributes.timestamp)}
           </DescriptionListDescription>
         </DescriptionListGroup>
 
         <DescriptionListGroup>
-          <DescriptionListTerm>{t('topics.messages.field.epoch')}</DescriptionListTerm>
+          <DescriptionListTerm>
+            {t('topics.messages.field.epoch')}
+          </DescriptionListTerm>
           <DescriptionListDescription>
             {formatEpoch(message.attributes.timestamp)}
           </DescriptionListDescription>
         </DescriptionListGroup>
 
         <DescriptionListGroup>
-          <DescriptionListTerm>{t('topics.messages.field.keyFormat')}</DescriptionListTerm>
+          <DescriptionListTerm>
+            {t('topics.messages.field.keyFormat')}
+          </DescriptionListTerm>
           <DescriptionListDescription>
             {message.relationships.keySchema?.meta?.artifactType || 'Plain'}
           </DescriptionListDescription>
         </DescriptionListGroup>
 
         <DescriptionListGroup>
-          <DescriptionListTerm>{t('topics.messages.field.valueFormat')}</DescriptionListTerm>
+          <DescriptionListTerm>
+            {t('topics.messages.field.valueFormat')}
+          </DescriptionListTerm>
           <DescriptionListDescription>
             {message.relationships.valueSchema?.meta?.artifactType || 'Plain'}
           </DescriptionListDescription>
@@ -160,7 +185,9 @@ export function MessageDetails({ message }: MessageDetailsProps) {
         >
           <Tab
             eventKey="value"
-            title={<TabTitleText>{t('topics.messages.field.value')}</TabTitleText>}
+            title={
+              <TabTitleText>{t('topics.messages.field.value')}</TabTitleText>
+            }
           >
             <div style={{ padding: '1rem' }}>
               <ClipboardCopy
@@ -174,7 +201,11 @@ export function MessageDetails({ message }: MessageDetailsProps) {
                 {message.attributes.value ?? '-'}
               </ClipboardCopy>
               {valueJson.isJSON && (
-                <JsonView data={valueJson.parsed} shouldExpandNode={allExpanded} style={jsonStyles} />
+                <JsonView
+                  data={valueJson.parsed}
+                  shouldExpandNode={allExpanded}
+                  style={jsonStyles}
+                />
               )}
               {message.relationships.valueSchema?.meta?.name && (
                 <div style={{ marginTop: '1rem' }}>
@@ -194,7 +225,9 @@ export function MessageDetails({ message }: MessageDetailsProps) {
 
           <Tab
             eventKey="key"
-            title={<TabTitleText>{t('topics.messages.field.key')}</TabTitleText>}
+            title={
+              <TabTitleText>{t('topics.messages.field.key')}</TabTitleText>
+            }
           >
             <div style={{ padding: '1rem' }}>
               <ClipboardCopy
@@ -208,7 +241,11 @@ export function MessageDetails({ message }: MessageDetailsProps) {
                 {message.attributes.key ?? '-'}
               </ClipboardCopy>
               {keyJson.isJSON && (
-                <JsonView data={keyJson.parsed} shouldExpandNode={allExpanded} style={jsonStyles} />
+                <JsonView
+                  data={keyJson.parsed}
+                  shouldExpandNode={allExpanded}
+                  style={jsonStyles}
+                />
               )}
               {message.relationships.keySchema?.meta?.name && (
                 <div style={{ marginTop: '1rem' }}>
@@ -228,7 +265,9 @@ export function MessageDetails({ message }: MessageDetailsProps) {
 
           <Tab
             eventKey="headers"
-            title={<TabTitleText>{t('topics.messages.field.headers')}</TabTitleText>}
+            title={
+              <TabTitleText>{t('topics.messages.field.headers')}</TabTitleText>
+            }
           >
             <div style={{ padding: '1rem' }}>
               {headers.length === 0 ? (
@@ -238,7 +277,9 @@ export function MessageDetails({ message }: MessageDetailsProps) {
                   {headers.map(([k, v]) => (
                     <DescriptionListGroup key={k}>
                       <DescriptionListTerm>{k}</DescriptionListTerm>
-                      <DescriptionListDescription>{String(v)}</DescriptionListDescription>
+                      <DescriptionListDescription>
+                        {String(v)}
+                      </DescriptionListDescription>
                     </DescriptionListGroup>
                   ))}
                 </DescriptionList>
