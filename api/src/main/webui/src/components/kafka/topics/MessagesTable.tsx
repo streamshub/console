@@ -14,7 +14,11 @@ import {
   Tooltip,
 } from '@patternfly/react-core';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { ExclamationTriangleIcon, HelpIcon, SearchIcon } from '@patternfly/react-icons';
+import {
+  ExclamationTriangleIcon,
+  HelpIcon,
+  SearchIcon,
+} from '@patternfly/react-icons';
 import { KafkaRecord } from '@/api/types';
 import { Column, useColumnLabels } from './ColumnsModal';
 import { formatDateTime } from '@/utils/dateTime';
@@ -28,6 +32,8 @@ interface MessagesTableProps {
   onReset: () => void;
   topicName: string;
 }
+
+const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
 
 export function MessagesTable({
   messages,
@@ -43,7 +49,14 @@ export function MessagesTable({
   const truncate = (value: string | null): React.ReactNode => {
     if (!value) return '-';
     return (
-      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span
+        style={{
+          display: 'block',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
         {value}
       </span>
     );
@@ -55,7 +68,14 @@ export function MessagesTable({
     return (
       <div>
         {entries.map(([k, v]) => (
-          <div key={k} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div
+            key={k}
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             <strong>{k}</strong>: {String(v)}
           </div>
         ))}
@@ -67,12 +87,14 @@ export function MessagesTable({
     return formatDateTime({
       value: timestamp,
       timeZone: 'UTC',
+      format: MESSAGE_TIMESTAMP_FORMAT,
     });
   };
 
   const formatTimestampLocal = (timestamp: string): string => {
     return formatDateTime({
       value: timestamp,
+      format: MESSAGE_TIMESTAMP_FORMAT,
     });
   };
 
@@ -138,7 +160,11 @@ export function MessagesTable({
                 <Content component="small">
                   {message.relationships.keySchema.meta?.name}
                   {message.relationships.keySchema.meta?.errors && (
-                    <> <ExclamationTriangleIcon /> {message.relationships.keySchema.meta.errors[0].detail}</>
+                    <>
+                      {' '}
+                      <ExclamationTriangleIcon />{' '}
+                      {message.relationships.keySchema.meta.errors[0].detail}
+                    </>
                   )}
                 </Content>
               </Content>
@@ -156,7 +182,11 @@ export function MessagesTable({
                 <Content component="small">
                   {message.relationships.valueSchema.meta?.name}
                   {message.relationships.valueSchema.meta?.errors && (
-                    <> <ExclamationTriangleIcon /> {message.relationships.valueSchema.meta.errors[0].detail}</>
+                    <>
+                      {' '}
+                      <ExclamationTriangleIcon />{' '}
+                      {message.relationships.valueSchema.meta.errors[0].detail}
+                    </>
                   )}
                 </Content>
               </Content>
@@ -173,7 +203,11 @@ export function MessagesTable({
   return (
     <>
       <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
-        <Table aria-label={t('topics.messages.tableAriaLabel')} variant="compact" style={{ tableLayout: 'fixed', width: '100%' }}>
+        <Table
+          aria-label={t('topics.messages.tableAriaLabel')}
+          variant="compact"
+          style={{ tableLayout: 'fixed', width: '100%' }}
+        >
           <Thead>
             <Tr>
               {chosenColumns.map((column) => {
@@ -183,7 +217,10 @@ export function MessagesTable({
                 if (column === 'offset-partition') {
                   width = 10;
                   modifier = 'nowrap';
-                } else if (column === 'timestampUTC' || column === 'timestamp') {
+                } else if (
+                  column === 'timestampUTC' ||
+                  column === 'timestamp'
+                ) {
                   modifier = 'nowrap';
                   width = 15;
                 } else if (column === 'size') {
@@ -193,7 +230,7 @@ export function MessagesTable({
                   modifier = 'truncate';
                 }
                 // key, headers, value get remaining space (no width set)
-                
+
                 return (
                   <Th key={column} modifier={modifier} width={width}>
                     {column === 'size' ? (
@@ -220,10 +257,7 @@ export function MessagesTable({
                 onRowClick={() => onSelectMessage(message)}
               >
                 {chosenColumns.map((column) => (
-                  <Td
-                    key={column}
-                    dataLabel={columnLabels[column]}
-                  >
+                  <Td key={column} dataLabel={columnLabels[column]}>
                     {renderCell(column, message)}
                   </Td>
                 ))}
