@@ -48,7 +48,8 @@ STRIMZI_OPERATOR_VERSION: 1.3.0
 # 1. URL - released console-operator.yaml
 # 2. Local path that is relative to the root project dir
 # 3. Local path that is absolute
-CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.14.1/streamshub-console-operator.yaml
+# If unset it defaults to the latest released
+CONSOLE_OPERATOR_BUNDLE_URL:
 # -------------------------------------------
 # Kroxy
 # -------------------------------------------
