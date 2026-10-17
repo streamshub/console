@@ -1,0 +1,81 @@
+---
+# Minimal Kafka Connect cluster so the console's Connect / connector views
+# populate. Uses the default Strimzi Connect image (no custom connector
+# plugins) and the Kafka `plain` internal listener. Internal topics use
+# replication factor 1 to match the lean single-broker cluster.
+#
+# Deployed into the Kafka namespace. The REST API service is
+# console-connect-connect-api:8083, exposed at http://connect.<domain>/.
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: console-connect
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  replicas: 1
+  bootstrapServers: console-kafka-kafka-bootstrap:9092
+  config:
+    group.id: console-connect
+    offset.storage.topic: console-connect-offsets
+    config.storage.topic: console-connect-configs
+    status.storage.topic: console-connect-status
+    config.storage.replication.factor: 1
+    offset.storage.replication.factor: 1
+    status.storage.replication.factor: 1
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: false
+    value.converter.schemas.enable: false
+  resources:
+    requests:
+      cpu: 250m
+      memory: 768Mi
+    limits:
+      memory: 1Gi
+---
+# Strimzi locks the Connect REST API (8083) down with a NetworkPolicy that only
+# admits the Connect pods and the cluster-operator. This kind cluster enforces
+# NetworkPolicy, so nothing else can reach it without this additive allow rule:
+# in frontend/backend mode the caller is ingress-nginx, and in operator mode it
+# is the in-cluster console pod. For a dev environment we simply open 8083 to
+# all namespaces. (NetworkPolicies are purely additive, so this only widens
+# access to 8083 — it doesn't relax any of Strimzi's other rules.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dev-access-to-connect-rest
+spec:
+  podSelector:
+    matchLabels:
+      strimzi.io/cluster: console-connect
+      strimzi.io/kind: KafkaConnect
+      strimzi.io/name: console-connect-connect
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 8083
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: console-connect
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: connect.${CLUSTER_DOMAIN}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: console-connect-connect-api
+                port:
+                  number: 8083
