@@ -100,7 +100,7 @@ public class Environment {
     public static final boolean DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL = ENVS.getOrDefault("DELETE_CONSOLE_OPERATOR_BEFORE_INSTALL", Boolean::parseBoolean, true);
 
     // YAML bundle
-    public static final String CONSOLE_OPERATOR_BUNDLE_URL = ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "");
+    public static final String CONSOLE_OPERATOR_BUNDLE_URL = getConsoleOperatorBundleUrl();
 
     public static final String OLD_CONSOLE_OPERATOR_VERSION = getPreviousConsoleOperatorVersion();
     public static final String OLD_CONSOLE_OPERATOR_CRDS_URL = ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_CRDS_URL",
@@ -223,7 +223,11 @@ public class Environment {
 
                     var previous = versions.lower(currentMinor);
                     LOGGER.info("Latest minor release earlier than {} from GitHub API: {}", currentMinor, previous);
-                    return Optional.ofNullable(previous).map(Version::toString);
+                    return Optional.ofNullable(previous)
+                        .map(Version::toString)
+                        // Register the resolved value with ENVS so it's correctly reflected by
+                        // logConfigAndSaveToFile(), instead of the blank probed above.
+                        .map(value -> ENVS.getOrDefault("OLD_CONSOLE_OPERATOR_VERSION", value));
                 }
 
                 return Optional.empty();
@@ -231,6 +235,26 @@ public class Environment {
             .orElseThrow(() -> new IllegalStateException("""
                     Environment variable OLD_CONSOLE_OPERATOR_VERSION is not set \
                     and could not be derived from `operator.version` property and GitHub releases."""));
+    }
+
+    private static String getConsoleOperatorBundleUrl() {
+        return Optional.of(ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", ""))
+            .filter(Predicate.not(String::isBlank))
+            // Register the resolved value with ENVS so it's correctly reflected by
+            // logConfigAndSaveToFile(), instead of the blank probed above.
+            .orElseGet(() -> ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL",
+                "https://github.com/streamshub/console/releases/download/" + getLatestConsoleOperatorVersion() + "/streamshub-console-operator.yaml"));
+    }
+
+    private static String getLatestConsoleOperatorVersion() {
+        NavigableSet<Version> versions = findGitHubReleases();
+        LOGGER.debug("CONSOLE_OPERATOR_BUNDLE_URL was not set, found GitHub releases: {}", versions);
+
+        return Optional.of(versions)
+            .filter(Predicate.not(NavigableSet::isEmpty))
+            .map(NavigableSet::last)
+            .map(Version::toString)
+            .orElseThrow(() -> new IllegalStateException("CONSOLE_OPERATOR_BUNDLE_URL is not set and the latest version could not be derived from GitHub releases"));
     }
 
     /* test */ static NavigableSet<Version> findGitHubReleases() {
