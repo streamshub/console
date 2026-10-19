@@ -1,6 +1,6 @@
 /**
  * Messages Table Component
- * Displays Kafka messages
+ * Displays Kafka messages.
  */
 
 import React from 'react';
@@ -12,8 +12,9 @@ import {
   Title,
   Content,
   Tooltip,
+  Flex,
+  Spinner,
 } from '@patternfly/react-core';
-import { SkeletonTableBody } from '@patternfly/react-component-groups';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
 import {
   ExclamationTriangleIcon,
@@ -24,7 +25,8 @@ import { KafkaRecord } from '@/api/types';
 import { Column, useColumnLabels } from './ColumnsModal';
 import { formatDateTime } from '@/utils/dateTime';
 
-const SKELETON_ROWS = 10;
+const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
+
 interface MessagesTableProps {
   messages: KafkaRecord[];
   isLoading?: boolean;
@@ -36,8 +38,6 @@ interface MessagesTableProps {
   onReset: () => void;
   topicName: string;
 }
-
-const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
 
 export function MessagesTable({
   messages,
@@ -185,7 +185,6 @@ export function MessagesTable({
     }
   };
 
-  // One full-width row inside the table body (the header stays visible)
   const messageRow = (content: React.ReactNode) => (
     <Tbody>
       <Tr>
@@ -194,12 +193,25 @@ export function MessagesTable({
     </Tbody>
   );
 
-  // Body: loading skeleton, error, empty state or rows. Never replaces the header.
   const body = isLoading ? (
-    <SkeletonTableBody
-      rowsCount={SKELETON_ROWS}
-      columnsCount={chosenColumns.length}
-    />
+    <Tbody>
+      <Tr>
+        <Td colSpan={chosenColumns.length}>
+          <Flex
+            justifyContent={{ default: 'justifyContentCenter' }}
+            alignItems={{ default: 'alignItemsCenter' }}
+            style={{ minHeight: '300px' }}
+          >
+            <EmptyState>
+              <Spinner size="lg" />
+              <Title headingLevel="h2" size="lg">
+                {t('common.loading')}
+              </Title>
+            </EmptyState>
+          </Flex>
+        </Td>
+      </Tr>
+    </Tbody>
   ) : errorState ? (
     messageRow(errorState)
   ) : messages.length === 0 ? (
@@ -241,71 +253,51 @@ export function MessagesTable({
   );
 
   return (
-    <>
-      <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
-        <Table
-          aria-label={t('topics.messages.tableAriaLabel')}
-          variant="compact"
-          style={{ tableLayout: 'fixed', width: '100%' }}
-        >
-          <Thead>
-            <Tr>
-              {chosenColumns.map((column) => {
-                // Set fixed widths for columns with consistent data
-                let modifier: 'fitContent' | 'nowrap' | 'truncate' | undefined;
-                let width: 10 | 15 | 20 | undefined;
-                if (column === 'offset-partition') {
-                  width = 10;
-                  modifier = 'nowrap';
-                } else if (
-                  column === 'timestampUTC' ||
-                  column === 'timestamp'
-                ) {
-                  modifier = 'nowrap';
-                  width = 15;
-                } else if (column === 'size') {
-                  modifier = 'nowrap';
-                  width = 10;
-                } else {
-                  modifier = 'truncate';
-                }
-                // key, headers, value get remaining space (no width set)
+    <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+      <Table
+        aria-label={t('topics.messages.tableAriaLabel')}
+        variant="compact"
+        style={{ tableLayout: 'fixed', width: '100%' }}
+      >
+        <Thead>
+          <Tr>
+            {chosenColumns.map((column) => {
+              // Set fixed widths for columns with consistent data
+              let modifier: 'fitContent' | 'nowrap' | 'truncate' | undefined;
+              let width: 10 | 15 | 20 | undefined;
+              if (column === 'offset-partition') {
+                width = 10;
+                modifier = 'nowrap';
+              } else if (column === 'timestampUTC' || column === 'timestamp') {
+                modifier = 'nowrap';
+                width = 20;
+              } else if (column === 'size') {
+                modifier = 'nowrap';
+                width = 10;
+              } else {
+                modifier = 'truncate';
+              }
+              // key, headers, value get remaining space (no width set)
 
-                return (
-                  <Th key={column} modifier={modifier} width={width}>
-                    {column === 'size' ? (
-                      <>
-                        {columnLabels[column]}{' '}
-                        <Tooltip content={t('topics.messages.tooltip.size')}>
-                          <HelpIcon />
-                        </Tooltip>
-                      </>
-                    ) : (
-                      columnLabels[column]
-                    )}
-                  </Th>
-                );
-              })}
-            </Tr>
-          </Thead>
-          <Tbody>
-            {messages.map((message) => (
-              <Tr
-                key={`${message.attributes.partition}-${message.attributes.offset}`}
-                isSelectable
-                isRowSelected={isSelected(message)}
-                onRowClick={() => onSelectMessage(message)}
-              >
-                {chosenColumns.map((column) => (
-                  <Td key={column} dataLabel={columnLabels[column]}>
-                    {renderCell(column, message)}
-                  </Td>
-                ))}
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </div>
-    </>
+              return (
+                <Th key={column} modifier={modifier} width={width}>
+                  {column === 'size' ? (
+                    <>
+                      {columnLabels[column]}{' '}
+                      <Tooltip content={t('topics.messages.tooltip.size')}>
+                        <HelpIcon />
+                      </Tooltip>
+                    </>
+                  ) : (
+                    columnLabels[column]
+                  )}
+                </Th>
+              );
+            })}
+          </Tr>
+        </Thead>
+        {body}
+      </Table>
+    </div>
   );
 }
