@@ -36,7 +36,7 @@
     "date-fns-tz": "^3.2.0",
     "iron-session": "^8.0.4",
     "js-yaml": "4.3.2",
-    "next": "15.5.25",
+    "next": "15.5.28",
     "next-auth": "4.24.15",
     "next-intl": "4.13.4",
     "next-logger": "^5.0.2",
@@ -49,7 +49,7 @@
     "typescript": "5.9.3",
     "use-debounce": "^10.1.1",
     "victory": "^37.3.6",
-    "zod": "4.4.3"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
@@ -62,7 +62,7 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.4",
-    "eslint-config-next": "15.5.25",
+    "eslint-config-next": "15.5.28",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "4.4.5",
     "eslint-plugin-storybook": "10.5.4",
@@ -78,7 +78,7 @@
       "rimraf": "4.4.1"
     },
     "browserslist": "4.28.8",
-    "dompurify": "3.4.13",
+    "dompurify": "3.4.17",
     "esbuild": "0.28.1",
     "eslint-plugin-storybook": {
       "typescript": "$typescript"
@@ -92,7 +92,7 @@
       ".": "4.4.1",
       "glob": "13.0.6"
     },
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "uuid": "11.1.1"
   }
 }
