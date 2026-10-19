@@ -6,12 +6,14 @@ interface CommitInputProps
   value: string;
   onCommit: (value: string) => void;
   isValid?: (value: string) => boolean;
+  sanitize?: (raw: string) => string;
 }
 
 export function CommitInput({
   value,
   onCommit,
   isValid = () => true,
+  sanitize,
   ...props
 }: CommitInputProps) {
   const [draft, setDraft] = useState(value);
@@ -22,8 +24,10 @@ export function CommitInput({
   }
 
   const valid = isValid(draft);
+
+  // Leaving the box without changing anything is not a new search
   const commit = () => {
-    if (valid) onCommit(draft);
+    if (valid && draft !== value) onCommit(draft);
   };
 
   return (
@@ -31,7 +35,7 @@ export function CommitInput({
       {...props}
       value={draft}
       validated={valid ? 'default' : 'error'}
-      onChange={(_, next) => setDraft(next)}
+      onChange={(_, next) => setDraft(sanitize ? sanitize(next) : next)}
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === 'Enter') commit();

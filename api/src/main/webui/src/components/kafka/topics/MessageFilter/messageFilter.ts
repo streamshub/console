@@ -1,6 +1,9 @@
 import { SearchParams } from '@/api/types';
 import { FromOptions } from './FetchFromSelector';
 import { WhereOption } from './whereSelector';
+import { KafkaRecord } from '@/api/types';
+
+export type SearchWhere = 'key' | 'headers' | 'value' | undefined;
 
 export const DEFAULT_LIMIT = 50;
 
@@ -83,4 +86,61 @@ export function buildSearchParams(state: FilterState): SearchParams {
     from: buildFrom(state),
     limit: state.limit,
   };
+}
+
+export function isSearchEnabled({
+  from,
+  offset,
+  timestamp,
+}: Pick<FilterState, 'from' | 'offset' | 'timestamp'>): boolean {
+  switch (from) {
+    case 'last5':
+    case 'last10':
+    case 'last15':
+      return true;
+    case 'offset':
+      return offset !== undefined;
+    case 'timestamp':
+      return timestamp !== undefined;
+    default:
+      return false;
+  }
+}
+
+export function filterMessages(
+  messages: KafkaRecord[],
+  query: string | undefined,
+  where: SearchWhere
+): KafkaRecord[] {
+  const term = query?.trim().toLowerCase();
+  if (!term) {
+    return messages;
+  }
+
+  const matches = (value: unknown): boolean =>
+    value !== null &&
+    value !== undefined &&
+    String(value).toLowerCase().includes(term);
+
+  return messages.filter((message) => {
+    const { key, value, headers } = message.attributes;
+
+    const inKey = () => matches(key);
+    const inValue = () => matches(value);
+    const inHeaders = () =>
+      Object.entries(headers ?? {}).some(
+        ([name, headerValue]) => matches(name) || matches(headerValue)
+      );
+
+    switch (where) {
+      case 'key':
+        return inKey();
+      case 'value':
+        return inValue();
+      case 'headers':
+        return inHeaders();
+      default:
+        return inKey() || inValue() || inHeaders();
+    }
+  });
 }

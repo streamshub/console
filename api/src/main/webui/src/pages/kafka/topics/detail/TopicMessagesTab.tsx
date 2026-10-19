@@ -36,6 +36,7 @@ import { MessageDetails } from '@/components/kafka/topics/MessageDetails';
 import { AdvancedSearch } from '@/components/kafka/topics/AdvancedSearch';
 import { Column, ColumnsModal } from '@/components/kafka/topics/ColumnsModal';
 import { FromOptions } from '@/components/kafka/topics/MessageFilter/FetchFromSelector';
+import { filterMessages } from '@/components/kafka/topics/MessageFilter/messageFilter';
 
 const defaultColumns: Column[] = [
   'offset-partition',
@@ -86,6 +87,7 @@ export function TopicMessagesTab() {
   const epoch = epochParam ? parseInt(epochParam) : undefined;
   const [showColumnsModal, setShowColumnsModal] = useState(false);
   const [resetCount, setResetCount] = useState(0);
+  const [pendingReset, setPendingReset] = useState(false);
 
   // Fetch topic info to get partition count
   const { data: topic, isLoading: isLoadingTopic } = useTopic(
@@ -96,7 +98,8 @@ export function TopicMessagesTab() {
   const topicData = topic?.data;
   const partitions = topicData?.attributes?.numPartitions || 0;
 
-  // Fetch messages
+  // Fetch messages. The search term is NOT sent: it is applied below to the
+  // fetched records, so typing a search never triggers a new request.
   const {
     data: messages = [],
     isLoading: isLoadingMessages,
@@ -108,8 +111,6 @@ export function TopicMessagesTab() {
       topicId: topicId!,
       pageSize: limit === 'continuously' ? 50 : limit,
       partition,
-      query,
-      where,
       offset,
       timestamp,
       epoch,
@@ -118,6 +119,12 @@ export function TopicMessagesTab() {
       enabled: !!kafkaId && !!topicId,
       refetchInterval: limit === 'continuously' ? 1000 : false,
     }
+  );
+
+  // Apply the search term to the fetched records
+  const visibleMessages = useMemo(
+    () => filterMessages(messages, query, where),
+    [messages, query, where]
   );
 
   const selectedMessageId = useMemo(
@@ -168,10 +175,11 @@ export function TopicMessagesTab() {
         newParams.set('retrieve', String(params.limit));
       }
 
+      // The changed URL changes the query key, which triggers the fetch.
+      // No refetch() here: it would re-run the previous query as well.
       setSearchParams(newParams, { replace: true });
-      refetch();
     },
-    [setSearchParams, refetch]
+    [setSearchParams]
   );
 
   const handleSelectMessage = useCallback(
@@ -194,8 +202,16 @@ export function TopicMessagesTab() {
 
   const handleReset = useCallback(() => {
     setSearchParams(new URLSearchParams());
-    setResetCount((c) => c + 1);
+    setPendingReset(true);
   }, [setSearchParams]);
+
+  // Remount the filter only once the cleared URL has been applied. Doing it in
+  // the same step as setSearchParams would let the filter start from the old
+  // URL values, so its selections and search term would not be reset.
+  if (pendingReset && searchParams.toString() === '') {
+    setPendingReset(false);
+    setResetCount((c) => c + 1);
+  }
 
   // Load saved column preferences from localStorage
   const persistedColumns = useMemo(() => {
@@ -222,8 +238,10 @@ export function TopicMessagesTab() {
     setShowColumnsModal(false);
   };
 
-  // Loading state
-  if (isLoadingTopic || (isLoadingMessages && messages.length === 0)) {
+  // Only the topic load replaces the whole page. Message loading, empty and
+  // error states are shown inside the table body so the filter and the table
+  // header stay in place.
+  if (isLoadingTopic) {
     return (
       <PageSection isFilled>
         <EmptyState>
@@ -242,6 +260,25 @@ export function TopicMessagesTab() {
     timestamp !== undefined ||
     epoch !== undefined ||
     query !== undefined;
+
+  const errorState = messagesError ? (
+    <EmptyState>
+      <ExclamationCircleIcon />
+      <Title headingLevel="h2" size="lg">
+        {messagesError instanceof ApiError && messagesError.errors?.[0]?.title
+          ? messagesError.errors[0].title
+          : t('topics.messages.noDataTitle')}
+      </Title>
+      <EmptyStateBody>
+        {messagesError instanceof ApiError && messagesError.errors?.[0]?.detail
+          ? messagesError.errors[0].detail
+          : messagesError.message}
+      </EmptyStateBody>
+      <Button variant="primary" onClick={() => refetch()}>
+        {t('common.retry')}
+      </Button>
+    </EmptyState>
+  ) : undefined;
 
   return (
     <>
@@ -304,36 +341,17 @@ export function TopicMessagesTab() {
                 </ToolbarContent>
               </Toolbar>
 
-              {messagesError ? (
-                <EmptyState>
-                  <ExclamationCircleIcon />
-                  <Title headingLevel="h2" size="lg">
-                    {messagesError instanceof ApiError &&
-                    messagesError.errors?.[0]?.title
-                      ? messagesError.errors[0].title
-                      : t('topics.messages.noDataTitle')}
-                  </Title>
-                  <EmptyStateBody>
-                    {messagesError instanceof ApiError &&
-                    messagesError.errors?.[0]?.detail
-                      ? messagesError.errors[0].detail
-                      : messagesError.message}
-                  </EmptyStateBody>
-                  <Button variant="primary" onClick={() => refetch()}>
-                    {t('common.retry')}
-                  </Button>
-                </EmptyState>
-              ) : (
-                <MessagesTable
-                  messages={messages}
-                  selectedMessage={selectedMessage}
-                  chosenColumns={chosenColumns}
-                  hasFilters={hasFilters}
-                  onSelectMessage={handleSelectMessage}
-                  onReset={handleReset}
-                  topicName={topicData?.attributes?.name || topicId || ''}
-                />
-              )}
+              <MessagesTable
+                messages={visibleMessages}
+                isLoading={isLoadingMessages}
+                errorState={errorState}
+                selectedMessage={selectedMessage}
+                chosenColumns={chosenColumns}
+                hasFilters={hasFilters}
+                onSelectMessage={handleSelectMessage}
+                onReset={handleReset}
+                topicName={topicData?.attributes?.name || topicId || ''}
+              />
             </PageSection>
           </DrawerContentBody>
         </DrawerContent>

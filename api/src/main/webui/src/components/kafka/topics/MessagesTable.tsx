@@ -1,6 +1,6 @@
 /**
  * Messages Table Component
- * Displays Kafka messages in a virtualized table
+ * Displays Kafka messages
  */
 
 import React from 'react';
@@ -13,6 +13,7 @@ import {
   Content,
   Tooltip,
 } from '@patternfly/react-core';
+import { SkeletonTableBody } from '@patternfly/react-component-groups';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
 import {
   ExclamationTriangleIcon,
@@ -23,8 +24,11 @@ import { KafkaRecord } from '@/api/types';
 import { Column, useColumnLabels } from './ColumnsModal';
 import { formatDateTime } from '@/utils/dateTime';
 
+const SKELETON_ROWS = 10;
 interface MessagesTableProps {
   messages: KafkaRecord[];
+  isLoading?: boolean;
+  errorState?: React.ReactNode;
   selectedMessage?: KafkaRecord;
   chosenColumns: Column[];
   hasFilters: boolean;
@@ -37,6 +41,8 @@ const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
 
 export function MessagesTable({
   messages,
+  isLoading = false,
+  errorState,
   selectedMessage,
   chosenColumns,
   hasFilters,
@@ -113,27 +119,6 @@ export function MessagesTable({
     );
   };
 
-  if (messages.length === 0) {
-    return (
-      <EmptyState>
-        <SearchIcon />
-        <Title headingLevel="h2" size="lg">
-          {t('topics.messages.noDataTitle')}
-        </Title>
-        <EmptyStateBody>
-          {hasFilters
-            ? t('topics.messages.noResultsBody')
-            : t('topics.messages.noDataBody')}
-        </EmptyStateBody>
-        <Button variant="primary" onClick={onReset}>
-          {hasFilters
-            ? t('topics.messages.noResultsReset')
-            : t('topics.messages.noDataRefresh')}
-        </Button>
-      </EmptyState>
-    );
-  }
-
   const renderCell = (column: Column, message: KafkaRecord) => {
     switch (column) {
       case 'offset-partition':
@@ -199,6 +184,61 @@ export function MessagesTable({
         return '-';
     }
   };
+
+  // One full-width row inside the table body (the header stays visible)
+  const messageRow = (content: React.ReactNode) => (
+    <Tbody>
+      <Tr>
+        <Td colSpan={chosenColumns.length}>{content}</Td>
+      </Tr>
+    </Tbody>
+  );
+
+  // Body: loading skeleton, error, empty state or rows. Never replaces the header.
+  const body = isLoading ? (
+    <SkeletonTableBody
+      rowsCount={SKELETON_ROWS}
+      columnsCount={chosenColumns.length}
+    />
+  ) : errorState ? (
+    messageRow(errorState)
+  ) : messages.length === 0 ? (
+    messageRow(
+      <EmptyState>
+        <SearchIcon />
+        <Title headingLevel="h2" size="lg">
+          {t('topics.messages.noDataTitle')}
+        </Title>
+        <EmptyStateBody>
+          {hasFilters
+            ? t('topics.messages.noResultsBody')
+            : t('topics.messages.noDataBody')}
+        </EmptyStateBody>
+        <Button variant="primary" onClick={onReset}>
+          {hasFilters
+            ? t('topics.messages.noResultsReset')
+            : t('topics.messages.noDataRefresh')}
+        </Button>
+      </EmptyState>
+    )
+  ) : (
+    <Tbody>
+      {messages.map((message) => (
+        <Tr
+          key={`${message.attributes.partition}-${message.attributes.offset}`}
+          isSelectable
+          isRowSelected={isSelected(message)}
+          onRowClick={() => onSelectMessage(message)}
+        >
+          {chosenColumns.map((column) => (
+            <Td key={column} dataLabel={columnLabels[column]}>
+              {renderCell(column, message)}
+            </Td>
+          ))}
+        </Tr>
+      ))}
+    </Tbody>
+  );
 
   return (
     <>

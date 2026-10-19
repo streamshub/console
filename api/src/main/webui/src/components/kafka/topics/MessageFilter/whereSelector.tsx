@@ -14,6 +14,7 @@ interface WhereSelectorProps {
   where: WhereOption;
   onWhereChange: (where: WhereOption) => void;
   ouiaId?: string;
+  isDisabled?: boolean;
 }
 
 type WhereValue = 'everywhere' | 'key' | 'headers' | 'value';
@@ -22,6 +23,7 @@ export function WhereSelector({
   where,
   onWhereChange,
   ouiaId = 'where-selector',
+  isDisabled,
 }: WhereSelectorProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -64,6 +66,7 @@ export function WhereSelector({
         <MenuToggle
           ref={toggleRef}
           ouiaId={ouiaId}
+          isDisabled={isDisabled}
           onClick={() => setIsOpen((open) => !open)}
           isExpanded={isOpen}
           style={{ width: '140px' }}

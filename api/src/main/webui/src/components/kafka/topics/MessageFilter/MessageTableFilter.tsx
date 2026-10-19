@@ -1,11 +1,21 @@
-import { Flex, FlexItem, ToolbarItem } from '@patternfly/react-core';
+import {
+  Flex,
+  FlexItem,
+  ToolbarGroup,
+  ToolbarItem,
+} from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { PartitionSelector } from './PartitionSelector';
 import { FetchFromSelector } from './FetchFromSelector';
 import { LimitSelect } from './LimitSelector';
 import { WhereSelector } from './whereSelector';
 import { CommitInput } from './CommitInput';
-import { FilterState, isValidOffset, parseOffset } from './messageFilter';
+import {
+  FilterState,
+  isSearchEnabled,
+  isValidOffset,
+  parseOffset,
+} from './messageFilter';
 import { TimestampPicker } from './TimeStampPicker';
 
 interface MessageTableFilterProps {
@@ -39,6 +49,8 @@ export function MessageTableFilter({
   const { t } = useTranslation();
   const { partition, from, offset, limit, query, where, timestamp } = value;
 
+  const searchEnabled = isSearchEnabled(value);
+
   return (
     <>
       <FilterSection title={t('topics.messages.filter.partition')}>
@@ -49,37 +61,37 @@ export function MessageTableFilter({
         />
       </FilterSection>
       <ToolbarItem variant="separator" />
-      <FilterSection title={t('topics.messages.filter.fetchFrom')}>
-        <Flex>
-          <FlexItem>
-            <FetchFromSelector
-              selectedFrom={from}
-              onFromChange={(next) => onChange({ from: next })}
+      <ToolbarGroup>
+        <FilterSection title={t('topics.messages.filter.fetchFrom')}>
+          <FetchFromSelector
+            selectedFrom={from}
+            onFromChange={(next) => onChange({ from: next })}
+          />
+        </FilterSection>
+
+        {from === 'offset' && (
+          <FilterSection title="Offset">
+            <CommitInput
+              type="number"
+              min={0}
+              value={offset?.toString() ?? ''}
+              isValid={isValidOffset}
+              onCommit={(raw) => onChange({ offset: parseOffset(raw) })}
+              placeholder={t('topics.messages.filter.offsetPlaceholder')}
+              aria-label={t('topics.messages.filter.offsetAriaLabel')}
             />
-          </FlexItem>
-          {from === 'offset' && (
-            <FlexItem>
-              <CommitInput
-                type="number"
-                min={0}
-                value={offset?.toString() ?? ''}
-                isValid={isValidOffset}
-                onCommit={(raw) => onChange({ offset: parseOffset(raw) })}
-                placeholder={t('topics.messages.filter.offsetPlaceholder')}
-                aria-label={t('topics.messages.filter.offsetAriaLabel')}
-              />
-            </FlexItem>
-          )}
-          {from === 'timestamp' && (
-            <FlexItem>
-              <TimestampPicker
-                value={timestamp}
-                onCommit={(ts) => onChange({ timestamp: ts })}
-              />
-            </FlexItem>
-          )}
-        </Flex>
-      </FilterSection>
+          </FilterSection>
+        )}
+
+        {from === 'timestamp' && (
+          <FilterSection title="Timestamp">
+            <TimestampPicker
+              value={timestamp}
+              onCommit={(ts) => onChange({ timestamp: ts })}
+            />
+          </FilterSection>
+        )}
+      </ToolbarGroup>
       <FilterSection title={t('topics.messages.filter.limit')}>
         <LimitSelect
           value={limit}
@@ -95,11 +107,13 @@ export function MessageTableFilter({
             <FlexItem>
               <WhereSelector
                 where={where}
+                isDisabled={!searchEnabled}
                 onWhereChange={(next) => onChange({ where: next })}
               />
             </FlexItem>
             <FlexItem>
               <CommitInput
+                isDisabled={!searchEnabled}
                 aria-label={t('topics.messages.advancedSearch.queryHelper')}
                 placeholder={t('topics.messages.advancedSearch.queryHelper')}
                 value={query}

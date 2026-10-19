@@ -7,6 +7,7 @@ import {
   DEFAULT_LIMIT,
   FilterState,
   isSameFilter,
+  isSearchEnabled,
 } from './MessageFilter/messageFilter';
 import { MessageTableFilter } from './MessageFilter/MessageTableFilter';
 
@@ -33,7 +34,6 @@ export function AdvancedSearch({
   onSearch,
   filterTimestamp,
 }: AdvancedSearchProps) {
-  // Initial state comes from the URL; the page already loaded it, so no search here.
   const [filter, setFilter] = useState<FilterState>(() =>
     applyPatch(
       {
@@ -61,7 +61,12 @@ export function AdvancedSearch({
   );
 
   const handleChange = (patch: Partial<FilterState>) => {
-    const next = applyPatch(filter, patch);
+    let next = applyPatch(filter, patch);
+
+    if (!isSearchEnabled(next)) {
+      next = { ...next, query: '', where: undefined };
+    }
+
     if (isSameFilter(filter, next)) return;
     setFilter(next);
 
