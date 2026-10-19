@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatInTimeZone } from 'date-fns-tz';
 import {
   Button,
@@ -29,22 +29,12 @@ type Zone = 'UTC' | 'local';
 const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const ZERO_TIME = '00:00:00.000';
 
-// The popup is exactly as wide as the icon + input. The calendar is wider than
-// that by default, so it is scaled down to fit inside the popup padding.
-const TRIGGER_WIDTH_REM = 21;
-const POPUP_PADDING_REM = 2; // 1rem on each side
-const CALENDAR_NATURAL_WIDTH_REM = 24; // adjust if your calendar is a different width
-const CALENDAR_ZOOM = Math.min(
-  1,
-  (TRIGGER_WIDTH_REM - POPUP_PADDING_REM) / CALENDAR_NATURAL_WIDTH_REM
-);
+const TRIGGER_WIDTH_REM = 20;
 const pad = (n: number) => String(n).padStart(2, '0');
 
-// yyyy-MM-ddTHH:mm:ss.SSSZ (UTC) or yyyy-MM-ddTHH:mm:ss.SSS±HH:mm (local time)
 const ISO_REGEX =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z|[+-]\d{2}:\d{2})$/;
 
-/** Only the two accepted formats pass; impossible dates such as Feb 31 fail. */
 export function isValidISODateTime(value: string): boolean {
   const match = ISO_REGEX.exec(value);
   if (!match) return false;
@@ -72,7 +62,6 @@ export function isValidISODateTime(value: string): boolean {
   return !Number.isNaN(new Date(value).getTime());
 }
 
-/** "" -> 00:00:00.000, "9:30" -> 09:30:00.000, invalid -> undefined. */
 function normalizeTime(raw: string): string | undefined {
   const text = raw.trim();
   if (text === '') return ZERO_TIME;
@@ -89,7 +78,6 @@ function normalizeTime(raw: string): string | undefined {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${millis}`;
 }
 
-/** Combine the calendar day, the time and the zone into an accepted timestamp. */
 function buildTimestamp(date: Date, time: string, zone: Zone): string {
   const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
     date.getDate()
@@ -110,7 +98,6 @@ function buildTimestamp(date: Date, time: string, zone: Zone): string {
   return formatInTimeZone(local, LOCAL_TZ, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
 }
 
-/** Read the wall-clock parts of a valid timestamp back into picker fields. */
 function toDraft(value: string) {
   if (!isValidISODateTime(value)) return undefined;
   const [datePart, timePart] = value.split('T');
@@ -128,15 +115,14 @@ interface TimestampPickerProps {
 }
 
 export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
-  // The text box
   const [text, setText] = useState(value ?? '');
   const [prevValue, setPrevValue] = useState(value);
   const [textError, setTextError] = useState(false);
 
-  // The popup
   const [isOpen, setIsOpen] = useState(false);
   const [isZoneOpen, setIsZoneOpen] = useState(false);
   const [popupWidth, setPopupWidth] = useState<number>();
+  const [calendarZoom, setCalendarZoom] = useState(1);
   const [date, setDate] = useState<Date>(() => new Date());
   const [time, setTime] = useState(ZERO_TIME);
   const [zone, setZone] = useState<Zone>('UTC');
@@ -144,15 +130,23 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
 
   const triggerRef = useRef<HTMLDivElement>(null);
   const popperRef = useRef<HTMLDivElement>(null);
+  const calendarMeasured = useRef(false);
 
-  // Follow changes made from outside (reset, reload)
+  const fitCalendar = useCallback((node: HTMLDivElement | null) => {
+    if (!node || calendarMeasured.current) return;
+    const available = node.parentElement?.clientWidth;
+    const natural = node.offsetWidth;
+    if (!available || !natural) return;
+    calendarMeasured.current = true;
+    setCalendarZoom(Math.min(1, (available - 1) / natural));
+  }, []);
+
   if (value !== prevValue) {
     setPrevValue(value);
     setText(value ?? '');
     setTextError(false);
   }
 
-  // Close on outside click or Escape
   useEffect(() => {
     if (!isOpen) return;
     const onMouseDown = (e: MouseEvent) => {
@@ -175,7 +169,6 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
     };
   }, [isOpen]);
 
-  // Typed text: only the two accepted formats are applied
   const commitText = () => {
     const trimmed = text.trim();
     if (trimmed === '') {
@@ -226,7 +219,7 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
         <InputGroupItem isFill>
           <TextInput
             aria-label="Timestamp"
-            placeholder="yyyy-MM-ddTHH:mm:ss.SSS±HH:mm"
+            placeholder="yyyy-MM-ddTHH:mm:ss.SSS"
             value={text}
             validated={textError ? 'error' : 'default'}
             onChange={(_, next) => {
@@ -242,8 +235,7 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
         <FormHelperText>
           <HelperText>
             <HelperTextItem variant="error">
-              Invalid timestamp. Use yyyy-MM-ddTHH:mm:ss.SSSZ (UTC) or
-              yyyy-MM-ddTHH:mm:ss.SSS±HH:mm (local time)
+              Invalid ISO 8601 format. Expected: yyyy-MM-ddTHH:mm:ss.SSSZ
             </HelperTextItem>
           </HelperText>
         </FormHelperText>
@@ -287,10 +279,25 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
                     <SelectOption value="local">Local time</SelectOption>
                   </SelectList>
                 </Select>
+                <HelperText>
+                  <HelperTextItem>
+                    Format:{' '}
+                    {zone === 'UTC'
+                      ? 'yyyy-MM-ddTHH:mm:ss.SSSZ'
+                      : 'yyyy-MM-ddTHH:mm:ss.SSS±HH:mm'}
+                  </HelperTextItem>
+                </HelperText>
               </FlexItem>
 
-              <FlexItem alignSelf={{ default: 'alignSelfCenter' }}>
-                <div style={{ zoom: CALENDAR_ZOOM }}>
+              <FlexItem>
+                <div
+                  ref={fitCalendar}
+                  style={{
+                    zoom: calendarZoom,
+                    width: 'max-content',
+                    margin: '0 auto',
+                  }}
+                >
                   <CalendarMonth
                     date={date}
                     onChange={(_, newDate) => {
@@ -301,7 +308,7 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
               </FlexItem>
 
               <FlexItem>
-                <label htmlFor="timestamp-time">Time (optional)</label>
+                <label htmlFor="timestamp-time">Time</label>
                 <TextInput
                   id="timestamp-time"
                   value={time}
@@ -317,13 +324,12 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
                   <FormHelperText>
                     <HelperText>
                       <HelperTextItem variant="error">
-                        Use HH:mm:ss.SSS, for example {ZERO_TIME}
+                        Use HH:mm:ss.SSS
                       </HelperTextItem>
                     </HelperText>
                   </FormHelperText>
                 )}
               </FlexItem>
-
               <FlexItem>
                 <Button variant="primary" onClick={confirm}>
                   Confirm

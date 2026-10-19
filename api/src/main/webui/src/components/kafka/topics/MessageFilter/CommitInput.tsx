@@ -25,7 +25,6 @@ export function CommitInput({
 
   const valid = isValid(draft);
 
-  // Leaving the box without changing anything is not a new search
   const commit = () => {
     if (valid && draft !== value) onCommit(draft);
   };
@@ -33,6 +32,7 @@ export function CommitInput({
   return (
     <TextInput
       {...props}
+      style={{ width: '12rem' }}
       value={draft}
       validated={valid ? 'default' : 'error'}
       onChange={(_, next) => setDraft(sanitize ? sanitize(next) : next)}

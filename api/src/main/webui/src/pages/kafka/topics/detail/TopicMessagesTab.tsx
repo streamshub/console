@@ -88,8 +88,6 @@ export function TopicMessagesTab() {
   const [showColumnsModal, setShowColumnsModal] = useState(false);
   const [resetCount, setResetCount] = useState(0);
   const [pendingReset, setPendingReset] = useState(false);
-
-  // Fetch topic info to get partition count
   const { data: topic, isLoading: isLoadingTopic } = useTopic(
     kafkaId!,
     topicId!
@@ -98,8 +96,6 @@ export function TopicMessagesTab() {
   const topicData = topic?.data;
   const partitions = topicData?.attributes?.numPartitions || 0;
 
-  // Fetch messages. The search term is NOT sent: it is applied below to the
-  // fetched records, so typing a search never triggers a new request.
   const {
     data: messages = [],
     isLoading: isLoadingMessages,
@@ -121,7 +117,6 @@ export function TopicMessagesTab() {
     }
   );
 
-  // Apply the search term to the fetched records
   const visibleMessages = useMemo(
     () => filterMessages(messages, query, where),
     [messages, query, where]
@@ -131,7 +126,7 @@ export function TopicMessagesTab() {
     () => searchParams.get('selected'),
     [searchParams]
   );
-  // Derive selected message directly from URL + messages — no separate state needed.
+
   const selectedMessage = useMemo(() => {
     if (!selectedMessageId) return undefined;
     const [partStr, offsetStr] = selectedMessageId.split(':');
@@ -145,8 +140,6 @@ export function TopicMessagesTab() {
   const handleSearch = useCallback(
     (params: SearchParams, selectedFrom: FromOptions) => {
       const newParams = new URLSearchParams();
-
-      // Preserve the selected Fetch From option.
       newParams.set('from', selectedFrom);
 
       if (params.query?.value) {
@@ -174,9 +167,6 @@ export function TopicMessagesTab() {
       if (params.limit !== 50) {
         newParams.set('retrieve', String(params.limit));
       }
-
-      // The changed URL changes the query key, which triggers the fetch.
-      // No refetch() here: it would re-run the previous query as well.
       setSearchParams(newParams, { replace: true });
     },
     [setSearchParams]
@@ -238,9 +228,6 @@ export function TopicMessagesTab() {
     setShowColumnsModal(false);
   };
 
-  // Only the topic load replaces the whole page. Message loading, empty and
-  // error states are shown inside the table body so the filter and the table
-  // header stay in place.
   if (isLoadingTopic) {
     return (
       <PageSection isFilled>
@@ -328,7 +315,7 @@ export function TopicMessagesTab() {
                       />
                     </ToolbarGroup>
                   </ToolbarItem>
-                  <ToolbarItem alignItems="end">
+                  <ToolbarItem align={{ default: 'alignEnd' }}>
                     <Tooltip content={t('topics.messages.manage_columns')}>
                       <Button
                         variant="plain"
