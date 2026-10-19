@@ -22,6 +22,7 @@ export type FromOptions =
   | 'last10'
   | 'last15'
   | 'offset'
+  | 'epoch'
   | 'timestamp';
 
 interface FetchFromSelectorProps {
@@ -46,6 +47,10 @@ export function FetchFromSelector({
     { value: 'last10', label: t('topics.messages.fetchFrom.last10') },
     { value: 'last15', label: t('topics.messages.fetchFrom.last15') },
     { value: 'offset', label: t('topics.messages.fetchFrom.offset') },
+    {
+      value: 'epoch',
+      label: t('topics.messages.fetchFrom.epoch'),
+    },
     {
       value: 'timestamp',
       label: t('topics.messages.fetchFrom.timestamp'),

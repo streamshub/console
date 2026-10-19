@@ -19,6 +19,7 @@ interface AdvancedSearchProps {
   filterOffset?: number;
   filterLimit?: number | 'continuously';
   filterFrom?: FromOptions;
+  filterEpoch?: number;
   onSearch: (params: SearchParams, selectedFrom: FromOptions) => void;
   filterTimestamp?: string;
 }
@@ -31,6 +32,7 @@ export function AdvancedSearch({
   filterOffset,
   filterLimit,
   filterFrom,
+  filterEpoch,
   onSearch,
   filterTimestamp,
 }: AdvancedSearchProps) {
@@ -42,10 +44,13 @@ export function AdvancedSearch({
           filterFrom ??
           (filterOffset !== undefined
             ? 'offset'
+            : filterEpoch !== undefined
+            ? 'epoch'
             : filterTimestamp !== undefined
             ? 'timestamp'
             : 'latest'),
         offset: filterOffset,
+        epoch: filterEpoch,
         timestamp: filterTimestamp,
         limit: typeof filterLimit === 'number' ? filterLimit : DEFAULT_LIMIT,
         query: filterQuery ?? '',
@@ -72,6 +77,7 @@ export function AdvancedSearch({
 
     if (
       (next.from === 'offset' && next.offset === undefined) ||
+      (next.from === 'epoch' && next.epoch === undefined) ||
       (next.from === 'timestamp' && next.timestamp === undefined)
     ) {
       return;

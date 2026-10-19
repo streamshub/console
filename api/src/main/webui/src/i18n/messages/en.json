@@ -278,7 +278,7 @@
         "limit": "limit",
         "search": "Search",
         "timestamp": "Timestamp",
-        "epoch": "From Unix timestamp",
+        "epoch": "Unix timestamp",
         "epochAriaLabel": "Specify Unix timestamp",
         "epochPlaceholder": "Specify Unix timestamp",
         "latest": "Latest messages",
@@ -300,7 +300,8 @@
         "last10": "Last 10 minutes",
         "last15": "Last 15 minutes",
         "offset": "Offset",
-        "timestamp": "Timestamp"
+        "timestamp": "Timestamp",
+        "epoch": "Unix timestamp"
       },
       "advancedSearch": {
         "dialogLabel": "Search messages",

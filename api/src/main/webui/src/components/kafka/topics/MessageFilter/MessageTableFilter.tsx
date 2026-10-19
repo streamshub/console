@@ -13,7 +13,9 @@ import { CommitInput } from './CommitInput';
 import {
   FilterState,
   isSearchEnabled,
+  isValidEpoch,
   isValidOffset,
+  parseEpoch,
   parseOffset,
 } from './messageFilter';
 import { TimestampPicker } from './TimeStampPicker';
@@ -47,7 +49,8 @@ export function MessageTableFilter({
   onChange,
 }: MessageTableFilterProps) {
   const { t } = useTranslation();
-  const { partition, from, offset, limit, query, where, timestamp } = value;
+  const { partition, from, offset, limit, query, where, epoch, timestamp } =
+    value;
 
   const searchEnabled = isSearchEnabled(value);
 
@@ -79,6 +82,19 @@ export function MessageTableFilter({
               onCommit={(raw) => onChange({ offset: parseOffset(raw) })}
               placeholder={t('topics.messages.filter.offsetPlaceholder')}
               aria-label={t('topics.messages.filter.offsetAriaLabel')}
+            />
+          </FilterSection>
+        )}
+        {from === 'epoch' && (
+          <FilterSection title="Unix timestamp">
+            <CommitInput
+              type="number"
+              min={0}
+              value={epoch?.toString() ?? ''}
+              isValid={isValidEpoch}
+              onCommit={(raw) => onChange({ epoch: parseEpoch(raw) })}
+              placeholder="Enter Unix timestamp in milliseconds"
+              aria-label="Unix timestamp in milliseconds"
             />
           </FilterSection>
         )}

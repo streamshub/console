@@ -15,6 +15,7 @@ export interface FilterState {
   query: string;
   where: WhereOption;
   timestamp?: string;
+  epoch?: number;
 }
 
 const RELATIVE_MINUTES: Partial<Record<FromOptions, number>> = {
@@ -32,6 +33,7 @@ export function applyPatch(
   if (next.from !== 'offset') {
     next.offset = undefined;
   }
+  if (next.from !== 'epoch') next.epoch = undefined;
   if (next.from !== 'timestamp') next.timestamp = undefined;
   if (next.from === 'latest') {
     // The search box is hidden for "latest", so don't keep a hidden filter
@@ -59,6 +61,7 @@ function buildFrom({
   from,
   offset,
   timestamp,
+  epoch,
 }: FilterState): SearchParams['from'] {
   const minutes = RELATIVE_MINUTES[from];
   if (minutes !== undefined) {
@@ -69,6 +72,9 @@ function buildFrom({
   }
   if (from === 'timestamp' && timestamp !== undefined) {
     return { type: 'timestamp', value: timestamp };
+  }
+  if (from === 'epoch' && epoch !== undefined) {
+    return { type: 'epoch', value: epoch };
   }
   if (from === 'offset' && offset !== undefined) {
     return { type: 'offset', value: offset };
@@ -91,8 +97,9 @@ export function buildSearchParams(state: FilterState): SearchParams {
 export function isSearchEnabled({
   from,
   offset,
+  epoch,
   timestamp,
-}: Pick<FilterState, 'from' | 'offset' | 'timestamp'>): boolean {
+}: Pick<FilterState, 'from' | 'offset' | 'epoch' | 'timestamp'>): boolean {
   switch (from) {
     case 'last5':
     case 'last10':
@@ -100,6 +107,8 @@ export function isSearchEnabled({
       return true;
     case 'offset':
       return offset !== undefined;
+    case 'epoch':
+      return epoch !== undefined;
     case 'timestamp':
       return timestamp !== undefined;
     default:
@@ -143,4 +152,24 @@ export function filterMessages(
         return inKey() || inValue() || inHeaders();
     }
   });
+}
+
+export function isValidEpoch(value: string): boolean {
+  if (value.trim() === '') return true;
+
+  const epoch = Number(value);
+
+  return (
+    Number.isSafeInteger(epoch) &&
+    epoch >= 0 &&
+    !isNaN(new Date(epoch).getTime())
+  );
+}
+
+export function parseEpoch(value: string): number | undefined {
+  if (value.trim() === '' || !isValidEpoch(value)) {
+    return undefined;
+  }
+
+  return Number(value);
 }
