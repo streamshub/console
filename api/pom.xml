@@ -156,6 +156,13 @@
         <dependency>
             <groupId>io.apicurio</groupId>
             <artifactId>apicurio-registry-serde-kafka-common</artifactId>
+            <exclusions>
+                <exclusion>
+                    <!-- The Console uses the JDK HTTP client -->
+                    <groupId>io.apicurio</groupId>
+                    <artifactId>apicurio-registry-java-sdk-adapter-vertx</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.apicurio</groupId>
