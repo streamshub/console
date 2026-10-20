@@ -9,11 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
+import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.Images;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerSpec;
@@ -44,6 +47,10 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 public class ConsoleDeployment extends BaseDeployment {
 
     public static final String NAME = "console-deployment";
+    private static final String ALLOWED_IMAGE_PREFIXES = "console.deployment.allowed-image-prefixes";
+
+    @Inject
+    Logger logger;
 
     @Inject
     ConsoleServiceAccount serviceAccount;
@@ -54,6 +61,26 @@ public class ConsoleDeployment extends BaseDeployment {
     @Inject
     @ConfigProperty(name = "console.deployment.default-api-image")
     String defaultAPIImage;
+
+    @Inject
+    @ConfigProperty(name = ALLOWED_IMAGE_PREFIXES)
+    Optional<List<String>> allowedImagePrefixes;
+
+    List<String> effectiveAllowedPrefixes;
+
+    @PostConstruct
+    void initAllowedPrefixes() {
+        effectiveAllowedPrefixes = allowedImagePrefixes.orElseGet(() ->
+            List.of(defaultAPIImage.substring(0, defaultAPIImage.lastIndexOf('/') + 1)));
+
+        if (effectiveAllowedPrefixes.stream().noneMatch(defaultAPIImage::startsWith)) {
+            logger.warnf(
+                    "Configured `%s` of %s blocks use of default API image `%s`",
+                    ALLOWED_IMAGE_PREFIXES,
+                    effectiveAllowedPrefixes,
+                    defaultAPIImage);
+        }
+    }
 
     public ConsoleDeployment() {
         super(NAME);
@@ -87,6 +114,7 @@ public class ConsoleDeployment extends BaseDeployment {
                 .or(() -> templateAPI.map(ContainerSpec::getImage))
                 .or(() -> images.map(Images::getApi))
                 .orElse(defaultAPIImage);
+        validateImage(image, effectiveAllowedPrefixes);
         String imagePullPolicy = containerTemplate.map(ContainerTemplate::getImagePullPolicy)
                 .map(ImagePullPolicy::value)
                 .orElseGet(() -> pullPolicy(image));
@@ -207,6 +235,14 @@ public class ConsoleDeployment extends BaseDeployment {
             });
 
         return envVars;
+    }
+
+    private static void validateImage(String image, List<String> allowedPrefixes) {
+        if (allowedPrefixes.stream().noneMatch(image::startsWith)) {
+            throw new ReconciliationException(
+                "Console API image '%s' is not permitted. Allowed prefixes: %s"
+                    .formatted(image, allowedPrefixes));
+        }
     }
 
     private static String pullPolicy(String image) {
