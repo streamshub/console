@@ -71,7 +71,7 @@ export function FetchFromSelector({
       onClick={() => setIsOpen(!isOpen)}
       isExpanded={isOpen}
       isDisabled={isDisabled}
-      aria-label={t('topics.messages.fetchFrom.label')}
+      aria-label={t('topics.messages.fetchFrom.latest')}
     >
       {selectedOption?.label ?? FROM_OPTIONS[0].label}
     </MenuToggle>

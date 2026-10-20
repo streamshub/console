@@ -39,7 +39,7 @@ export function PartitionSelector({
       isExpanded={isOpen}
       isDisabled={isDisabled}
       isFullWidth
-      aria-label={t('topics.messages.advancedSearch.inPartition')}
+      aria-label={t('topics.messages.partitionPlaceholder')}
     >
       {selectedPartition !== undefined
         ? t('topics.messages.partitionOption', { value: selectedPartition })
