@@ -1,7 +1,6 @@
 package com.github.streamshub.console.api.v1alpha1.status;
 
 import java.util.Comparator;
-import java.util.Locale;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -124,21 +123,37 @@ public class Condition {
         }
 
         enum ConditionType {
-            READY("Ready"), WARNING("Warning"), ERROR("Error");
+            READY("Ready"),
+            WARNING("Warning"),
+            ERROR("Error"),
+            SECURITY_WARNING("SecurityWarning"),
+            SECURITY_ERROR("SecurityError");
+
             final String display;
+
             ConditionType(String display) {
                 this.display = display;
+            }
+
+            static ConditionType fromDisplay(String display) {
+                for (var value : values()) {
+                    if (value.display.equals(display)) {
+                        return value;
+                    }
+                }
+                throw new IllegalArgumentException("No enum value for display " + display);
             }
         }
 
         public static final String READY = ConditionType.READY.display;
         public static final String WARNING = ConditionType.WARNING.display;
         public static final String ERROR = ConditionType.ERROR.display;
+        public static final String SECURITY_WARNING = ConditionType.SECURITY_WARNING.display;
+        public static final String SECURITY_ERROR = ConditionType.SECURITY_ERROR.display;
 
         static final Comparator<String> COMPARATOR = (t1, t2) ->
             // declaration order
-            ConditionType.valueOf(t1.toUpperCase(Locale.ROOT))
-                .compareTo(ConditionType.valueOf(t2.toUpperCase(Locale.ROOT)));
+            ConditionType.fromDisplay(t1).compareTo(ConditionType.fromDisplay(t2));
     }
 
     /**
@@ -152,5 +167,6 @@ public class Condition {
         public static final String INVALID_CONFIGURATION = "InvalidConfiguration";
         public static final String DEPRECATED_CONFIGURATION = "DeprecatedConfiguration";
         public static final String RECONCILIATION_EXCEPTION = "ReconciliationException";
+        public static final String ACCESS_DENIED = "AccessDenied";
     }
 }

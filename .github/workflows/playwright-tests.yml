@@ -111,12 +111,15 @@ jobs:
           kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
           kubectl wait kafkauser/console-kafka-user1 --for=condition=Ready --timeout=60s -n $TARGET_NAMESPACE
 
-          # Display the resource
+          # Display the resources
           export KAFKA_NAMESPACE="${TARGET_NAMESPACE}"
+          export CONSOLE_NAMESPACE="${TARGET_NAMESPACE}"
 
+          cat examples/console/kafkauser-role-rolebinding.yaml | envsubst && echo
           cat examples/console/010-Console-example.yaml | envsubst && echo
 
-          # Apply the resource
+          # Apply the resources
+          cat examples/console/kafkauser-role-rolebinding.yaml | envsubst | kubectl apply -f -
           cat examples/console/010-Console-example.yaml | envsubst | kubectl apply -n ${TARGET_NAMESPACE} -f -
 
           kubectl wait console/example --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE

@@ -2,6 +2,11 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: console-server
+# SECURITY: The console-server ServiceAccount intentionally has NO access to Secrets.
+# KafkaUser credential Secrets are read by the operator ServiceAccount during reconciliation,
+# only after a SubjectAccessReview confirms this ServiceAccount has explicit 'get' permission
+# on the specific Secret. Adding a 'secrets' rule here would bypass that gate entirely,
+# allowing the console-server pod to read arbitrary Secrets cluster-wide.
 rules:
   - verbs:
       - get

@@ -79,6 +79,18 @@ rules:
       - update
       - watch
   - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
       - ""
     resources:
       - configmaps
@@ -160,6 +172,15 @@ rules:
       # temporary until available: https://github.com/operator-framework/java-operator-sdk/pull/2456
       - create
 
+  # Used by operator to check that the Console instance service account has been granted
+  # access to read a KafkaUser secret associated with a Kafka cluster.
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+
   # Used by operator to discover the OpenShift Monitoring query endpoint
   - apiGroups:
       - route.openshift.io
@@ -170,19 +191,6 @@ rules:
     verbs:
       - get
 
-  # Used by operator to manage Route resources for Console instances on OpenShift
-  - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
   # Allow operator to create routes with custom hostnames
   - apiGroups:
       - route.openshift.io

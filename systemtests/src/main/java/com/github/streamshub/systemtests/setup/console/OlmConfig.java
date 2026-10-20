@@ -8,7 +8,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +26,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.zafarkhaja.semver.Version;
 
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.openshift.api.model.operatorhub.packages.v1.ChannelEntry;
@@ -36,6 +39,7 @@ import io.fabric8.openshift.api.model.operatorhub.v1alpha1.CatalogSourceBuilder;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.ClusterServiceVersion;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionBuilder;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionConfig;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
 
 import static org.awaitility.Awaitility.await;
@@ -115,6 +119,28 @@ public class OlmConfig extends InstallConfig {
         } else {
             LOGGER.debug("No Console Operator deployment found with prefix '{}' in namespace '{}', nothing to delete", deploymentName, deploymentNamespace);
         }
+    }
+
+    @Override
+    List<EnvVar> editEnv(UnaryOperator<List<EnvVar>> editor) {
+        AtomicReference<List<EnvVar>> result = new AtomicReference<>();
+
+        ResourceUtils.editKubeResource(Subscription.class, deploymentNamespace, subscriptionName, sub -> {
+            var env = editor.apply(Optional.ofNullable(sub.getSpec().getConfig())
+                    .map(SubscriptionConfig::getEnv)
+                    .orElseGet(Collections::emptyList));
+            result.set(env);
+
+            return new SubscriptionBuilder(sub)
+                    .editSpec()
+                        .editOrNewConfig()
+                            .withEnv(env)
+                        .endConfig()
+                    .endSpec()
+                    .build();
+        });
+
+        return result.get();
     }
 
     public OlmVersionModificationData getUpgradeData() {

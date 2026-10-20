@@ -1,3 +1,10 @@
+#
+# !!IMPORTANT!!
+# This example uses a Strimzi KafkaUser custom resource credentials for
+# authentication with the Kafka cluster. Access to the user's credentials secret
+# must be granted to the Console using a role and role binding, as shown in
+# kafkauser-role-rolebinding.yaml.
+#
 ---
 apiVersion: console.streamshub.github.com/v1alpha1
 kind: Console
