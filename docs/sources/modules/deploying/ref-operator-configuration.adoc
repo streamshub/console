@@ -18,6 +18,65 @@ How you set these variables depends on how the operator was installed:
 
 Changes to these environment variables take effect after the operator pod restarts.
 
+== KafkaUser Secret access review
+
+The operator checks whether each Console ServiceAccount is authorized to read the
+Strimzi-generated Secret referenced by `kafkaClusters.credentials.kafkaUser` before it
+uses the credentials. This protects credential Secrets when a Console references a
+Kafka cluster or KafkaUser in another namespace.
+
+`CONSOLE_SERVICE_ACCOUNT_ACCESS_REVIEW_DENIED_ACTION`::
+Controls what the operator does when a SubjectAccessReview denies the Console
+ServiceAccount `get` access to a referenced KafkaUser Secret. The setting applies
+globally to all Console instances managed by the operator. Supported values are:
+
+* `PRESERVE` (default) — sets a `SecurityError` condition and leaves the Console
+  configuration workflow not ready. Existing owned resources are preserved unchanged,
+  including any denied KafkaUser credentials already present in an existing
+  `ConsoleSecret` and deployed Console configuration. This option prevents new
+  updates but does not remove credentials that were already deployed.
+* `REMOVE` — the most secure option — sets a `SecurityWarning` condition and continues
+  reconciliation without the denied Kafka cluster connection. Existing generated
+  configuration is updated, so denied KafkaUser credentials and their cluster
+  connection are removed from an existing Console. `REMOVE` may become the default
+  in a future release.
+* `IGNORE` — continues reconciliation and uses the denied credentials despite the
+  failed authorization check. This option bypasses the security protection.
+
+The actual MicroProfile configuration property is
+`console.service-account.access-review.denied-action`. When configuring the operator
+through environment variables, replace periods with underscores and use the
+upper-case form shown above. For example:
+
+[source,yaml]
+----
+# OLM Subscription or operator Deployment container environment
+- name: CONSOLE_SERVICE_ACCOUNT_ACCESS_REVIEW_DENIED_ACTION
+  value: "PRESERVE"
+----
+
+Changes take effect after the operator pod restarts. Values are case-insensitive;
+other values prevent the operator from starting with a valid configuration.
+
+[WARNING]
+====
+`IGNORE` bypasses the authorization protection and can allow a Console author to cause
+credential Secret data to be copied across namespaces. Use it only as a deliberately
+reviewed migration or compatibility exception, and do not use it for normal production
+deployments or when Console authors are not fully trusted.
+====
+
+IMPORTANT: `REMOVE` provides the strongest protection because it removes denied credentials
+from generated Console configuration, including configuration already used by an existing
+deployment. Although `PRESERVE` is the current default to avoid unexpected changes during
+upgrade, consider using `REMOVE` for new deployments. The default may change to `REMOVE`
+in a future release.
+
+If access is denied while using `PRESERVE`, grant the per-Console ServiceAccount
+`get` access to the exact Secret in the Secret's namespace, then allow reconciliation
+to run again. See xref:proc-connecting-console-{context}[Deploying and connecting the
+console to a Kafka cluster] for the Role and RoleBinding examples.
+
 == Default API image
 
 The operator uses a built-in default API container image when a `Console` instance does not specify one explicitly.

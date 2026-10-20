@@ -160,6 +160,15 @@ rules:
       # temporary until available: https://github.com/operator-framework/java-operator-sdk/pull/2456
       - create
 
+  # Used by operator to check that the Console instance service account has been granted
+  # access to read a KafkaUser secret associated with a Kafka cluster.
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+
   # Used by operator to discover the OpenShift Monitoring query endpoint
   - apiGroups:
       - route.openshift.io
@@ -187,7 +196,7 @@ rules:
   - nonResourceURLs: [ /metrics ]
     verbs: [ get ]
 
-  # Used directly by operator and granted to Console instances
+  # Used directly by operator and/or granted to Console instances
   - verbs:
       - get
       - watch
@@ -196,12 +205,13 @@ rules:
       - kafka.strimzi.io
     resources:
       - kafkas
+      - kafkaconnectors
+      - kafkaconnects
+      - kafkamirrormaker2s
       - kafkanodepools
       - kafkarebalances
       - kafkatopics
       - kafkausers
-      - kafkaconnects
-      - kafkamirrormaker2s
 
   # Granted to Console instances
   - verbs:

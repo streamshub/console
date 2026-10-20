@@ -1,5 +1,13 @@
 package com.github.streamshub.systemtests.setup.console;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.exceptions.OperatorSdkNotInstalledException;
@@ -7,6 +15,8 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
@@ -14,11 +24,8 @@ import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.ClusterServiceVersion;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionBuilder;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionConfig;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.Collections;
-import java.util.List;
 
 public class OlmConfig extends InstallConfig {
     private static final Logger LOGGER = LogWrapper.getLogger(OlmConfig.class);
@@ -64,6 +71,28 @@ public class OlmConfig extends InstallConfig {
             KubeResourceManager.get().deleteResourceWithWait(csv);
             KubeResourceManager.get().deleteResourceWithWait(deploymentList.getFirst());
         }
+    }
+
+    @Override
+    List<EnvVar> editEnv(UnaryOperator<List<EnvVar>> editor) {
+        AtomicReference<List<EnvVar>> result = new AtomicReference<>();
+
+        ResourceUtils.editKubeResource(Subscription.class, deploymentNamespace, subscriptionName, sub -> {
+            var env = editor.apply(Optional.ofNullable(sub.getSpec().getConfig())
+                    .map(SubscriptionConfig::getEnv)
+                    .orElseGet(Collections::emptyList));
+            result.set(env);
+
+            return new SubscriptionBuilder(sub)
+                    .editSpec()
+                        .editOrNewConfig()
+                            .withEnv(env)
+                        .endConfig()
+                    .endSpec()
+                    .build();
+        });
+
+        return result.get();
     }
 
     public void setChannelName(String channelName) {

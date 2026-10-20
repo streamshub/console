@@ -1,5 +1,14 @@
 package com.github.streamshub.systemtests.setup.console;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
+
+import org.apache.logging.log4j.Logger;
+
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.resourcetypes.prometheus.ServiceMonitorType;
@@ -7,16 +16,14 @@ import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceOrder;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
+
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.openshift.api.model.monitoring.v1.ServiceMonitor;
 import io.skodjob.kubetest4j.resources.KubeResourceManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 public class YamlConfig extends InstallConfig {
     private static final Logger LOGGER = LogWrapper.getLogger(YamlConfig.class);
@@ -65,5 +72,30 @@ public class YamlConfig extends InstallConfig {
     @Override
     public void delete() {
         // ResourceManager handles this step and clears operator once the test leaves the scope of installation
+    }
+
+    @Override
+    List<EnvVar> editEnv(UnaryOperator<List<EnvVar>> editor) {
+        AtomicReference<List<EnvVar>> result = new AtomicReference<>();
+
+        ResourceUtils.editKubeResource(Deployment.class, deploymentNamespace, deploymentName, dep -> {
+            var container = dep.getSpec().getTemplate().getSpec().getContainers().get(0);
+            var env = editor.apply(container.getEnv());
+            result.set(env);
+
+            return new DeploymentBuilder(dep)
+                    .editSpec()
+                        .editTemplate()
+                            .editSpec()
+                                .editContainer(0)
+                                    .withEnv(env)
+                                .endContainer()
+                            .endSpec()
+                        .endTemplate()
+                    .endSpec()
+                    .build();
+        });
+
+        return result.get();
     }
 }

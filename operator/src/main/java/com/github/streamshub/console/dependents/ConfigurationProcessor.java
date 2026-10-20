@@ -304,8 +304,8 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     data
             ));
 
-        coalesce(primary.getSpec().getMetricsSources(), Collections::emptyList).stream()
-            .forEach(source -> buildClientSecrets(
+        coalesce(primary.getSpec().getMetricsSources(), Collections::emptyList).forEach(
+            source -> buildClientSecrets(
                 context,
                 primary.getMetadata().getNamespace(),
                 "metrics-source-" + source.getName(),
@@ -314,8 +314,8 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 data
             ));
 
-        coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList).stream()
-            .forEach(source -> buildClientSecrets(
+        coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList).forEach(
+            source -> buildClientSecrets(
                 context,
                 primary.getMetadata().getNamespace(),
                 "schema-registry-" + source.getName(),
@@ -324,8 +324,8 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 data
             ));
 
-        coalesce(primary.getSpec().getKafkaConnectClusters(), Collections::emptyList).stream()
-            .forEach(connect -> buildClientSecrets(
+        coalesce(primary.getSpec().getKafkaConnectClusters(), Collections::emptyList).forEach(
+            connect -> buildClientSecrets(
                 context,
                 primary.getMetadata().getNamespace(),
                 "kafka-connect-" + connect.getName(),
@@ -469,8 +469,18 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         addKafkaConnectClusters(primary, config);
 
         for (var kafkaRef : primary.getSpec().getKafkaClusters()) {
-            var kafkaConfig = addConfig(primary, context, config, kafkaRef);
-            addSecurity(kafkaRef.getSecurity(), kafkaConfig.getSecurity());
+            if (kafkaUserAccessDenied(context, kafkaRef)) {
+                LOGGER.warnf(
+                        "Kafka cluster %s/%s excluded from deployment of Console %s/%s because access to its KafkaUser Secret was denied",
+                        kafkaRef.getNamespace(),
+                        kafkaRef.getName(),
+                        primary.getMetadata().getNamespace(),
+                        primary.getMetadata().getName()
+                );
+            } else {
+                var kafkaConfig = addConfig(primary, context, config, kafkaRef);
+                addSecurity(kafkaRef.getSecurity(), kafkaConfig.getSecurity());
+            }
         }
 
         return config;
@@ -755,6 +765,18 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return defaultValue;
     }
 
+    private boolean kafkaUserAccessDenied(Context<Console> context, KafkaCluster kafkaRef) {
+        return Optional.ofNullable(kafkaRef.getCredentials())
+            .map(Credentials::getKafkaUser)
+            .map(user ->
+                getKafkaUser(
+                        context,
+                        Optional.ofNullable(user.getNamespace()).orElseGet(kafkaRef::getNamespace),
+                        user.getName()
+                ).isEmpty() // user is not in the context, access was denied
+            ).orElse(false);
+    }
+
     private KafkaClusterConfig addConfig(Console primary, Context<Console> context, ConsoleConfig config, KafkaCluster kafkaRef) {
         String namespace = kafkaRef.getNamespace();
         String name = kafkaRef.getName();
@@ -791,13 +813,16 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
         Optional.ofNullable(kafkaRef.getCredentials())
             .map(Credentials::getKafkaUser)
-            .ifPresent(user -> {
-                String userNs = Optional.ofNullable(user.getNamespace()).orElse(namespace);
-                setKafkaUserConfig(
-                        context,
-                        getResource(context, KafkaUser.class, userNs, user.getName()),
-                        kcConfig.getProperties());
-            });
+            .flatMap(user -> getKafkaUser(
+                    context,
+                    Optional.ofNullable(user.getNamespace()).orElse(namespace),
+                    user.getName()
+            ))
+            .ifPresent(kafkaUser -> setKafkaUserConfig(
+                    context,
+                    kafkaUser,
+                    kcConfig.getProperties()
+            ));
 
         return kcConfig;
     }
@@ -879,6 +904,19 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
     }
 
+    Optional<KafkaUser> getKafkaUser(Context<Console> context, String namespace, String name) {
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, KafkaUser>> accessibleUsers = getAttribute(
+                context,
+                ConsoleServiceAccountAccessReview.ALLOWED_USERS,
+                Map.class
+        );
+
+        var user = accessibleUsers.getOrDefault(namespace, Collections.emptyMap()).get(name);
+
+        return Optional.ofNullable(user);
+    }
+
     void setKafkaUserConfig(Context<Console> context, KafkaUser user, Map<String, String> properties) {
         var authenticationType = Optional.ofNullable(user.getSpec())
                 .map(KafkaUserSpec::getAuthentication)
@@ -925,7 +963,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
     }
 
-    private String getSecretName(KafkaUser user) {
+    static String getSecretName(KafkaUser user) {
         return Optional.ofNullable(user.getStatus())
             .map(KafkaUserStatus::getSecret)
             .orElseThrow(() -> new ReconciliationException("KafkaUser %s/%s missing .status.secret"
