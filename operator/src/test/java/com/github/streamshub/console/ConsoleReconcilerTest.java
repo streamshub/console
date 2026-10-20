@@ -71,6 +71,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -160,8 +161,8 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                         .withUrl("http://prometheus.example.com")
                     .endMetricsSource()
                     .withNewImages()
-                        .withApi("deprecated-api-image")
-                        .withUi("deprecated-ui-image")
+                        .withApi("quay.io/streamshub/deprecated-api-image:test")
+                        .withUi("quay.io/streamshub/deprecated-ui-image:test")
                     .endImages()
                     .addToEnv(new EnvVarBuilder()
                             .withName("DEPRECATED_API_VAR")
@@ -170,7 +171,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .withNewContainers()
                         .withNewApi()
                             .withNewSpec()
-                                .withImage("custom-api-image")
+                                .withImage("quay.io/streamshub/custom-api-image:test")
                                 .withResources(new ResourceRequirementsBuilder()
                                         .withRequests(Map.of("cpu", Quantity.parse("250m")))
                                         .withLimits(Map.of("cpu", Quantity.parse("500m")))
@@ -183,7 +184,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                         .endApi()
                         .withNewUi()
                             .withNewSpec()
-                                .withImage("custom-ui-image")
+                                .withImage("quay.io/streamshub/custom-ui-image:test")
                                 .withResources(new ResourceRequirementsBuilder()
                                         .withRequests(Map.of("cpu", Quantity.parse("100m")))
                                         .withLimits(Map.of("cpu", Quantity.parse("200m")))
@@ -213,7 +214,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
         var apiContainer = consoleContainers.get(0);
 
-        assertEquals("custom-api-image", apiContainer.getImage());
+        assertEquals("quay.io/streamshub/custom-api-image:test", apiContainer.getImage());
         assertEquals(new ResourceRequirementsBuilder()
                 .withRequests(Map.of("cpu", Quantity.parse("250m")))
                 .withLimits(Map.of("cpu", Quantity.parse("500m")))
@@ -225,7 +226,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .filter(e -> e.getName().equals("CUSTOM_API_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
 
         var uiContainer = consoleContainers.get(1);
-        assertEquals("custom-ui-image", uiContainer.getImage());
+        assertEquals("quay.io/streamshub/custom-ui-image:test", uiContainer.getImage());
         assertEquals(new ResourceRequirementsBuilder()
                 .withRequests(Map.of("cpu", Quantity.parse("100m")))
                 .withLimits(Map.of("cpu", Quantity.parse("200m")))
@@ -233,6 +234,65 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         assertEquals(7, uiContainer.getEnv().size()); // 1 override + 6 from YAML template
         assertEquals("value2", uiContainer.getEnv().stream()
                 .filter(e -> e.getName().equals("CUSTOM_UI_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
+    }
+
+    @Test
+    void testConsoleReconciliationRejectsUnallowedImage() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(CONSOLE_NAME)
+                        .withNamespace(CONSOLE_NS)
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .withNewContainers()
+                        .withNewApi()
+                            .withNewSpec()
+                                .withImage("malicious-registry.io/backdoored:latest")
+                            .endSpec()
+                        .endApi()
+                    .endContainers()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress");
+        setConsoleIngressReady(consoleCR);
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            // Ready=False is always present. The ERROR condition appears once ConsoleDeployment
+            // has run and thrown ReconciliationException for the disallowed image. The Ready
+            // reason may be DependentsNotReady (downstream dependents blocked by the error) or
+            // RECONCILIATION_EXCEPTION depending on ordering; the ERROR condition is the reliable
+            // signal.
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
+            assertEquals("False", ready.getStatus());
+            var error = conditions.stream()
+                    .filter(c -> Condition.Types.ERROR.equals(c.getType()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("No ERROR condition present yet: " + conditions));
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, error.getReason());
+            assertThat(error.getMessage(), containsString("malicious-registry.io/backdoored:latest"));
+            assertThat(error.getMessage(), containsString("quay.io/streamshub/"));
+            // Verify no Deployment was created for the console
+            var deployment = client.apps().deployments()
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName() + "-" + ConsoleDeployment.NAME)
+                    .get();
+            assertNull(deployment);
+        });
     }
 
     @Test
