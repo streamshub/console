@@ -1,0 +1,162 @@
+---
+# Standalone Prometheus (via the Prometheus operator, installed separately by
+# dev.sh). Scrapes the Kafka JMX exporter + node/cadvisor so the console's
+# charts and cluster-overview tiles populate. Adapted from examples/prometheus.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: console-prometheus-server
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: console-prometheus-server
+rules:
+  - apiGroups: [ '' ]
+    resources:
+      - nodes
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+    verbs: [ get, list, watch ]
+  - apiGroups: [ extensions ]
+    resources:
+      - ingresses
+    verbs: [ get, list, watch ]
+  - nonResourceURLs: [ /metrics, /metrics/cadvisor ]
+    verbs: [ get ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: console-prometheus-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: console-prometheus-server
+subjects:
+  - kind: ServiceAccount
+    name: console-prometheus-server
+    namespace: ${NAMESPACE}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kubernetes-scrape-configs
+type: Opaque
+stringData:
+  prometheus-additional.yaml: |
+    - job_name: kubernetes-cadvisor
+      honor_labels: true
+      scrape_interval: 10s
+      scrape_timeout: 10s
+      metrics_path: /metrics/cadvisor
+      scheme: https
+      kubernetes_sd_configs:
+      - role: node
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      relabel_configs:
+      - separator: ;
+        regex: __meta_kubernetes_node_label_(.+)
+        replacement: $1
+        action: labelmap
+      - separator: ;
+        regex: (.*)
+        target_label: __address__
+        replacement: kubernetes.default.svc:443
+        action: replace
+      - source_labels: [__meta_kubernetes_node_name]
+        separator: ;
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+        action: replace
+      - source_labels: [__meta_kubernetes_node_name]
+        separator: ;
+        regex: (.*)
+        target_label: node_name
+        replacement: $1
+        action: replace
+      - source_labels: [__meta_kubernetes_node_address_InternalIP]
+        separator: ;
+        regex: (.*)
+        target_label: node_ip
+        replacement: $1
+        action: replace
+    - job_name: kubernetes-nodes-kubelet
+      scrape_interval: 10s
+      scrape_timeout: 10s
+      scheme: https
+      kubernetes_sd_configs:
+      - role: node
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: console-prometheus
+spec:
+  replicas: 1
+  serviceAccountName: console-prometheus-server
+  podMonitorSelector:
+    matchLabels:
+      app: console-kafka-monitor
+  # Kafka pods (and their PodMonitor) live in a different namespace, so watch
+  # PodMonitors cluster-wide rather than only in this one.
+  podMonitorNamespaceSelector: {}
+  serviceMonitorSelector: {}
+  resources:
+    requests:
+      memory: 400Mi
+  enableAdminAPI: false
+  additionalScrapeConfigs:
+    name: kubernetes-scrape-configs
+    key: prometheus-additional.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: console-prometheus
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+  selector:
+    prometheus: console-prometheus
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: console-prometheus
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: prometheus.${CLUSTER_DOMAIN}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: console-prometheus
+                port:
+                  number: 9090
