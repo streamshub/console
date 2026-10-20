@@ -11,11 +11,11 @@
 #   ./delete-cluster.sh --keep-cluster      # remove deployed resources only
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./lib/env.sh
+source ./env.sh
 
 KEEP_CLUSTER=false
-KAFKA_NAMESPACE="kafka"
-OPERATOR_NAMESPACE="co-namespace"
+KAFKA_NAMESPACE="console-namespace"
+OPERATOR_NAMESPACE="operators"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -23,7 +23,7 @@ while [ $# -gt 0 ]; do
     --kafka-namespace) KAFKA_NAMESPACE="$2"; shift 2 ;;
     --operator-namespace) OPERATOR_NAMESPACE="$2"; shift 2 ;;
     -h|--help)
-      echo "Usage: $0 [--keep-cluster] [--kafka-namespace kafka] [--operator-namespace co-namespace]" >&2
+      echo "Usage: $0 [--keep-cluster] [--kafka-namespace console-namespace] [--operator-namespace operators]" >&2
       exit 1
       ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;

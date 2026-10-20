@@ -104,21 +104,33 @@ jobs:
       - name: Fetch Operator Framework Utilities
         run: ./operator/bin/fetch-operator-utilities.sh
 
-      - name: Setup Minikube Environment
-        run: |
-          # Needed for skopeo in setup-minikube.sh script
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          
-          # Needed to copy locally built images to minikube registry
-          sudo apt-get install -y socat
-          
-          # Execute the setup
-          MINIKUBE_CPU_COUNT=4 MINIKUBE_MEMORY=15g MINIKUBE_DRIVER=docker ./systemtests/scripts/setup-minikube.sh
+      - name: Create minikube cluster
+        working-directory: systemtests/cluster-setup
+        env:
+          MINIKUBE_CPU_COUNT: '4'
+          MINIKUBE_MEMORY: '15g'
+          MINIKUBE_EXTRA_ADDONS: 'storage,ingress-dns,metrics-server'
+          MINIKUBE_INSECURE_REGISTRY: 'localhost:5000,10.0.0.0/24'
+          MINIKUBE_EXTRA_CONFIG: 'kubeadm.ignore-preflight-errors=SystemVerification;apiserver.authorization-mode=RBAC,Node'
+        run: ./minikube/create-cluster.sh
+
+      - name: Set up local registry
+        working-directory: systemtests/cluster-setup
+        run: ./minikube/setup-registry.sh
+
+      - name: Build Console images from source
+        working-directory: systemtests/cluster-setup
+        run: ./common/build-console.sh
+
+      - name: Load images into registry
+        working-directory: systemtests/cluster-setup
+        run: ./minikube/load-images.sh
 
       - name: Set Dynamic Environment Vars
         run: |
           echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          echo "CONSOLE_CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
+          source systemtests/cluster-setup/minikube/.cluster-env
+          echo "CONSOLE_CLUSTER_DOMAIN=${CONSOLE_CLUSTER_DOMAIN}" >> $GITHUB_ENV
 
       - name: Prepare YAML install
         if: ${{ env.INSTALL_TYPE == 'yaml' }}
@@ -143,18 +155,13 @@ jobs:
         if: ${{ env.INSTALL_TYPE == 'olm' }}
         run: |
           set -x
-
           echo "CONSOLE_OLM_CATALOG_SOURCE_NAME=streamshub-console-catalog" >> $GITHUB_ENV
           echo "CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE=$OLM_MINIKUBE_NAMESPACE" >> $GITHUB_ENV
 
-          # Create the CatalogSource with the Console operator bundle
-          yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
-            ./install/operator/olm/010-CatalogSource-console-operator-catalog.yaml \
-            | kubectl apply -n $OLM_MINIKUBE_NAMESPACE -f -
-
-          kubectl wait catalogsource/streamshub-console-catalog -n $OLM_MINIKUBE_NAMESPACE \
-            --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
-            --timeout=180s
+          systemtests/cluster-setup/common/setup-catalogsource.sh \
+            --image "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}" \
+            --namespace "$OLM_MINIKUBE_NAMESPACE" \
+            --name streamshub-console-catalog
 
       - name: Install Playwright Via NodeJS
         uses: actions/setup-node@v7

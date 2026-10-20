@@ -23,7 +23,7 @@
 # investigation and the original decision to build ../kind/ first.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./lib/env.sh
+source ./env.sh
 
 check_linux_rootless_podman_ip_tables
 
@@ -31,13 +31,29 @@ if [ "${CONTAINER_ENGINE}" = "podman" ]; then
   ensure_podman_machine
 fi
 
+MINIKUBE_CPU_COUNT="${MINIKUBE_CPU_COUNT:-}"
+MINIKUBE_MEMORY="${MINIKUBE_MEMORY:-}"
+MINIKUBE_DISK_SIZE="${MINIKUBE_DISK_SIZE:-}"
+MINIKUBE_EXTRA_ADDONS="${MINIKUBE_EXTRA_ADDONS:-}"
+MINIKUBE_INSECURE_REGISTRY="${MINIKUBE_INSECURE_REGISTRY:-}"
+MINIKUBE_EXTRA_CONFIG="${MINIKUBE_EXTRA_CONFIG:-}"
+
 if minikube status -p "${MINIKUBE_PROFILE}" >/dev/null 2>&1; then
   echo "minikube profile '${MINIKUBE_PROFILE}' already running, skipping create"
 else
+  MINIKUBE_START_ARGS=(--driver="${CONTAINER_ENGINE}" --addons="ingress${MINIKUBE_EXTRA_ADDONS:+,${MINIKUBE_EXTRA_ADDONS}}")
+  [ -n "${MINIKUBE_CPU_COUNT}" ] && MINIKUBE_START_ARGS+=(--cpus="${MINIKUBE_CPU_COUNT}")
+  [ -n "${MINIKUBE_MEMORY}" ] && MINIKUBE_START_ARGS+=(--memory="${MINIKUBE_MEMORY}")
+  [ -n "${MINIKUBE_DISK_SIZE}" ] && MINIKUBE_START_ARGS+=(--disk-size="${MINIKUBE_DISK_SIZE}")
+  [ -n "${MINIKUBE_INSECURE_REGISTRY}" ] && MINIKUBE_START_ARGS+=(--insecure-registry="${MINIKUBE_INSECURE_REGISTRY}")
+  if [ -n "${MINIKUBE_EXTRA_CONFIG}" ]; then
+    IFS=';' read -ra _extra_cfgs <<< "${MINIKUBE_EXTRA_CONFIG}"
+    for cfg in "${_extra_cfgs[@]}"; do
+      MINIKUBE_START_ARGS+=(--extra-config="${cfg}")
+    done
+  fi
   echo "Creating minikube cluster '${MINIKUBE_PROFILE}' (driver=${CONTAINER_ENGINE})..."
-  minikube start -p "${MINIKUBE_PROFILE}" \
-    --driver="${CONTAINER_ENGINE}" \
-    --addons=ingress
+  minikube start -p "${MINIKUBE_PROFILE}" "${MINIKUBE_START_ARGS[@]}"
 fi
 
 kubectl config use-context "${MINIKUBE_PROFILE}" >/dev/null
@@ -56,7 +72,13 @@ if [ "$(kubectl get deployment -n ingress-nginx ingress-nginx-controller -ojson 
 fi
 
 TUNNEL_ACTIVE=false
-if [ -f "${TUNNEL_PID_FILE}" ] && kill -0 "$(cat "${TUNNEL_PID_FILE}")" 2>/dev/null; then
+LOCAL_ACCESS=false
+
+if [ "${NEEDS_LOCAL_PORT_FORWARD}" = false ]; then
+  echo "Linux: minikube node IP is directly reachable, skipping port-forward"
+  LOCAL_ACCESS=true
+  CONSOLE_CLUSTER_DOMAIN="$(minikube ip -p "${MINIKUBE_PROFILE}").nip.io"
+elif [ -f "${TUNNEL_PID_FILE}" ] && kill -0 "$(cat "${TUNNEL_PID_FILE}")" 2>/dev/null; then
   echo "minikube tunnel is already running (pid $(cat "${TUNNEL_PID_FILE}")) — skipping port-forward, portless access is active"
   TUNNEL_ACTIVE=true
 elif [ -f "${PORT_FORWARD_PID_FILE}" ] && kill -0 "$(cat "${PORT_FORWARD_PID_FILE}")" 2>/dev/null; then
@@ -72,14 +94,21 @@ else
     || { echo "port-forward failed to start, check ${PORT_FORWARD_LOG_FILE}" >&2; exit 1; }
 fi
 
-cat > "${CLUSTER_ENV_FILE}" <<EOF
+if [ "${LOCAL_ACCESS}" = true ]; then
+  cat > "${CLUSTER_ENV_FILE}" <<EOF
+export CONSOLE_CLUSTER_DOMAIN=${CONSOLE_CLUSTER_DOMAIN}
+export KUBECONTEXT=${MINIKUBE_PROFILE}
+EOF
+else
+  cat > "${CLUSTER_ENV_FILE}" <<EOF
 export CONSOLE_CLUSTER_DOMAIN=${CONSOLE_CLUSTER_DOMAIN}
 export KUBECONTEXT=${MINIKUBE_PROFILE}
 export LOCAL_HTTP_PORT=${LOCAL_HTTP_PORT}
 export LOCAL_HTTPS_PORT=${LOCAL_HTTPS_PORT}
 EOF
+fi
 
-if [ "${TUNNEL_ACTIVE}" = true ]; then
+if [ "${LOCAL_ACCESS}" = true ] || [ "${TUNNEL_ACTIVE}" = true ]; then
   SMOKE_HTTP_PORT=80
   SMOKE_HTTPS_PORT=443
 else
@@ -198,7 +227,9 @@ echo "  source ${CLUSTER_ENV_FILE}"
 echo ""
 echo "CONSOLE_CLUSTER_DOMAIN=${CONSOLE_CLUSTER_DOMAIN}"
 echo "kubectl context: ${MINIKUBE_PROFILE}"
-if [ "${TUNNEL_ACTIVE}" = true ]; then
+if [ "${LOCAL_ACCESS}" = true ]; then
+  echo "Access via https://<name>.${CONSOLE_CLUSTER_DOMAIN}/ (direct node-IP access, no port-forward needed on Linux)"
+elif [ "${TUNNEL_ACTIVE}" = true ]; then
   echo "Access via https://<name>.${CONSOLE_CLUSTER_DOMAIN}/ (portless, via minikube tunnel)"
 else
   echo "Access via https://<name>.${CONSOLE_CLUSTER_DOMAIN}:${LOCAL_HTTPS_PORT}/ (note the :${LOCAL_HTTPS_PORT} — run enable-tunnel.sh for portless access)"
