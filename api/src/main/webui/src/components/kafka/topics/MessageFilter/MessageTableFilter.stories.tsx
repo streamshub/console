@@ -35,6 +35,10 @@ function FilterStory({
       partitions={partitions}
       value={value}
       onChange={(patch) => setValue((current) => ({ ...current, ...patch }))}
+      onDraftChange={(patch) => {
+        setValue((prev) => ({ ...prev, ...patch }));
+      }}
+      onSubmit={() => {}}
     />
   );
 }
