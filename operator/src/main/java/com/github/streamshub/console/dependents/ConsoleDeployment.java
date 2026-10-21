@@ -80,7 +80,7 @@ public class ConsoleDeployment extends BaseDeployment {
             logger.warnf(
                     "Configured `%s` of %s blocks use of default API image `%s`",
                     ALLOWED_IMAGE_PREFIXES,
-                    allowedImagePrefixes.get(),
+                    allowedImagePrefixes.orElseGet(Collections::emptyList),
                     defaultAPIImage);
         }
     }
