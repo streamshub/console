@@ -3,7 +3,6 @@ package com.github.streamshub.console.dependents;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class ConsoleDeploymentTest {
 
@@ -18,6 +17,5 @@ class ConsoleDeploymentTest {
         String prefix = ConsoleDeployment.defaultAllowedPrefix("an_image:a_tag");
 
         assertEquals("an_image:a_tag", prefix);
-        assertFalse("quay.io/other-org/console-api:latest".startsWith(prefix));
     }
 }

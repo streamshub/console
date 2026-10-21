@@ -85,8 +85,8 @@ public class ConsoleDeployment extends BaseDeployment {
     /**
      * The prefix permitted when no allowlist is configured: everything in the default
      * image up to and including its last {@code /}. An image without a {@code /} has no
-     * such prefix, and an empty one would permit every image, so only the default image
-     * itself is permitted then.
+     * such prefix and returning an empty prefix would permit every image.
+     * Therefore, in the case of a default image containing no {@code /}, this method will return the default image name itself as the prefix.
      */
     static String defaultAllowedPrefix(String defaultImage) {
         int lastSlash = defaultImage.lastIndexOf('/');

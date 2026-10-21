@@ -105,7 +105,7 @@ If the image does not match, the operator sets an `ERROR` condition on the `Cons
 +
 When this variable is not set, the operator derives a single permitted prefix from its built-in default image by taking everything up to and including the last `/`.
 For a standard release, that is `quay.io/streamshub/`.
-If the default image contains no `/`, the operator permits only the default image itself.
+If the default image contains no `/`, then the operator will set the allowed image prefix to the default image name itself.
 
 === Important considerations
 
