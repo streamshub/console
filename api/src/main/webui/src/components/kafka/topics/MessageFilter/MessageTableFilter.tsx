@@ -18,7 +18,7 @@ import {
   parseOffset,
 } from './messageFilter';
 import { TimestampPicker } from './TimeStampPicker';
-import ArrowRightIcon from '@patternfly/react-icons/dist/esm/icons/arrow-right-icon';
+import RhMicronsCaretRightIcon from '@patternfly/react-icons/dist/esm/icons/rh-microns-caret-right-icon';
 
 interface MessageTableFilterProps {
   partitions: number[];
@@ -174,7 +174,7 @@ export function MessageTableFilter({
             <Button
               variant="control"
               onClick={onSubmit}
-              icon={<ArrowRightIcon />}
+              icon={<RhMicronsCaretRightIcon />}
             />
           </FlexItem>
         </Flex>
