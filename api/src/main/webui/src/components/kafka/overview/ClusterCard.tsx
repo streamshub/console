@@ -56,6 +56,8 @@ export interface ClusterCardProps {
   isLoading: boolean;
 }
 
+const OUIA_ID = 'cluster-card';
+
 export function ClusterCard({
   cluster,
   groupsCount,
@@ -109,7 +111,7 @@ export function ClusterCard({
   const dangers = messages.filter((m) => m.variant === 'danger').length;
 
   return (
-    <Card component="div">
+    <Card component="div" ouiaId={OUIA_ID}>
       <CardBody>
         <Flex
           justifyContent={{ default: 'justifyContentSpaceBetween' }}
@@ -125,6 +127,7 @@ export function ClusterCard({
           {isManaged && canUpdate && (
             <FlexItem>
               <Button
+                ouiaId={`${OUIA_ID}-reconciliation-toggle`}
                 variant="link"
                 icon={
                   isReconciliationPaused ? <PlayIcon /> : <PauseCircleIcon />
@@ -287,6 +290,7 @@ export function ClusterCard({
           <FlexItem>
             <ErrorsAndWarnings warnings={warnings} dangers={dangers}>
               <DataList
+                data-ouia-component-id={`${OUIA_ID}-conditions`}
                 aria-label={t('ClusterCard.cluster_errors_and_warnings')}
                 isCompact
               >
@@ -369,6 +373,7 @@ export function ClusterCard({
                                         <>
                                           &nbsp;
                                           <Button
+                                            ouiaId={`${OUIA_ID}-condition-resume`}
                                             variant="link"
                                             isInline
                                             onClick={() => setIsModalOpen(true)}
