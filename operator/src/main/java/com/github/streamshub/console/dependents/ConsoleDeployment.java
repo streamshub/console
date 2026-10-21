@@ -71,7 +71,7 @@ public class ConsoleDeployment extends BaseDeployment {
     @PostConstruct
     void initAllowedPrefixes() {
         effectiveAllowedPrefixes = allowedImagePrefixes.orElseGet(() ->
-            List.of(defaultAPIImage.substring(0, defaultAPIImage.lastIndexOf('/') + 1)));
+            List.of(defaultAllowedPrefix(defaultAPIImage)));
 
         if (effectiveAllowedPrefixes.stream().noneMatch(defaultAPIImage::startsWith)) {
             logger.warnf(
@@ -80,6 +80,17 @@ public class ConsoleDeployment extends BaseDeployment {
                     effectiveAllowedPrefixes,
                     defaultAPIImage);
         }
+    }
+
+    /**
+     * The prefix permitted when no allowlist is configured: everything in the default
+     * image up to and including its last {@code /}. An image without a {@code /} has no
+     * such prefix and returning an empty prefix would permit every image.
+     * Therefore, in the case of a default image containing no {@code /}, this method will return the default image name itself as the prefix.
+     */
+    static String defaultAllowedPrefix(String defaultImage) {
+        int lastSlash = defaultImage.lastIndexOf('/');
+        return lastSlash < 0 ? defaultImage : defaultImage.substring(0, lastSlash + 1);
     }
 
     public ConsoleDeployment() {
