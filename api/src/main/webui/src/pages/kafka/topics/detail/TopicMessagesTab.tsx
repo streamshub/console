@@ -1,5 +1,9 @@
 /**
  * Topic Messages Tab - Shows messages in a topic with advanced search and detail drawer
+ *
+ * - The server fetches `limit` records (partition / from / limit).
+ * - The search term is applied in the browser to those fetched records.
+ * - Only the table body shows loading, empty and error states.
  */
 
 import { useState, useCallback, useMemo } from 'react';
@@ -24,7 +28,6 @@ import {
   ToolbarContent,
   ToolbarItem,
   Tooltip,
-  ToolbarGroup,
 } from '@patternfly/react-core';
 import { ExclamationCircleIcon, ColumnsIcon } from '@patternfly/react-icons';
 import { useMessages } from '@/api/hooks/useMessages';
@@ -64,6 +67,7 @@ export function TopicMessagesTab() {
     'last15',
     'offset',
     'timestamp',
+    'epoch',
   ];
 
   const filterFrom: FromOptions | undefined =
@@ -88,6 +92,7 @@ export function TopicMessagesTab() {
   const [showColumnsModal, setShowColumnsModal] = useState(false);
   const [resetCount, setResetCount] = useState(0);
   const [pendingReset, setPendingReset] = useState(false);
+
   const { data: topic, isLoading: isLoadingTopic } = useTopic(
     kafkaId!,
     topicId!
@@ -126,7 +131,6 @@ export function TopicMessagesTab() {
     () => searchParams.get('selected'),
     [searchParams]
   );
-
   const selectedMessage = useMemo(() => {
     if (!selectedMessageId) return undefined;
     const [partStr, offsetStr] = selectedMessageId.split(':');
@@ -167,9 +171,14 @@ export function TopicMessagesTab() {
       if (params.limit !== 50) {
         newParams.set('retrieve', String(params.limit));
       }
-      setSearchParams(newParams, { replace: true });
+
+      if (newParams.toString() === searchParams.toString()) {
+        refetch();
+      } else {
+        setSearchParams(newParams, { replace: true });
+      }
     },
-    [setSearchParams]
+    [searchParams, setSearchParams, refetch]
   );
 
   const handleSelectMessage = useCallback(
@@ -195,9 +204,6 @@ export function TopicMessagesTab() {
     setPendingReset(true);
   }, [setSearchParams]);
 
-  // Remount the filter only once the cleared URL has been applied. Doing it in
-  // the same step as setSearchParams would let the filter start from the old
-  // URL values, so its selections and search term would not be reset.
   if (pendingReset && searchParams.toString() === '') {
     setPendingReset(false);
     setResetCount((c) => c + 1);
@@ -294,39 +300,48 @@ export function TopicMessagesTab() {
                   title={t('topics.messages.continuousMode.title')}
                 />
               )}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 1fr) auto',
+                  alignItems: 'start',
+                }}
+              >
+                <Toolbar>
+                  <ToolbarContent>
+                    <AdvancedSearch
+                      partitions={partitions}
+                      filterQuery={query}
+                      filterWhere={where}
+                      filterPartition={partition}
+                      filterOffset={offset}
+                      filterLimit={limit}
+                      filterFrom={filterFrom}
+                      onSearch={handleSearch}
+                      key={resetCount}
+                      filterTimestamp={
+                        filterFrom === 'timestamp' ? timestamp : undefined
+                      }
+                      filterEpoch={filterFrom === 'epoch' ? epoch : undefined}
+                    />
+                  </ToolbarContent>
+                </Toolbar>
 
-              <Toolbar>
-                <ToolbarContent>
-                  <ToolbarItem>
-                    <ToolbarGroup>
-                      <AdvancedSearch
-                        partitions={partitions}
-                        filterQuery={query}
-                        filterWhere={where}
-                        filterPartition={partition}
-                        filterOffset={offset}
-                        filterLimit={limit}
-                        filterFrom={filterFrom}
-                        onSearch={handleSearch}
-                        key={resetCount}
-                        filterTimestamp={
-                          filterFrom === 'timestamp' ? timestamp : undefined
-                        }
-                      />
-                    </ToolbarGroup>
-                  </ToolbarItem>
-                  <ToolbarItem align={{ default: 'alignEnd' }}>
-                    <Tooltip content={t('topics.messages.manage_columns')}>
-                      <Button
-                        variant="plain"
-                        icon={<ColumnsIcon />}
-                        onClick={() => setShowColumnsModal(true)}
-                        aria-label={t('topics.messages.manage_columns')}
-                      />
-                    </Tooltip>
-                  </ToolbarItem>
-                </ToolbarContent>
-              </Toolbar>
+                <Toolbar>
+                  <ToolbarContent>
+                    <ToolbarItem align={{ default: 'alignEnd' }}>
+                      <Tooltip content={t('topics.messages.manage_columns')}>
+                        <Button
+                          variant="plain"
+                          icon={<ColumnsIcon />}
+                          onClick={() => setShowColumnsModal(true)}
+                          aria-label={t('topics.messages.manage_columns')}
+                        />
+                      </Tooltip>
+                    </ToolbarItem>
+                  </ToolbarContent>
+                </Toolbar>
+              </div>
 
               <MessagesTable
                 messages={visibleMessages}

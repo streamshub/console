@@ -275,7 +275,7 @@
         "hasTheWords": "Has the words",
         "partition": "Partition",
         "fetchFrom": "Fetch from",
-        "limit": "limit",
+        "limit": "Limit",
         "search": "Search",
         "timestamp": "Timestamp",
         "epoch": "Unix timestamp",

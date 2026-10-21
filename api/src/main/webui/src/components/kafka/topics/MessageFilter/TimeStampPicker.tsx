@@ -35,6 +35,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
 const ISO_REGEX =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{3})(Z|[+-]\d{2}:\d{2})$/;
 
+function normalizeISOInput(raw: string): string {
+  const trimmed = raw.trim();
+
+  // Allow a space instead of the ISO 8601 "T" delimiter.
+  return trimmed.replace(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:)/, '$1T$2');
+}
+
 export function isValidISODateTime(value: string): boolean {
   const match = ISO_REGEX.exec(value);
   if (!match) return false;
@@ -170,20 +177,27 @@ export function TimestampPicker({ value, onCommit }: TimestampPickerProps) {
   }, [isOpen]);
 
   const commitText = () => {
-    const trimmed = text.trim();
-    if (trimmed === '') {
+    const normalized = normalizeISOInput(text);
+
+    if (normalized === '') {
       setTextError(false);
       if (value !== undefined) onCommit(undefined);
-    } else if (isValidISODateTime(trimmed)) {
+    } else if (isValidISODateTime(normalized)) {
       setTextError(false);
-      if (trimmed !== value) onCommit(trimmed);
+
+      // Show the normalized ISO format in the input.
+      setText(normalized);
+
+      if (normalized !== value) {
+        onCommit(normalized);
+      }
     } else {
       setTextError(true);
     }
   };
 
   const openPicker = () => {
-    const draft = toDraft(text.trim());
+    const draft = toDraft(normalizeISOInput(text));
     setDate(draft?.date ?? new Date());
     setTime(draft?.time ?? ZERO_TIME);
     setZone(draft?.zone ?? 'UTC');

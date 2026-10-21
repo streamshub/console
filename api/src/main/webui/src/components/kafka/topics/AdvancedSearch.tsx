@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { SearchParams } from '@/api/types';
 import { FromOptions } from './MessageFilter/FetchFromSelector';
 import {
@@ -19,10 +19,17 @@ interface AdvancedSearchProps {
   filterOffset?: number;
   filterLimit?: number | 'continuously';
   filterFrom?: FromOptions;
-  filterEpoch?: number;
   onSearch: (params: SearchParams, selectedFrom: FromOptions) => void;
   filterTimestamp?: string;
+  filterEpoch?: number;
 }
+
+const isComplete = (s: FilterState) =>
+  !(
+    (s.from === 'offset' && s.offset === undefined) ||
+    (s.from === 'timestamp' && s.timestamp === undefined) ||
+    (s.from === 'epoch' && s.epoch === undefined)
+  );
 
 export function AdvancedSearch({
   partitions,
@@ -32,9 +39,9 @@ export function AdvancedSearch({
   filterOffset,
   filterLimit,
   filterFrom,
-  filterEpoch,
   onSearch,
   filterTimestamp,
+  filterEpoch,
 }: AdvancedSearchProps) {
   const [filter, setFilter] = useState<FilterState>(() =>
     applyPatch(
@@ -44,14 +51,14 @@ export function AdvancedSearch({
           filterFrom ??
           (filterOffset !== undefined
             ? 'offset'
-            : filterEpoch !== undefined
-            ? 'epoch'
             : filterTimestamp !== undefined
             ? 'timestamp'
+            : filterEpoch !== undefined
+            ? 'epoch'
             : 'latest'),
         offset: filterOffset,
-        epoch: filterEpoch,
         timestamp: filterTimestamp,
+        epoch: filterEpoch,
         limit: typeof filterLimit === 'number' ? filterLimit : DEFAULT_LIMIT,
         query: filterQuery ?? '',
         where: filterWhere,
@@ -59,38 +66,43 @@ export function AdvancedSearch({
       {}
     )
   );
+  const filterRef = useRef(filter);
 
   const partitionList = useMemo(
     () => Array.from({ length: partitions }, (_, i) => i),
     [partitions]
   );
 
-  const handleChange = (patch: Partial<FilterState>) => {
-    let next = applyPatch(filter, patch);
+  const run = (state: FilterState) => {
+    if (!isComplete(state)) return;
+    onSearch(
+      buildSearchParams({ ...state, query: state.query.trim() }),
+      state.from
+    );
+  };
+
+  const update = (patch: Partial<FilterState>, applyNow: boolean) => {
+    const previous = filterRef.current;
+    let next = applyPatch(previous, patch);
 
     if (!isSearchEnabled(next)) {
       next = { ...next, query: '', where: undefined };
     }
 
-    if (isSameFilter(filter, next)) return;
+    if (isSameFilter(previous, next)) return;
+    filterRef.current = next;
     setFilter(next);
 
-    if (
-      (next.from === 'offset' && next.offset === undefined) ||
-      (next.from === 'epoch' && next.epoch === undefined) ||
-      (next.from === 'timestamp' && next.timestamp === undefined)
-    ) {
-      return;
-    }
-
-    onSearch(buildSearchParams(next), next.from);
+    if (applyNow) run(next);
   };
 
   return (
     <MessageTableFilter
       partitions={partitionList}
       value={filter}
-      onChange={handleChange}
+      onChange={(patch) => update(patch, true)}
+      onDraftChange={(patch) => update(patch, false)}
+      onSubmit={() => run(filterRef.current)}
     />
   );
 }

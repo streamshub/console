@@ -1,6 +1,8 @@
 import {
+  Button,
   Flex,
   FlexItem,
+  TextInput,
   ToolbarGroup,
   ToolbarItem,
 } from '@patternfly/react-core';
@@ -9,21 +11,24 @@ import { PartitionSelector } from './PartitionSelector';
 import { FetchFromSelector } from './FetchFromSelector';
 import { LimitSelect } from './LimitSelector';
 import { WhereSelector } from './whereSelector';
-import { CommitInput } from './CommitInput';
 import {
   FilterState,
   isSearchEnabled,
-  isValidEpoch,
-  isValidOffset,
   parseEpoch,
   parseOffset,
 } from './messageFilter';
 import { TimestampPicker } from './TimeStampPicker';
+import ArrowRightIcon from '@patternfly/react-icons/dist/esm/icons/arrow-right-icon';
 
 interface MessageTableFilterProps {
   partitions: number[];
   value: FilterState;
+  /** A choice was made (dropdown, timestamp): applied straight away. */
   onChange: (patch: Partial<FilterState>) => void;
+  /** Text is being typed (offset, Unix timestamp, search term): not applied yet. */
+  onDraftChange: (patch: Partial<FilterState>) => void;
+  /** Enter or the Submit button: apply everything and run the query. */
+  onSubmit: () => void;
 }
 
 function FilterSection({
@@ -43,16 +48,27 @@ function FilterSection({
   );
 }
 
+const digitsOnly = (raw: string) => raw.replace(/\D/g, '');
+
 export function MessageTableFilter({
   partitions,
   value,
   onChange,
+  onDraftChange,
+  onSubmit,
 }: MessageTableFilterProps) {
   const { t } = useTranslation();
   const { partition, from, offset, limit, query, where, epoch, timestamp } =
     value;
 
   const searchEnabled = isSearchEnabled(value);
+
+  const submitOnEnter = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      onSubmit();
+    }
+  };
 
   return (
     <>
@@ -74,25 +90,31 @@ export function MessageTableFilter({
 
         {from === 'offset' && (
           <FilterSection title="Offset">
-            <CommitInput
-              type="number"
-              min={0}
+            {/* Whole numbers only: anything else is removed as it is typed */}
+            <TextInput
+              type="text"
+              inputMode="numeric"
               value={offset?.toString() ?? ''}
-              isValid={isValidOffset}
-              onCommit={(raw) => onChange({ offset: parseOffset(raw) })}
+              onChange={(_event, raw) =>
+                onDraftChange({ offset: parseOffset(digitsOnly(raw)) })
+              }
+              onKeyDown={submitOnEnter}
               placeholder={t('topics.messages.filter.offsetPlaceholder')}
               aria-label={t('topics.messages.filter.offsetAriaLabel')}
             />
           </FilterSection>
         )}
+
         {from === 'epoch' && (
           <FilterSection title="Unix timestamp">
-            <CommitInput
-              type="number"
-              min={0}
+            <TextInput
+              type="text"
+              inputMode="numeric"
               value={epoch?.toString() ?? ''}
-              isValid={isValidEpoch}
-              onCommit={(raw) => onChange({ epoch: parseEpoch(raw) })}
+              onChange={(_event, raw) =>
+                onDraftChange({ epoch: parseEpoch(digitsOnly(raw)) })
+              }
+              onKeyDown={submitOnEnter}
               placeholder="Enter Unix timestamp in milliseconds"
               aria-label="Unix timestamp in milliseconds"
             />
@@ -128,18 +150,35 @@ export function MessageTableFilter({
               />
             </FlexItem>
             <FlexItem>
-              <CommitInput
+              <TextInput
+                type="text"
                 isDisabled={!searchEnabled}
                 aria-label={t('topics.messages.advancedSearch.queryHelper')}
                 placeholder={t('topics.messages.advancedSearch.queryHelper')}
                 value={query}
-                onCommit={(text) => onChange({ query: text.trim() })}
-                style={{ width: '260px' }}
+                onChange={(_event, text) => onDraftChange({ query: text })}
+                onKeyDown={submitOnEnter}
+                style={{ width: '160px' }}
               />
             </FlexItem>
           </Flex>
         </FilterSection>
       )}
+
+      {/* Last item of the toolbar */}
+      <ToolbarItem>
+        <Flex direction={{ default: 'column' }}>
+          {/* Same height as the section titles, so the button lines up with the controls */}
+          <FlexItem aria-hidden="true">&nbsp;</FlexItem>
+          <FlexItem>
+            <Button
+              variant="control"
+              onClick={onSubmit}
+              icon={<ArrowRightIcon />}
+            />
+          </FlexItem>
+        </Flex>
+      </ToolbarItem>
     </>
   );
 }
