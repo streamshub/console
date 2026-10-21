@@ -35,6 +35,10 @@ class ConsoleDeploymentTest {
         assertThat(pattern.toString(), is("^\\Qquay.io/streamshub/\\E"));
         assertThat("quay.io/streamshub/my-image:1", findsPattern(pattern));
         assertThat("quay.io/evil-streamshub/my-evil-image:1", not(findsPattern(pattern)));
+        // ^ anchor: an allowed prefix appearing mid-string must not match under find()
+        assertThat("registry.evil.com/quay.io/streamshub/console", not(findsPattern(pattern)));
+        // Pattern.quote: the '.' must be literal, not a regex wildcard
+        assertThat("quayXio/streamshub/evil:1", not(findsPattern(pattern)));
     }
 
     @Test
@@ -43,6 +47,7 @@ class ConsoleDeploymentTest {
         assertThat(pattern.toString(), is("^\\Qan_image:a_tag\\E$"));
         assertThat("an_image:a_tag", findsPattern(pattern));
         assertThat("an_image_evil:1", not(findsPattern(pattern)));
+        assertThat("an_image:a_tag_evil", not(findsPattern(pattern)));
     }
 
     @Test
@@ -51,7 +56,7 @@ class ConsoleDeploymentTest {
         target.logger = mock(Logger.class);
         target.defaultAPIImage = "example.com/my-default-org/console-api:1";
         target.allowedImagePrefixes = Optional.of(List.of("example.com/my-allowed-org/"));
-        target.initAllowedPrefixes();
+        target.initAllowedImagePatterns();
 
         verify(target.logger).warnf(
                 "Configured `%s` of %s blocks use of default API image `%s`",

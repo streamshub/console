@@ -71,7 +71,7 @@ public class ConsoleDeployment extends BaseDeployment {
     List<Pattern> allowedImagePatterns;
 
     @PostConstruct
-    void initAllowedPrefixes() {
+    void initAllowedImagePatterns() {
         allowedImagePatterns = allowedImagePrefixes
                 .map(prefixes -> prefixes.stream().map(ConsoleDeployment::startsWithPattern).toList())
                 .orElseGet(() -> List.of(defaultAllowedPrefix(defaultAPIImage)));
@@ -90,7 +90,7 @@ public class ConsoleDeployment extends BaseDeployment {
      * the default image up to and including its last {@code /}. An image without a
      * {@code /} has no such prefix pattern and returning an empty prefix would
      * permit every image. Therefore, in the case of a default image containing no
-     * {@code /}, this method will return the a pattern matching only the default
+     * {@code /}, this method will return the pattern matching only the default
      * image name itself.
      */
     static Pattern defaultAllowedPrefix(String defaultImage) {
