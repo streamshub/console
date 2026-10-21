@@ -11,6 +11,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.Test;
 
 import com.github.streamshub.console.kafka.systemtest.TestTlsProfile;
+import com.github.streamshub.console.test.TlsHelper;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
@@ -25,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @TestProfile(TestTlsProfile.class)
 class MetadataResourceTlsIT {
 
+    TlsHelper tls;
+
     @Inject
     @ConfigProperty(name = "quarkus.http.test-ssl-port")
     int testSslPort;
@@ -38,7 +41,7 @@ class MetadataResourceTlsIT {
         // The lambda receives the RequestSpecification and adds the generated CA trust store
         // so RestAssured accepts the server certificate issued by TlsHelper.
         whenRequesting(req -> req
-                .trustStore(TestTlsProfile.TLS.getTrustStore())
+                .trustStore(tls.getTrustStore())
                 .get(URI.create("https://localhost:%d/api/metadata".formatted(testSslPort))))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
