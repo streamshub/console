@@ -18,12 +18,15 @@ import com.github.streamshub.console.config.TrustStoreConfig.Type;
 import com.github.streamshub.console.config.Value;
 
 import io.quarkus.tls.BaseTlsConfiguration;
+import io.quarkus.tls.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.CertificateRecorder;
-import io.quarkus.tls.runtime.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.config.JKSTrustStoreConfig;
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
+import io.quarkus.tls.runtime.config.OtherTrustStoreConfig;
 import io.quarkus.tls.runtime.config.P12TrustStoreConfig;
 import io.quarkus.tls.runtime.config.PemCertsConfig;
+import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
+import io.quarkus.tls.runtime.config.SslEngineType;
 import io.quarkus.tls.runtime.config.TrustStoreCredentialProviderConfig;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.TrustOptions;
@@ -132,6 +135,21 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
         public Optional<Duration> reloadPeriod() {
             return Optional.empty();
         }
+
+        @Override
+        public PqcEnforcementPolicy pqcEnforcementPolicy() {
+            return PqcEnforcementPolicy.RELAXED;
+        }
+
+        @Override
+        public Optional<List<String>> keyExchangeGroups() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<SslEngineType> sslEngine() {
+            return Optional.empty();
+        }
     }
 
     private static class CommonTrustStoreConfig implements io.quarkus.tls.runtime.config.TrustStoreConfig,
@@ -206,6 +224,11 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
 
         @Override
         public Optional<List<Path>> certDirs() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<OtherTrustStoreConfig> other() {
             return Optional.empty();
         }
     }
