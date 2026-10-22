@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,7 +36,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 public class ConsoleDeployment extends BaseDeployment {
 
     public static final String NAME = "console-deployment";
-    private static final String ALLOWED_IMAGE_PREFIXES = "console.deployment.allowed-image-prefixes";
+    static final String ALLOWED_IMAGE_PREFIXES = "console.deployment.allowed-image-prefixes";
 
     @Inject
     Logger logger;
@@ -57,39 +59,51 @@ public class ConsoleDeployment extends BaseDeployment {
     @ConfigProperty(name = ALLOWED_IMAGE_PREFIXES)
     Optional<List<String>> allowedImagePrefixes;
 
-    List<String> effectiveAllowedPrefixes;
+    List<Pattern> allowedImagePatterns;
 
     @PostConstruct
-    void initAllowedPrefixes() {
-        effectiveAllowedPrefixes = allowedImagePrefixes.orElseGet(() ->
-            List.of(defaultAllowedPrefix(defaultAPIImage)));
+    void initAllowedImagePatterns() {
+        allowedImagePatterns = allowedImagePrefixes
+                .map(prefixes -> prefixes.stream().map(ConsoleDeployment::startsWithPattern).toList())
+                .orElseGet(() -> List.of(defaultAllowedPrefix(defaultAPIImage)));
 
-        if (effectiveAllowedPrefixes.stream().noneMatch(defaultAPIImage::startsWith)) {
+        if (allowedImagePatterns.stream().map(p -> p.matcher(defaultAPIImage)).noneMatch(Matcher::find)) {
             logger.warnf(
                     "Configured `%s` of %s blocks use of default API image `%s`",
                     ALLOWED_IMAGE_PREFIXES,
-                    effectiveAllowedPrefixes,
+                    allowedImagePrefixes.orElseGet(Collections::emptyList),
                     defaultAPIImage);
         }
 
-        if (effectiveAllowedPrefixes.stream().noneMatch(defaultUIImage::startsWith)) {
+        if (allowedImagePatterns.stream().map(p -> p.matcher(defaultUIImage)).noneMatch(Matcher::find)) {
             logger.warnf(
                     "Configured `%s` of %s blocks use of default UI image `%s`",
                     ALLOWED_IMAGE_PREFIXES,
-                    effectiveAllowedPrefixes,
+                    allowedImagePrefixes.orElseGet(Collections::emptyList),
                     defaultUIImage);
         }
     }
 
     /**
-     * The prefix permitted when no allowlist is configured: everything in the default
-     * image up to and including its last {@code /}. An image without a {@code /} has no
-     * such prefix and returning an empty prefix would permit every image.
-     * Therefore, in the case of a default image containing no {@code /}, this method will return the default image name itself as the prefix.
+     * The prefix pattern permitted when no allowlist is configured: everything in
+     * the default image up to and including its last {@code /}. An image without a
+     * {@code /} has no such prefix pattern and returning an empty prefix would
+     * permit every image. Therefore, in the case of a default image containing no
+     * {@code /}, this method will return the pattern matching only the default
+     * image name itself.
      */
-    static String defaultAllowedPrefix(String defaultImage) {
+    static Pattern defaultAllowedPrefix(String defaultImage) {
         int lastSlash = defaultImage.lastIndexOf('/');
-        return lastSlash < 0 ? defaultImage : defaultImage.substring(0, lastSlash + 1);
+
+        if (lastSlash < 0) {
+            return Pattern.compile('^' + Pattern.quote(defaultImage) + '$');
+        }
+
+        return startsWithPattern(defaultImage.substring(0, lastSlash + 1));
+    }
+
+    static Pattern startsWithPattern(String value) {
+        return Pattern.compile('^' + Pattern.quote(value));
     }
 
     public ConsoleDeployment() {
@@ -111,11 +125,11 @@ public class ConsoleDeployment extends BaseDeployment {
         String imageAPI = templateAPI.map(ContainerSpec::getImage)
                 .or(() -> images.map(Images::getApi))
                 .orElse(defaultAPIImage);
-        validateImage(imageAPI, effectiveAllowedPrefixes);
+        validateImage(imageAPI, allowedImagePatterns);
         String imageUI = templateUI.map(ContainerSpec::getImage)
                 .or(() -> images.map(Images::getUi))
                 .orElse(defaultUIImage);
-        validateImage(imageUI, effectiveAllowedPrefixes);
+        validateImage(imageUI, allowedImagePatterns);
 
         List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(coalesce(primary.getSpec().getEnv(), Collections::emptyList));
@@ -190,11 +204,11 @@ public class ConsoleDeployment extends BaseDeployment {
         return (List<R>) resources.getOrDefault(key, Collections.emptyList());
     }
 
-    private static void validateImage(String image, List<String> allowedPrefixes) {
-        if (allowedPrefixes.stream().noneMatch(image::startsWith)) {
+    static void validateImage(String image, List<Pattern> allowedPatterns) {
+        if (allowedPatterns.stream().map(p -> p.matcher(image)).noneMatch(Matcher::find)) {
             throw new ReconciliationException(
-                "Console image '%s' is not permitted. Allowed prefixes: %s"
-                    .formatted(image, allowedPrefixes));
+                "Console image '%s' is not permitted. Allowed patterns: %s"
+                    .formatted(image, allowedPatterns));
         }
     }
 
