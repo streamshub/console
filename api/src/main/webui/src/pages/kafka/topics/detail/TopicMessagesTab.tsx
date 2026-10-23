@@ -1,5 +1,9 @@
 /**
  * Topic Messages Tab - Shows messages in a topic with advanced search and detail drawer
+ *
+ * - The server fetches `limit` records (partition / from / limit).
+ * - The search term is applied in the browser to those fetched records.
+ * - Only the table body shows loading, empty and error states.
  */
 
 import { useState, useCallback, useMemo } from 'react';
@@ -34,6 +38,8 @@ import { MessagesTable } from '@/components/kafka/topics/MessagesTable';
 import { MessageDetails } from '@/components/kafka/topics/MessageDetails';
 import { AdvancedSearch } from '@/components/kafka/topics/AdvancedSearch';
 import { Column, ColumnsModal } from '@/components/kafka/topics/ColumnsModal';
+import { FromOptions } from '@/components/kafka/topics/MessageFilter/FetchFromSelector';
+import { filterMessages } from '@/components/kafka/topics/MessageFilter/messageFilter';
 
 const defaultColumns: Column[] = [
   'offset-partition',
@@ -46,26 +52,47 @@ const defaultColumns: Column[] = [
 
 export function TopicMessagesTab() {
   const { t } = useTranslation();
-  const { kafkaId, topicId } = useParams<{ kafkaId: string; topicId: string }>();
+  const { kafkaId, topicId } = useParams<{
+    kafkaId: string;
+    topicId: string;
+  }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Parse search params
+  const fromParam = searchParams.get('from');
+  const validFromOptions: FromOptions[] = [
+    'latest',
+    'last5',
+    'last10',
+    'last15',
+    'offset',
+    'timestamp',
+    'epoch',
+  ];
+
+  const filterFrom: FromOptions | undefined =
+    fromParam && validFromOptions.includes(fromParam as FromOptions)
+      ? (fromParam as FromOptions)
+      : undefined;
   const retrieveParam = searchParams.get('retrieve');
-  const limit = retrieveParam === 'continuously'
-    ? 'continuously' as const
-    : parseInt(retrieveParam || '50');
+  const limit =
+    retrieveParam === 'continuously'
+      ? ('continuously' as const)
+      : parseInt(retrieveParam || '50');
   const partitionParam = searchParams.get('partition');
   const partition = partitionParam ? parseInt(partitionParam) : undefined;
   const query = searchParams.get('query') || undefined;
-  const where = (searchParams.get('where') as 'key' | 'headers' | 'value') || undefined;
+  const where =
+    (searchParams.get('where') as 'key' | 'headers' | 'value') || undefined;
   const offsetParam = searchParams.get('offset');
   const offset = offsetParam ? parseInt(offsetParam) : undefined;
   const timestamp = searchParams.get('timestamp') || undefined;
   const epochParam = searchParams.get('epoch');
   const epoch = epochParam ? parseInt(epochParam) : undefined;
   const [showColumnsModal, setShowColumnsModal] = useState(false);
+  const [resetCount, setResetCount] = useState(0);
+  const [pendingReset, setPendingReset] = useState(false);
 
-  // Fetch topic info to get partition count
   const { data: topic, isLoading: isLoadingTopic } = useTopic(
     kafkaId!,
     topicId!
@@ -74,7 +101,6 @@ export function TopicMessagesTab() {
   const topicData = topic?.data;
   const partitions = topicData?.attributes?.numPartitions || 0;
 
-  // Fetch messages
   const {
     data: messages = [],
     isLoading: isLoadingMessages,
@@ -86,8 +112,6 @@ export function TopicMessagesTab() {
       topicId: topicId!,
       pageSize: limit === 'continuously' ? 50 : limit,
       partition,
-      query,
-      where,
       offset,
       timestamp,
       epoch,
@@ -98,57 +122,76 @@ export function TopicMessagesTab() {
     }
   );
 
-  const selectedMessageId = useMemo(() => searchParams.get('selected'), [searchParams]);
-  // Derive selected message directly from URL + messages — no separate state needed.
+  const visibleMessages = useMemo(
+    () => filterMessages(messages, query, where),
+    [messages, query, where]
+  );
+
+  const selectedMessageId = useMemo(
+    () => searchParams.get('selected'),
+    [searchParams]
+  );
   const selectedMessage = useMemo(() => {
     if (!selectedMessageId) return undefined;
     const [partStr, offsetStr] = selectedMessageId.split(':');
     const part = parseInt(partStr);
     const off = parseInt(offsetStr);
     return messages.find(
-      m => m.attributes.partition === part && m.attributes.offset === off
+      (m) => m.attributes.partition === part && m.attributes.offset === off
     );
   }, [selectedMessageId, messages]);
 
-  const handleSearch = useCallback((params: SearchParams) => {
-    const newParams = new URLSearchParams();
-    
-    if (params.query?.value) {
-      newParams.set('query', params.query.value);
-      if (params.query.where !== 'everywhere') {
-        newParams.set('where', params.query.where);
-      }
-    }
-    
-    if (params.partition !== undefined) {
-      newParams.set('partition', String(params.partition));
-    }
-    
-    if (params.from.type !== 'latest') {
-      if (params.from.type === 'offset') {
-        newParams.set('offset', String(params.from.value));
-      } else if (params.from.type === 'timestamp') {
-        newParams.set('timestamp', params.from.value);
-      } else if (params.from.type === 'epoch') {
-        newParams.set('epoch', String(params.from.value));
-      }
-    }
-    
-    if (params.limit !== 50) {
-      newParams.set('retrieve', String(params.limit));
-    }
-    
-    setSearchParams(newParams, { replace: true });
-    // Always refetch explicitly — if the params haven't changed the query key
-    // is identical and TanStack Query won't issue a new request otherwise.
-    refetch();
-  }, [setSearchParams, refetch]);
+  const handleSearch = useCallback(
+    (params: SearchParams, selectedFrom: FromOptions) => {
+      const newParams = new URLSearchParams();
+      newParams.set('from', selectedFrom);
 
-  const handleSelectMessage = useCallback((message: KafkaRecord) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('selected', `${message.attributes.partition}:${message.attributes.offset}`);
-    setSearchParams(newParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+      if (params.query?.value) {
+        newParams.set('query', params.query.value);
+
+        if (params.query.where !== 'everywhere') {
+          newParams.set('where', params.query.where);
+        }
+      }
+
+      if (params.partition !== undefined) {
+        newParams.set('partition', String(params.partition));
+      }
+
+      if (params.from.type !== 'latest') {
+        if (params.from.type === 'offset') {
+          newParams.set('offset', String(params.from.value));
+        } else if (params.from.type === 'timestamp') {
+          newParams.set('timestamp', params.from.value);
+        } else if (params.from.type === 'epoch') {
+          newParams.set('epoch', String(params.from.value));
+        }
+      }
+
+      if (params.limit !== 50) {
+        newParams.set('retrieve', String(params.limit));
+      }
+
+      if (newParams.toString() === searchParams.toString()) {
+        refetch();
+      } else {
+        setSearchParams(newParams, { replace: true });
+      }
+    },
+    [searchParams, setSearchParams, refetch]
+  );
+
+  const handleSelectMessage = useCallback(
+    (message: KafkaRecord) => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set(
+        'selected',
+        `${message.attributes.partition}:${message.attributes.offset}`
+      );
+      setSearchParams(newParams, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
 
   const handleDeselectMessage = useCallback(() => {
     const newParams = new URLSearchParams(searchParams);
@@ -158,25 +201,28 @@ export function TopicMessagesTab() {
 
   const handleReset = useCallback(() => {
     setSearchParams(new URLSearchParams());
+    setPendingReset(true);
   }, [setSearchParams]);
 
+  if (pendingReset && searchParams.toString() === '') {
+    setPendingReset(false);
+    setResetCount((c) => c + 1);
+  }
+
   // Load saved column preferences from localStorage
-  const persistedColumns = useMemo(
-    () => {
-      const columnsJson = localStorage.getItem('message-browser-columns');
-      if (columnsJson) {
-        try {
-          const parsed = JSON.parse(columnsJson);
-          if (Array.isArray(parsed)) {
-            return parsed;
-          }
-        } catch {
-          // Ignore parse errors
+  const persistedColumns = useMemo(() => {
+    const columnsJson = localStorage.getItem('message-browser-columns');
+    if (columnsJson) {
+      try {
+        const parsed = JSON.parse(columnsJson);
+        if (Array.isArray(parsed)) {
+          return parsed;
         }
+      } catch {
+        // Ignore parse errors
       }
-    },
-    []
-  );
+    }
+  }, []);
 
   const [chosenColumns, setChosenColumns] = useState<Column[]>(
     persistedColumns ?? defaultColumns
@@ -188,8 +234,7 @@ export function TopicMessagesTab() {
     setShowColumnsModal(false);
   };
 
-  // Loading state
-  if (isLoadingTopic || (isLoadingMessages && messages.length === 0)) {
+  if (isLoadingTopic) {
     return (
       <PageSection isFilled>
         <EmptyState>
@@ -202,85 +247,106 @@ export function TopicMessagesTab() {
     );
   }
 
-  const hasFilters = partition !== undefined || offset !== undefined ||
-                     timestamp !== undefined || epoch !== undefined || query !== undefined;
+  const hasFilters =
+    partition !== undefined ||
+    offset !== undefined ||
+    timestamp !== undefined ||
+    epoch !== undefined ||
+    query !== undefined;
+
+  const errorState = messagesError ? (
+    <EmptyState>
+      <ExclamationCircleIcon />
+      <Title headingLevel="h2" size="lg">
+        {messagesError instanceof ApiError && messagesError.errors?.[0]?.title
+          ? messagesError.errors[0].title
+          : t('topics.messages.noDataTitle')}
+      </Title>
+      <EmptyStateBody>
+        {messagesError instanceof ApiError && messagesError.errors?.[0]?.detail
+          ? messagesError.errors[0].detail
+          : messagesError.message}
+      </EmptyStateBody>
+      <Button variant="primary" onClick={() => refetch()}>
+        {t('common.retry')}
+      </Button>
+    </EmptyState>
+  ) : undefined;
 
   return (
     <>
-    <Drawer isExpanded={!!selectedMessage}>
-      <DrawerContent
-        panelContent={
-          selectedMessage && (
-            <DrawerPanelContent isResizable minSize="400px">
-              <DrawerHead>
-                <span>{t('topics.messages.message')}</span>
-                <DrawerActions>
-                  <DrawerCloseButton onClick={handleDeselectMessage} />
-                </DrawerActions>
-              </DrawerHead>
-              <MessageDetails message={selectedMessage} />
-            </DrawerPanelContent>
-          )
-        }
-      >
-        <DrawerContentBody>
-          <PageSection isFilled>
-            {limit === 'continuously' && (
-              <Alert
-                variant="info"
-                isInline
-                title={t('topics.messages.continuousMode.title')}
-              />
-            )}
-
-            <Toolbar>
-              <ToolbarContent>
-                <ToolbarItem style={{ flex: 1, maxWidth: '700px' }}>
-                  <AdvancedSearch
-                    partitions={partitions}
-                    filterQuery={query}
-                    filterWhere={where}
-                    filterPartition={partition}
-                    filterOffset={offset}
-                    filterTimestamp={timestamp}
-                    filterEpoch={epoch}
-                    filterLimit={limit}
-                    onSearch={handleSearch}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Tooltip content={t('topics.messages.manage_columns')}>
-                    <Button
-                      variant="plain"
-                      icon={<ColumnsIcon />}
-                      onClick={() => setShowColumnsModal(true)}
-                      aria-label={t('topics.messages.manage_columns')}
+      <Drawer isExpanded={!!selectedMessage}>
+        <DrawerContent
+          panelContent={
+            selectedMessage && (
+              <DrawerPanelContent isResizable minSize="400px">
+                <DrawerHead>
+                  <span>{t('topics.messages.message')}</span>
+                  <DrawerActions>
+                    <DrawerCloseButton onClick={handleDeselectMessage} />
+                  </DrawerActions>
+                </DrawerHead>
+                <MessageDetails message={selectedMessage} />
+              </DrawerPanelContent>
+            )
+          }
+        >
+          <DrawerContentBody>
+            <PageSection isFilled>
+              {limit === 'continuously' && (
+                <Alert
+                  variant="info"
+                  isInline
+                  title={t('topics.messages.continuousMode.title')}
+                />
+              )}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 1fr) auto',
+                  alignItems: 'start',
+                }}
+              >
+                <Toolbar>
+                  <ToolbarContent>
+                    <AdvancedSearch
+                      partitions={partitions}
+                      filterQuery={query}
+                      filterWhere={where}
+                      filterPartition={partition}
+                      filterOffset={offset}
+                      filterLimit={limit}
+                      filterFrom={filterFrom}
+                      onSearch={handleSearch}
+                      key={resetCount}
+                      filterTimestamp={
+                        filterFrom === 'timestamp' ? timestamp : undefined
+                      }
+                      filterEpoch={filterFrom === 'epoch' ? epoch : undefined}
                     />
-                  </Tooltip>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
+                  </ToolbarContent>
+                </Toolbar>
 
-            {messagesError ? (
-              <EmptyState>
-                <ExclamationCircleIcon />
-                <Title headingLevel="h2" size="lg">
-                  {messagesError instanceof ApiError && messagesError.errors?.[0]?.title
-                    ? messagesError.errors[0].title
-                    : t('topics.messages.noDataTitle')}
-                </Title>
-                <EmptyStateBody>
-                  {messagesError instanceof ApiError && messagesError.errors?.[0]?.detail
-                    ? messagesError.errors[0].detail
-                    : messagesError.message}
-                </EmptyStateBody>
-                <Button variant="primary" onClick={() => refetch()}>
-                  {t('common.retry')}
-                </Button>
-              </EmptyState>
-            ) : (
+                <Toolbar>
+                  <ToolbarContent>
+                    <ToolbarItem align={{ default: 'alignEnd' }}>
+                      <Tooltip content={t('topics.messages.manage_columns')}>
+                        <Button
+                          variant="plain"
+                          icon={<ColumnsIcon />}
+                          onClick={() => setShowColumnsModal(true)}
+                          aria-label={t('topics.messages.manage_columns')}
+                        />
+                      </Tooltip>
+                    </ToolbarItem>
+                  </ToolbarContent>
+                </Toolbar>
+              </div>
+
               <MessagesTable
-                messages={messages}
+                messages={visibleMessages}
+                isLoading={isLoadingMessages}
+                errorState={errorState}
                 selectedMessage={selectedMessage}
                 chosenColumns={chosenColumns}
                 hasFilters={hasFilters}
@@ -288,19 +354,18 @@ export function TopicMessagesTab() {
                 onReset={handleReset}
                 topicName={topicData?.attributes?.name || topicId || ''}
               />
-            )}
-          </PageSection>
-        </DrawerContentBody>
-      </DrawerContent>
-    </Drawer>
+            </PageSection>
+          </DrawerContentBody>
+        </DrawerContent>
+      </Drawer>
 
-    {showColumnsModal && (
-      <ColumnsModal
-        chosenColumns={chosenColumns}
-        onConfirm={handleColumnsConfirm}
-        onCancel={() => setShowColumnsModal(false)}
-      />
-    )}
+      {showColumnsModal && (
+        <ColumnsModal
+          chosenColumns={chosenColumns}
+          onConfirm={handleColumnsConfirm}
+          onCancel={() => setShowColumnsModal(false)}
+        />
+      )}
     </>
   );
 }

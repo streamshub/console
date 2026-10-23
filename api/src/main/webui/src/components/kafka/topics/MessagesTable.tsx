@@ -1,6 +1,6 @@
 /**
  * Messages Table Component
- * Displays Kafka messages in a virtualized table
+ * Displays Kafka messages.
  */
 
 import React from 'react';
@@ -12,6 +12,8 @@ import {
   Title,
   Content,
   Tooltip,
+  Flex,
+  Spinner,
 } from '@patternfly/react-core';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
 import {
@@ -23,8 +25,12 @@ import { KafkaRecord } from '@/api/types';
 import { Column, useColumnLabels } from './ColumnsModal';
 import { formatDateTime } from '@/utils/dateTime';
 
+const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
+
 interface MessagesTableProps {
   messages: KafkaRecord[];
+  isLoading?: boolean;
+  errorState?: React.ReactNode;
   selectedMessage?: KafkaRecord;
   chosenColumns: Column[];
   hasFilters: boolean;
@@ -33,10 +39,10 @@ interface MessagesTableProps {
   topicName: string;
 }
 
-const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
-
 export function MessagesTable({
   messages,
+  isLoading = false,
+  errorState,
   selectedMessage,
   chosenColumns,
   hasFilters,
@@ -113,27 +119,6 @@ export function MessagesTable({
     );
   };
 
-  if (messages.length === 0) {
-    return (
-      <EmptyState>
-        <SearchIcon />
-        <Title headingLevel="h2" size="lg">
-          {t('topics.messages.noDataTitle')}
-        </Title>
-        <EmptyStateBody>
-          {hasFilters
-            ? t('topics.messages.noResultsBody')
-            : t('topics.messages.noDataBody')}
-        </EmptyStateBody>
-        <Button variant="primary" onClick={onReset}>
-          {hasFilters
-            ? t('topics.messages.noResultsReset')
-            : t('topics.messages.noDataRefresh')}
-        </Button>
-      </EmptyState>
-    );
-  }
-
   const renderCell = (column: Column, message: KafkaRecord) => {
     switch (column) {
       case 'offset-partition':
@@ -200,72 +185,119 @@ export function MessagesTable({
     }
   };
 
-  return (
-    <>
-      <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
-        <Table
-          aria-label={t('topics.messages.tableAriaLabel')}
-          variant="compact"
-          style={{ tableLayout: 'fixed', width: '100%' }}
-        >
-          <Thead>
-            <Tr>
-              {chosenColumns.map((column) => {
-                // Set fixed widths for columns with consistent data
-                let modifier: 'fitContent' | 'nowrap' | 'truncate' | undefined;
-                let width: 10 | 15 | 20 | undefined;
-                if (column === 'offset-partition') {
-                  width = 10;
-                  modifier = 'nowrap';
-                } else if (
-                  column === 'timestampUTC' ||
-                  column === 'timestamp'
-                ) {
-                  modifier = 'nowrap';
-                  width = 15;
-                } else if (column === 'size') {
-                  modifier = 'nowrap';
-                  width = 10;
-                } else {
-                  modifier = 'truncate';
-                }
-                // key, headers, value get remaining space (no width set)
+  const messageRow = (content: React.ReactNode) => (
+    <Tbody>
+      <Tr>
+        <Td colSpan={chosenColumns.length}>{content}</Td>
+      </Tr>
+    </Tbody>
+  );
 
-                return (
-                  <Th key={column} modifier={modifier} width={width}>
-                    {column === 'size' ? (
-                      <>
-                        {columnLabels[column]}{' '}
-                        <Tooltip content={t('topics.messages.tooltip.size')}>
-                          <HelpIcon />
-                        </Tooltip>
-                      </>
-                    ) : (
-                      columnLabels[column]
-                    )}
-                  </Th>
-                );
-              })}
-            </Tr>
-          </Thead>
-          <Tbody>
-            {messages.map((message) => (
-              <Tr
-                key={`${message.attributes.partition}-${message.attributes.offset}`}
-                isSelectable
-                isRowSelected={isSelected(message)}
-                onRowClick={() => onSelectMessage(message)}
-              >
-                {chosenColumns.map((column) => (
-                  <Td key={column} dataLabel={columnLabels[column]}>
-                    {renderCell(column, message)}
-                  </Td>
-                ))}
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </div>
-    </>
+  const body = isLoading ? (
+    <Tbody>
+      <Tr>
+        <Td colSpan={chosenColumns.length}>
+          <Flex
+            justifyContent={{ default: 'justifyContentCenter' }}
+            alignItems={{ default: 'alignItemsCenter' }}
+            style={{ minHeight: '300px' }}
+          >
+            <EmptyState>
+              <Spinner size="lg" />
+              <Title headingLevel="h2" size="lg">
+                {t('common.loading')}
+              </Title>
+            </EmptyState>
+          </Flex>
+        </Td>
+      </Tr>
+    </Tbody>
+  ) : errorState ? (
+    messageRow(errorState)
+  ) : messages.length === 0 ? (
+    messageRow(
+      <EmptyState>
+        <SearchIcon />
+        <Title headingLevel="h2" size="lg">
+          {t('topics.messages.noDataTitle')}
+        </Title>
+        <EmptyStateBody>
+          {hasFilters
+            ? t('topics.messages.noResultsBody')
+            : t('topics.messages.noDataBody')}
+        </EmptyStateBody>
+        <Button variant="primary" onClick={onReset}>
+          {hasFilters
+            ? t('topics.messages.noResultsReset')
+            : t('topics.messages.noDataRefresh')}
+        </Button>
+      </EmptyState>
+    )
+  ) : (
+    <Tbody>
+      {messages.map((message) => (
+        <Tr
+          key={`${message.attributes.partition}-${message.attributes.offset}`}
+          isSelectable
+          isRowSelected={isSelected(message)}
+          onRowClick={() => onSelectMessage(message)}
+        >
+          {chosenColumns.map((column) => (
+            <Td key={column} dataLabel={columnLabels[column]}>
+              {renderCell(column, message)}
+            </Td>
+          ))}
+        </Tr>
+      ))}
+    </Tbody>
+  );
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+      <Table
+        aria-label={t('topics.messages.tableAriaLabel')}
+        variant="compact"
+        style={{ tableLayout: 'fixed', width: '100%' }}
+      >
+        <Thead>
+          <Tr>
+            {chosenColumns.map((column) => {
+              // Set fixed widths for columns with consistent data
+              let modifier: 'fitContent' | 'nowrap' | 'truncate' | undefined;
+              let width: 10 | 15 | 20 | undefined;
+              if (column === 'offset-partition') {
+                width = 10;
+                modifier = 'nowrap';
+              } else if (column === 'timestampUTC' || column === 'timestamp') {
+                modifier = 'nowrap';
+                width = 20;
+              } else if (column === 'size') {
+                modifier = 'nowrap';
+                width = 10;
+              } else {
+                modifier = 'truncate';
+              }
+              // key, headers, value get remaining space (no width set)
+
+              return (
+                <Th key={column} modifier={modifier} width={width}>
+                  {column === 'size' ? (
+                    <>
+                      {columnLabels[column]}{' '}
+                      <Tooltip content={t('topics.messages.tooltip.size')}>
+                        <HelpIcon />
+                      </Tooltip>
+                    </>
+                  ) : (
+                    columnLabels[column]
+                  )}
+                </Th>
+              );
+            })}
+          </Tr>
+        </Thead>
+        {body}
+      </Table>
+    </div>
   );
 }
