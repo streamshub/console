@@ -3,23 +3,31 @@
  * Displays detailed information about a selected Kafka message
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  DrawerPanelBody,
-  DescriptionList,
-  DescriptionListGroup,
-  DescriptionListTerm,
-  DescriptionListDescription,
-  Tabs,
-  Tab,
-  TabTitleText,
+  Alert,
+  Button,
   ClipboardCopy,
-  Title,
-  Tooltip,
   CodeBlock,
   CodeBlockCode,
-  Button,
+  DescriptionList,
+  DescriptionListDescription,
+  DescriptionListGroup,
+  DescriptionListTerm,
+  DrawerPanelBody,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  ModalVariant,
+  Progress,
+  ProgressMeasureLocation,
+  Tab,
+  Tabs,
+  TabTitleText,
+  Title,
+  Tooltip,
 } from '@patternfly/react-core';
 import { HelpIcon } from '@patternfly/react-icons';
 import {
@@ -37,6 +45,12 @@ import { useSchemaContent } from '@/api/hooks/useSchemaContent';
 interface MessageDetailsProps {
   message: KafkaRecord;
 }
+
+// Number of base64 characters decoded per animation-frame slice.
+// Each base64 char represents 6 bits; 65536 chars ≈ 48 KB of output per slice,
+// keeping each slice well under the ~10 ms frame budget on low-end hardware.
+const DECODE_CHUNK_SIZE = 65_536;
+
 const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
 
 export function MessageDetails({ message }: MessageDetailsProps) {
@@ -44,6 +58,12 @@ export function MessageDetails({ message }: MessageDetailsProps) {
   const { isDarkMode } = useTheme();
   const jsonStyles = isDarkMode ? darkStyles : defaultStyles;
   const [activeTabKey, setActiveTabKey] = useState<string | number>('value');
+
+  // Download progress modal state
+  const [downloadFilename, setDownloadFilename] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const cancelledRef = useRef(false);
 
   const formatTimestampLocal = (timestamp: string): string => {
     return formatDateTime({
@@ -96,36 +116,91 @@ export function MessageDetails({ message }: MessageDetailsProps) {
   const isBinaryValue = message.meta?.content?.value?.type === 'application/octet-stream';
   const valueMeta = message.meta?.content?.value;
 
-  const keyJson = maybeJson(message.attributes.key);
-  const valueJson = maybeJson(message.attributes.value);
+  // Skip the JSON parse attempt for binary fields — they contain base64, not JSON.
+  const keyJson = isBinaryKey ? { parsed: {}, isJSON: false } : maybeJson(message.attributes.key);
+  const valueJson = isBinaryValue ? { parsed: {}, isJSON: false } : maybeJson(message.attributes.value);
   const headers = Object.entries(message.attributes.headers ?? {});
+
+  /**
+   * Decode a base64 string to a Uint8Array in DECODE_CHUNK_SIZE slices,
+   * yielding to the browser between each slice via requestAnimationFrame so the
+   * UI stays responsive and progress updates are painted.  Returns null if the
+   * operation was cancelled by the user.
+   */
+  const decodeBase64Async = (base64Value: string): Promise<Uint8Array | null> => {
+    return new Promise((resolve, reject) => {
+      // atob validates the alphabet and padding; an invalid string throws DOMException.
+      let decoded: string;
+      try {
+        decoded = atob(base64Value);
+      } catch {
+        reject(new Error(t('topics.messages.downloadErrorBody')));
+        return;
+      }
+
+      const totalLen = decoded.length;
+      const bytes = new Uint8Array(totalLen);
+      let offset = 0;
+
+      const processChunk = () => {
+        // Check cancellation before each chunk
+        if (cancelledRef.current) {
+          resolve(null);
+          return;
+        }
+
+        const end = Math.min(offset + DECODE_CHUNK_SIZE, totalLen);
+        for (let i = offset; i < end; i++) {
+          bytes[i] = decoded.charCodeAt(i);
+        }
+        offset = end;
+
+        const progress = totalLen === 0 ? 100 : Math.round((offset / totalLen) * 100);
+        setDownloadProgress(progress);
+
+        if (offset < totalLen) {
+          requestAnimationFrame(processChunk);
+        } else {
+          resolve(bytes);
+        }
+      };
+
+      requestAnimationFrame(processChunk);
+    });
+  };
 
   const handleDownload = async (fieldName: string, base64Value: string | null) => {
     if (!base64Value) return;
 
-    const filename = `message-p${message.attributes.partition}-o${message.attributes.offset}-${fieldName}.bin`;
+    // Sanitise fieldName: only allow alphanumerics, hyphens and underscores to
+    // prevent path-traversal sequences (e.g. "../../etc/passwd") reaching the
+    // browser's showSaveFilePicker suggestedName or the anchor download attribute.
+    const safeFieldName = fieldName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `message-p${message.attributes.partition}-o${message.attributes.offset}-${safeFieldName}.bin`;
+
+    // Open the progress modal
+    cancelledRef.current = false;
+    setDownloadProgress(0);
+    setDownloadError(null);
+    setDownloadFilename(filename);
 
     try {
-      let blob: Blob;
+      // Decode asynchronously with per-chunk progress updates
+      const bytes = await decodeBase64Async(base64Value);
 
-      // Uint8Array.fromBase64 is ES2025 and not included in this project's ES2020 lib,
-      // so TypeScript has no type for it. We cast through `unknown` to access it at
-      // runtime while keeping the `'fromBase64' in Uint8Array` guard so the fallback
-      // path is still reached on browsers that don't support it yet (older Firefox/Safari).
-      if ('fromBase64' in Uint8Array && typeof (Uint8Array as unknown as { fromBase64: unknown }).fromBase64 === 'function') {
-        const bytes = (Uint8Array as unknown as { fromBase64: (s: string) => Uint8Array }).fromBase64(base64Value);
-        // `bytes.buffer` is typed as `ArrayBufferLike` (which includes SharedArrayBuffer)
-        // but Blob only accepts `ArrayBuffer`. We cast directly since the buffer produced
-        // by fromBase64 is always a plain ArrayBuffer in practice.
-        blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/octet-stream' });
-      } else {
-        const byteCharacters = atob(base64Value);
-        const bytes = new Uint8Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          bytes[i] = byteCharacters.charCodeAt(i);
-        }
-        blob = new Blob([bytes], { type: 'application/octet-stream' });
+      // User cancelled during decode
+      if (bytes === null) {
+        setDownloadFilename(null);
+        return;
       }
+
+      // `bytes.buffer` is typed as `ArrayBufferLike` (which includes SharedArrayBuffer)
+      // but Blob only accepts `ArrayBuffer`. The buffer produced by `new Uint8Array(n)`
+      // is always a plain ArrayBuffer, so this cast is safe.
+      const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/octet-stream' });
+
+      // Close modal before opening the native save dialog
+      setDownloadFilename(null);
 
       // Use the File System Access API save dialog when available (Chromium/Edge).
       // Falls back to the silent anchor-click download for Firefox/Safari.
@@ -157,8 +232,15 @@ export function MessageDetails({ message }: MessageDetailsProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (e) {
-      console.error('Failed to decode and download binary message data:', e);
+      const message = e instanceof Error ? e.message : t('topics.messages.downloadErrorBody');
+      setDownloadError(message);
     }
+  };
+
+  const handleCancelDownload = () => {
+    cancelledRef.current = true;
+    setDownloadFilename(null);
+    setDownloadError(null);
   };
 
   const keySchemaContentUrl = message.relationships.keySchema?.links?.content;
@@ -169,6 +251,38 @@ export function MessageDetails({ message }: MessageDetailsProps) {
 
   return (
     <DrawerPanelBody>
+      {/* Binary decode progress modal */}
+      <Modal
+        variant={ModalVariant.small}
+        isOpen={downloadFilename !== null}
+        onClose={handleCancelDownload}
+        aria-label={t('topics.messages.downloadProgressTitle')}
+      >
+        <ModalHeader title={t('topics.messages.downloadProgressTitle')} />
+        <ModalBody>
+          {downloadError ? (
+            <Alert
+              variant="danger"
+              isInline
+              title={t('topics.messages.downloadErrorTitle')}
+            >
+              {downloadError}
+            </Alert>
+          ) : (
+            <Progress
+              value={downloadProgress}
+              title={t('topics.messages.downloadProgressLabel', { filename: downloadFilename ?? '' })}
+              measureLocation={ProgressMeasureLocation.outside}
+            />
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="link" onClick={handleCancelDownload}>
+            {t('topics.messages.downloadProgressCancel')}
+          </Button>
+        </ModalFooter>
+      </Modal>
+
       <DescriptionList isHorizontal isCompact>
         <DescriptionListGroup>
           <DescriptionListTerm>
