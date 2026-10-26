@@ -38,6 +38,7 @@ public abstract class AbstractST {
         if (!initialized) {
             SetupUtils.initializeSystemTests();
             initialized = true;
+            // meaningless change to trigger build
         }
 
         KubeResourceManager.get().setTestContext(extensionContext);
