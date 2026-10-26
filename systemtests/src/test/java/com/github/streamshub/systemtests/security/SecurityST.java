@@ -46,6 +46,7 @@ import io.skodjob.kubetest4j.wait.Wait;
 import static java.util.Locale.ROOT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -173,7 +174,7 @@ class SecurityST extends AbstractST {
         }
 
         ClusterRoleBinding clusterRoleBinding = ResourceUtils.getKubeResource(ClusterRoleBinding.class, clusterRoleBindingName);
-        assertTrue(clusterRoleBinding != null, "Expected ClusterRoleBinding " + clusterRoleBindingName + " to exist");
+        assertNotNull(clusterRoleBinding, "Expected ClusterRoleBinding " + clusterRoleBindingName + " to exist");
         assertEquals("ClusterRole", clusterRoleBinding.getRoleRef().getKind());
         assertEquals(clusterRoleName, clusterRoleBinding.getRoleRef().getName());
 
@@ -254,7 +255,9 @@ class SecurityST extends AbstractST {
         boolean credentialsLeaked = secondarySecret.stream()
             .map(Secret::getData)
             .filter(Objects::nonNull)
-            .anyMatch(data -> baseJaasConfig.equals(data.get(SaslConfigs.SASL_JAAS_CONFIG)));
+            .anyMatch(data -> data.values()
+                .stream()
+                .anyMatch(v -> v.contains(baseJaasConfig)));
         assertFalse(credentialsLeaked, "Base KafkaUser credentials must never be copied into any Secret in the secondary namespace");
     }
 
