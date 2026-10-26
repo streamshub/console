@@ -138,7 +138,7 @@ public class MultiformatSerializer extends MultiformatSerdeBase
             serialized = serializeProtobuf(data, schema, protobufSchema);
         } else {
             data.meta.remove("schema"); // Remove schema meta so it is not returned with 201 response
-            serialized = data.data;
+            serialized = data.bytes();
         }
 
         return serialized;
@@ -180,7 +180,7 @@ public class MultiformatSerializer extends MultiformatSerdeBase
             var builder = DynamicMessage.newBuilder(descriptor);
             com.google.protobuf.util.JsonFormat.parser()
                 .ignoringUnknownFields()
-                .merge(data.dataString(null), builder);
+                .merge(data.stringValue(), builder);
             msg = builder.build();
         } catch (InvalidProtocolBufferException e) {
             throw new BadRequestException(e.getMessage(), e);

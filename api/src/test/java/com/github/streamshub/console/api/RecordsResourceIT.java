@@ -5,6 +5,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,6 @@ import org.skyscreamer.jsonassert.JSONAssert;
 
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.serdes.MultiformatDeserializer;
-import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
@@ -77,6 +77,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 @QuarkusTest
 @TestHTTPEndpoint(RecordsResource.class)
@@ -86,7 +87,7 @@ class RecordsResourceIT {
     static LogCapture logCapture = LogCapture.with(logRecord -> logRecord
             .getLoggerName()
             .equals(MultiformatDeserializer.class.getName()),
-            Level.INFO);
+            Level.FINEST);
 
     @Inject
     Config config;
@@ -421,34 +422,82 @@ class RecordsResourceIT {
     }
 
     @Test
-    void testConsumeRecordWithBinaryValue() throws NoSuchAlgorithmException {
+    void testConsumeRecordWithBinaryValueWithinLimit() throws NoSuchAlgorithmException {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
-        final byte[] data = new byte[512];
+        final byte[] data = new byte[16];
         SecureRandom.getInstanceStrong().nextBytes(data);
-        data[511] = -1; // ensure at least one byte invalid
+        data[15] = (byte) 0xFF; // ensure at least one byte invalid UTF-8
 
         recordUtils.produceRecord(topicName, null, null, null, data);
+
+        String expectedBase64 = Base64.getEncoder().encodeToString(data);
 
         whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
-            .body("data[0].attributes.value", is(equalTo(RecordData.BINARY_DATA_MESSAGE)));
+            .body("data[0].attributes.value", is(equalTo(expectedBase64)))
+            .body("data[0].meta.content.value.type", is(equalTo("application/octet-stream")))
+            .body("data[0].meta.content.value.encoding", is(equalTo("base64")));
+    }
+
+    @Test
+    void testConsumeRecordWithBinaryValueExceedingLimit() throws NoSuchAlgorithmException {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
+
+        final byte[] data = new byte[512];
+        SecureRandom.getInstanceStrong().nextBytes(data);
+        data[511] = (byte) 0xFF; // ensure at least one byte invalid UTF-8
+
+        recordUtils.produceRecord(topicName, null, null, null, data);
+
+        whenRequesting(req -> req
+                .queryParam("maxValueLength", 100)
+                .get("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data", hasSize(1))
+            .body("data[0].attributes.value", is(nullValue()))
+            .body("data[0].meta.content.value.type", is(equalTo("application/octet-stream")))
+            .body("data[0].meta.content.value.omitted", is(equalTo(true)));
+    }
+
+    @Test
+    void testConsumeRecordWithBinaryHeader() throws NoSuchAlgorithmException {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
+
+        final byte[] binaryHeaderValue = new byte[8];
+        SecureRandom.getInstanceStrong().nextBytes(binaryHeaderValue);
+        binaryHeaderValue[7] = (byte) 0xFF; // ensure at least one byte invalid UTF-8
+
+        recordUtils.produceRecord(topicName, null, Map.<String, Object>of("binHeader", binaryHeaderValue), null, (byte[]) null);
+
+        String expectedBase64 = Base64.getEncoder().encodeToString(binaryHeaderValue);
+
+        whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data", hasSize(1))
+            .body("data[0].attributes.headers.binHeader", is(equalTo(expectedBase64)))
+            .body("data[0].meta.content.headers.binHeader.type", is(equalTo("application/octet-stream")))
+            .body("data[0].meta.content.headers.binHeader.encoding", is(equalTo("base64")));
     }
 
     @ParameterizedTest
     @CsvSource({
-        "  1,   1",
-        "  5,   5",
-        " 99,  99",
-        "100, 100",
-        "101, 100",
-        "200, 100",
-        "   , 100",
+        "  1,   1, true",
+        "  5,   5, true",
+        " 99,  99, true",
+        "100, 100, false",
+        "101, 100, false",
+        "200, 100, false",
+        "   , 100, false",
     })
-    void testConsumeRecordWithValueLengthLimit(Integer maxValueLength, int responseValueLength) {
+    void testConsumeRecordWithValueLengthLimit(Integer maxValueLength, int responseValueLength, boolean expectTruncated) {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
         String h1Value = "h".repeat(100);
@@ -462,7 +511,7 @@ class RecordsResourceIT {
             queryParams.put("maxValueLength", maxValueLength);
         }
 
-        whenRequesting(req -> req
+        var response = whenRequesting(req -> req
                 .queryParams(queryParams)
                 .get("", clusterId1, topicIds.get(topicName)))
             .assertThat()
@@ -471,6 +520,15 @@ class RecordsResourceIT {
             .body("data[0].attributes.headers", hasEntry(equalTo("h1"), equalTo(h1Value.subSequence(0, responseValueLength))))
             .body("data[0].attributes.key", equalTo(key.subSequence(0, responseValueLength)))
             .body("data[0].attributes.value", equalTo(value.subSequence(0, responseValueLength)));
+
+        if (expectTruncated) {
+            response
+                .body("data[0].meta.content.key.truncated", is(equalTo(true)))
+                .body("data[0].meta.content.value.truncated", is(equalTo(true)))
+                .body("data[0].meta.content.headers.h1.truncated", is(equalTo(true)));
+        } else {
+            response.body("data[0].meta", is(nullValue()));
+        }
     }
 
     @Test
@@ -503,7 +561,8 @@ class RecordsResourceIT {
     void testConsumeRecordMagicByteWithoutRegistry() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
-        recordUtils.produceRecord(topicName, null, null, null, "\u0000rest of value");
+        var value = "\u0000rest of value";
+        recordUtils.produceRecord(topicName, null, null, null, value);
 
         await().atMost(5, TimeUnit.SECONDS)
             .until(() -> topicUtils.getTopicSize(topicName) == 1);
@@ -515,14 +574,16 @@ class RecordsResourceIT {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
             .body("data[0].attributes.offset", is(equalTo(0)))
-            .body("data[0].attributes.value", is(equalTo("\u0000rest of value")));
+            // The value is treated as binary data
+            .body("data[0].attributes.value", is(equalTo(Base64.getEncoder().encodeToString(value.getBytes()))));
     }
 
     @Test
     void testConsumeRecordWithSchemaNotFound() {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
-        recordUtils.produceRecord(topicName, null, null, null, "\u0000rest of value");
+        var value = "\u0000rest of value";
+        recordUtils.produceRecord(topicName, null, null, null, value);
 
         await().atMost(5, TimeUnit.SECONDS)
             .until(() -> topicUtils.getTopicSize(topicName) == 1);
@@ -533,10 +594,8 @@ class RecordsResourceIT {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
             .body("data[0].attributes.offset", is(equalTo(0)))
-            // The back-end consumes the NULL magic byte + 4 bytes as the schema ID,
-            // thus the missing "\u0000rest" from the value string. A future enhancement
-            // might "rewind" the byte buffer to keep the entire original value.
-            .body("data[0].attributes.value", is(equalTo(" of value")));
+            // The value is treated as binary data
+            .body("data[0].attributes.value", is(equalTo(Base64.getEncoder().encodeToString(value.getBytes()))));
 
         var logs = logCapture.records();
 

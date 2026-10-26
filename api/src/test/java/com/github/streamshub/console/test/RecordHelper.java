@@ -52,7 +52,7 @@ public class RecordHelper {
             Long timestampMs = timestamp != null ? timestamp.toEpochMilli() : null;
             ProducerRecord<K, V> rec = new ProducerRecord<>(topicName, partition, timestampMs, key, value);
             if (headers != null) {
-                headers.forEach((k, v) -> rec.headers().add(k, String.valueOf(v).getBytes()));
+                headers.forEach((k, v) -> rec.headers().add(k, v instanceof byte[] b ? b : String.valueOf(v).getBytes()));
             }
 
             CompletableFuture<Void> promise = new CompletableFuture<>();
