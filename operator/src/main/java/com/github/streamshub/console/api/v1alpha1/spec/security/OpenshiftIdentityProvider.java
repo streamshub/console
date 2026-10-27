@@ -6,10 +6,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 
+import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@ValidationRule(
+    value = "!(has(self.insecureCA) && self.insecureCA && has(self.trustStore))",
+    message = "`trustStore` has no effect when `insecureCA` is true")
 public class OpenshiftIdentityProvider {
 
     @JsonPropertyDescription("Restrict logins to members of these groups. Empty means all groups are allowed.")

@@ -26,7 +26,7 @@ spec:
                 path: openshift.pem
       containers:
         - name: dex
-          image: ghcr.io/dexidp/dex:v2.45.1
+          image: ghcr.io/dexidp/dex:v2.46.1
           command: [ 'dex', 'serve', '/etc/dex/cfg/config.yaml' ]
           ports:
             # May be either HTTP or HTTPS depending on configuration
@@ -42,6 +42,14 @@ spec:
               mountPath: /etc/ssl/openshift.pem
               subPath: openshift.pem
               readOnly: true
+          # Sizing is unmeasured; revisit with real usage data. No CPU limit, to avoid
+          # throttling latency-sensitive login requests.
+          resources:
+            requests:
+              cpu: 200m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
           startupProbe:
             httpGet:
               path: /dex/healthz
@@ -74,9 +82,11 @@ spec:
             allowPrivilegeEscalation: false
             seccompProfile:
               type: RuntimeDefault
+            # The UID is intentionally not set here. The Dex image declares a non-numeric
+            # USER (dex:dex), so DexDeployment sets runAsUser=1001 on plain Kubernetes, where
+            # the kubelet cannot verify runAsNonRoot otherwise. On OpenShift it is left unset
+            # so the restricted SCC can assign a UID from the namespace range.
             runAsNonRoot: true
-            # This may vary depending on the image
-            runAsUser: 1001
             capabilities:
               drop:
                 - ALL

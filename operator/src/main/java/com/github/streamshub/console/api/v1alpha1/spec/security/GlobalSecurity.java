@@ -1,5 +1,7 @@
 package com.github.streamshub.console.api.v1alpha1.spec.security;
 
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+
 import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
@@ -10,7 +12,23 @@ import io.sundr.builder.annotations.Buildable;
 public class GlobalSecurity extends Security {
 
     private Oidc oidc;
+
+    @JsonPropertyDescription("""
+            Use the OpenShift cluster's OAuth server as the identity source. The operator deploys \
+            and configures a Dex identity broker for this purpose. Mutually exclusive with \
+            `oidc` and `ldap`. \
+            Note: on plain Kubernetes there is no TLS between the Ingress and the Console or \
+            Dex pods; TLS is terminated by the Ingress controller (see `spec.tls`).
+            """)
     private OpenshiftIdentityProvider openshift;
+
+    @JsonPropertyDescription("""
+            Use an LDAP directory as the identity source. The operator deploys and configures \
+            a Dex identity broker for this purpose. Mutually exclusive with `oidc` and \
+            `openshift`. \
+            Note: on plain Kubernetes there is no TLS between the Ingress and the Console or \
+            Dex pods; TLS is terminated by the Ingress controller (see `spec.tls`).
+            """)
     private LdapIdentityProvider ldap;
 
     public Oidc getOidc() {

@@ -96,24 +96,32 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
         }
     }
 
-    default void updateDigest(Context<Console> context, String digestName, Map<String, String> data) {
-        var digest = getOptionalAttribute(context, digestName, MessageDigest.class)
-                .orElseGet(this::messageDigest);
+    /**
+     * Name of the workflow context attribute holding this resource's content digest,
+     * as stored by {@link #putDigest} and read by the Deployment that must restart
+     * when the content changes.
+     */
+    default String digestName() {
+        return resourceName() + "-digest";
+    }
+
+    /**
+     * Compute a digest of the values in {@code data}, ordered by key, and store the
+     * hex-encoded result in the workflow context under {@code digestName}. Consumers
+     * (typically a Deployment that must restart when the data changes) retrieve it
+     * with {@link #getOptionalAttribute}. The digest is calculated from a single map
+     * and stored in one step, so it does not depend on the order or concurrency of
+     * other workflow nodes.
+     */
+    default void putDigest(Context<Console> context, String digestName, Map<String, String> data) {
+        var digest = messageDigest();
 
         data.entrySet()
             .stream()
             .sorted(Comparator.comparing(Map.Entry::getKey))
             .forEach(entry -> digest.update(entry.getValue().getBytes(StandardCharsets.UTF_8)));
 
-        setAttribute(context, digestName, digest);
-    }
-
-    default String serializeDigest(Context<Console> context, String digestName) {
-        var resourceContext = context.managedWorkflowAndDependentResourceContext();
-        return resourceContext.get(digestName, MessageDigest.class)
-                .map(MessageDigest::digest)
-                .map(DIGEST_FORMAT::formatHex)
-                .orElse(DEFAULT_DIGEST);
+        setAttribute(context, digestName, DIGEST_FORMAT.formatHex(digest.digest()));
     }
 
     default String encodeString(String value) {

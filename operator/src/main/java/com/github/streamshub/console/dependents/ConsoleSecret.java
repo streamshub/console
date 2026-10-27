@@ -28,7 +28,7 @@ public class ConsoleSecret extends BaseSecret {
         Map<String, String> data = context.managedWorkflowAndDependentResourceContext()
                 .getMandatory("ConsoleSecretData", Map.class);
 
-        updateDigest(context, "console-digest", data);
+        putDigest(context, "console-digest", data);
 
         return new SecretBuilder()
                 .withNewMetadata()

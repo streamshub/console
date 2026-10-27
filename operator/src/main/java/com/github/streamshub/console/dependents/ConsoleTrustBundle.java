@@ -1,5 +1,6 @@
 package com.github.streamshub.console.dependents;
 
+import java.util.Map;
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -78,11 +79,17 @@ public class ConsoleTrustBundle extends CRUDKubernetesDependentResource<ConfigMa
                 Console primary,
                 Context<Console> context) {
 
-            return dependentResource.getSecondaryResource(primary, context)
+            var bundle = dependentResource.getSecondaryResource(primary, context)
                     .map(ConfigMap::getData)
                     .map(data -> data.get(CA_BUNDLE_KEY))
-                    .map(ca -> !ca.isBlank())
-                    .orElse(false);
+                    .filter(ca -> !ca.isBlank());
+
+            if (bundle.isPresent() && dependentResource instanceof ConsoleTrustBundle trustBundle) {
+                // Lets the Deployment mounting the bundle restart when the bundle changes
+                trustBundle.putDigest(context, trustBundle.digestName(), Map.of(CA_BUNDLE_KEY, bundle.get()));
+            }
+
+            return bundle.isPresent();
         }
     }
 }
