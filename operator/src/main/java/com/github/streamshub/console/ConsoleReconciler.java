@@ -2,6 +2,7 @@ package com.github.streamshub.console;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +25,7 @@ import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
+import com.github.streamshub.console.dependents.ConsoleIngressTlsSecret;
 import com.github.streamshub.console.dependents.ConsoleMonitoringClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleRoute;
@@ -34,6 +36,8 @@ import com.github.streamshub.console.dependents.ConsoleServiceAccountAccessRevie
 import com.github.streamshub.console.dependents.ConsoleTrustBundle;
 import com.github.streamshub.console.dependents.DexClusterRole;
 import com.github.streamshub.console.dependents.DexClusterRoleBinding;
+import com.github.streamshub.console.dependents.DexRole;
+import com.github.streamshub.console.dependents.DexRoleBinding;
 import com.github.streamshub.console.dependents.DexDeployment;
 import com.github.streamshub.console.dependents.DexRoute;
 import com.github.streamshub.console.dependents.DexSecret;
@@ -145,6 +149,16 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     type = ConsoleSecret.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
+                    // Only active on Kubernetes (no Routes) with Dex and spec.tls; the
+                    // Ingress terminates TLS using this Secret. This is intentionally a
+                    // leaf node: nothing may dependOn it, because a dependent of a node
+                    // whose activation condition is not met is deleted by the workflow.
+                    // The Ingress references the Secret by name only.
+                    name = ConsoleIngressTlsSecret.NAME,
+                    type = ConsoleIngressTlsSecret.class,
+                    activationCondition = ConsoleIngressTlsSecret.Activation.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
                     name = ConsoleService.NAME,
                     type = ConsoleService.class,
                     readyPostcondition = ServingCertReadyCondition.class,
@@ -157,6 +171,11 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
             @Dependent(
                     name = DexClusterRole.NAME,
                     type = DexClusterRole.class,
+                    reconcilePrecondition = DexPrecondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = DexRole.NAME,
+                    type = DexRole.class,
                     reconcilePrecondition = DexPrecondition.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
@@ -192,6 +211,14 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                         DexClusterRole.NAME,
                         DexServiceAccount.NAME
                     }),
+            @Dependent(
+                    name = DexRoleBinding.NAME,
+                    type = DexRoleBinding.class,
+                    reconcilePrecondition = DexPrecondition.class,
+                    dependsOn = {
+                        DexRole.NAME,
+                        DexServiceAccount.NAME
+                    }),
 
             // Level 5
             @Dependent(
@@ -218,7 +245,8 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     reconcilePrecondition = DexPrecondition.class,
                     dependsOn = {
                         ConfigurationProcessor.NAME,
-                        DexClusterRoleBinding.NAME
+                        DexClusterRoleBinding.NAME,
+                        DexRoleBinding.NAME
                     }),
             @Dependent(
                     name = DexRoute.NAME,
@@ -250,6 +278,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     readyPostcondition = DeploymentReadyCondition.class,
                     dependsOn = {
                         DexClusterRoleBinding.NAME,
+                        DexRoleBinding.NAME,
                         DexSecret.NAME,
                         DexService.NAME
                     }),
@@ -309,6 +338,13 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconciler.class);
 
+    /** Poll quickly at first, since OpenShift normally acts within a second or two. */
+    private static final Duration RESCHEDULE_INITIAL = Duration.ofMillis(500);
+    /** Period for which the initial rate is used, measured from when Ready became False. */
+    private static final Duration RESCHEDULE_INITIAL_PERIOD = Duration.ofMinutes(1);
+    /** Rate used once the resources have been not ready for longer than the initial period. */
+    private static final Duration RESCHEDULE_BACKOFF = Duration.ofSeconds(10);
+
     private static final Set<Class<?>> RESCHEDULABLE_RESOURCES = Set.of(
             // Waits for OpenShift to assign a host name
             HostnameAvailableGate.class,
@@ -332,7 +368,7 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
         var updateControl = UpdateControl.patchStatus(resource);
 
         if (reschedule(result)) {
-            updateControl.rescheduleAfter(Duration.ofMillis(500));
+            updateControl.rescheduleAfter(rescheduleDelay(resource));
         }
 
         return updateControl;
@@ -442,6 +478,29 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
         return ((Predicate<? super DependentResource>) ConfigurationProcessor.class::isInstance)
                 .or(ConsoleServiceAccountAccessReview.class::isInstance)
                 .or(HostnameAvailableGate.class::isInstance);
+    }
+
+    /**
+     * Back off the reschedule interval so that a resource that never becomes ready (e.g.
+     * OpenShift never issues a serving certificate) does not cause a tight polling loop.
+     * The time spent not ready is taken from the transition time of the Ready condition.
+     */
+    static Duration rescheduleDelay(Console resource) {
+        var transitionTime = resource.getStatus().getCondition("Ready").getLastTransitionTime();
+
+        if (transitionTime != null) {
+            try {
+                var notReadyFor = Duration.between(Instant.parse(transitionTime), Instant.now());
+
+                if (notReadyFor.compareTo(RESCHEDULE_INITIAL_PERIOD) > 0) {
+                    return RESCHEDULE_BACKOFF;
+                }
+            } catch (DateTimeParseException e) {
+                LOGGER.debugf("Unable to parse Ready condition transition time '%s'", transitionTime);
+            }
+        }
+
+        return RESCHEDULE_INITIAL;
     }
 
     /**

@@ -47,7 +47,7 @@ public class ConfigSupport {
     public static void setConfigVars(Console primary, Context<Console> context, Map<String, String> target, ConfigVars source) {
         String namespace = primary.getMetadata().getNamespace();
 
-        source.getValuesFrom().stream().forEach(fromSource -> {
+        source.getValuesFrom().forEach(fromSource -> {
             String prefix = fromSource.getPrefix();
             var configMapRef = fromSource.getConfigMapRef();
             var secretRef = fromSource.getSecretRef();

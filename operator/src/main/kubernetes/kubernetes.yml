@@ -91,6 +91,19 @@ rules:
       - update
       - watch
   - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - roles
+      - rolebindings
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
       - ""
     resources:
       - configmaps
@@ -190,6 +203,23 @@ rules:
       - thanos-querier
     verbs:
       - get
+
+  # Granted to Dex instances (Role in the Console namespace). The operator must hold
+  # these permissions itself in order to grant them (RBAC escalation prevention).
+  - apiGroups:
+      - dex.coreos.com
+    resources:
+      - '*'
+    verbs:
+      - '*'
+
+  # Granted to Dex instances (ClusterRole). Dex registers its own CRDs on startup.
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - create
 
   # Allow operator to create routes with custom hostnames
   - apiGroups:

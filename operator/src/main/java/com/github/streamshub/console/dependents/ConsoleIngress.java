@@ -38,6 +38,9 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     @Inject
     DexService dexService;
 
+    @Inject
+    ConsoleIngressTlsSecret tlsSecret;
+
     public ConsoleIngress() {
         super(Ingress.class);
     }
@@ -49,7 +52,10 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
 
     @Override
     protected Ingress desired(Console primary, Context<Console> context) {
-        boolean tls = primary.getSpec().getTls() != null;
+        // The pod serves TLS itself only for user-provided pass-through TLS. When Dex is
+        // enabled, spec.tls instead terminates TLS at the Ingress (see below) and the
+        // Console and Dex are served over HTTP behind it.
+        boolean tls = ConfigSupport.userProvidedPassthroughTLS(primary);
         String backendProtocol = tls ? "HTTPS" : "HTTP";
         int servicePort = tls ? 443 : 80;
         String serviceName = service.instanceName(primary);
@@ -106,11 +112,24 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
             builder = builder.addToPaths(dexPath);
         }
 
-        return builder
+        var ingress = builder
                     .endHttp()
                 .endRule()
             .endSpec()
             .build();
+
+        if (ConsoleIngressTlsSecret.required(primary, context)) {
+            ingress = ingress.edit()
+                .editSpec()
+                    .addNewTl()
+                        .withHosts(primary.getSpec().getHostname())
+                        .withSecretName(tlsSecret.instanceName(primary))
+                    .endTl()
+                .endSpec()
+                .build();
+        }
+
+        return ingress;
     }
 
     /**

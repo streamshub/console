@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.dependents.ConsoleResource;
 
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
@@ -18,7 +19,7 @@ import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
  * Ready postcondition for Services. When the Service is annotated with
  * {@code service.beta.openshift.io/serving-cert-secret-name}, blocks downstream
  * dependents until the OpenShift service CA controller has populated the named
- * Secret with a non-blank {@code tls.crt} entry. A Service without the
+ * Secret with non-blank {@code tls.crt} and {@code tls.key} entries. A Service without the
  * annotation (i.e. not running on OpenShift) is ready as soon as it exists.
  */
 public class ServingCertReadyCondition implements Condition<Service, Console> {
@@ -33,11 +34,13 @@ public class ServingCertReadyCondition implements Condition<Service, Console> {
             Context<Console> context) {
 
         return dependentResource.getSecondaryResource(primary, context)
-                .map(svc -> isServingCertReady(svc, primary, context))
+                .map(svc -> isServingCertReady(dependentResource, svc, primary, context))
                 .orElse(false);
     }
 
-    private static boolean isServingCertReady(Service service, Console primary, Context<Console> context) {
+    private boolean isServingCertReady(DependentResource<Service, Console> dependentResource,
+            Service service, Console primary, Context<Console> context) {
+
         Map<String, String> annotations = service.getMetadata().getAnnotations();
         String secretName = annotations != null ? annotations.get(ANNOTATION) : null;
 
@@ -51,11 +54,22 @@ public class ServingCertReadyCondition implements Condition<Service, Console> {
                 .withName(secretName)
                 .get();
 
-        var certificateReady = Optional.ofNullable(tlsSecret)
-                .map(Secret::getData)
-                .map(data -> data.get("tls.crt"))
-                .map(cert -> !cert.isBlank())
-                .orElse(false);
+        var data = Optional.ofNullable(tlsSecret).map(Secret::getData);
+        var certificate = data
+                .map(d -> d.get("tls.crt"))
+                .filter(cert -> !cert.isBlank());
+        // Both entries are mounted into the pod, so wait for the key as well
+        var keyPresent = data
+                .map(d -> d.get("tls.key"))
+                .filter(key -> !key.isBlank())
+                .isPresent();
+        var certificateReady = certificate.isPresent() && keyPresent;
+
+        if (certificateReady && dependentResource instanceof ConsoleResource<Service> consoleService) {
+            // Only the public certificate is digested, never the private key. The key is
+            // reissued together with the certificate, so the certificate identifies a change.
+            consoleService.putDigest(context, consoleService.digestName(), Map.of("tls.crt", certificate.get()));
+        }
 
         LOGGER.debugf(
                 "Serving certificate '%s' for service '%s' is ready: %s",
