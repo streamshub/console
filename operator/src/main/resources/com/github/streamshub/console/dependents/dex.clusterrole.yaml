@@ -3,9 +3,7 @@ kind: ClusterRole
 metadata:
   name: console-dex
 rules:
-  - apiGroups: [ 'dex.coreos.com' ]
-    resources: [ '*' ]
-    verbs: [ '*' ]
+  # Dex registers its own CRDs on startup when using Kubernetes storage
   - apiGroups: [ 'apiextensions.k8s.io' ]
     resources: [ 'customresourcedefinitions' ]
     verbs: [ 'create' ]

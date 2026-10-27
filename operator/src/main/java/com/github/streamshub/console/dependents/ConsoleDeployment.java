@@ -138,7 +138,7 @@ public class ConsoleDeployment extends BaseDeployment {
         var podSpecTemplate = podTemplate.map(PodTemplate::getSpec);
         var podRequiredLabels = Map.of(INSTANCE_LABEL, name);
         var podRequiredAnnotations = Map.of("streamshub.github.com/dependency-digest",
-                serializeDigest(context, "console-digest"));
+                getOptionalAttribute(context, "console-digest", String.class).orElse(DEFAULT_DIGEST));
         var containerTemplate = podSpecTemplate.map(PodSpecTemplate::getServerContainer);
 
         // deprecated
@@ -257,10 +257,31 @@ public class ConsoleDeployment extends BaseDeployment {
         // referenced by Quarkus TLS configuration. The CA bundle is mounted so the
         // console can trust the (re-encrypt) HTTPS endpoint of Dex.
         if (servingCert) {
-            edit = mountTrustBundle(primary, mountServingCert(primary, edit));
+            edit = addCertificateDigests(context, mountTrustBundle(primary, mountServingCert(primary, edit)));
         }
 
         return edit.build();
+    }
+
+    /**
+     * The serving certificate and CA bundle are only read at startup. Their digests
+     * change the pod template, and so restart the pods, when OpenShift reissues them.
+     */
+    private DeploymentBuilder addCertificateDigests(Context<Console> context, DeploymentBuilder edit) {
+        var digests = new LinkedHashMap<String, String>();
+        getOptionalAttribute(context, service.digestName(), String.class)
+            .ifPresent(digest -> digests.put("streamshub.github.com/tls-digest", digest));
+        getOptionalAttribute(context, trustBundle.digestName(), String.class)
+            .ifPresent(digest -> digests.put("streamshub.github.com/ca-digest", digest));
+
+        return edit
+            .editSpec()
+                .editTemplate()
+                    .editMetadata()
+                        .addToAnnotations(digests)
+                    .endMetadata()
+                .endTemplate()
+            .endSpec();
     }
 
     private DeploymentBuilder mountTrustBundle(Console primary, DeploymentBuilder edit) {

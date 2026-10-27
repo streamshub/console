@@ -1,4 +1,4 @@
-package com.github.streamshub.console.support;
+package com.github.streamshub.console.dependents.support;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.informers.cache.Cache;

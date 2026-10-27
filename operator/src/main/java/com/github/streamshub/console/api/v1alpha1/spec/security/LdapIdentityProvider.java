@@ -6,10 +6,23 @@ import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 import com.github.streamshub.console.api.v1alpha1.spec.Value;
 
 import io.fabric8.generator.annotation.Required;
+import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@ValidationRule(
+    value = "!(has(self.insecureNoSSL) && self.insecureNoSSL && has(self.startTLS) && self.startTLS)",
+    message = "`insecureNoSSL` and `startTLS` are mutually exclusive")
+@ValidationRule(
+    value = "!(has(self.insecureNoSSL) && self.insecureNoSSL && has(self.trustStore))",
+    message = "`trustStore` has no effect when `insecureNoSSL` is true")
+@ValidationRule(
+    value = "!(has(self.insecureSkipVerify) && self.insecureSkipVerify && has(self.trustStore))",
+    message = "`trustStore` has no effect when `insecureSkipVerify` is true")
+@ValidationRule(
+    value = "!has(self.bindSecret) || has(self.bindDN)",
+    message = "`bindDN` is required when `bindSecret` is specified")
 public class LdapIdentityProvider {
 
     @Required

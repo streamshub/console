@@ -226,25 +226,49 @@ public class ConfigurationProcessor extends BaseVirtualResource {
 
         var security = primary.getSpec().getSecurity();
         String host = getAttribute(context, "host", String.class);
-        boolean openShiftTls = resourceSupported(context, Route.class);
         String namespace = primary.getMetadata().getNamespace();
+        Map<String, String> dexData = new LinkedHashMap<>();
         DexConfig dexConfig;
 
         if (security.getOpenshift() != null) {
+            if (!resourceSupported(context, Route.class)) {
+                throw new ReconciliationException(
+                        "spec.security.openshift is only supported when the cluster is OpenShift");
+            }
+
+            boolean customCA = putDexCA(context, namespace, "openshift", security.getOpenshift().getTrustStore(), dexData);
             String apiServerUrl = context.getClient().getMasterUrl().toString();
             // Strip trailing slash that getMasterUrl() may include
             if (apiServerUrl.endsWith("/")) {
                 apiServerUrl = apiServerUrl.substring(0, apiServerUrl.length() - 1);
             }
             String saClientId = "system:serviceaccount:" + namespace + ":" + dexServiceAccount.instanceName(primary);
-            dexConfig = DexConfig.forOpenshift(host, openShiftTls, security.getOpenshift(), apiServerUrl, saClientId);
+            dexConfig = DexConfig.forOpenshift(host, security.getOpenshift(), apiServerUrl, saClientId, customCA);
         } else {
             var ldap = security.getLdap();
-            String bindPW = Optional.ofNullable(ldap.getBindSecret())
-                    .map(bindSecret -> getValue(context, namespace, bindSecret))
-                    .map(secret -> new String(secret, StandardCharsets.UTF_8))
-                    .orElse(null);
-            dexConfig = DexConfig.forLdap(host, ldap, bindPW);
+            boolean customCA = putDexCA(context, namespace, "ldap", ldap.getTrustStore(), dexData);
+            boolean hasBindPW = false;
+
+            // The bind credentials are passed to Dex as environment variables sourced from
+            // the Dex Secret, not written into config.yaml (see DexConfig.forLdap).
+            if (ldap.getBindDN() != null) {
+                dexData.put(DexConfig.LDAP_BIND_DN_KEY, encodeString(ldap.getBindDN()));
+            }
+
+            if (ldap.getBindSecret() != null) {
+                byte[] secret = getValue(context, namespace, ldap.getBindSecret());
+
+                if (secret == null || secret.length == 0) {
+                    // Do not continue with a bindDN and no password, which some servers
+                    // would treat as an unauthenticated bind.
+                    throw new ReconciliationException(
+                            "spec.security.ldap.bindSecret was specified, but did not resolve to a value");
+                }
+
+                dexData.put(DexConfig.LDAP_BIND_PW_KEY, ConfigSupport.encodeBytes(secret));
+                hasBindPW = true;
+            }
+            dexConfig = DexConfig.forLdap(host, ldap, hasBindPW, customCA);
         }
 
         String configYaml;
@@ -255,10 +279,37 @@ public class ConfigurationProcessor extends BaseVirtualResource {
             throw new UncheckedIOException(e);
         }
 
-        Map<String, String> dexData = new LinkedHashMap<>();
         dexData.put(DexSecret.CONFIG_KEY, encodeString(configYaml));
 
         context.managedWorkflowAndDependentResourceContext().put("DexSecretData", dexData);
+    }
+
+    /**
+     * Add the PEM encoded CA certificates of the given trust store (if any) to the Dex
+     * Secret data so that Dex can verify the upstream identity provider.
+     *
+     * @return true if a CA bundle was added to {@code dexData}
+     */
+    private boolean putDexCA(Context<Console> context, String namespace, String name,
+            TrustStore trustStore, Map<String, String> dexData) {
+
+        if (trustStore == null) {
+            return false;
+        }
+
+        byte[] password = getValue(context, namespace, trustStore.getPassword());
+        byte[] content = getValue(context, namespace, trustStore.getContent());
+
+        if (content == null || content.length == 0) {
+            throw new ReconciliationException("spec.security.%s.trustStore content must resolve to a value".formatted(name));
+        }
+
+        if (trustStore.getType() != TrustStore.Type.PEM) {
+            content = pemEncode(name, trustStore, password, content);
+        }
+
+        dexData.put(DexConfig.CA_KEY, ConfigSupport.encodeBytes(content));
+        return true;
     }
 
     private void buildConsoleConfig(Console primary, Context<Console> context,
@@ -650,6 +701,11 @@ public class ConfigurationProcessor extends BaseVirtualResource {
                             primary.getMetadata().getNamespace()))
                     .withTrustStore(dexTrustStore)
                     .withClientId("streamshub-console")
+                    // Dex only issues refresh tokens when offline_access is requested. The
+                    // Console API refreshes expired sessions, so without it users must log in
+                    // again whenever the ID token expires. Both the OpenShift and LDAP
+                    // connectors implement refresh.
+                    .withScopes("openid email profile groups offline_access")
                     .withPkceRequired(Boolean.TRUE)
                     .withStateSecret(currentOrNewStateSecret(currentConfig))
                     .withForceRedirectHttpsScheme(Boolean.TRUE)

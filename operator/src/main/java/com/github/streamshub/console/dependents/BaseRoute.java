@@ -48,7 +48,10 @@ abstract class BaseRoute extends CRUDKubernetesDependentResource<Route, Console>
             return new TLSConfigBuilder()
                     .withTermination("passthrough")
                     .build();
-        } else if (ConfigSupport.servingCertificateReencryptTLS(primary, context)) {
+        } else {
+            // Routes only exist where the Route API is available (OpenShift), so the service
+            // CA is always available: re-encrypt rather than terminating TLS at the edge with
+            // plain HTTP to the backend.
             // Read the CA bundle injected by the service CA controller for reencrypt termination
             String caBundlePem = trustBundle.getSecondaryResource(primary, context)
                     .map(ConfigMap::getData)
@@ -71,10 +74,6 @@ abstract class BaseRoute extends CRUDKubernetesDependentResource<Route, Console>
                     .withCertificate(edgeCert)
                     .withKey(edgeKey)
                     .withInsecureEdgeTerminationPolicy("Redirect")
-                    .build();
-        } else {
-            return new TLSConfigBuilder()
-                    .withTermination("edge")
                     .build();
         }
     }

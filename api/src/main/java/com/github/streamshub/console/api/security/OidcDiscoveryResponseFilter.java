@@ -124,7 +124,15 @@ public class OidcDiscoveryResponseFilter implements OidcResponseFilter {
             var authServerUrl = URI.create(oidc.getAuthServerUrl());
 
             for (String key : List.of("token_endpoint", "jwks_uri")) {
-                var discoveredUri = URI.create(discovery.getString(key));
+                String discoveredValue = discovery.getString(key);
+
+                if (discoveredValue == null) {
+                    // Not all providers advertise every endpoint; nothing to override
+                    logger.debugf("OIDC discovery document has no '%s' to override", key);
+                    continue;
+                }
+
+                var discoveredUri = URI.create(discoveredValue);
                 var overriddenUri = UriBuilder
                         .fromUri(discoveredUri)
                         .scheme(authServerUrl.getScheme())
@@ -134,7 +142,7 @@ public class OidcDiscoveryResponseFilter implements OidcResponseFilter {
                         .build()
                         .toString();
 
-                logger.infof("Discovered %s OIDC endpoint '%s' overridden to '%s'",
+                logger.debugf("Discovered %s OIDC endpoint '%s' overridden to '%s'",
                         key, discoveredUri, overriddenUri);
 
                 discovery.put(key, overriddenUri);

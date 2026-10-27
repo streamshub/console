@@ -15,7 +15,7 @@ import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition.Reasons;
 import com.github.streamshub.console.api.v1alpha1.status.Condition.Types;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
-import com.github.streamshub.console.support.DisplayName;
+import com.github.streamshub.console.dependents.support.DisplayName;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.openshift.api.model.Route;

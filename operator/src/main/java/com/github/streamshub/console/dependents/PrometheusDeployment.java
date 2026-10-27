@@ -46,7 +46,7 @@ public class PrometheusDeployment extends BaseDeployment {
                 .editTemplate()
                     .editMetadata()
                         .addToLabels(Map.of(INSTANCE_LABEL, name))
-                        .addToAnnotations("streamshub.github.com/dependency-digest", serializeDigest(context, "prometheus-digest"))
+                        .addToAnnotations("streamshub.github.com/dependency-digest", getOptionalAttribute(context, "prometheus-digest", String.class).orElse(DEFAULT_DIGEST))
                     .endMetadata()
                     .editSpec()
                         .withServiceAccountName(serviceAccount.instanceName(primary))

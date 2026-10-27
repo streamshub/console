@@ -29,7 +29,7 @@ public class DexSecret extends BaseSecret {
         Map<String, String> data = context.managedWorkflowAndDependentResourceContext()
                 .getMandatory("DexSecretData", Map.class);
 
-        updateDigest(context, "dex-digest", data);
+        putDigest(context, "dex-digest", data);
 
         return new SecretBuilder()
                 .withNewMetadata()
