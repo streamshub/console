@@ -1,5 +1,5 @@
-import { test as base } from "@playwright/test";
-import { AuthenticatedPage } from "./authenticated-page";
+import { test as base } from '@playwright/test';
+import { AuthenticatedPage } from './authenticated-page';
 
 // Declare the types of your fixtures.
 type MyFixtures = {
@@ -12,7 +12,10 @@ export const test = base.extend<MyFixtures>({
   authenticatedPage: async ({ page }, use) => {
     // Set up the fixture.
     const todoPage = new AuthenticatedPage(page);
+
+    // Playwright fixture callback, not a React Hook.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(todoPage);
   },
 });
-export { expect } from "@playwright/test";
+export { expect } from '@playwright/test';

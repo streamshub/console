@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 env:
-  TARGET_NAMESPACE: "console-namespace"
+  TARGET_NAMESPACE: 'console-namespace'
   CI_CLUSTER: true
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-  
+
       - name: Cache Maven Packages
         uses: actions/cache@v6
         with:
@@ -36,10 +36,10 @@ jobs:
         run: |
           # Needed for skopeo in setup-minikube.sh script
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          
+
           # Needed to copy locally built images to minikube registry
           sudo apt-get install -y socat
-          
+
           # Execute the setup
           MINIKUBE_CPU_COUNT=2 MINIKUBE_MEMORY=8g MINIKUBE_DRIVER=docker ./systemtests/scripts/setup-minikube.sh
 
@@ -201,14 +201,15 @@ jobs:
         uses: actions/setup-node@v7
 
       - name: Run Playwright Tests
-        working-directory: ./ui
+        working-directory: ./api/src/main/webui
         run: |
           set -x
 
           npm ci
           npm ls playwright --json=true
 
-          PLAYWRIGHT_VERSION="$(npm ls playwright --json=true | jq -r '.dependencies.playwright.version')"
+          PLAYWRIGHT_VERSION="$(node -p 'require("@playwright/test/package.json").version')"
+          echo "Using Playwright version: ${PLAYWRIGHT_VERSION}"
 
           docker run --rm \
             -v$(pwd):/app:z \
@@ -223,7 +224,7 @@ jobs:
         if: failure()
         with:
           name: playwright-tests-failed
-          path: ./ui/test-results
+          path: ./api/src/main/webui/test-results
 
       - name: Backup Logs
         if: always()
