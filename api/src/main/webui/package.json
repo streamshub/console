@@ -10,7 +10,8 @@
     "lint": "eslint . --ext js,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test-storybook": "vitest --config vitest.config.ts"
+    "test-storybook": "vitest --config vitest.config.ts",
+    "test": "npx playwright test --config ./playwright.config.ts"
   },
   "dependencies": {
     "@patternfly/patternfly": "^6.7.0",
@@ -38,11 +39,13 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.64.1",
     "@storybook/addon-docs": "10.6.3",
     "@storybook/addon-links": "10.6.3",
     "@storybook/addon-vitest": "10.6.3",
     "@storybook/react": "10.6.3",
     "@storybook/react-vite": "10.6.3",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@typescript-eslint/eslint-plugin": "^8.72.0",
