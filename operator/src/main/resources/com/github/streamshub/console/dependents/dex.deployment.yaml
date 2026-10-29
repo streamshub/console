@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console-dex
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {}
+  template:
+    metadata:
+      labels: {}
+    spec:
+      serviceAccountName: console-dex
+      volumes:
+        - name: config
+          secret:
+            secretName: placeholder
+        - name: work
+          emptyDir: {}
+        - name: openshift-ca
+          configMap:
+            name: kube-root-ca.crt
+            items:
+              - key: ca.crt
+                path: openshift.pem
+      containers:
+        - name: dex
+          image: ghcr.io/dexidp/dex:v2.46.1
+          command: [ 'dex', 'serve', '/etc/dex/cfg/config.yaml' ]
+          ports:
+            # May be either HTTP or HTTPS depending on configuration
+            - name: http
+              containerPort: 5556
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dex/cfg
+              readOnly: true
+            - name: work
+              mountPath: /tmp
+            - name: openshift-ca
+              mountPath: /etc/ssl/openshift.pem
+              subPath: openshift.pem
+              readOnly: true
+          # Sizing is unmeasured; revisit with real usage data. No CPU limit, to avoid
+          # throttling latency-sensitive login requests.
+          resources:
+            requests:
+              cpu: 200m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /dex/healthz
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 3
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /dex/healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /dex/healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            # The UID is intentionally not set here. The Dex image declares a non-numeric
+            # USER (dex:dex), so DexDeployment sets runAsUser=1001 on plain Kubernetes, where
+            # the kubelet cannot verify runAsNonRoot otherwise. On OpenShift it is left unset
+            # so the restricted SCC can assign a UID from the namespace range.
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL

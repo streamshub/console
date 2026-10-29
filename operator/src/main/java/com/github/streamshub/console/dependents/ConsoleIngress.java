@@ -9,7 +9,10 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.dependents.support.ConfigSupport;
 
+import io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressPath;
+import io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressPathBuilder;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressLoadBalancerStatus;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressStatus;
@@ -32,6 +35,12 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     @Inject
     ConsoleService service;
 
+    @Inject
+    DexService dexService;
+
+    @Inject
+    ConsoleIngressTlsSecret tlsSecret;
+
     public ConsoleIngress() {
         super(Ingress.class);
     }
@@ -43,12 +52,15 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
 
     @Override
     protected Ingress desired(Console primary, Context<Console> context) {
-        boolean tls = primary.getSpec().getTls() != null;
+        // The pod serves TLS itself only for user-provided pass-through TLS. When Dex is
+        // enabled, spec.tls instead terminates TLS at the Ingress (see below) and the
+        // Console and Dex are served over HTTP behind it.
+        boolean tls = ConfigSupport.userProvidedPassthroughTLS(primary);
         String backendProtocol = tls ? "HTTPS" : "HTTP";
         int servicePort = tls ? 443 : 80;
         String serviceName = service.instanceName(primary);
 
-        return load(context, "console.ingress.yaml", Ingress.class)
+        var builder = load(context, "console.ingress.yaml", Ingress.class)
             .edit()
             .editMetadata()
                 .withName(instanceName(primary))
@@ -80,11 +92,44 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                                     .endPort()
                                 .endService()
                             .endBackend()
-                        .endPath()
+                        .endPath();
+
+        // When Dex is configured, add a /dex prefix path routing to the Dex service
+        if (ConfigSupport.dexIntegrationEnabled(primary)) {
+            HTTPIngressPath dexPath = new HTTPIngressPathBuilder()
+                    .withPath("/dex")
+                    .withPathType("Prefix")
+                    .withNewBackend()
+                        .withNewService()
+                            .withName(dexService.instanceName(primary))
+                            .withNewPort()
+                                .withNumber(5556)
+                            .endPort()
+                        .endService()
+                    .endBackend()
+                    .build();
+
+            builder = builder.addToPaths(dexPath);
+        }
+
+        var ingress = builder
                     .endHttp()
                 .endRule()
             .endSpec()
             .build();
+
+        if (ConsoleIngressTlsSecret.required(primary, context)) {
+            ingress = ingress.edit()
+                .editSpec()
+                    .addNewTl()
+                        .withHosts(primary.getSpec().getHostname())
+                        .withSecretName(tlsSecret.instanceName(primary))
+                    .endTl()
+                .endSpec()
+                .build();
+        }
+
+        return ingress;
     }
 
     /**

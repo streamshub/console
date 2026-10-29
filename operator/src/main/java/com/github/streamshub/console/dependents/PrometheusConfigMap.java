@@ -29,7 +29,7 @@ public class PrometheusConfigMap extends CRUDKubernetesDependentResource<ConfigM
     @Override
     protected ConfigMap desired(Console primary, Context<Console> context) {
         ConfigMap template = load(context, "prometheus.configmap.yaml", ConfigMap.class);
-        updateDigest(context, "prometheus-digest", template.getData());
+        putDigest(context, "prometheus-digest", template.getData());
 
         return template.edit()
                 .withNewMetadata()
