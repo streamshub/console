@@ -46,7 +46,6 @@ const makeResult = (overrides: Record<string, unknown> = {}) =>
   } as unknown as UseQueryResult<ListResponse<EnrichedConnector>, Error>);
 
 const meta = {
-  title: 'Kafka/Connect/ConnectorsDataView',
   component: ConnectorsDataView,
   decorators: [
     (Story) => (
