@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { KafkaUser, ListResponse } from '@/api/types';
 import { UsersDataView } from './UsersDataView';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter } from 'react-router';
 
 const mockUsers = [
   {
@@ -55,14 +55,11 @@ const createUsersResult = (
   } as unknown as UseQueryResult<ListResponse<KafkaUser>, Error>);
 
 const meta: Meta<typeof UsersDataView> = {
-  title: 'Kafka/Users/UsersDataView',
   component: UsersDataView,
   decorators: [
     (Story) => (
       <MemoryRouter initialEntries={['/kafka/my-cluster/users']}>
-        <Routes>
-          <Route path="/kafka/:kafkaId/users" element={<Story />} />
-        </Routes>
+        <Story />
       </MemoryRouter>
     ),
   ],
