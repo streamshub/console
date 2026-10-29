@@ -64,7 +64,9 @@ export const NoClusters: Story = {
 export const FilteredNoResults: Story = {
   play: async (context) => {
     await openMenu(context);
-    const search = within(document.body).getByRole('searchbox');
+    const search = within(document.body).getByRole('textbox', {
+      name: 'Filter by name',
+    });
     await userEvent.type(search, 'zzz');
   },
 };
