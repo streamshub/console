@@ -106,7 +106,7 @@ export function UserDetailPage() {
     authorization,
   } = user.attributes;
   const authorizationData = authorization?.accessControls ?? [];
-  
+
   // Use username for display (not the resource name or userId)
   const displayName = username || '';
 
@@ -122,29 +122,43 @@ export function UserDetailPage() {
           <FlexItem>
             <DescriptionList isHorizontal columnModifier={{ default: '2Col' }}>
               <DescriptionListGroup>
-                <DescriptionListTerm>{t('users.details.name')}</DescriptionListTerm>
+                <DescriptionListTerm>
+                  {t('users.details.name')}
+                </DescriptionListTerm>
                 <DescriptionListDescription>{name}</DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
-                <DescriptionListTerm>{t('users.details.username')}</DescriptionListTerm>
-                <DescriptionListDescription>{username}</DescriptionListDescription>
+                <DescriptionListTerm>
+                  {t('users.details.username')}
+                </DescriptionListTerm>
+                <DescriptionListDescription>
+                  {username}
+                </DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
-                <DescriptionListTerm>{t('users.details.authentication')}</DescriptionListTerm>
+                <DescriptionListTerm>
+                  {t('users.details.authentication')}
+                </DescriptionListTerm>
                 <DescriptionListDescription>
                   {authenticationType}
                 </DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
-                <DescriptionListTerm>{t('users.details.namespace')}</DescriptionListTerm>
+                <DescriptionListTerm>
+                  {t('users.details.namespace')}
+                </DescriptionListTerm>
                 <DescriptionListDescription>
                   {namespace ?? '-'}
                 </DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
-                <DescriptionListTerm>{t('users.details.creationTime')}</DescriptionListTerm>
+                <DescriptionListTerm>
+                  {t('users.details.creationTime')}
+                </DescriptionListTerm>
                 <DescriptionListDescription>
-                  {creationTimestamp ? formatDateTime({ value: creationTimestamp }) : '-'}
+                  {creationTimestamp
+                    ? formatDateTime({ value: creationTimestamp })
+                    : '-'}
                 </DescriptionListDescription>
               </DescriptionListGroup>
             </DescriptionList>
@@ -159,7 +173,11 @@ export function UserDetailPage() {
             >
               <Tab
                 eventKey={0}
-                title={<TabTitleText>{t('users.details.authorization')}</TabTitleText>}
+                title={
+                  <TabTitleText>
+                    {t('users.details.authorization')}
+                  </TabTitleText>
+                }
                 aria-label={t('users.details.authorization')}
               >
                 <TabContentBody>
@@ -181,7 +199,9 @@ export function UserDetailPage() {
                           <Th>{t('users.details.authColumns.patternType')}</Th>
                           <Th>{t('users.details.authColumns.host')}</Th>
                           <Th>{t('users.details.authColumns.operations')}</Th>
-                          <Th>{t('users.details.authColumns.permissionType')}</Th>
+                          <Th>
+                            {t('users.details.authColumns.permissionType')}
+                          </Th>
                         </Tr>
                       </Thead>
                       <Tbody>
@@ -190,19 +210,35 @@ export function UserDetailPage() {
                             <Td dataLabel={t('users.details.authColumns.type')}>
                               {rule.type}
                             </Td>
-                            <Td dataLabel={t('users.details.authColumns.resourceName')}>
+                            <Td
+                              dataLabel={t(
+                                'users.details.authColumns.resourceName'
+                              )}
+                            >
                               {rule.resourceName ?? '-'}
                             </Td>
-                            <Td dataLabel={t('users.details.authColumns.patternType')}>
+                            <Td
+                              dataLabel={t(
+                                'users.details.authColumns.patternType'
+                              )}
+                            >
                               {rule.patternType ?? '-'}
                             </Td>
                             <Td dataLabel={t('users.details.authColumns.host')}>
                               {rule.host ?? '-'}
                             </Td>
-                            <Td dataLabel={t('users.details.authColumns.operations')}>
+                            <Td
+                              dataLabel={t(
+                                'users.details.authColumns.operations'
+                              )}
+                            >
                               {rule.operations?.join(', ')}
                             </Td>
-                            <Td dataLabel={t('users.details.authColumns.permissionType')}>
+                            <Td
+                              dataLabel={t(
+                                'users.details.authColumns.permissionType'
+                              )}
+                            >
                               {rule.permissionType}
                             </Td>
                           </Tr>

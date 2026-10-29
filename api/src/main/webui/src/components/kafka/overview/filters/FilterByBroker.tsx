@@ -1,6 +1,6 @@
 /**
  * Filter By Broker Component
- * 
+ *
  * Dropdown selector for filtering charts by specific broker/node.
  * Allows users to view metrics for individual nodes or all nodes.
  */
@@ -31,15 +31,16 @@ export function FilterByBroker({
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedLabel = value
-    ? `Node ${value}`
-    : t('metrics.all_nodes');
+  const selectedLabel = value ? `Node ${value}` : t('metrics.all_nodes');
 
   const onToggleClick = () => {
     setIsOpen(!isOpen);
   };
 
-  const onSelect = (_event: React.MouseEvent<Element, MouseEvent> | undefined, selectedValue: string | number | undefined) => {
+  const onSelect = (
+    _event: React.MouseEvent<Element, MouseEvent> | undefined,
+    selectedValue: string | number | undefined
+  ) => {
     if (selectedValue === 'all') {
       onChange(null);
     } else if (typeof selectedValue === 'string') {
