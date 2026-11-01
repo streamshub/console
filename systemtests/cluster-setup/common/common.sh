@@ -3,11 +3,8 @@
 
 OS_NAME="$(uname -s)"
 
-# The only OS-conditional behavior left after unifying with
-# systemtests/scripts/setup-minikube.sh is local exposure (reaching the
-# cluster's ingress/registry from the host): Linux can reach the
-# minikube/kind node directly; macOS's container engines run inside a
-# hidden VM and can't. NEEDS_LOCAL_PORT_FORWARD is that one switch.
+# Can the host reach the minikube/kind node directly? Yes on Linux; no on
+# macOS, where the container engine runs inside a hidden VM.
 case "${OS_NAME}" in
   Darwin) NEEDS_LOCAL_PORT_FORWARD=true ;;
   Linux)  NEEDS_LOCAL_PORT_FORWARD=false ;;
@@ -17,12 +14,9 @@ case "${OS_NAME}" in
     ;;
 esac
 
-# Podman machine sizing (only relevant on macOS, where podman needs a VM to
-# run containers at all — native Linux podman doesn't). Defaults to (host
-# CPUs - 1) and (host memory - 4GB headroom) so the host itself isn't
-# starved; override with PODMAN_MACHINE_CPUS/PODMAN_MACHINE_MEMORY (MB).
-# Portable: prefers Linux-native tools (nproc, /proc/meminfo), falls back
-# to macOS's sysctl.
+# Podman machine sizing (macOS only — native Linux podman needs no VM).
+# Defaults to host-1 CPU / host-4GB memory so the host isn't starved;
+# override with PODMAN_MACHINE_CPUS/PODMAN_MACHINE_MEMORY (MB).
 detect_default_cpus() {
   local total
   if command -v nproc >/dev/null 2>&1; then
@@ -97,12 +91,9 @@ install_docker_colima() {
   ln -sfn "$(brew --prefix)/opt/docker-buildx/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
 }
 
-# macOS + CONTAINER_ENGINE=docker only: installs docker/colima if docker is
-# missing, and starts colima if no daemon is reachable. A no-op when Docker
-# Desktop (or an already-running colima) provides the daemon. The VM must
-# fit the minikube node, so size it with COLIMA_CPUS / COLIMA_MEMORY (GB);
-# defaults match the podman machine sizing above (host - 1 CPU, host - 4GB).
-# Call after CONTAINER_ENGINE has been determined.
+# macOS + CONTAINER_ENGINE=docker: installs docker/colima if missing, starts
+# colima if no daemon is reachable (no-op with Docker Desktop or an
+# already-running colima). Size the VM with COLIMA_CPUS/COLIMA_MEMORY (GB).
 ensure_docker_engine() {
   if [ "${OS_NAME}" != "Darwin" ] || [ "${CONTAINER_ENGINE}" != "docker" ]; then
     return 0
@@ -118,12 +109,9 @@ ensure_docker_engine() {
   fi
 }
 
-# Installs skopeo — needed by both kind/load-images.sh and
-# minikube/load-images.sh to push built images into the local registry.
-# On Linux, also applies the AppArmor tweak skopeo needs to actually work
-# on Ubuntu 24.04+ runners (restricts unprivileged user namespaces, which
-# skopeo uses) — folded in here rather than left as a separate CI step,
-# since it's specifically a "make skopeo work" concern, not a general one.
+# Installs skopeo (used by both load-images.sh scripts to push into the
+# local registry). On Linux, also applies the AppArmor tweak skopeo needs
+# on Ubuntu 24.04+ runners (restricts unprivileged user namespaces).
 install_skopeo() {
   case "${OS_NAME}" in
     Darwin)
@@ -137,33 +125,21 @@ install_skopeo() {
   esac
 }
 
-# "localhost" resolves to both 127.0.0.1 and ::1, and getaddrinfo ordering
-# can try the IPv6 one first. On macOS that's a real problem for the local
-# registry: ControlCenter's AirPlay Receiver listens on port 5000 on the
-# IPv6 wildcard by default (it's a system service, on whether you've ever
-# used AirPlay or not), while the registry container's port is published
-# IPv4-only (kind/minikube's setup-registry.sh both bind it explicitly to
-# 127.0.0.1). A push that resolves "localhost" to ::1 silently lands on
-# AirPlay instead of the registry and gets back a baffling "403 Forbidden"
-# with no indication it's not even talking to a container registry.
+# "localhost" can resolve to ::1 before 127.0.0.1 — fatal on macOS, where
+# AirPlay Receiver squats on port 5000's IPv6 wildcard while the registry
+# is IPv4-only, so a push there gets a baffling 403 instead of a real error.
 #
-# Used only for the skopeo *destination* URL in kind/load-images.sh and
-# minikube/load-images.sh — the one place that makes a real host-level
-# network connection. Locally-tagged image names and the catalog-image
-# reference handed to setup-catalogsource.sh/deploy-example-console.sh
-# must stay "localhost:<port>" unchanged: that string is also the key in
-# the containerd hosts.toml config the cluster uses to resolve pulls, and
-# has nothing to do with how the host happens to reach the registry.
+# Only for load-images.sh's skopeo push URL (the one real network call).
+# Image tags and the catalog-image reference must stay "localhost:<port>"
+# — that's the containerd hosts.toml key the cluster resolves pulls by.
 registry_host_for_push() {
   echo "${1/localhost/127.0.0.1}"
 }
 
-# Which local daemon actually holds the images build-console.sh built — NOT
-# $CONTAINER_ENGINE, which for minikube is the *driver* (can be vfkit/kvm2,
-# neither of which builds or stores OCI images). Prefers docker, falling
-# back to podman; if both are on PATH, docker may actually be podman's
-# docker-CLI-compatibility shim, so ask it. Used by build-console.sh and
-# both kind/load-images.sh and minikube/load-images.sh.
+# Which local daemon actually holds the built images — NOT $CONTAINER_ENGINE,
+# which for minikube is the *driver* (can be vfkit/kvm2, neither of which
+# stores images). Docker preferred; if both are on PATH, `docker` may
+# actually be podman's compat shim, so ask it rather than assume.
 detect_image_runtime() {
   if command -v podman >/dev/null 2>&1 && command -v docker >/dev/null 2>&1; then
     if docker --version | grep -q podman; then
@@ -188,13 +164,9 @@ skopeo_transport_for() {
   fi
 }
 
-# Ensures a podman machine exists and is running — but only on macOS.
-# Native Linux podman talks to the local system directly; there's no VM to
-# create or manage, so this is a no-op there regardless of CONTAINER_ENGINE.
-# Only sizes the machine (via PODMAN_MACHINE_CPUS/PODMAN_MACHINE_MEMORY) on
-# first-time init — an existing machine is never resized automatically,
-# since that requires stopping it (killing anything running inside,
-# including the kind cluster).
+# Ensures a podman machine exists and is running (macOS only — native Linux
+# podman has no VM to manage). Only sizes it on first-time init; an existing
+# machine is never resized automatically, since that means stopping it.
 ensure_podman_machine() {
   if [ "${OS_NAME}" != "Darwin" ]; then
     return 0
@@ -225,13 +197,10 @@ ensure_podman_machine() {
   fi
 }
 
-# On native Linux with rootless podman, kube-proxy/ingress-nginx need the
-# host's ip_tables kernel module loaded — rootless containers can't load
-# kernel modules themselves (no CAP_SYS_MODULE), so a missing module
-# surfaces confusingly later as ingress-nginx/kube-proxy failing, not as an
-# obvious "module missing" error. Check up front and fail fast instead.
-# No-op on macOS (podman machine VM, handled by ensure_podman_machine) and
-# on rootful podman/docker (which don't hit this).
+# Rootless podman on Linux can't load kernel modules itself (no
+# CAP_SYS_MODULE), so a missing ip_tables module surfaces later as a
+# confusing ingress-nginx/kube-proxy failure. Check up front and fail fast.
+# No-op on macOS and on rootful podman/docker.
 check_linux_rootless_podman_ip_tables() {
   if [ "${OS_NAME}" != "Linux" ] || [ "${CONTAINER_ENGINE}" != "podman" ]; then
     return 0
@@ -253,37 +222,24 @@ check_linux_rootless_podman_ip_tables() {
   fi
 }
 
-# Configures CoreDNS with split-horizon DNS for the cluster's ingress domain:
-# any "*.<domain>" query that originates from *inside* the cluster (a Pod) gets
-# answered directly with the ingress controller's ClusterIP, instead of being
-# forwarded out to the real public nip.io DNS — which only knows the domain's
-# embedded IP (127.0.0.1 for both kind's and macOS-minikube's default
-# CONSOLE_CLUSTER_DOMAIN), and 127.0.0.1 means something different to every
-# asker: from the host it's genuinely the host (where Docker/colima/podman
-# forward 80/443 to the node), but from inside a Pod it's that Pod's own
-# loopback, never the ingress controller. The host keeps resolving the exact
-# same hostname via real DNS, completely unaffected — this only intercepts
-# queries CoreDNS itself answers, so it's genuinely split-horizon, not a
-# global override.
+# Configures CoreDNS with split-horizon DNS for CONSOLE_CLUSTER_DOMAIN: a
+# "*.<domain>" query from inside the cluster (a Pod) is answered with the
+# ingress controller's ClusterIP directly, instead of being forwarded to
+# real nip.io DNS (which only knows 127.0.0.1 — see registry_host_for_push
+# above for why that's ambiguous). The host keeps resolving the hostname
+# normally; this only intercepts in-cluster queries, so it's genuinely
+# split-horizon, not a global override.
 #
-# Why this matters: Kafka's `secure` listener (ingress-exposed — used by
-# anything connecting to Kafka from outside the cluster network, including
-# Console, which is itself a Pod) is addressed by exactly this kind of
-# hostname. Without this, Console's own connection to Kafka resolves
-# "bootstrap.<kafka>.<domain>" to its own loopback and every Kafka API call
-# times out ("Timed out waiting for a node assignment") even though both
-# Console and Kafka are perfectly healthy. Confirmed happening on kind
-# (regardless of host OS — it always uses the 127.0.0.1 trick) and would
-# equally affect minikube's macOS exposure path for the same reason.
-# minikube-on-Linux doesn't hit this (its domain is the node's own real,
-# already-routable IP), but applying this there too is harmless — same
-# ingress Service, just reached one hop more directly — so it's done
-# unconditionally rather than detected per cluster type.
+# Needed because Kafka's `secure` listener is ingress-exposed and addressed
+# by this same kind of hostname, and Console (itself a Pod) connects to
+# Kafka through it. Without this, Console resolves to its own loopback and
+# every Kafka API call times out, even though both are healthy. Applies on
+# kind (any OS) and minikube-on-macOS; a harmless no-op on minikube-on-Linux
+# (already a real routable IP), so it runs unconditionally rather than
+# detecting the case.
 #
-# Idempotent: re-running replaces the previously-injected block (tracked by
-# the BEGIN/END marker comments) rather than duplicating it, so a second
-# create-cluster.sh run (or one against a changed CONSOLE_CLUSTER_DOMAIN)
-# converges cleanly instead of accumulating stale template blocks.
+# Idempotent: re-running replaces the previous block (BEGIN/END markers)
+# instead of duplicating it.
 #
 # Usage: configure_dns_split_horizon <domain> <ingress-namespace> [<ingress-service>]
 configure_dns_split_horizon() {
@@ -302,23 +258,17 @@ configure_dns_split_horizon() {
   marker_begin="# cluster-setup:dns-split-horizon:begin"
   marker_end="# cluster-setup:dns-split-horizon:end"
 
-  # Strip any block from a previous run before re-inserting a fresh one —
-  # covers both "nothing changed" (pure no-op re-apply) and "domain or
-  # ingress IP changed since last run" (stale entry would otherwise linger
-  # alongside the new one). Done with sed, not awk: macOS ships the
-  # non-GNU "one true awk", which rejects multi-line -v values outright
-  # ("newline in string") - sed with temp files avoids that trap entirely
-  # and is identical between BSD (macOS) and GNU (Linux) for everything
-  # used here.
+  # Strip any block from a previous run first, so re-running converges
+  # instead of duplicating or leaving a stale entry. sed, not awk: macOS's
+  # non-GNU awk rejects multi-line -v values ("newline in string"); sed with
+  # temp files behaves identically on BSD and GNU.
   stripped_file=$(mktemp)
   kubectl get configmap -n kube-system coredns -o jsonpath='{.data.Corefile}' \
     | sed "/${marker_begin}/,/${marker_end}/d" > "${stripped_file}"
 
-  # Placed right after the server block's opening brace (line 1 of the
-  # Corefile) rather than appended at the end — CoreDNS evaluates plugins in
-  # file order, and the existing `forward . /etc/resolv.conf` plugin claims
-  # the catch-all "." zone, so it would intercept (and forward upstream)
-  # every query, including ours, if it ran first.
+  # Inserted right after the opening brace, not appended — CoreDNS evaluates
+  # plugins in file order, and `forward . /etc/resolv.conf` claims the
+  # catch-all "." zone, so it must run after ours, not before.
   block_file=$(mktemp)
   cat > "${block_file}" <<EOF
     ${marker_begin}
@@ -337,9 +287,8 @@ EOF
   sed "1r ${block_file}" "${stripped_file}" > "${final_file}"
   rm -f "${stripped_file}" "${block_file}"
 
-  # A CoreDNS Corefile this short is never valid — refuse to push something
-  # that would crash-loop every CoreDNS pod and take cluster DNS down with
-  # it, rather than trusting the text-munging above blindly.
+  # A Corefile this short is never valid — refuse to push it rather than
+  # risk crash-looping every CoreDNS pod and taking cluster DNS down.
   line_count=$(wc -l < "${final_file}")
   if [ "${line_count}" -lt 10 ]; then
     echo "Generated Corefile looks truncated (${line_count} lines) - refusing to apply it. Left cluster DNS untouched." >&2
@@ -352,16 +301,11 @@ EOF
   echo "${apply_output}"
   rm -f "${final_file}"
 
-  # Only restart CoreDNS if the Corefile actually changed — this runs on
-  # every create-cluster.sh invocation (it's idempotent), and restarting
-  # cluster-wide DNS unconditionally on a no-op re-run causes a real,
-  # if brief, disruption: anything resolving a name right then (e.g.
-  # Console's own Kafka connection) stalls for several seconds waiting on
-  # the old CoreDNS pods to terminate and new ones to come up. The
-  # `reload` plugin already in CoreDNS's default Corefile picks up a
-  # genuine change on its own within ~30s regardless, but restarting
-  # when there IS a change makes it deterministic — nothing after this
-  # call has to guess whether the new config is live yet.
+  # Only restart if the Corefile actually changed — this runs on every
+  # create-cluster.sh invocation, and an unconditional restart briefly
+  # disrupts any in-flight DNS lookup (e.g. Console's Kafka connection).
+  # Restarting on a real change makes the new config live immediately,
+  # instead of waiting on CoreDNS's own ~30s reload check.
   if [ "${apply_output}" = "configmap/coredns unchanged" ]; then
     return 0
   fi
@@ -371,12 +315,9 @@ EOF
 }
 
 # Deploys a throwaway echo-server behind an Ingress, curls it over HTTP and
-# HTTPS on the given host ports, then cleans up — confirms the cluster's
-# exposure path (kind's hostPort mapping, or minikube's node-IP / tunnel /
-# port-forward) actually works end to end before kind/create-cluster.sh or
-# minikube/create-cluster.sh declare success. Exits non-zero (via the
-# caller's `set -euo pipefail`) if it doesn't. Requires a working kubectl
-# context against the target cluster and ingress-nginx already installed.
+# HTTPS on the given ports, then cleans up — confirms the cluster's exposure
+# path actually works end to end before create-cluster.sh declares success.
+# Exits non-zero (via the caller's `set -euo pipefail`) if it doesn't.
 #
 # Usage: verify_ingress_exposure <cluster-domain> <http-port> <https-port>
 verify_ingress_exposure() {
@@ -454,14 +395,11 @@ EOF
     return 1
   }
 
-  # The --enable-ssl-passthrough patch both callers apply just before this
-  # replaces the ingress-nginx-controller pod. `kubectl rollout status` only
-  # confirms the new pod passed its /healthz readiness probe — it says
-  # nothing about kube-proxy having programmed the new pod's IP into the
-  # ingress-nginx-controller-admission Service's dataplane yet. Applying this
-  # Ingress (which goes through that validating webhook) can land in that
-  # gap and get "connection refused". Retry instead of guessing a fixed
-  # delay — the apply is idempotent.
+  # The ssl-passthrough patch callers apply just before this replaces the
+  # ingress-nginx-controller pod; `rollout status` confirms it's ready but
+  # not that kube-proxy has caught up yet, so an immediate apply (which goes
+  # through the admission webhook) can land in that gap. Retry, don't guess
+  # a delay — the apply is idempotent.
   local attempt
   for attempt in $(seq 1 15); do
     if kubectl apply -f "${manifest}"; then
