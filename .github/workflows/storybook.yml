@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'api/src/main/webui/**'
+      - '!api/src/main/webui/package.json'
+      - '!api/src/main/webui/package-lock.json'
 
 jobs:
   build_and_deploy:
