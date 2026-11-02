@@ -34,6 +34,9 @@ install_minikube() {
 
 ensure_installed minikube install_minikube
 
+# Which local daemon actually holds the images built locally - docker or podman.
+IMAGE_RUNTIME="$(detect_image_runtime)"
+
 # Auto-detect the minikube driver if not explicitly set. Minikube's own
 # driver docs (https://minikube.sigs.k8s.io/docs/drivers/) list docker as
 # preferred on both platforms; podman is still marked experimental on
@@ -43,13 +46,13 @@ ensure_installed minikube install_minikube
 # crashes under a full Kafka+Console workload, and a rootless-podman
 # failure hit directly against minikube.
 if [ -z "${CONTAINER_ENGINE:-}" ]; then
-  if command -v docker >/dev/null 2>&1; then
+  if [ "${IMAGE_RUNTIME}" = "docker" ]; then
     CONTAINER_ENGINE="docker"
   elif [ "${OS_NAME}" = "Darwin" ] && command -v vfkit >/dev/null 2>&1; then
     CONTAINER_ENGINE="vfkit"
   elif [ "${OS_NAME}" = "Linux" ] && command -v virsh >/dev/null 2>&1; then
     CONTAINER_ENGINE="kvm2"
-  elif command -v podman >/dev/null 2>&1; then
+  elif [ "${IMAGE_RUNTIME}" = "podman" ]; then
     CONTAINER_ENGINE="podman"
   else
     echo "No supported minikube driver found (docker, vfkit/kvm2, or podman). Install one, or set CONTAINER_ENGINE explicitly." >&2

@@ -47,10 +47,10 @@ fi
 
 IMAGE_PREFIX="${REGISTRY}/${GROUP}"
 
-# Which local daemon actually holds the images build-console.sh built —
-# NOT ${CONTAINER_ENGINE} above, which is the *minikube driver* (can be
-# vfkit/kvm2, neither of which builds or stores OCI images).
-IMAGE_RUNTIME="$(detect_image_runtime)"
+# ${IMAGE_RUNTIME} is which local daemon actually holds the images
+# build-console.sh built — NOT ${CONTAINER_ENGINE}, which is 
+# the *minikube driver* (can be vfkit/kvm2, neither of which builds
+# or stores OCI images).
 SKOPEO_TRANSPORT="$(skopeo_transport_for "${IMAGE_RUNTIME}")"
 
 # The actual network connection for the push — see registry_host_for_push
