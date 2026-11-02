@@ -6,17 +6,23 @@ const brokerNodes: Node[] = [
   {
     id: '1',
     type: 'nodes',
-    attributes: { broker: { status: 'Running', replicaCount: 80, leaderCount: 20 } },
+    attributes: {
+      broker: { status: 'Running', replicaCount: 80, leaderCount: 20 },
+    },
   },
   {
     id: '2',
     type: 'nodes',
-    attributes: { broker: { status: 'Running', replicaCount: 60, leaderCount: 30 } },
+    attributes: {
+      broker: { status: 'Running', replicaCount: 60, leaderCount: 30 },
+    },
   },
   {
     id: '3',
     type: 'nodes',
-    attributes: { broker: { status: 'Running', replicaCount: 65, leaderCount: 45 } },
+    attributes: {
+      broker: { status: 'Running', replicaCount: 65, leaderCount: 45 },
+    },
   },
 ];
 
@@ -43,7 +49,6 @@ const largeClusterNodes: Node[] = [
 
 const meta: Meta<typeof ChartPartitionDistribution> = {
   component: ChartPartitionDistribution,
-  title: 'Kafka/Nodes/Charts/ChartPartitionDistribution',
 };
 
 export default meta;

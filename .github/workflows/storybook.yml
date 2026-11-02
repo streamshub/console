@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths:
-      - 'ui/**'
-      - '!ui/package.json'
-      - '!ui/package-lock.json'
+      - 'api/src/main/webui/**'
+      - '!api/src/main/webui/package.json'
+      - '!api/src/main/webui/package-lock.json'
 
 jobs:
   build_and_deploy:
@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build Storybook
-        working-directory: ./ui
+        working-directory: ./api/src/main/webui
         run: |
           npm ci
           npx playwright install
@@ -32,9 +32,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           storybookBuildDir: 'storybook-static'
-          workingDir: './ui'
+          workingDir: './api/src/main/webui'
 
       - name: Test Storybook
-        working-directory: ./ui
+        working-directory: ./api/src/main/webui
         run: |
           npm run test-storybook -- --no-index-json --url ${{ steps.chromatic.outputs.storybookUrl }}

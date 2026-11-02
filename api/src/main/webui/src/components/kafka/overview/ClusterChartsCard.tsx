@@ -6,7 +6,9 @@
  * - CPU Usage
  * - Memory Usage
  *
- * Each chart supports broker filtering and time range selection.
+ * Split in two:
+ * - ClusterChartsCard      -> fetches the metrics (hooks, useMemo)
+ * - ClusterChartsCardView  -> pure UI, takes everything as props (used by Storybook)
  */
 
 import { useState, useMemo } from 'react';
@@ -44,13 +46,16 @@ export interface ClusterChartsCardProps {
   metricsAvailable?: boolean;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Container: data fetching                                                    */
+/* -------------------------------------------------------------------------- */
+
 export function ClusterChartsCard({
   kafkaId,
   nodes,
   isLoading,
   metricsAvailable = true,
 }: ClusterChartsCardProps) {
-  const { t } = useTranslation();
   const [selectedBroker, setSelectedBroker] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<DurationOptions>(
     DurationOptions.Last5minutes
@@ -73,70 +78,90 @@ export function ClusterChartsCard({
     refetchInterval: 30000,
   });
 
-  const isLoadingMetrics = selectedBroker === null ? clusterMetrics.isLoading : nodeMetrics.isLoading;
-  const hasError = selectedBroker === null ? clusterMetrics.isError : nodeMetrics.isError;
+  const isLoadingMetrics =
+    selectedBroker === null ? clusterMetrics.isLoading : nodeMetrics.isLoading;
+  const hasError =
+    selectedBroker === null ? clusterMetrics.isError : nodeMetrics.isError;
 
-  // Extract metrics data for charts
-  const diskUsageData = useMemo(() => {
-    if (isLoadingMetrics || hasError) return {};
-    
-    const usages: Record<string, TimeSeriesMetrics> = {};
-    const available: Record<string, TimeSeriesMetrics> = {};
-    
-    // Use cluster metrics when "All brokers" selected, otherwise use node metrics
-    const metricsData = selectedBroker === null
+  // Use cluster metrics when "All brokers" selected, otherwise use node metrics
+  const metricsData =
+    selectedBroker === null
       ? clusterMetrics.data?.data?.attributes?.metrics
       : nodeMetrics.data?.data?.attributes?.metrics;
-    
-    if (metricsData) {
-      // Extract disk usage metrics
-      const usageSeries = timeSeriesMetrics(metricsData.ranges, 'volume_stats_used_bytes');
-      const availableSeries = timeSeriesMetrics(metricsData.ranges, 'volume_stats_capacity_bytes');
-      
-      Object.assign(usages, usageSeries);
-      Object.assign(available, availableSeries);
-    }
-    
-    return { usages, available };
-  }, [clusterMetrics.data, nodeMetrics.data, selectedBroker, isLoadingMetrics, hasError]);
+
+  const diskUsageData = useMemo(() => {
+    if (isLoadingMetrics || hasError || !metricsData) return {};
+    return {
+      usages: timeSeriesMetrics(metricsData.ranges, 'volume_stats_used_bytes'),
+      available: timeSeriesMetrics(
+        metricsData.ranges,
+        'volume_stats_capacity_bytes'
+      ),
+    };
+  }, [metricsData, isLoadingMetrics, hasError]);
 
   const cpuUsageData = useMemo(() => {
-    if (isLoadingMetrics || hasError) return {};
-    
-    const usages: Record<string, TimeSeriesMetrics> = {};
-    
-    // Use cluster metrics when "All brokers" selected, otherwise use node metrics
-    const metricsData = selectedBroker === null
-      ? clusterMetrics.data?.data?.attributes?.metrics
-      : nodeMetrics.data?.data?.attributes?.metrics;
-    
-    if (metricsData) {
-      // Extract CPU usage metrics
-      const cpuSeries = timeSeriesMetrics(metricsData.ranges, 'cpu_usage_seconds');
-      Object.assign(usages, cpuSeries);
-    }
-    
-    return usages;
-  }, [clusterMetrics.data, nodeMetrics.data, selectedBroker, isLoadingMetrics, hasError]);
+    if (isLoadingMetrics || hasError || !metricsData) return {};
+    return timeSeriesMetrics(metricsData.ranges, 'cpu_usage_seconds');
+  }, [metricsData, isLoadingMetrics, hasError]);
 
   const memoryUsageData = useMemo(() => {
-    if (isLoadingMetrics || hasError) return {};
-    
-    const usages: Record<string, TimeSeriesMetrics> = {};
-    
-    // Use cluster metrics when "All brokers" selected, otherwise use node metrics
-    const metricsData = selectedBroker === null
-      ? clusterMetrics.data?.data?.attributes?.metrics
-      : nodeMetrics.data?.data?.attributes?.metrics;
-    
-    if (metricsData) {
-      // Extract memory usage metrics
-      const memorySeries = timeSeriesMetrics(metricsData.ranges, 'memory_usage_bytes');
-      Object.assign(usages, memorySeries);
-    }
-    
-    return usages;
-  }, [clusterMetrics.data, nodeMetrics.data, selectedBroker, isLoadingMetrics, hasError]);
+    if (isLoadingMetrics || hasError || !metricsData) return {};
+    return timeSeriesMetrics(metricsData.ranges, 'memory_usage_bytes');
+  }, [metricsData, isLoadingMetrics, hasError]);
+
+  return (
+    <ClusterChartsCardView
+      nodes={nodes}
+      metricsAvailable={metricsAvailable}
+      selectedBroker={selectedBroker}
+      onBrokerChange={setSelectedBroker}
+      selectedDuration={selectedDuration}
+      onDurationChange={setSelectedDuration}
+      isLoadingMetrics={isLoadingMetrics}
+      hasError={hasError}
+      diskUsageData={diskUsageData}
+      cpuUsageData={cpuUsageData}
+      memoryUsageData={memoryUsageData}
+    />
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* View: pure UI                                                               */
+/* -------------------------------------------------------------------------- */
+
+export interface ClusterChartsCardViewProps {
+  nodes: Array<{ id: number; name: string }>;
+  metricsAvailable: boolean;
+  selectedBroker: string | null;
+  onBrokerChange: (broker: string | null) => void;
+  selectedDuration: DurationOptions;
+  onDurationChange: (duration: DurationOptions) => void;
+  isLoadingMetrics: boolean;
+  hasError: boolean;
+  diskUsageData: {
+    usages?: Record<string, TimeSeriesMetrics>;
+    available?: Record<string, TimeSeriesMetrics>;
+  };
+  cpuUsageData: Record<string, TimeSeriesMetrics>;
+  memoryUsageData: Record<string, TimeSeriesMetrics>;
+}
+
+export function ClusterChartsCardView({
+  nodes,
+  metricsAvailable,
+  selectedBroker,
+  onBrokerChange,
+  selectedDuration,
+  onDurationChange,
+  isLoadingMetrics,
+  hasError,
+  diskUsageData,
+  cpuUsageData,
+  memoryUsageData,
+}: ClusterChartsCardViewProps) {
+  const { t } = useTranslation();
 
   return (
     <Card component="div" isFullHeight>
@@ -161,13 +186,13 @@ export function ClusterChartsCard({
                   <FilterByBroker
                     brokerIds={nodes.map((n) => String(n.id))}
                     value={selectedBroker}
-                    onChange={setSelectedBroker}
+                    onChange={onBrokerChange}
                   />
                 </FlexItem>
                 <FlexItem>
                   <FilterByTime
                     value={selectedDuration}
-                    onChange={setSelectedDuration}
+                    onChange={onDurationChange}
                   />
                 </FlexItem>
               </Flex>
@@ -207,7 +232,9 @@ export function ClusterChartsCard({
                 <StackItem>
                   <b>
                     {t('ClusterChartsCard.used_disk_space')}{' '}
-                    <Tooltip content={t('ClusterChartsCard.used_disk_space_tooltip')}>
+                    <Tooltip
+                      content={t('ClusterChartsCard.used_disk_space_tooltip')}
+                    >
                       <HelpIcon />
                     </Tooltip>
                   </b>
@@ -246,7 +273,9 @@ export function ClusterChartsCard({
                 <StackItem>
                   <b>
                     {t('ClusterChartsCard.memory_usage')}{' '}
-                    <Tooltip content={t('ClusterChartsCard.memory_usage_tooltip')}>
+                    <Tooltip
+                      content={t('ClusterChartsCard.memory_usage_tooltip')}
+                    >
                       <HelpIcon />
                     </Tooltip>
                   </b>

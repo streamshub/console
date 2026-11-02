@@ -43,7 +43,6 @@ const largeClusterNodes: Node[] = [
 
 const meta: Meta<typeof ChartNodeStorageUsage> = {
   component: ChartNodeStorageUsage,
-  title: 'Kafka/Nodes/Charts/ChartNodeStorageUsage',
 };
 
 export default meta;
