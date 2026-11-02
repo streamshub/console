@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Pushes the images built by ../common/build-console.sh to the local
-# registry set up by ./setup-registry.sh, via skopeo (same mechanism
-# systemtests/scripts/setup-minikube.sh already uses, parameterized here).
+# registry set up by ./setup-registry.sh, via skopeo.
 #
 # Why skopeo and not `docker push`/`podman push`: the registry is plain
 # HTTP, and getting a container engine to trust that for an arbitrary local
@@ -20,7 +19,8 @@
 #   ./load-images.sh [--registry localhost:5000] [--group streamshub] [--tag <tag>]
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./lib/env.sh
+source ./env.sh
+ensure_installed skopeo install_skopeo
 
 REGISTRY="${IMAGE_REGISTRY:-localhost:5000}"
 GROUP="${IMAGE_GROUP:-streamshub}"
@@ -49,26 +49,14 @@ IMAGE_PREFIX="${REGISTRY}/${GROUP}"
 
 # Which local daemon actually holds the images build-console.sh built —
 # NOT ${CONTAINER_ENGINE} above, which is the *minikube driver* (can be
-# vfkit/kvm2, neither of which builds or stores OCI images). Mirrors
-# build-console.sh's own runtime detection: prefer docker, fall back to
-# podman.
-if command -v podman >/dev/null 2>&1 && command -v docker >/dev/null 2>&1; then
-  if docker --version | grep -q podman; then
-    IMAGE_RUNTIME=podman
-  else
-    IMAGE_RUNTIME=docker
-  fi
-elif command -v podman >/dev/null 2>&1; then
-  IMAGE_RUNTIME=podman
-else
-  IMAGE_RUNTIME=docker
-fi
+# vfkit/kvm2, neither of which builds or stores OCI images).
+IMAGE_RUNTIME="$(detect_image_runtime)"
+SKOPEO_TRANSPORT="$(skopeo_transport_for "${IMAGE_RUNTIME}")"
 
-if [ "${IMAGE_RUNTIME}" = "podman" ]; then
-  SKOPEO_TRANSPORT="containers-storage:"
-else
-  SKOPEO_TRANSPORT="docker-daemon:"
-fi
+# The actual network connection for the push — see registry_host_for_push
+# in common.sh for why this has to be IPv4-explicit, unlike IMAGE_PREFIX
+# above (which stays "localhost:<port>" everywhere else).
+PUSH_PREFIX="$(registry_host_for_push "${REGISTRY}")/${GROUP}"
 
 echo "Pushing images to ${REGISTRY} for minikube profile '${MINIKUBE_PROFILE}'..."
 for img in console-api console-operator console-operator-bundle console-operator-catalog; do
@@ -79,7 +67,7 @@ for img in console-api console-operator console-operator-bundle console-operator
   # already baked into the CSV by digest.
   skopeo copy --preserve-digests --dest-tls-verify=false \
     "${SKOPEO_TRANSPORT}${IMAGE_PREFIX}/${img}:${TAG}" \
-    "docker://${IMAGE_PREFIX}/${img}:${TAG}"
+    "docker://${PUSH_PREFIX}/${img}:${TAG}"
 done
 
 echo ""
