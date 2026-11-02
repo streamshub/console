@@ -1,0 +1,69 @@
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+  # See examples/console for other sample Kafka cluster configuration. This example resource
+  # focuses on LDAP security configuration.
+  kafkaClusters: []
+  security:
+    ldap:
+      host: openldap.default.svc.cluster.local:389
+      insecureNoSSL: true
+      bindDN: cn=readonly,dc=streamshub,dc=dev
+      bindSecret:
+        value: password123
+      userSearch:
+        # BaseDN to start the search from. It will translate to the query
+        # "(&(objectClass=inetOrgPerson)(uid=<username>))".
+        baseDN: ou=people,dc=streamshub,dc=dev
+        # Optional filter to apply when searching the directory.
+        filter: "(objectClass=inetOrgPerson)"
+
+        # username attribute used for comparing user entries. This will be translated
+        # and combined with the other filter as "(<attr>=<username>)".
+        username: uid
+        # The following three fields are direct mappings of attributes on the user entry.
+        # String representation of the user.
+        idAttr: uid
+        # Required. Attribute to map to Email.
+        emailAttr: mail
+        # Maps to display name of users. No default value.
+        nameAttr: cn
+        # Maps to preferred username of users. No default value.
+        preferredUsernameAttr: uid
+
+      groupSearch:
+        # BaseDN to start the search from. It will translate to the query
+        # "(&(objectClass=groupOfNames)(member=<user DN>))".
+        baseDN: ou=groups,dc=streamshub,dc=dev
+        # Optional filter to apply when searching the directory.
+        filter: "(objectClass=groupOfNames)"
+
+        # Following list contains field pairs that are used to match a user to a group. It adds an additional
+        # requirement to the filter that an attribute in the group must match the user's
+        # attribute value.
+        userMatchers:
+        - userAttr: DN
+          groupAttr: member
+
+        # Represents group name.
+        nameAttr: cn
+
+    roles:
+      - name: console-role
+        rules:
+          - privileges:
+              - GET
+              - LIST
+            resourceNames:
+              - '*'
+            resources:
+              - kafkas
+    subjects:
+      - claim: groups
+        include:
+          - developers
+        roleNames:
+          - console-role
