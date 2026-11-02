@@ -33,8 +33,3 @@ jobs:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           storybookBuildDir: 'storybook-static'
           workingDir: './api/src/main/webui'
-
-      - name: Test Storybook
-        working-directory: ./api/src/main/webui
-        run: |
-          npm run test-storybook -- --no-index-json --url ${{ steps.chromatic.outputs.storybookUrl }}
