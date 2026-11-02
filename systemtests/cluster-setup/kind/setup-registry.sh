@@ -14,7 +14,7 @@
 #   ./setup-registry.sh [--registry-port 5000]
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./lib/env.sh
+source ./env.sh
 
 REGISTRY_PORT="${IMAGE_REGISTRY_PORT:-5000}"
 

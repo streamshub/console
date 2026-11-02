@@ -30,9 +30,6 @@ jobs:
         if: ${{ contains(github.event.comment.body, '--help') }}
         run: ./.github/actions/systemtests/pr-help.sh
 
-      - name: Check if build-images job succeeded
-        run: ./.github/actions/systemtests/verify-workflow-run-succeeded.sh
-
       - name: Parse parameters from comment
         id: parse_env
         run: ./.github/actions/systemtests/parse-pr-comment-params.sh
@@ -45,7 +42,6 @@ jobs:
           inputs: >
             {
               "commit_sha": "${{ env.COMMIT_SHA }}",
-              "artifacts_run_id": "${{ env.ARTIFACTS_RUN_ID }}",
               "testcase": "${{ env.TESTCASE }}",
               "profile": "${{ env.PROFILE }}",
               "install_type": "${{ env.INSTALL_TYPE }}",
