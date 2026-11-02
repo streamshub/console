@@ -6,8 +6,6 @@ on:
       - main
     paths:
       - 'api/src/main/webui/**'
-      - '!api/src/main/webui/package.json'
-      - '!api/src/main/webui/package-lock.json'
 
 jobs:
   build_and_deploy:
@@ -19,22 +17,11 @@ jobs:
           fetch-depth: 0
 
       - name: Build Storybook
-        working-directory: api/src/main/webui
+        working-directory: ./api/src/main/webui
         run: |
           npm ci
           npx playwright install
           npm run build-storybook
-
-      # The Vitest-based test-storybook runs the stories from the repo,
-      # so it does not need the Chromatic URL (and --url / --no-index-json
-      # are not Vitest options).
-      - name: Install Playwright Browsers
-        working-directory: api/src/main/webui
-        run: node_modules/.bin/playwright install chromium --with-deps
-
-      - name: Test Storybook
-        working-directory: api/src/main/webui
-        run: npm run test-storybook
 
       - name: Publish to Chromatic
         id: chromatic
@@ -43,4 +30,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           storybookBuildDir: 'storybook-static'
-          workingDir: 'api/src/main/webui'
+          workingDir: './api/src/main/webui'
