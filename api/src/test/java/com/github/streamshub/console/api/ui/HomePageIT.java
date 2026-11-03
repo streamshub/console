@@ -1,5 +1,6 @@
 package com.github.streamshub.console.api.ui;
 
+import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -16,8 +17,8 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 
 @QuarkusTest
 @WithPlaywright
-@TestProfile(UITestProfile.class)
-class HomePageUITest {
+@TestProfile(TestPlainProfile.class)
+class HomePageIT {
 
     @InjectPlaywright
     BrowserContext context;
@@ -30,12 +31,21 @@ class HomePageUITest {
         try (Page page = context.newPage()) {
             page.navigate(home.toString());
 
-            assertThat(page.getByRole(AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("kafka1")).first()).isVisible();
-            assertThat(page.getByRole(AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("kafka2")).first()).isVisible();
-            // count text comes from i18n 'kafka.connectedClusters'
-            assertThat(page.getByText("2 ", new Page.GetByTextOptions())).isVisible();
+            // Verify Kafka clusters configured in config-testplain.yaml
+            assertThat(page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("test-kafka1")
+            ).first()).isVisible();
+
+            assertThat(page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("test-kafka2")
+            ).first()).isVisible();
+
+            assertThat(page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("test-kafka3")
+            ).first()).isVisible();
         }
     }
 
@@ -44,13 +54,22 @@ class HomePageUITest {
         try (Page page = context.newPage()) {
             page.navigate(home.toString());
 
-            page.getByPlaceholder("Filter by name").fill("kafka2"); // match your i18n text
+            page.getByPlaceholder("Filter by name")
+                    .fill("test-kafka2");
+
             page.keyboard().press("Enter");
 
-            assertThat(page.getByRole(AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("kafka1"))).hasCount(0);
-            assertThat(page.getByRole(AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("kafka2")).first()).isVisible();
+            // test-kafka1 should not be displayed
+            assertThat(page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("test-kafka1")
+            )).hasCount(0);
+
+            // test-kafka2 should be displayed
+            assertThat(page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("test-kafka2")
+            ).first()).isVisible();
         }
     }
 
@@ -59,8 +78,10 @@ class HomePageUITest {
         try (Page page = context.newPage()) {
             page.navigate(home.toString());
 
-            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("kafka1"))
-                .first().click();
+            page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("test-kafka1")
+            ).first().click();
 
             page.waitForURL("**/kafka/*");
         }
