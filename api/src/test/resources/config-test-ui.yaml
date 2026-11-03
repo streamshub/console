@@ -1,0 +1,15 @@
+kubernetes:
+  enabled: false
+
+kafka:
+  clusters:
+    - name: test-kafka1
+      namespace: default
+      id: k1-id
+      properties:
+        bootstrap.servers: localhost:9092
+    - name: test-kafka2
+      namespace: default
+      id: k2-id
+      properties:
+        bootstrap.servers: localhost:9093
