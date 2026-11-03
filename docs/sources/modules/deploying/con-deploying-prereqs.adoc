@@ -27,7 +27,10 @@ For each Kafka cluster, the `Kafka` resource used to install the cluster must be
 * Sufficient authorization for the console to connect
 * Metrics properties for the console to be able to display certain data
 +
+The `Kafka` resource must expose Prometheus metrics through the `spec.kafka.metricsConfig` property.
 The metrics configuration must match the properties specified in the example `Kafka` (`console-kafka`) and `ConfigMap` (`console-kafka-metrics`) resources.
+The console relies on these metrics being exposed; it does not create or modify the metrics configuration on the Kafka cluster.
+For more information, see link:{BookURLConfiguring}#con-common-configuration-prometheus-reference[configuring metrics in the Strimzi documentation^].
 
 
 
