@@ -34,14 +34,18 @@ You can define Prometheus sources globally as part of the console configuration 
   - `embedded` (console-managed Prometheus)
 `url`:: For `standalone` sources, specifies the base URL of the Prometheus instance.
 `authentication`:: (For `standalone` and `openshift-monitoring` only) Configures access to the metrics provider using `basic`, `bearer` token, or `oidc` authentication.
-`trustStore`:: (Optional, for `standalone` only) Specifies a truststore for verifying TLS certificates when connecting to the metrics provider. 
-Supported formats: `JKS`, `PEM`, `PKCS12`. 
+`trustStore`:: (Optional, for `standalone` and `openshift-monitoring`) Specifies a truststore for verifying TLS certificates when connecting to the metrics provider.
+Supported formats: `JKS`, `PEM`, `PKCS12`.
 Content may be provided using a `ConfigMap` or a `Secret`.
+A truststore is required when the metrics endpoint presents a TLS certificate signed by a CA that is not already in the console's default trust store.
+This is common for `openshift-monitoring`, where the console connects to the Thanos Querier route, which on a default OpenShift cluster presents a self-signed certificate.
 
 Assign the metrics source to a Kafka cluster using the `kafkaClusters.metricsSource` property.
 The value of `metricsSource` is the `name` of the entry in the `metricsSources` array.
 
-The `metricsSources` entry for `openshift-monitoring` and `embedded` requires no properties besides the `type` (and, for `openshift-monitoring`, `authentication`).
+The `metricsSources` entry for `embedded` requires no properties besides the `type`.
+The `openshift-monitoring` entry additionally supports `authentication` and, in most deployments, requires a `trustStore`: the console connects to the OpenShift Thanos Querier route over HTTPS, and when that route uses a self-signed or private CA (the default on OpenShift) the CA must be supplied so the console can validate the connection.
+For a complete example, see `examples/console/console-openshift-metrics-self-signed-cluster-ca.yaml`.
 However, this configuration only tells the console where to _read_ metrics from.
 In all cases, you must separately configure each Kafka cluster to _expose_ Prometheus metrics; the console does not do this for you.
 
@@ -71,16 +75,46 @@ spec:
   metricsSources:
     - name: my-ocp-prometheus
       type: openshift-monitoring
+      # Required when the Thanos Querier route uses a self-signed CA (the default on
+      # OpenShift). On most clusters the cluster root CA (kube-root-ca.crt, available in
+      # every namespace) is sufficient. See the note below if this does not resolve the
+      # error on your cluster.
+      # trustStore:
+      #   type: PEM
+      #   content:
+      #     valueFrom:
+      #       configMapKeyRef:
+      #         name: kube-root-ca.crt
+      #         key: ca.crt
   kafkaClusters:
     - name: console-kafka
       namespace: kafka
-      listener: secure  
-      metricsSource: my-ocp-prometheus                  
+      listener: secure
+      metricsSource: my-ocp-prometheus
       credentials:
         kafkaUser:
           name: console-kafka-user1
   # ...        
 ----
+
+[NOTE]
+====
+If the console logs a `PKIX path building failed` error from `MetricsService`, the metrics client could not validate the TLS certificate presented by the metrics endpoint.
+For an `openshift-monitoring` source, the console connects to the `thanos-querier` route, which presents a self-signed certificate on a default OpenShift cluster.
+
+Set `metricsSources[].trustStore` to the cluster root CA using the `kube-root-ca.crt` `ConfigMap`, which is available in every namespace, as shown in `examples/console/console-openshift-metrics-self-signed-cluster-ca.yaml`.
+On most clusters this is sufficient, because the route's signing CA is included in the cluster root CA bundle (for example on managed or hosted OpenShift, or when a single custom CA signs the whole cluster).
+
+If the `PKIX` error persists with `kube-root-ca.crt`, the Thanos Querier route is signed by a separate ingress CA that is not in the cluster root CA bundle.
+In that case, supply the CA that actually signs the route instead.
+To identify it, inspect the certificate the route presents:
+
+[source,shell]
+----
+HOST=$(oc get route thanos-querier -n openshift-monitoring -o jsonpath='{.spec.host}')
+echo | openssl s_client -connect "$HOST:443" 2>/dev/null | openssl x509 -noout -issuer
+----
+====
 
 .Example metrics configuration for standalone Prometheus monitoring
 [source,yaml]

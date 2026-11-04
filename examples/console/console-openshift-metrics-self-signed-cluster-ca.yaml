@@ -26,10 +26,19 @@ spec:
     # Example metrics source using OpenShift's built-in monitoring.
     - name: my-ocp-prometheus
       type: openshift-monitoring
-      # In case your OpenShift cluster uses self-signed CA you can pass kube-root-ca into
-      # console by setting trustStore configuration as follows. Console will inject
-      # the cert into it's truststore and then will be able to connected to internal Prometheus
-      # ConfigMap kube-root-ca.crt is available in every namespace on OpenShift cluster.
+      # When your OpenShift cluster uses a self-signed CA you can pass the cluster root CA
+      # into the console by setting the trustStore below. The console injects the cert into
+      # its truststore and can then validate the metrics endpoint (the Thanos Querier
+      # route). The kube-root-ca.crt ConfigMap is available in every namespace on an
+      # OpenShift cluster, so no extra setup is required.
+      #
+      # On most clusters this works because the route's CA is present in the cluster root
+      # CA bundle (for example on managed/hosted OpenShift, or when a single custom CA
+      # signs the whole cluster). If you still get a PKIX path building error, the route is
+      # signed by a separate ingress CA that is not in the cluster root CA bundle; supply
+      # the CA that actually signs the route instead. To see which CA that is:
+      #   HOST=$(oc get route thanos-querier -n openshift-monitoring -o jsonpath='{.spec.host}')
+      #   echo | openssl s_client -connect "$HOST:443" 2>/dev/null | openssl x509 -noout -issuer
       trustStore:
         content:
           valueFrom:
