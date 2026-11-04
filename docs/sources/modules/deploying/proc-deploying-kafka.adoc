@@ -15,6 +15,7 @@ These resources create the following:
 * A Kafka cluster in KRaft mode with SCRAM-SHA-512 authentication.
 * A Strimzi `KafkaNodePool` resource to manage the cluster nodes.
 * A `KafkaUser` resource to enable authenticated and authorized console connections to the Kafka cluster.
+* Metrics configuration on the Kafka cluster, using the JMX Prometheus exporter (`spec.kafka.metricsConfig`) and an associated metrics `ConfigMap`, so that the console can display metrics. If you use your own Kafka cluster, you must configure this yourself.
 
 The `KafkaUser` custom resource in the `040-KafkaUser-console-kafka-user1.yaml` file includes the necessary ACL types to provide authorized access for the console to the Kafka cluster.
 

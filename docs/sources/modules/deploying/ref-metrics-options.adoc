@@ -41,7 +41,22 @@ Content may be provided using a `ConfigMap` or a `Secret`.
 Assign the metrics source to a Kafka cluster using the `kafkaClusters.metricsSource` property.
 The value of `metricsSource` is the `name` of the entry in the `metricsSources` array.
 
-The configuration for `openshift-monitoring` and `embedded` requires no further configuration besides the `type`. 
+The `metricsSources` entry for `openshift-monitoring` and `embedded` requires no properties besides the `type` (and, for `openshift-monitoring`, `authentication`).
+However, this configuration only tells the console where to _read_ metrics from.
+In all cases, you must separately configure each Kafka cluster to _expose_ Prometheus metrics; the console does not do this for you.
+
+[NOTE]
+====
+Regardless of the metrics source type, each `Kafka` resource must expose Prometheus metrics through the `spec.kafka.metricsConfig` property, as shown in the example `Kafka` (`console-kafka`) and `ConfigMap` (`console-kafka-metrics`) resources in `examples/kafka`.
+The console reads these metrics but does not configure metrics exposure on the Kafka cluster.
+For more information, see link:{BookURLConfiguring}#con-common-configuration-prometheus-reference[configuring metrics in the Strimzi documentation^].
+
+The responsibility for scraping the exposed metrics into Prometheus depends on the source type:
+
+* `embedded`: the operator deploys a private Prometheus instance that automatically scrapes the metrics endpoints exposed by your Strimzi-managed Kafka clusters. You must still enable `metricsConfig` on each `Kafka` resource. Using embedded metrics is intended for development and evaluation only, not for production environments.
+* `openshift-monitoring`: you must also enable monitoring for user-defined projects in OpenShift and provide a `PodMonitor` to scrape the Kafka pods, as shown in `examples/prometheus/040-PodMonitor-kafka-resources.yaml`. See the https://docs.openshift.com/container-platform/latest/observability/monitoring/enabling-monitoring-for-user-defined-projects.html[OpenShift documentation on enabling monitoring for user-defined projects^].
+* `standalone`: your Prometheus instance must be configured to scrape the Kafka pods and be accessible from the console.
+====
 
 .Example metrics configuration for Openshift monitoring
 [source,yaml]
@@ -98,7 +113,7 @@ spec:
     - name: console-kafka
       namespace: kafka
       listener: secure
-      metricsSource: my-ocp-prometheus
+      metricsSource: my-custom-prometheus
       credentials:
         kafkaUser:
           name: console-kafka-user1
