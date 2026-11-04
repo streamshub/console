@@ -16,6 +16,8 @@ interface ReconciliationControlsProps {
   cluster: KafkaCluster | undefined;
 }
 
+const OUIA_ID = 'reconciliation-controls';
+
 export function ReconciliationControls({
   cluster,
 }: ReconciliationControlsProps) {
@@ -26,7 +28,9 @@ export function ReconciliationControls({
   const isReconciliationPaused = cluster?.meta?.reconciliationPaused ?? false;
   const canUpdate = hasPrivilege('UPDATE', cluster);
 
-  const { mutate: patchKafkaCluster, isPending } = usePatchKafkaCluster(cluster?.id);
+  const { mutate: patchKafkaCluster, isPending } = usePatchKafkaCluster(
+    cluster?.id
+  );
 
   if (!cluster || !isManaged) {
     return null;
@@ -43,7 +47,10 @@ export function ReconciliationControls({
   return (
     <>
       {isReconciliationPaused && (
-        <Banner color="yellow">
+        <Banner
+          data-ouia-component-id={`${OUIA_ID}-paused-banner`}
+          color="yellow"
+        >
           <Bullseye>
             <Flex spaceItems={{ default: 'spaceItemsMd' }}>
               <FlexItem spacer={{ default: 'spacerNone' }}>
@@ -55,6 +62,7 @@ export function ReconciliationControls({
                   style={{ marginLeft: '0.75rem' }}
                 >
                   <Button
+                    ouiaId={`${OUIA_ID}-resume`}
                     variant="link"
                     isInline
                     onClick={() => setIsModalOpen(true)}
