@@ -707,12 +707,11 @@ class GroupsResourceIT {
                 .listOffsets(anyMap());
         });
 
-        String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
-        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+        try (var consumer = groupUtils.consume(group1, client1, 2, 1)) {
             await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> GroupState.STABLE == groupUtils.consumerGroupState(group1));
 
