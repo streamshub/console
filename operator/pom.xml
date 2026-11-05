@@ -111,6 +111,60 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>download-and-unzip-dex-crds</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- Step 1: Read the Dockerfile and extract the version -->
+                                <loadfile srcfile="${project.basedir}/src/main/docker/dex.Dockerfile" property="dex.version">
+                                    <filterchain>
+                                        <!-- Keep only the line starting with FROM and pointing to dex -->
+                                        <linecontainsregexp>
+                                            <regexp pattern="(?i)^FROM\s+.*dexidp/dex:v?([0-9.]+)" />
+                                        </linecontainsregexp>
+                                        <!-- Extract the version and explicitly discard everything after it, including @sha256:... -->
+                                        <tokenfilter>
+                                            <replaceregex pattern="(?i)^FROM\s+.*?dexidp/dex:v?([0-9.]+)(?:@sha256:[a-fA-F0-9]+)?.*" replace="\1" />
+                                        </tokenfilter>
+                                        <!-- Clean up trailing newlines -->
+                                        <striplinebreaks/>
+                                    </filterchain>
+                                </loadfile>
+
+                                <!-- Print it out to verify it works during compilation -->
+                                <echo message="Extracted Dex Version from Dockerfile: ${dex.version}" />
+
+                                <!-- Step 2: Proceed with the download using the dynamic property -->
+                                <mkdir dir="${project.build.directory}/dex-crds" />
+
+                                <get src="https://github.com/dexidp/dex/archive/refs/tags/v${dex.version}.tar.gz"
+                                     dest="${project.build.directory}/dex-v${dex.version}.tar.gz"
+                                     skipexisting="true"
+                                     verbose="true" />
+
+                                <!-- Step 3: Untar and extract only the target manifests directory -->
+                                <untar src="${project.build.directory}/dex-v${dex.version}.tar.gz"
+                                       dest="${project.build.directory}/dex-crds"
+                                       compression="gzip">
+                                    <patternset>
+                                        <include name="dex-${dex.version}/scripts/manifests/crds/**" />
+                                    </patternset>
+                                    <cutdirsmapper dirs="4" />
+                                </untar>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <annotationProcessorPaths>

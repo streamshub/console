@@ -86,7 +86,13 @@ mvn clean package -Pcontainer-image -B --no-transfer-progress -DskipTests -Dskip
   -Dcontainer-image.push=false \
   "${BUILDX_PLATFORM_ARGS[@]}"
 
-echo "Building OLM bundle metadata..."
+echo "Building console-dexidp image..."
+"${CONTAINER_RUNTIME}" build \
+  "${BUILD_LOAD_ARGS[@]}" \
+  -t "${IMAGE_PREFIX}/console-dexidp:${TAG}" \
+  -f operator/src/main/docker/dex.Dockerfile
+
+echo "Updating OLM bundle metadata..."
 ./operator/bin/modify-bundle-metadata.sh \
   "VERSION=${TAG}" \
   "SKOPEO_TRANSPORT=${SKOPEO_TRANSPORT}" \
@@ -118,7 +124,7 @@ echo "Building console-operator-catalog image..."
 
 echo ""
 echo "Built images (local only, not pushed):"
-for img in console-api console-operator console-operator-bundle console-operator-catalog; do
+for img in console-api console-dexidp console-operator console-operator-bundle console-operator-catalog; do
   echo "  ${IMAGE_PREFIX}/${img}:${TAG}"
 done
 echo ""

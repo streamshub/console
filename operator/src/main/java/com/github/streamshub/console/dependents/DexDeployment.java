@@ -1,5 +1,6 @@
 package com.github.streamshub.console.dependents;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -43,6 +44,10 @@ public class DexDeployment extends BaseDeployment {
     @ConfigProperty(name = "console.deployment.dex-image")
     String dexImage;
 
+    @Inject
+    @ConfigProperty(name = "console.deployment.dex-command")
+    List<String> dexCommand;
+
     public DexDeployment() {
         super(NAME);
     }
@@ -77,6 +82,7 @@ public class DexDeployment extends BaseDeployment {
                         .endVolume()
                         .editMatchingContainer(c -> "dex".equals(c.getName()))
                             .withImage(dexImage)
+                            .withCommand(dexCommand)
                         .endContainer()
                     .endSpec()
                 .endTemplate()
