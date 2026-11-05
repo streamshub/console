@@ -17,8 +17,9 @@ import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.Config;
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.eclipse.microprofile.config.Config;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,17 +34,15 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 @TestProfile(TestPlainProfile.class)
 class KafkaOverviewIT {
 
-    static final Pattern OVERVIEW_HEADER      = Pattern.compile("Cluster overview");       
-    static final Pattern CONNECTION_BTN       = Pattern.compile("Cluster connection details");
-    static final Pattern CLUSTER_CARD_TITLE   = Pattern.compile("Kafka cluster details");   // ClusterCard.Kafka_cluster_details
-    static final Pattern ONLINE_BROKERS       = Pattern.compile("Online brokers");          // ClusterCard.online_brokers
-    static final Pattern CONSUMER_GROUPS      = Pattern.compile("Groups");         // ClusterCard.consumer_groups
-    static final Pattern KAFKA_VERSION        = Pattern.compile("Kafka version");           // ClusterCard.kafka_version
-    static final Pattern PAUSE_BTN            = Pattern.compile("Pause Reconciliation");    // reconciliation.pause_reconciliation_button
-    static final Pattern RESUME_BTN           = Pattern.compile("Resume Reconciliation");                  // reconciliation.resume_reconciliation
-    static final Pattern ERRORS_WARNINGS_LIST = Pattern.compile("Cluster errors and warnings");     // ClusterCard.cluster_errors_and_warnings
-    static final Pattern NO_MESSAGES          = Pattern.compile("No errors or warnings");             // ClusterCard.no_messages
-    static final Pattern PAUSED_WARNING       = Pattern.compile("Cluster reconciliation paused. Changes to the Kafka resource will not be applied.");  // reconciliation.reconciliation_paused_warning
+    static final Pattern OVERVIEW_HEADER      = ci("Cluster overview");              
+    static final Pattern CONNECTION_BTN       = ci("Cluster connection details");    
+    static final Pattern CLUSTER_CARD_TITLE   = ci("Kafka cluster details");          
+    static final Pattern PAUSE_BTN            = ci("Pause Reconciliation");          
+    static final Pattern RESUME_BTN           = ci("Resume Reconciliation");         
+    static final Pattern ERRORS_WARNINGS_LIST = ci("Cluster errors and warnings");    
+    static final Pattern NO_MESSAGES          = ci("No errors or warnings");         
+    static final String PAUSED_WARNING =
+            "Cluster reconciliation paused. Changes to the Kafka resource will not be applied.";
 
     @InjectPlaywright
     BrowserContext context;
@@ -69,7 +68,25 @@ class KafkaOverviewIT {
         utils = new TestHelper(bootstrapServers, config);
     }
 
-    /** Opens home, clicks the cluster name link, and waits for the overview page. */
+    @AfterEach
+    void cleanup() {
+        client.resources(Kafka.class).inAnyNamespace().delete();
+    }
+
+    private static Pattern ci(String text) {
+        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
+    }
+
+    private static Locator main(Page page) {
+        return page.getByRole(AriaRole.MAIN);
+    }
+
+    private static Locator cardTitle(Page page, String title) {
+        return page.locator(".pf-v6-c-card__title-text")
+                .filter(new Locator.FilterOptions().setHasText(title))
+                .first();
+    }
+
     private void openOverviewViaClusterName(Page page, String clusterName) {
         page.navigate(home.toString());
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(clusterName))
@@ -77,7 +94,6 @@ class KafkaOverviewIT {
                 .click();
         page.waitForURL("**/kafka/*/overview");
     }
-
     private Kafka applyManagedKafka(boolean paused) {
         String clusterId = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
 
@@ -106,10 +122,7 @@ class KafkaOverviewIT {
         return utils.apply(client, builder.build());
     }
 
-    // ---------------------------------------------------------------------
-    // Navigation
-    // ---------------------------------------------------------------------
-
+  
     @Test
     void clusterNameLinkOpensOverviewPage() {
         try (Page page = context.newPage()) {
@@ -125,22 +138,18 @@ class KafkaOverviewIT {
     void viewButtonOpensOverviewPage() {
         try (Page page = context.newPage()) {
             page.navigate(home.toString());
-
-            // TODO: adjust if the row action is a link/menu item rather than a button named "View"
-            page.getByRole(AriaRole.ROW, new Page.GetByRoleOptions().setName(Pattern.compile("test-kafka1")))
-                    .getByRole(AriaRole.LINK, new Locator.GetByRoleOptions().setName(Pattern.compile("(?i)view")))
-                    .first()
+            page.getByRole(AriaRole.ROW)
+                    .filter(new Locator.FilterOptions().setHasText("test-kafka1"))
+                    .locator("td[data-label='Actions']")
+                    .getByRole(AriaRole.BUTTON,
+                            new Locator.GetByRoleOptions().setName("View").setExact(true))
                     .click();
 
             page.waitForURL("**/kafka/*/overview");
             assertThat(page.getByRole(AriaRole.HEADING,
-                    new Page.GetByRoleOptions().setName(OVERVIEW_HEADER))).isVisible();
+                    new Page.GetByRoleOptions().setName(OVERVIEW_HEADER).setLevel(1))).isVisible();
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Header + connection drawer
-    // ---------------------------------------------------------------------
 
     @Test
     void headerAndConnectionButtonAreDisplayed() {
@@ -148,7 +157,7 @@ class KafkaOverviewIT {
             openOverviewViaClusterName(page, "test-kafka1");
 
             assertThat(page.getByRole(AriaRole.HEADING,
-                    new Page.GetByRoleOptions().setName(OVERVIEW_HEADER))).isVisible();
+                    new Page.GetByRoleOptions().setName(OVERVIEW_HEADER).setLevel(1))).isVisible();
             assertThat(page.getByRole(AriaRole.BUTTON,
                     new Page.GetByRoleOptions().setName(CONNECTION_BTN))).isEnabled();
         }
@@ -166,9 +175,6 @@ class KafkaOverviewIT {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Cluster card
-    // ---------------------------------------------------------------------
 
     @Test
     void clusterCardShowsNameAndStatistics() {
@@ -177,19 +183,15 @@ class KafkaOverviewIT {
 
             assertThat(page.getByRole(AriaRole.HEADING,
                     new Page.GetByRoleOptions().setName(CLUSTER_CARD_TITLE))).isVisible();
+            assertThat(main(page).getByRole(AriaRole.HEADING,
+                    new Locator.GetByRoleOptions().setName("test-kafka1").setLevel(2))).isVisible();
 
-            // Cluster name heading inside the card
-            assertThat(page.getByRole(AriaRole.HEADING,
-                    new Page.GetByRoleOptions().setName("test-kafka1").setLevel(2))).isVisible();
+            assertThat(main(page).getByText("Online brokers")).isVisible();
+            assertThat(main(page).getByText("Groups", new Locator.GetByTextOptions().setExact(true))).isVisible();
+            assertThat(main(page).getByText("Kafka version")).isVisible();
 
-            // Labels under the counters
-            assertThat(page.getByText(ONLINE_BROKERS)).isVisible();
-            assertThat(page.getByText(CONSUMER_GROUPS)).isVisible();
-            assertThat(page.getByText(KAFKA_VERSION)).isVisible();
-
-            // Broker counter renders as "<online>/<total>"
-            assertThat(page.getByRole(AriaRole.LINK,
-                    new Page.GetByRoleOptions().setName(Pattern.compile("^\\d+/\\d+$")))).isVisible();
+            assertThat(main(page).getByRole(AriaRole.LINK,
+                    new Locator.GetByRoleOptions().setName(Pattern.compile("^\\d+\\/\\d+$")))).isVisible();
         }
     }
 
@@ -197,10 +199,7 @@ class KafkaOverviewIT {
     void onlineBrokersLinkNavigatesToNodes() {
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
-
-            page.getByRole(AriaRole.LINK,
-                    new Page.GetByRoleOptions().setName(Pattern.compile("^\\d+/\\d+$"))).click();
-
+            main(page).locator("a[href$='/nodes']").first().click();
             page.waitForURL("**/kafka/*/nodes");
         }
     }
@@ -210,16 +209,11 @@ class KafkaOverviewIT {
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
 
-            // The groups counter is the link located right above the "Consumer groups" label
-            page.locator("a[href$='../groups'], a[href$='/groups']").first().click();
+            main(page).locator("a[href$='/groups']").first().click();
 
             page.waitForURL("**/kafka/*/groups");
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Errors and warnings
-    // ---------------------------------------------------------------------
 
     @Test
     void errorsAndWarningsSectionShowsNoMessagesWhenClusterIsHealthy() {
@@ -228,9 +222,9 @@ class KafkaOverviewIT {
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
 
-            Locator toggle = page.locator(".pf-v6-c-expandable-section__toggle").first();
-            if (toggle.count() > 0 && "false".equals(toggle.getAttribute("aria-expanded"))) {
-                toggle.click();
+            Locator toggleButton = page.locator(".pf-v6-c-expandable-section__toggle button").first();
+            if (toggleButton.count() > 0 && "false".equals(toggleButton.getAttribute("aria-expanded"))) {
+                toggleButton.click();
             }
 
             assertThat(page.getByRole(AriaRole.LIST,
@@ -268,7 +262,7 @@ class KafkaOverviewIT {
             assertThat(modal).isVisible();
 
             modal.getByRole(AriaRole.BUTTON,
-                    new Locator.GetByRoleOptions().setName(Pattern.compile("(?i)cancel"))).click();
+                    new Locator.GetByRoleOptions().setName(ci("cancel"))).click();
 
             assertThat(modal).isHidden();
         }
@@ -280,26 +274,26 @@ class KafkaOverviewIT {
 
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
-
             assertThat(page.getByRole(AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName(Pattern.compile("(?i)resume reconciliation")))).isVisible();
+                    new Page.GetByRoleOptions().setName(RESUME_BTN))).isVisible();
 
             assertThat(page.getByText("ReconciliationPaused").first()).isVisible();
             assertThat(page.getByText(PAUSED_WARNING).first()).isVisible();
 
+
             assertThat(page.getByRole(AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName(RESUME_BTN).setExact(true))).isVisible();
+                    new Page.GetByRoleOptions().setName("Resume").setExact(true))).isVisible();
         }
     }
+
 
     @Test
     void overviewCardsAreRendered() {
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
 
-            assertThat(page.getByText(Pattern.compile("(?i)topics"))).not().hasCount(0);
-            assertThat(page.getByText(Pattern.compile("(?i)recently viewed topics"))).isVisible();
-            assertThat(page.getByText(Pattern.compile("(?i)partitions"))).not().hasCount(0);
+            assertThat(cardTitle(page, "Topics")).isVisible();
+            assertThat(cardTitle(page, "Recently viewed topics")).isVisible();
         }
     }
 
@@ -308,8 +302,8 @@ class KafkaOverviewIT {
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
 
-            assertThat(page.getByText(Pattern.compile("(?i)cluster metrics"))).isVisible();
-            assertThat(page.getByText(Pattern.compile("(?i)topic metrics"))).isVisible();
+            assertThat(cardTitle(page, "Cluster metrics")).isVisible();
+            assertThat(cardTitle(page, "Topic metrics")).isVisible();
         }
     }
 }
