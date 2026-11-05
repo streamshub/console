@@ -90,7 +90,8 @@ echo "Building console-dexidp image..."
 "${CONTAINER_RUNTIME}" build \
   "${BUILD_LOAD_ARGS[@]}" \
   -t "${IMAGE_PREFIX}/console-dexidp:${TAG}" \
-  -f operator/src/main/docker/dex.Dockerfile
+  -f operator/src/main/docker/dex.Dockerfile \
+  .
 
 echo "Updating OLM bundle metadata..."
 ./operator/bin/modify-bundle-metadata.sh \
