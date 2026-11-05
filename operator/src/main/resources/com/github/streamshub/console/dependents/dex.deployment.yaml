@@ -26,8 +26,7 @@ spec:
                 path: openshift.pem
       containers:
         - name: dex
-          image: ghcr.io/dexidp/dex:v2.46.1
-          command: [ 'dex', 'serve', '/etc/dex/cfg/config.yaml' ]
+          image: placeholder
           ports:
             # May be either HTTP or HTTPS depending on configuration
             - name: http

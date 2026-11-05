@@ -107,7 +107,8 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
                       "storage": {
                         "type": "kubernetes",
                         "config": {
-                          "inCluster": true
+                          "inCluster": true,
+                          "crdHandling": "check"
                         }
                       },
                       "web": {
@@ -606,7 +607,8 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
                       "storage": {
                         "type": "kubernetes",
                         "config": {
-                          "inCluster": true
+                          "inCluster": true,
+                          "crdHandling": "check"
                         }
                       },
                       "web": {

@@ -18,8 +18,8 @@ import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
-import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import com.github.streamshub.console.api.v1alpha1.status.Condition.Types;
+import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import com.github.streamshub.console.dependents.ConfigurationProcessor;
 import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
@@ -34,11 +34,9 @@ import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.ConsoleServiceAccount;
 import com.github.streamshub.console.dependents.ConsoleServiceAccountAccessReview;
 import com.github.streamshub.console.dependents.ConsoleTrustBundle;
-import com.github.streamshub.console.dependents.DexClusterRole;
-import com.github.streamshub.console.dependents.DexClusterRoleBinding;
+import com.github.streamshub.console.dependents.DexDeployment;
 import com.github.streamshub.console.dependents.DexRole;
 import com.github.streamshub.console.dependents.DexRoleBinding;
-import com.github.streamshub.console.dependents.DexDeployment;
 import com.github.streamshub.console.dependents.DexRoute;
 import com.github.streamshub.console.dependents.DexSecret;
 import com.github.streamshub.console.dependents.DexService;
@@ -169,11 +167,6 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     reconcilePrecondition = DexPrecondition.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
-                    name = DexClusterRole.NAME,
-                    type = DexClusterRole.class,
-                    reconcilePrecondition = DexPrecondition.class,
-                    dependsOn = ConfigurationProcessor.NAME),
-            @Dependent(
                     name = DexRole.NAME,
                     type = DexRole.class,
                     reconcilePrecondition = DexPrecondition.class,
@@ -203,14 +196,6 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     type = ConsoleMonitoringClusterRoleBinding.class,
                     reconcilePrecondition = ConsoleMonitoringClusterRoleBinding.Precondition.class,
                     dependsOn = ConfigurationProcessor.NAME),
-            @Dependent(
-                    name = DexClusterRoleBinding.NAME,
-                    type = DexClusterRoleBinding.class,
-                    reconcilePrecondition = DexPrecondition.class,
-                    dependsOn = {
-                        DexClusterRole.NAME,
-                        DexServiceAccount.NAME
-                    }),
             @Dependent(
                     name = DexRoleBinding.NAME,
                     type = DexRoleBinding.class,
@@ -245,7 +230,6 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     reconcilePrecondition = DexPrecondition.class,
                     dependsOn = {
                         ConfigurationProcessor.NAME,
-                        DexClusterRoleBinding.NAME,
                         DexRoleBinding.NAME
                     }),
             @Dependent(
@@ -277,7 +261,6 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     reconcilePrecondition = DexPrecondition.class,
                     readyPostcondition = DeploymentReadyCondition.class,
                     dependsOn = {
-                        DexClusterRoleBinding.NAME,
                         DexRoleBinding.NAME,
                         DexSecret.NAME,
                         DexService.NAME

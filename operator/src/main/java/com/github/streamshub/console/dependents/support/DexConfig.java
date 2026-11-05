@@ -49,7 +49,11 @@ public record DexConfig(
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record StorageConfig(boolean inCluster) {
+    public record StorageConfig(boolean inCluster, String crdHandling) {
+        public StorageConfig(boolean inCluster) {
+            // Only check that the CRDs are present
+            this(inCluster, "check");
+        }
     }
 
     /**
