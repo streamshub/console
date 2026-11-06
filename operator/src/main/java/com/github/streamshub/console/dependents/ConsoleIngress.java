@@ -118,7 +118,7 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
             .endSpec()
             .build();
 
-        if (ConsoleTlsSecret.required(primary, context)) {
+        if (ConsoleTlsSecret.required(primary)) {
             ingress = ingress.edit()
                 .editSpec()
                     .addNewTl()

@@ -36,11 +36,11 @@ public class ConsoleTlsSecret extends BaseSecret {
         public boolean isMet(DependentResource<Secret, Console> dependentResource,
                 Console primary,
                 Context<Console> context) {
-            return required(primary, context);
+            return required(primary);
         }
     }
 
-    public static boolean required(Console primary, Context<Console> context) {
+    public static boolean required(Console primary) {
         return ConfigSupport.dexIntegrationEnabled(primary)
                 && primary.getSpec().getTls() != null;
     }
