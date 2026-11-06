@@ -1,0 +1,10 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: console-dex
+rules:
+  # Dex storage objects are namespaced and only need to be accessible in the
+  # namespace where the Dex instance runs
+  - apiGroups: [ 'dex.coreos.com' ]
+    resources: [ '*' ]
+    verbs: [ '*' ]

@@ -23,6 +23,8 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class KeycloakResourceManager extends ResourceManagerBase implements QuarkusTestResourceLifecycleManager {
 
+    public static final int HTTPS_PORT = 8443;
+    private static final int HTTP_PORT = 8080;
     GenericContainer<?> keycloak;
 
     @Override
@@ -37,8 +39,6 @@ public class KeycloakResourceManager extends ResourceManagerBase implements Quar
         }
 
         String alias = "keycloak";
-        int httpPort = 8080;
-        int httpsPort = 8443;
         TlsHelper tls = TlsHelper.newInstance(alias);
         String keystorePath = "/opt/keycloak/keystore.p12";
         String keycloakImage;
@@ -55,7 +55,7 @@ public class KeycloakResourceManager extends ResourceManagerBase implements Quar
                 .withCreateContainerCmdModifier(setContainerName("keycloak"))
                 .withNetwork(SHARED_NETWORK)
                 .withNetworkAliases(alias)
-                .withExposedPorts(httpPort, httpsPort)
+                .withExposedPorts(HTTP_PORT, HTTPS_PORT)
                 .withEnv(Map.of(
                         "KC_BOOTSTRAP_ADMIN_USERNAME", "admin",
                         "KC_BOOTSTRAP_ADMIN_PASSWORD", "admin",
@@ -72,17 +72,17 @@ public class KeycloakResourceManager extends ResourceManagerBase implements Quar
                         "/opt/keycloak/data/import/console-authz.json")
                 .withCommand(
                         "start",
-                        "--hostname=https://localhost:%d".formatted(httpsPort),
+                        "--hostname=https://localhost:%d".formatted(HTTPS_PORT),
                         "--hostname-backchannel-dynamic=true",
                         "--http-enabled=true",
-                        "--https-port=%d".formatted(httpsPort),
+                        "--https-port=%d".formatted(HTTPS_PORT),
                         "--https-key-store-file=%s".formatted(keystorePath),
                         "--https-key-store-password=%s".formatted(String.copyValueOf(tls.getPassphrase())),
                         "--import-realm",
                         "--verbose"
                 )
                 .waitingFor(Wait.forHttps("/realms/console-authz")
-                        .forPort(httpsPort)
+                        .forPort(HTTPS_PORT)
                         .allowInsecure()
                         .withStartupTimeout(Duration.ofMinutes(1)));
 
@@ -98,15 +98,19 @@ public class KeycloakResourceManager extends ResourceManagerBase implements Quar
 
         keycloak.start();
 
+        String httpUrlTemplate = "http://localhost:%d/realms/console-authz";
+        var httpOidcUrl = httpUrlTemplate.formatted(keycloak.getMappedPort(HTTP_PORT));
+
         String httpsUrlTemplate = "https://localhost:%d/realms/console-authz";
-        var httpsOidcUrl = httpsUrlTemplate.formatted(keycloak.getMappedPort(httpsPort));
+        var httpsOidcUrl = httpsUrlTemplate.formatted(keycloak.getMappedPort(HTTPS_PORT));
 
         return Map.of(
-                "console.test.oidc-url-plain", "http://localhost:%d/realms/console-authz".formatted(keycloak.getMappedPort(httpPort)),
+                "console.test.oidc-url-plain", httpOidcUrl,
                 "console.test.oidc-url", httpsOidcUrl,
-                "console.test.oidc-url-internal", "https://%s:%d".formatted(alias, httpsPort),
-                "console.test.oidc-host", "localhost:%d".formatted(httpsPort),
-                "console.test.oidc-issuer", httpsUrlTemplate.formatted(httpsPort),
+                // Used by other test containers (e.g. Apicurio)
+                "console.test.oidc-url-internal", "https://%s:%d".formatted(alias, HTTPS_PORT),
+                "console.test.oidc-host", "localhost:%d".formatted(HTTPS_PORT),
+                "console.test.oidc-issuer", httpsUrlTemplate.formatted(HTTPS_PORT),
                 "console.test.oidc-realm", "console-authz",
                 "console.test.oidc-trust-store.type", TrustStoreConfig.Type.JKS.name(),
                 "console.test.oidc-trust-store.path", truststoreFile.getAbsolutePath(),

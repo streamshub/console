@@ -233,7 +233,7 @@ mechanism (port-forward or tunnel) is currently running.
 
 ### `common/build-console.sh [--registry localhost:5000] [--group streamshub] [--tag <tag>]`
 
-Builds the Console images (`console-api`, `console-operator`,
+Builds the Console images (`console-api`, `console-dexidp`, `console-operator`,
 `console-operator-bundle`, `console-operator-catalog`) from local source via
 Maven + the bundle/catalog build scripts under `operator/bin/` — mirrors the
 build half of the project's old `systemtests/scripts/setup-minikube.sh`.

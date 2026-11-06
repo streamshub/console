@@ -5,20 +5,23 @@
 // assembly-deploying.adoc
 
 [id='ref-authentication-options-{context}']
-= Using an OIDC provider to secure access to Kafka clusters
+= Securing access to the console and Kafka clusters
 
 [role="_abstract"]
-Enable secure console connections to Kafka clusters using an OIDC provider.
-Configure the console deployment to configure connections to any Identity Provider (IdP), such as Keycloak or Dex, that supports OpenID Connect (OIDC).
+Enable secure console access and connections to Kafka clusters using an external OIDC provider or by configuring upstream identity providers via the built-in identity broker (Dex).
+Configure the console deployment to connect to an external Identity Provider (IdP) that supports OpenID Connect (OIDC), or configure built-in identity providers for OpenShift OAuth or LDAP.
 Also define the subjects and roles for user authorization.
-To use group-based authorization as shown in the examples, configure an OIDC provider that includes a group membership claim, such as `groups`, in the generated access tokens.
+To use group-based authorization as shown in the examples, configure an OIDC provider or identity provider that includes a group membership claim, such as `groups`, in the generated access tokens.
 The security profiles can be configured for all Kafka cluster connections on a global level, though you can add roles and rules for specific Kafka clusters.
 
-An example configuration is provided in the following file: `examples/console/console-security-oidc.yaml`.
+Example configurations are provided in:
+* `examples/console/console-security-oidc.yaml` for external OIDC providers.
+* `examples/console/authentication/openshift/console.yaml` for OpenShift OAuth integration.
+* `examples/console/authentication/ldap/console.yaml` for LDAP integration.
 
 The configuration introduces the following additional properties for console deployment:
 
-`security`:: Properties that define the connection details for the console to connect with the OIDC provider.
+`security`:: Properties that define connection details for external OIDC providers or configured identity providers.
 `subjects`:: Specifies the subjects (users or groups) and their roles in terms of JWT claims or explicit subject names, determining access permissions.
 `roles`:: Defines the roles and associated access rules for users, specifying which resources (like Kafka clusters) they can interact with and what operations they are permitted to perform.
 
@@ -221,3 +224,149 @@ oidc:
 
 absoluteExpiresIn::
 Optional boolean. If set to `true`, the `expires_in` token property is treated as an absolute timestamp instead of a duration.
+
+== Configuring identity sources using the built-in identity broker
+
+When you configure an identity source using `spec.security.openshift` or `spec.security.ldap`, the operator automatically deploys and manages an embedded Dex instance acting as an identity broker.
+Dex authenticates users against OpenShift OAuth or an LDAP directory and issues standard OIDC tokens to the console.
+
+The `oidc`, `openshift`, and `ldap` fields under `spec.security` are mutually exclusive.
+
+=== OpenShift OAuth authentication
+
+You can integrate console authentication with OpenShift's native OAuth server using `spec.security.openshift`.
+
+When `spec.security.openshift` is configured:
+
+* The operator deploys a Dex instance configured with the OpenShift connector.
+* Dex uses a dedicated `ServiceAccount` and projected token credentials to communicate with OpenShift OAuth.
+* OpenShift users and groups are passed through to the console as OIDC claims.
+* Internal communication between the router, Dex, and the console pod is secured using `reencrypt` TLS with certificates issued by OpenShift's service CA.
+
+==== Prerequisites
+* OpenShift 4.19 or later (or clusters with the `RouteExternalCertificate` feature gate enabled).
+
+==== Example Console configuration with OpenShift OAuth
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  security:
+    openshift:
+      groups:
+        - developers
+        - cluster-admins
+    subjects:
+      - claim: groups
+        include:
+          - cluster-admins
+        roleNames:
+          - administrators
+      - claim: groups
+        include:
+          - developers
+        roleNames:
+          - developers
+    roles:
+      - name: administrators
+        rules:
+          - resources:
+              - kafkas
+            privileges:
+              - 'ALL'
+      - name: developers
+        rules:
+          - resources:
+              - kafkas
+            privileges:
+              - GET
+              - LIST
+----
+
+* `security.openshift.groups` optionally restricts logins to members of the listed OpenShift groups. If omitted or empty, all authenticated OpenShift users are allowed to log in.
+* `security.openshift.insecureCA` optionally disables TLS certificate verification when communicating with the OpenShift API server (default is `false`).
+* `security.openshift.trustStore` optionally defines a custom trust store containing CA certificates if the OpenShift API server uses certificates signed by an untrusted CA.
+
+=== LDAP authentication
+
+You can integrate console authentication with an LDAP directory using `spec.security.ldap`.
+
+When `spec.security.ldap` is configured:
+
+* The operator deploys a Dex instance configured with the LDAP connector.
+* Dex searches for users and group memberships based on the configured LDAP queries.
+* On plain Kubernetes, TLS is terminated at the Ingress controller and traffic behind the Ingress uses plain HTTP.
+* On OpenShift, TLS is re-encrypted using OpenShift service CA certificates.
+
+==== Example Console configuration with LDAP
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  security:
+    ldap:
+      host: ldap.example.com:636
+      bindDN: uid=serviceaccount,ou=users,dc=example,dc=com
+      bindSecret:
+        valueFrom:
+          secretKeyRef:
+            name: ldap-bind-secret
+            key: password
+      userSearch:
+        baseDN: ou=users,dc=example,dc=com
+        filter: "(objectClass=person)"
+        username: mail
+        idAttr: uid
+        emailAttr: mail
+        nameAttr: cn
+        preferredUsernameAttr: uid
+      groupSearch:
+        baseDN: ou=groups,dc=example,dc=com
+        filter: "(objectClass=groupOfNames)"
+        userMatchers:
+          - userAttr: DN
+            groupAttr: member
+        nameAttr: cn
+    subjects:
+      - claim: groups
+        include:
+          - kafka-admins
+        roleNames:
+          - administrators
+    roles:
+      - name: administrators
+        rules:
+          - resources:
+              - kafkas
+            privileges:
+              - 'ALL'
+----
+
+* `security.ldap.host` (required) specifies the host and port of the LDAP server (e.g. `ldap.example.com:636` for LDAPS or `ldap.example.com:389` for plain/StartTLS).
+* `security.ldap.bindDN` specifies the DN used to bind to the directory for user and group searches.
+* `security.ldap.bindSecret` specifies the password for `bindDN` as a direct `value` or via `valueFrom.secretKeyRef`.
+* `security.ldap.insecureNoSSL` specifies whether to connect without TLS encryption (default `false`). Mutually exclusive with `startTLS` and `trustStore`.
+* `security.ldap.insecureSkipVerify` specifies whether to skip TLS certificate verification (default `false`). Mutually exclusive with `trustStore`.
+* `security.ldap.startTLS` specifies whether to initiate a StartTLS upgrade on a plain connection instead of using LDAPS (default `false`). Mutually exclusive with `insecureNoSSL`.
+* `security.ldap.trustStore` optionally defines a custom trust store to validate the LDAP server certificate.
+* `security.ldap.userSearch` defines how users are located during authentication:
+** `baseDN`: Base distinguished name for user searches.
+** `filter`: Search filter combined with the username attribute query.
+** `username`: Attribute users enter at the login prompt (e.g. `mail` or `uid`).
+** `idAttr`: Attribute used as the unique user identifier.
+** `emailAttr`: (Required) Attribute mapped to the user email.
+** `nameAttr`: Optional attribute mapped to the user's display name.
+** `preferredUsernameAttr`: Optional attribute mapped to the user's preferred username.
+* `security.ldap.groupSearch` defines how group memberships are resolved:
+** `baseDN`: Base distinguished name for group searches.
+** `filter`: Search filter combined with the user matching query.
+** `userMatchers`: Matches user attributes to group attributes (e.g. `userAttr: DN` with `groupAttr: member`).
+** `nameAttr`: Attribute containing the group name, which maps to values in `security.subjects`.

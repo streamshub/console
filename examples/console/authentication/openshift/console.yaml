@@ -1,0 +1,43 @@
+#
+# This example demonstrates the use of OpenShift OAuth at `.spec.security.openshift`
+# for user authentication in the console. When OpenShift security is configured, the operator
+# deploys and manages a Dex identity broker configured with the OpenShift connector, using
+# OpenShift's internal OAuth server and service account tokens, and configures the console
+# to use Dex as its OIDC provider.
+#
+# Dex and the Console on OpenShift use re-encrypt TLS with certificates automatically issued
+# and rotated by OpenShift's service CA controller.
+#
+# Note: On OpenShift, `.spec.hostname` is optional; if omitted, OpenShift automatically assigns
+# a route hostname based on the route name, namespace, and cluster ingress domain.
+#
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  # Optional: hostname: example-console.apps.cluster.example.com
+  # See examples/console for other sample Kafka cluster configuration. This example resource
+  # intentionally leaves kafkaClusters empty to focus on the OpenShift security configuration.
+  kafkaClusters: []
+  security:
+    openshift:
+      groups:
+        - developers
+        - cluster-admins
+    roles:
+      - name: console-role
+        rules:
+          - privileges:
+              - GET
+              - LIST
+            resourceNames:
+              - '*'
+            resources:
+              - kafkas
+    subjects:
+      - claim: groups
+        include:
+          - developers
+        roleNames:
+          - console-role

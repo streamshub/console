@@ -91,12 +91,23 @@ jobs:
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
             -Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}
 
+      # ==================== Dex IdP ====================
+      - name: Build Custom Dex IdP Image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          platforms: ${{ env.PLATFORMS }}
+          provenance: false
+          push: true
+          file: operator/src/main/docker/dex.Dockerfile
+          tags: |
+            localhost:5000/streamshub/console-dexidp:${{ env.PROJECT_VERSION }}
+
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
         run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.PROJECT_VERSION }}" "PLATFORMS=${{ env.PLATFORMS }}"
 
       - name: Build Operator Bundle Image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: operator/target/bundle/streamshub-console-operator/
           platforms: ${{ env.PLATFORMS }}
@@ -112,7 +123,7 @@ jobs:
           operator/bin/generate-catalog.sh localhost:5000/streamshub/console-operator-bundle true
 
       - name: Build Operator Catalog Image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: operator/
           platforms: ${{ env.PLATFORMS }}
@@ -133,11 +144,11 @@ jobs:
             operator/target/catalog/
             operator/target/kubernetes/*.yml
 
-      - name: Save [UI, API, Operator, Operator-Bundle, Operator-Catalog] Images To Files
+      - name: Save [API, Dex, Operator, Operator-Bundle, Operator-Catalog] Images To Files
         run: |
           mkdir streamshub-images
 
-          for img in console-api console-operator console-operator-bundle console-operator-catalog ; do
+          for img in console-api console-dexidp console-operator console-operator-bundle console-operator-catalog ; do
               skopeo sync --all --scoped --src docker --src-tls-verify=false --dest dir \
                 localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }} \
                 $(pwd)/streamshub-images
@@ -145,7 +156,7 @@ jobs:
 
           tar -czf streamshub-images.tgz -C streamshub-images .
 
-      - name: Archive [API, Operator-Bundle, Operator, Operator-Catalog] Image Files
+      - name: Archive [API, Dex, Operator-Bundle, Operator, Operator-Catalog] Image Files
         uses: actions/upload-artifact@v7
         with:
           name: streamshub-images
