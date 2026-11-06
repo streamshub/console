@@ -100,10 +100,6 @@ class KafkaNodesIT {
         client.resources(Kafka.class).inAnyNamespace().delete();
     }
 
-    // ---------------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------------
-
     private static Pattern ci(String text) {
         return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
     }
@@ -128,12 +124,10 @@ class KafkaNodesIT {
                         .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
     }
 
-    /** Nodes page URL for the default test cluster. */
     private String nodesUrl(String suffix) {
         return nodesUrl(clusterId, suffix);
     }
 
-    /** Nodes page URL for any cluster id. */
     private String nodesUrl(String id, String suffix) {
         return home + "kafka/" + id + "/nodes" + suffix;
     }
@@ -151,11 +145,6 @@ class KafkaNodesIT {
                 .setStatus(200).setContentType("application/json").setBody(body));
     }
 
-    /**
-     * Mock only the Cruise Control flag the Rebalances tab reads, and the rebalances
-     * list. Everything else goes to the real backend. Returns a counter of
-     * /rebalances requests.
-     */
     private AtomicInteger mockCruiseControl(Page page, boolean enabled) {
         AtomicInteger rebalanceRequests = new AtomicInteger();
 
@@ -177,16 +166,6 @@ class KafkaNodesIT {
         return rebalanceRequests;
     }
 
-    // ---------------------------------------------------------------------
-    // Inspect another cluster (k2-id)
-    // ---------------------------------------------------------------------
-
-    /**
-     * Throwaway test: opens the nodes overview for K2_ID and prints what the page
-     * renders, plus a screenshot under target/. Note that K2_ID must exist in the
-     * console config (or be applied as a second Kafka resource), otherwise this
-     * will show a not-found / error page.
-     */
     @Test
     void inspectK2Nodes() {
         try (Page page = context.newPage()) {
@@ -201,10 +180,6 @@ class KafkaNodesIT {
                     .setFullPage(true));
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Routing
-    // ---------------------------------------------------------------------
 
     @Test
     void nodesRootRedirectsToOverview() {
@@ -225,10 +200,6 @@ class KafkaNodesIT {
             assertThat(tab(page, OVERVIEW_TAB)).hasAttribute("aria-selected", "false");
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Page header and tabs
-    // ---------------------------------------------------------------------
 
     @Test
     void headerShowsTitleAndNodeCountLabels() {
@@ -269,10 +240,6 @@ class KafkaNodesIT {
             assertThat(tab(page, OVERVIEW_TAB)).hasAttribute("aria-selected", "true");
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Overview tab
-    // ---------------------------------------------------------------------
 
     @Test
     void overviewTabShowsSummaryCard() {
@@ -315,8 +282,8 @@ class KafkaNodesIT {
             page.navigate(nodesUrl("/overview"));
 
             for (String header : new String[] {
-                    "Node ID", "Roles", "Status", "Kafka version",
-                    "Total Replicas", "Leader partitions", "Rack", "Node Pool" }) {
+                "Node ID", "Roles", "Status", "Kafka version",
+                "Total Replicas", "Leader partitions", "Rack", "Node Pool" }) {
                 assertThat(page.getByRole(AriaRole.COLUMNHEADER,
                         new Page.GetByRoleOptions().setName(ci(header))).first()).isVisible();
             }
@@ -328,7 +295,6 @@ class KafkaNodesIT {
         try (Page page = context.newPage()) {
             page.navigate(nodesUrl("/overview"));
 
-            // exactly one data row (the header row has no "Quorum Leader" text)
             Locator dataRows = page.getByRole(AriaRole.ROW)
                     .filter(new Locator.FilterOptions().setHasText(ci("Quorum Leader")));
             assertThat(dataRows).hasCount(1);
@@ -354,10 +320,6 @@ class KafkaNodesIT {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Rebalances tab
-    // ---------------------------------------------------------------------
-
     @Test
     void rebalancesTabShowsEmptyStateWhenCruiseControlDisabled() {
         try (Page page = context.newPage()) {
@@ -370,8 +332,6 @@ class KafkaNodesIT {
             Locator link = page.getByRole(AriaRole.LINK,
                     new Page.GetByRoleOptions().setName(ci("get started")));
             assertThat(link).hasAttribute("target", "_blank");
-
-            // The tab disables the query until Cruise Control is known to be enabled
             assertEquals(0, rebalanceRequests.get());
         }
     }

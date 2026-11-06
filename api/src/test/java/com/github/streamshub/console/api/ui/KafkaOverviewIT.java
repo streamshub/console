@@ -130,10 +130,6 @@ class KafkaOverviewIT {
         page.waitForURL("**/kafka/*/overview");
     }
 
-    /**
-     * Creates (or replaces) the test-kafka1 CR and waits until the console has
-     * configured a context for it, so the cluster is listed in the UI.
-     */
     private Kafka applyManagedKafka(boolean paused) {
         String clusterId = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
 
@@ -170,10 +166,6 @@ class KafkaOverviewIT {
         return kafka;
     }
 
-    // ---------------------------------------------------------------------
-    // Navigation
-    // ---------------------------------------------------------------------
-
     @Test
     void clusterNameLinkOpensOverviewPage() {
         applyManagedKafka(false);
@@ -206,10 +198,6 @@ class KafkaOverviewIT {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Header and connection details
-    // ---------------------------------------------------------------------
-
     @Test
     void headerAndConnectionButtonAreDisplayed() {
         applyManagedKafka(false);
@@ -230,17 +218,10 @@ class KafkaOverviewIT {
 
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
-
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(CONNECTION_BTN)).click();
-
-            // PatternFly drawer panel
             assertThat(page.locator(".pf-v6-c-drawer__panel-main")).isVisible();
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Cluster card
-    // ---------------------------------------------------------------------
 
     @Test
     void clusterCardShowsNameAndStatistics() {
@@ -308,10 +289,6 @@ class KafkaOverviewIT {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Reconciliation
-    // ---------------------------------------------------------------------
-
     @Test
     void pauseReconciliationButtonIsShownForManagedCluster() {
         applyManagedKafka(false);
@@ -350,21 +327,15 @@ class KafkaOverviewIT {
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
 
-            // Top-of-page reconciliation controls
             assertThat(page.getByRole(AriaRole.BUTTON,
                     new Page.GetByRoleOptions().setName(RESUME_BTN))).isVisible();
             assertThat(bannerResume(page)).isVisible();
 
-            // "Cluster errors and warnings" row
             assertThat(page.getByText("ReconciliationPaused").first()).isVisible();
             assertThat(page.getByText(PAUSED_WARNING).first()).isVisible();
             assertThat(conditionResume(page)).isVisible();
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Overview cards
-    // ---------------------------------------------------------------------
 
     @Test
     void overviewCardsAreRendered() {
@@ -372,16 +343,10 @@ class KafkaOverviewIT {
 
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
-
-            // Debug aid: shows the real card titles if an assertion below fails
             System.out.println("Card titles: "
                     + page.locator(".pf-v6-c-card__title-text").allTextContents());
 
             assertThat(cardTitle(page, "Topics")).isVisible();
-            // "Recently viewed topics" was not found in the last run. Confirm the exact
-            // title in your i18n file (or whether the card only renders after a topic
-            // has been viewed) before re-enabling:
-            // assertThat(cardTitle(page, "Recently viewed topics")).isVisible();
         }
     }
 
