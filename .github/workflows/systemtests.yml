@@ -133,10 +133,7 @@ jobs:
         run: |
           set -x
           echo "Preparing YAML-based installation..."
-
-          cat ./operator/target/kubernetes/consoles.console.streamshub.github.com-v1.yml \
-              ./operator/target/kubernetes/kubernetes.yml \
-              > ./target/streamshub-console-operator.yaml
+          operator/bin/generate-non-olm-install.sh > ./target/streamshub-console-operator.yaml
 
           # Export as environment variable
           echo "CONSOLE_INSTALL_TYPE=yaml" >> $GITHUB_ENV
