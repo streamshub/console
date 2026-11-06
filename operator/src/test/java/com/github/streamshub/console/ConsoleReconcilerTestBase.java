@@ -47,6 +47,7 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.Status;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionStatus;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersion;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersionBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceSubresourceStatus;
@@ -61,8 +62,11 @@ import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
+import io.fabric8.kubernetes.client.dsl.NonDeletingOperation;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.config.v1.ClusterVersionBuilder;
+import io.fabric8.openshift.api.model.config.v1.FeatureGateBuilder;
 import io.javaoperatorsdk.operator.Operator;
 import io.strimzi.api.kafka.model.common.Constants;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -85,6 +89,11 @@ abstract class ConsoleReconcilerTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTestBase.class);
     static final String REQUIRES_OPENSHIFT_ROUTE = "requires:routes.route.openshift.io";
+    static final String REQUIRES_CLUSTER_VERSION = "requires:clusterversions.config.openshift.io:";
+    static final String OCP_VERSION_4_19 = "4.19.0";
+    static final String OCP_VERSION_4_18 = "4.18.0";
+    static final String REQUIRES_FEATURE_GATE = "requires:featuregates.config.openshift.io:";
+    static final String FEATURE_GATE_ROUTE_EXTERNAL_CERTIFICATE = "RouteExternalCertificate";
     static final Map<String, String> TEST_MANAGEMENT_LABEL = Map.of("app.kubernetes.io/managed-by", "console-operator-test");
 
     protected static final Duration LIMIT = Duration.ofSeconds(5);
@@ -180,15 +189,9 @@ abstract class ConsoleReconcilerTestBase {
         apply(client, crd(Kafka.class));
         apply(client, crd(KafkaUser.class));
 
-        if (testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
-            createRouteCRD();
-        } else {
-            try {
-                client.resources(CustomResourceDefinition.class).withName("routes.route.openshift.io").delete();
-            } catch (KubernetesClientException e) {
-                // Ignore
-            }
-        }
+        setupOpenShiftRoute(testInfo);
+        setupClusterVersion(testInfo);
+        setupFeatureGates(testInfo);
 
         var allConsoles = client.resources(Console.class).inAnyNamespace();
         var allKafkas = client.resources(Kafka.class).inAnyNamespace();
@@ -416,6 +419,153 @@ abstract class ConsoleReconcilerTestBase {
 
         client.resource(role).serverSideApply();
         client.resource(binding).serverSideApply();
+    }
+
+    private void setupOpenShiftRoute(TestInfo testInfo) {
+        if (testInfo.getTags().contains(REQUIRES_OPENSHIFT_ROUTE)) {
+            createRouteCRD();
+        } else {
+            try {
+                client.resources(CustomResourceDefinition.class).withName("routes.route.openshift.io").delete();
+            } catch (KubernetesClientException e) {
+                // Ignore
+            }
+        }
+    }
+
+    private void setupClusterVersion(TestInfo testInfo) {
+        Optional<String> clusterVersionTag = testInfo.getTags().stream()
+                .filter(tag -> tag.startsWith(REQUIRES_CLUSTER_VERSION))
+                .findFirst();
+
+        if (clusterVersionTag.isPresent()) {
+            createClusterVersionCRD();
+            String version = clusterVersionTag.get().substring(REQUIRES_CLUSTER_VERSION.length());
+            client.resource(new ClusterVersionBuilder()
+                    .withNewMetadata()
+                        .withName("version")
+                    .endMetadata()
+                    .withNewStatus()
+                        .withNewDesired()
+                            .withVersion(version)
+                        .endDesired()
+                    .endStatus()
+                    .build())
+                .createOr(NonDeletingOperation::update);
+        } else {
+            try {
+                client.resources(CustomResourceDefinition.class).withName("clusterversions.config.openshift.io").delete();
+            } catch (KubernetesClientException e) {
+                // Ignore
+            }
+        }
+    }
+
+    private void setupFeatureGates(TestInfo testInfo) {
+        Optional<String> featureGateTag = testInfo.getTags().stream()
+                .filter(tag -> tag.startsWith(REQUIRES_FEATURE_GATE))
+                .findFirst();
+
+        if (featureGateTag.isPresent()) {
+            createFeatureGateCRD();
+            String featureGateName = featureGateTag.get().substring(REQUIRES_FEATURE_GATE.length());
+            client.resource(new FeatureGateBuilder()
+                    .withNewMetadata()
+                        .withName("cluster")
+                    .endMetadata()
+                    .withNewStatus()
+                        .addNewFeatureGate()
+                            .addNewEnabled()
+                                .withName(featureGateName)
+                            .endEnabled()
+                        .endFeatureGate()
+                    .endStatus()
+                    .build())
+                .createOr(NonDeletingOperation::update);
+        } else {
+            try {
+                client.resources(CustomResourceDefinition.class).withName("featuregates.config.openshift.io").delete();
+            } catch (KubernetesClientException e) {
+                // Ignore
+            }
+        }
+    }
+
+    void waitUntilEstablished(String name) {
+        client.apiextensions().v1().customResourceDefinitions()
+            .withName(name)
+            .waitUntilCondition(crd -> {
+                return Optional.ofNullable(crd.getStatus())
+                    .map(CustomResourceDefinitionStatus::getConditions)
+                    .map(conditions -> conditions.stream()
+                            .filter(c -> "Established".equals(c.getType()))
+                            .anyMatch(c -> "True".equals(c.getStatus())))
+                    .orElse(false);
+            }, 10, TimeUnit.SECONDS);
+    }
+
+    private void createClusterVersionCRD() {
+        client.resource(new CustomResourceDefinitionBuilder()
+                .withNewMetadata()
+                .withName("clusterversions.config.openshift.io")
+            .endMetadata()
+            .withNewSpec()
+                .withScope("Cluster")
+                .withGroup("config.openshift.io")
+                .withNewNames()
+                    .withSingular("clusterversion")
+                    .withPlural("clusterversions")
+                    .withKind("ClusterVersion")
+                    .withListKind("ClusterVersionList")
+                .endNames()
+                .addNewVersion()
+                    .withName("v1")
+                    .withNewSchema()
+                        .withNewOpenAPIV3Schema()
+                            .withType("object")
+                            .withXKubernetesPreserveUnknownFields(true)
+                        .endOpenAPIV3Schema()
+                    .endSchema()
+                    .withStorage(true)
+                    .withServed(true)
+                .endVersion()
+            .endSpec()
+            .build())
+            .serverSideApply();
+
+        waitUntilEstablished("clusterversions.config.openshift.io");
+    }
+
+    private void createFeatureGateCRD() {
+        client.resource(new CustomResourceDefinitionBuilder()
+                .withNewMetadata()
+                .withName("featuregates.config.openshift.io")
+            .endMetadata()
+            .withNewSpec()
+                .withScope("Cluster")
+                .withGroup("config.openshift.io")
+                .withNewNames()
+                    .withSingular("featuregate")
+                    .withPlural("featuregates")
+                    .withKind("FeatureGate")
+                    .withListKind("FeatureGateList")
+                .endNames()
+                .addNewVersion()
+                    .withName("v1")
+                    .withNewSchema()
+                        .withNewOpenAPIV3Schema()
+                            .withType("object")
+                            .withXKubernetesPreserveUnknownFields(true)
+                        .endOpenAPIV3Schema()
+                    .endSchema()
+                    .withStorage(true)
+                    .withServed(true)
+                .endVersion()
+            .endSpec()
+            .build())
+            .serverSideApply();
+
+        waitUntilEstablished("featuregates.config.openshift.io");
     }
 
     private void createRouteCRD() {

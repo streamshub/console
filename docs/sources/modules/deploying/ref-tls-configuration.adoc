@@ -8,18 +8,20 @@
 = Configuring TLS for the console server
 
 [role="_abstract"]
-By default, the console server listens on plain HTTP (port 8080) and the ingress or route terminates TLS at the edge.
-You can configure the console to terminate TLS itself by providing a certificate and private key in the `Console` custom resource under `spec.tls`.
+By default on Kubernetes, the console server listens on plain HTTP (port 8080) and the ingress terminates TLS at the edge.
+On OpenShift, the operator secures internal traffic by default using the OpenShift service CA and configures routes with `reencrypt` TLS termination.
+You can configure custom TLS certificates for the console by providing a certificate and private key in the `Console` custom resource under `spec.tls`.
 
 When `spec.tls` is set, the operator makes the following changes automatically:
 
 * The console container switches to HTTPS (port 8443) and health probes use the HTTPS scheme.
 * The Kubernetes `Service` exposes port 443 and forwards traffic to port 8443 on the pod.
-* For plain Kubernetes clusters, the `Ingress` sets the `nginx.ingress.kubernetes.io/backend-protocol` annotation to `HTTPS` and targets port 443 on the service.
-* For OpenShift clusters, the `Route` uses `passthrough` TLS termination instead of `edge`, so the connection is encrypted end-to-end between the router and the console pod.
+* For plain Kubernetes clusters, the `Ingress` sets the `nginx.ingress.kubernetes.io/backend-protocol` annotation to `HTTPS` and targets port 443 on the service. If `spec.tls` is set, a Kubernetes TLS `Secret` is managed by the operator and referenced in `spec.tls` of the `Ingress`.
+* For OpenShift clusters without Dex enabled, the `Route` uses `passthrough` TLS termination, so the connection is encrypted end-to-end between the router and the console pod.
+* For OpenShift clusters with Dex identity broker integration enabled, the `Route` uses `reencrypt` TLS termination to route traffic between the console and Dex backends. When `spec.tls` is specified, the operator manages a Kubernetes TLS `Secret` and references it on the Route via `spec.tls.externalCertificate` (available on OpenShift 4.19 and later, or clusters with the `RouteExternalCertificate` feature gate enabled).
 
 TLS is an optional configuration.
-If `spec.tls` is not set, the console continues to operate over plain HTTP, with TLS terminated at the edge by the ingress or route (edge termination with redirect).
+If `spec.tls` is not set, the console operates over plain HTTP on Kubernetes (with TLS terminated at the ingress), or over service-CA encrypted HTTPS with `reencrypt` routes on OpenShift.
 
 == TLS properties
 

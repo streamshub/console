@@ -22,7 +22,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.security.LdapUserMatcherB
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
-import com.github.streamshub.console.dependents.ConsoleIngressTlsSecret;
+import com.github.streamshub.console.dependents.ConsoleTlsSecret;
 import com.github.streamshub.console.dependents.ConsoleRoute;
 import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.DexDeployment;
@@ -255,13 +255,13 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
                     .getPaths().get(0).getBackend().getService().getPort().getNumber());
             assertEquals(1, ingress.getSpec().getTls().size());
             assertEquals(List.of("example.com"), ingress.getSpec().getTls().get(0).getHosts());
-            assertEquals(CONSOLE_NAME + '-' + ConsoleIngressTlsSecret.NAME,
+            assertEquals(CONSOLE_NAME + '-' + ConsoleTlsSecret.NAME,
                     ingress.getSpec().getTls().get(0).getSecretName());
         });
 
         var tlsSecret = client.secrets()
                 .inNamespace(CONSOLE_NS)
-                .withName(CONSOLE_NAME + '-' + ConsoleIngressTlsSecret.NAME)
+                .withName(CONSOLE_NAME + '-' + ConsoleTlsSecret.NAME)
                 .get();
         assertNotNull(tlsSecret);
         assertEquals("kubernetes.io/tls", tlsSecret.getType());
@@ -423,6 +423,7 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
 
     @ParameterizedTest
     @Tag(REQUIRES_OPENSHIFT_ROUTE)
+    @Tag(REQUIRES_CLUSTER_VERSION + OCP_VERSION_4_19)
     @MethodSource("openShiftUserProvidedCertificates")
     void testDexWithOpenshiftOnOpenShift(String edgeCert, String edgeKey) {
         var builder = new ConsoleBuilder()
@@ -514,8 +515,117 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
         assertServingCertAnnotation(ConsoleService.NAME);
         assertServingCertAnnotation(DexService.NAME);
 
+        if (edgeCert != null) {
+            var tlsSecret = client.secrets()
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + '-' + ConsoleTlsSecret.NAME)
+                    .get();
+            assertNotNull(tlsSecret);
+            assertEquals("kubernetes.io/tls", tlsSecret.getType());
+            assertEquals(edgeCert, decode(tlsSecret.getData().get("tls.crt")));
+            assertEquals(edgeKey, decode(tlsSecret.getData().get("tls.key")));
+        }
+
         assertRouteConfiguration(ConsoleRoute.NAME, edgeCert, edgeKey);
         assertRouteConfiguration(DexRoute.NAME, edgeCert, edgeKey);
+    }
+
+    @Test
+    @Tag(REQUIRES_OPENSHIFT_ROUTE)
+    @Tag(REQUIRES_CLUSTER_VERSION + OCP_VERSION_4_18)
+    void testDexWithOpenshiftOnOpenShiftPriorTo419WithoutFeatureGateFails() {
+        var consoleCR = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .withNewSecurity()
+                        .withNewOpenshift()
+                            .withGroups("group-1")
+                        .endOpenshift()
+                    .endSecurity()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec());
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(CONSOLE_NS)
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+
+            var error = console.getStatus().getConditions().stream()
+                    .filter(c -> Condition.Types.ERROR.equals(c.getType()))
+                    .findFirst()
+                    .orElseThrow();
+            assertEquals("True", error.getStatus(), error::toString);
+            assertEquals("spec.security.openshift requires OpenShift version 4.19 or above, or the RouteExternalCertificate feature gate enabled",
+                    error.getMessage(), error::toString);
+        });
+        assertNull(client.secrets().inNamespace(CONSOLE_NS).withName(CONSOLE_NAME + '-' + DexSecret.NAME).get());
+    }
+
+    @Test
+    @Tag(REQUIRES_OPENSHIFT_ROUTE)
+    @Tag(REQUIRES_CLUSTER_VERSION + OCP_VERSION_4_18)
+    @Tag(REQUIRES_FEATURE_GATE + FEATURE_GATE_ROUTE_EXTERNAL_CERTIFICATE)
+    void testDexWithOpenshiftOnOpenShiftPriorTo419WithFeatureGateSucceeds() {
+        var consoleCR = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .withNewSecurity()
+                        .withNewOpenshift()
+                            .withGroups("group-1")
+                        .endOpenshift()
+                    .endSecurity()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec());
+
+        awaitDependentsNotReady(consoleCR, "ConsoleTrustBundle");
+        setConsoleTrustBundleContent(consoleCR);
+
+        awaitDependentsNotReady(consoleCR, "ConsoleService", "DexService");
+        createServingCertContent(consoleCR, ConsoleService.NAME);
+        createServingCertContent(consoleCR, DexService.NAME);
+
+        awaitDependentsNotReady(consoleCR, "ConsoleRoute");
+        setConsoleRouteReady(consoleCR);
+
+        awaitDependentsNotReady(consoleCR, "PrometheusDeployment", "ConsoleDeployment", "DexDeployment");
+        setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
+        setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        setDeploymentReady(consoleCR, DexDeployment.NAME);
+
+        awaitReady(consoleCR);
+        assertDexConfig(basicOpenShiftDexConfig());
+    }
+
+    @Test
+    @Tag(REQUIRES_OPENSHIFT_ROUTE)
+    @Tag(REQUIRES_CLUSTER_VERSION + OCP_VERSION_4_18)
+    void testDexWithLdapOnOpenShiftPriorTo419WithoutFeatureGateFails() {
+        var consoleCR = createConsole(ldapConsole());
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(CONSOLE_NS)
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+
+            var error = console.getStatus().getConditions().stream()
+                    .filter(c -> Condition.Types.ERROR.equals(c.getType()))
+                    .findFirst()
+                    .orElseThrow();
+            assertEquals("True", error.getStatus(), error::toString);
+            assertEquals("spec.security.ldap on OpenShift requires platform version 4.19 or above, or the RouteExternalCertificate feature gate enabled",
+                    error.getMessage(), error::toString);
+        });
+        assertNull(client.secrets().inNamespace(CONSOLE_NS).withName(CONSOLE_NAME + '-' + DexSecret.NAME).get());
     }
 
     private void assertServingCertAnnotation(String serviceName) {
@@ -539,8 +649,14 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
             assertNotNull(route);
             assertEquals("reencrypt", route.getSpec().getTls().getTermination());
             assertEquals("Redirect", route.getSpec().getTls().getInsecureEdgeTerminationPolicy());
-            assertEquals(edgeCert, route.getSpec().getTls().getCertificate());
-            assertEquals(edgeKey, route.getSpec().getTls().getKey());
+            assertNull(route.getSpec().getTls().getCertificate());
+            assertNull(route.getSpec().getTls().getKey());
+            if (edgeCert != null) {
+                assertNotNull(route.getSpec().getTls().getExternalCertificate());
+                assertEquals(CONSOLE_NAME + '-' + ConsoleTlsSecret.NAME, route.getSpec().getTls().getExternalCertificate().getName());
+            } else {
+                assertNull(route.getSpec().getTls().getExternalCertificate());
+            }
         });
     }
 

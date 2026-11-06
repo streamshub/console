@@ -25,7 +25,7 @@ import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
-import com.github.streamshub.console.dependents.ConsoleIngressTlsSecret;
+import com.github.streamshub.console.dependents.ConsoleTlsSecret;
 import com.github.streamshub.console.dependents.ConsoleMonitoringClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleRoute;
@@ -147,14 +147,13 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     type = ConsoleSecret.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
-                    // Only active on Kubernetes (no Routes) with Dex and spec.tls; the
-                    // Ingress terminates TLS using this Secret. This is intentionally a
+                    // Only active with Dex and spec.tls; Ingress (Kubernetes) and Route
+                    // (OpenShift) reference this Secret by name. This is intentionally a
                     // leaf node: nothing may dependOn it, because a dependent of a node
-                    // whose activation condition is not met is deleted by the workflow.
-                    // The Ingress references the Secret by name only.
-                    name = ConsoleIngressTlsSecret.NAME,
-                    type = ConsoleIngressTlsSecret.class,
-                    activationCondition = ConsoleIngressTlsSecret.Activation.class,
+                    // whose reconcile precondition is not met is deleted by the workflow.
+                    name = ConsoleTlsSecret.NAME,
+                    type = ConsoleTlsSecret.class,
+                    reconcilePrecondition = ConsoleTlsSecret.Precondition.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = ConsoleService.NAME,

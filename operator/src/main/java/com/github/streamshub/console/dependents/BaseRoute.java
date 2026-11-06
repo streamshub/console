@@ -1,15 +1,11 @@
 package com.github.streamshub.console.dependents;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import java.util.function.Function;
 
 import jakarta.inject.Inject;
 
 import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.api.v1alpha1.spec.Tls;
-import com.github.streamshub.console.api.v1alpha1.spec.Value;
 import com.github.streamshub.console.dependents.support.ConfigSupport;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -26,6 +22,9 @@ abstract class BaseRoute extends CRUDKubernetesDependentResource<Route, Console>
 
     @Inject
     ConsoleTrustBundle trustBundle;
+
+    @Inject
+    ConsoleTlsSecret tlsSecret;
 
     protected BaseRoute(String resourceName) {
         super(Route.class);
@@ -60,35 +59,18 @@ abstract class BaseRoute extends CRUDKubernetesDependentResource<Route, Console>
                             "Trust bundle or %s entry is missing".formatted(ConsoleTrustBundle.CA_BUNDLE_KEY)
                     ));
 
-            // When re-encrypting, the user's cert/key (if provided) become the edge
-            // certificate presented to the client browser.
-            String edgeCert = getValue(primary, context, Tls::getCertificate);
-            String edgeKey = getValue(primary, context, Tls::getKey);
-
-            // Service CA cert is available: use reencrypt so the router opens a new
-            // TLS connection to the backend pod using the cluster CA. If the user
-            // also provided a cert/key, use it as the edge certificate for the client.
-            return new TLSConfigBuilder()
+            var tlsBuilder = new TLSConfigBuilder()
                     .withTermination("reencrypt")
                     .withDestinationCACertificate(caBundlePem)
-                    .withCertificate(edgeCert)
-                    .withKey(edgeKey)
-                    .withInsecureEdgeTerminationPolicy("Redirect")
-                    .build();
-        }
-    }
+                    .withInsecureEdgeTerminationPolicy("Redirect");
 
-    private String getValue(Console primary, Context<Console> context, Function<Tls, Value> source) {
-        var specTls = primary.getSpec().getTls();
-
-        if (specTls != null) {
-            var value = ConfigSupport.getValue(context, primary.getMetadata().getNamespace(), source.apply(specTls));
-
-            if (value != null) {
-                return new String(value, StandardCharsets.UTF_8);
+            if (ConsoleTlsSecret.required(primary, context)) {
+                tlsBuilder.withNewExternalCertificate()
+                        .withName(tlsSecret.instanceName(primary))
+                        .endExternalCertificate();
             }
-        }
 
-        return null;
+            return tlsBuilder.build();
+        }
     }
 }

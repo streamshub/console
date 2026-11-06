@@ -5,6 +5,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
@@ -21,6 +22,8 @@ import io.fabric8.kubernetes.api.model.SecretEnvSource;
 import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.config.v1.ClusterVersion;
+import io.fabric8.openshift.api.model.config.v1.FeatureGate;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 
 public class ConfigSupport {
@@ -167,9 +170,8 @@ public class ConfigSupport {
         T resource;
 
         try {
-            resource = context.getClient()
-                .resources(resourceType)
-                .inNamespace(namespace)
+            var operation = context.getClient().resources(resourceType);
+            resource = (namespace != null ? operation.inNamespace(namespace) : operation)
                 .withName(name)
                 .get();
         } catch (KubernetesClientException e) {
@@ -182,6 +184,44 @@ public class ConfigSupport {
         }
 
         return resource;
+    }
+
+    public static boolean routeExternalCertificateSupported(Context<Console> context) {
+        if (!resourceSupported(context, Route.class)) {
+            return false;
+        }
+
+        if (resourceSupported(context, ClusterVersion.class)) {
+            ClusterVersion clusterVersion = getResource(context, ClusterVersion.class, null, "version", true);
+            if (clusterVersion != null && clusterVersion.getStatus() != null && clusterVersion.getStatus().getDesired() != null) {
+                String version = clusterVersion.getStatus().getDesired().getVersion();
+                if (version != null && isOpenShiftVersionAtLeast(version, 4, 19)) {
+                    return true;
+                }
+            }
+        }
+
+        if (resourceSupported(context, FeatureGate.class)) {
+            FeatureGate featureGate = getResource(context, FeatureGate.class, null, "cluster", true);
+            if (featureGate != null && featureGate.getStatus() != null && featureGate.getStatus().getFeatureGates() != null) {
+                return featureGate.getStatus().getFeatureGates().stream()
+                        .filter(details -> details.getEnabled() != null)
+                        .flatMap(details -> details.getEnabled().stream())
+                        .anyMatch(attr -> "RouteExternalCertificate".equals(attr.getName()));
+            }
+        }
+
+        return false;
+    }
+
+    static boolean isOpenShiftVersionAtLeast(String version, int minMajor, int minMinor) {
+        var matcher = Pattern.compile("^([0-9]+)\\.([0-9]+)").matcher(version);
+        if (matcher.find()) {
+            int major = Integer.parseInt(matcher.group(1));
+            int minor = Integer.parseInt(matcher.group(2));
+            return major > minMajor || major == minMajor && minor >= minMinor;
+        }
+        return false;
     }
 
     public static boolean dexIntegrationEnabled(Console primary) {
