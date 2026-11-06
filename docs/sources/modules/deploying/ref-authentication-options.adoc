@@ -16,8 +16,8 @@ The security profiles can be configured for all Kafka cluster connections on a g
 
 Example configurations are provided in:
 * `examples/console/console-security-oidc.yaml` for external OIDC providers.
-* `examples/openshift/console.yaml` for OpenShift OAuth integration.
-* `examples/ldap/console.yaml` for LDAP integration.
+* `examples/console/authentication/openshift/console.yaml` for OpenShift OAuth integration.
+* `examples/console/authentication/ldap/console.yaml` for LDAP integration.
 
 The configuration introduces the following additional properties for console deployment:
 
