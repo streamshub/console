@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Shim so the dev toolkit can be invoked as `./dev <command>` from the repo root.
+# See devtools/README.md for the full guide.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "${SCRIPT_DIR}/devtools/dev.sh" "$@"
