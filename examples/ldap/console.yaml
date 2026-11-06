@@ -1,3 +1,29 @@
+#
+# This example demonstrates the use of an LDAP directory at `.spec.security.ldap`
+# for user authentication in the console. When LDAP is configured, the operator
+# deploys and manages a Dex identity broker that connects to the LDAP server, and
+# configures the console to use Dex as its OIDC provider.
+#
+# The LDAP bind credentials are stored in a separate Secret resource (first) and
+# referenced from `.spec.security.ldap.bindSecret`. The user and group search
+# settings are written for the sample OpenLDAP deployment in openldap.yaml.
+#
+# In addition to the LDAP configuration, this example shows how to configure
+# subjects and roles for user authorization based on LDAP group membership.
+# This resource intentionally defines no Kafka clusters (`.spec.kafkaClusters`)
+# in order to focus on the LDAP security configuration.
+#
+# Replace the hostname and LDAP connection details with values specific to the
+# environment. See README.md in this directory for deployment instructions.
+#
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: console-openldap-bind-secret
+stringData:
+  bindSecret: password123
+---
 apiVersion: console.streamshub.github.com/v1alpha1
 kind: Console
 metadata:
@@ -13,7 +39,10 @@ spec:
       insecureNoSSL: true
       bindDN: cn=readonly,dc=streamshub,dc=dev
       bindSecret:
-        value: password123
+        valueFrom:
+          secretKeyRef:
+            name: console-openldap-bind-secret
+            key: bindSecret
       userSearch:
         # BaseDN to start the search from. It will translate to the query
         # "(&(objectClass=inetOrgPerson)(uid=<username>))".
