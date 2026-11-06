@@ -98,13 +98,28 @@ jobs:
           mvn -B release:perform --no-transfer-progress \
             '-Drelease.arguments=-Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}'
 
+      # ==================== Dex IdP ====================
+      # Must be pushed before the bundle metadata is modified, the script resolves the image digest
+      - name: Build and Push Custom Dex IdP Image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: target/checkout/operator/src/main/docker/
+          platforms: ${{ env.PLATFORMS }}
+          provenance: false
+          push: true
+          file: target/checkout/operator/src/main/docker/dex.Dockerfile
+          tags: |
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-dexidp:${{steps.metadata.outputs.current-version}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-dexidp:${{env.MAJOR_MINOR_TAG}}
+            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-dexidp:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
+
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
         working-directory: target/checkout
         run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{steps.metadata.outputs.current-version}}" "PLATFORMS=${{ env.PLATFORMS }}"
 
       - name: Build and Push Operator Bundle Image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: target/checkout/operator/target/bundle/streamshub-console-operator/
           platforms: ${{ env.PLATFORMS }}
@@ -132,7 +147,7 @@ jobs:
             target/checkout/operator/target/catalog/
 
       - name: Build and Push Operator Catalog Image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: target/checkout/operator/
           platforms: ${{ env.PLATFORMS }}
