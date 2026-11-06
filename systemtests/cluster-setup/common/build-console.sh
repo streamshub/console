@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Builds the Console images (API, operator, OLM bundle, OLM catalog) from
-# local source. Local only — nothing is pushed anywhere. Splits the "build"
+# Builds the Console images (API, Dex IdP, operator, OLM bundle, OLM catalog)
+# from local source. Local only — nothing is pushed anywhere. Splits the "build"
 # half of systemtests/scripts/setup-minikube.sh out from the "get it into a
 # cluster" half, which is now ../kind/load-images.sh / ../minikube/load-images.sh.
 #
@@ -11,6 +11,7 @@
 #
 # Builds (tagged, never pushed):
 #   <registry>/<group>/console-api:<tag>
+#   <registry>/<group>/console-dexidp:<tag>
 #   <registry>/<group>/console-operator:<tag>
 #   <registry>/<group>/console-operator-bundle:<tag>
 #   <registry>/<group>/console-operator-catalog:<tag>
@@ -77,6 +78,13 @@ if [ "${CONTAINER_RUNTIME}" = "docker" ]; then
   BUILDX_PLATFORM_ARGS=(-Dquarkus.docker.buildx.platform="${PLATFORMS}")
 fi
 
+# Same --load reasoning as above, for our own direct docker build calls
+# (podman build always writes to local storage directly, no such flag).
+BUILD_LOAD_ARGS=()
+if [ "${CONTAINER_RUNTIME}" = "docker" ]; then
+  BUILD_LOAD_ARGS=(--load)
+fi
+
 echo "Building console-api / console-operator images (runtime=${CONTAINER_RUNTIME}, registry=${REGISTRY}, group=${GROUP}, tag=${TAG})..."
 mvn clean package -Pcontainer-image -B --no-transfer-progress -DskipTests -DskipITs \
   -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
@@ -86,25 +94,19 @@ mvn clean package -Pcontainer-image -B --no-transfer-progress -DskipTests -Dskip
   -Dcontainer-image.push=false \
   "${BUILDX_PLATFORM_ARGS[@]}"
 
+# Must be built before modify-bundle-metadata.sh, which resolves its digest
 echo "Building console-dexidp image..."
 "${CONTAINER_RUNTIME}" build \
   "${BUILD_LOAD_ARGS[@]}" \
   -t "${IMAGE_PREFIX}/console-dexidp:${TAG}" \
   -f operator/src/main/docker/dex.Dockerfile \
-  .
+  operator/src/main/docker
 
 echo "Updating OLM bundle metadata..."
 ./operator/bin/modify-bundle-metadata.sh \
   "VERSION=${TAG}" \
   "SKOPEO_TRANSPORT=${SKOPEO_TRANSPORT}" \
   "PLATFORMS=${PLATFORMS}"
-
-# Same --load reasoning as above, for our own direct docker build calls
-# (podman build always writes to local storage directly, no such flag).
-BUILD_LOAD_ARGS=()
-if [ "${CONTAINER_RUNTIME}" = "docker" ]; then
-  BUILD_LOAD_ARGS=(--load)
-fi
 
 echo "Building console-operator-bundle image..."
 "${CONTAINER_RUNTIME}" build \
