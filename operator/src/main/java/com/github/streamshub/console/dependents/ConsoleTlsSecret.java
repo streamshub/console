@@ -8,7 +8,6 @@ import com.github.streamshub.console.dependents.support.ConfigSupport;
 
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
-import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
@@ -17,26 +16,22 @@ import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 
 /**
  * A {@code kubernetes.io/tls} Secret holding the user-provided certificate and key
- * ({@code spec.tls}) for use by the {@link ConsoleIngress} to terminate TLS. It is
- * only used on plain Kubernetes when Dex is enabled; in that case the Console pod and
- * Dex are served over HTTP behind the Ingress.
+ * ({@code spec.tls}). On plain Kubernetes with Dex enabled, it is referenced by {@link ConsoleIngress}
+ * to terminate TLS at the ingress. On OpenShift with Dex enabled, it is referenced by {@link ConsoleRoute}
+ * and {@link DexRoute} via {@code externalCertificate} so the user's private key is not exposed inline
+ * in the Route definition.
  */
 @ApplicationScoped
 @KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
-public class ConsoleIngressTlsSecret extends BaseSecret {
+public class ConsoleTlsSecret extends BaseSecret {
 
-    public static final String NAME = "console-ingress-tls";
+    public static final String NAME = "console-tls";
 
-    public ConsoleIngressTlsSecret() {
+    public ConsoleTlsSecret() {
         super(NAME);
     }
 
-    /**
-     * Used as the {@code activationCondition} (rather than a reconcile precondition) so
-     * that the {@link ConsoleIngress}, which depends on this resource, is still reconciled
-     * when no Secret is needed.
-     */
-    public static class Activation implements Condition<Secret, Console> {
+    public static class Precondition implements Condition<Secret, Console> {
         @Override
         public boolean isMet(DependentResource<Secret, Console> dependentResource,
                 Console primary,
@@ -45,9 +40,8 @@ public class ConsoleIngressTlsSecret extends BaseSecret {
         }
     }
 
-    static boolean required(Console primary, Context<Console> context) {
-        return !ConfigSupport.resourceSupported(context, Route.class)
-                && ConfigSupport.dexIntegrationEnabled(primary)
+    public static boolean required(Console primary, Context<Console> context) {
+        return ConfigSupport.dexIntegrationEnabled(primary)
                 && primary.getSpec().getTls() != null;
     }
 

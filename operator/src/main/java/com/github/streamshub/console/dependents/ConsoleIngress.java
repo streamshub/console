@@ -39,7 +39,7 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     DexService dexService;
 
     @Inject
-    ConsoleIngressTlsSecret tlsSecret;
+    ConsoleTlsSecret tlsSecret;
 
     public ConsoleIngress() {
         super(Ingress.class);
@@ -118,7 +118,7 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
             .endSpec()
             .build();
 
-        if (ConsoleIngressTlsSecret.required(primary, context)) {
+        if (ConsoleTlsSecret.required(primary, context)) {
             ingress = ingress.edit()
                 .editSpec()
                     .addNewTl()

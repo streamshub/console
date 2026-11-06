@@ -231,10 +231,7 @@ public class ConfigurationProcessor extends BaseVirtualResource {
         DexConfig dexConfig;
 
         if (security.getOpenshift() != null) {
-            if (!resourceSupported(context, Route.class)) {
-                throw new ReconciliationException(
-                        "spec.security.openshift is only supported when the cluster is OpenShift");
-            }
+            validateOpenshiftSecurity(context);
 
             boolean customCA = putDexCA(context, namespace, "openshift", security.getOpenshift().getTrustStore(), dexData);
             String apiServerUrl = context.getClient().getMasterUrl().toString();
@@ -245,6 +242,8 @@ public class ConfigurationProcessor extends BaseVirtualResource {
             String saClientId = "system:serviceaccount:" + namespace + ":" + dexServiceAccount.instanceName(primary);
             dexConfig = DexConfig.forOpenshift(host, security.getOpenshift(), apiServerUrl, saClientId, customCA);
         } else {
+            validateLdapSecurity(context);
+
             var ldap = security.getLdap();
             boolean customCA = putDexCA(context, namespace, "ldap", ldap.getTrustStore(), dexData);
             boolean hasBindPW = false;
@@ -282,6 +281,24 @@ public class ConfigurationProcessor extends BaseVirtualResource {
         dexData.put(DexSecret.CONFIG_KEY, encodeString(configYaml));
 
         context.managedWorkflowAndDependentResourceContext().put("DexSecretData", dexData);
+    }
+
+    private void validateOpenshiftSecurity(Context<Console> context) {
+        if (!resourceSupported(context, Route.class)) {
+            throw new ReconciliationException(
+                    "spec.security.openshift is only supported when the cluster is OpenShift");
+        }
+        if (!ConfigSupport.routeExternalCertificateSupported(context)) {
+            throw new ReconciliationException(
+                    "spec.security.openshift requires OpenShift version 4.19 or above, or the RouteExternalCertificate feature gate enabled");
+        }
+    }
+
+    private void validateLdapSecurity(Context<Console> context) {
+        if (resourceSupported(context, Route.class) && !ConfigSupport.routeExternalCertificateSupported(context)) {
+            throw new ReconciliationException(
+                    "spec.security.ldap on OpenShift requires platform version 4.19 or above, or the RouteExternalCertificate feature gate enabled");
+        }
     }
 
     /**
