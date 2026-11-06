@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Tag;
@@ -259,14 +260,7 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
                     ingress.getSpec().getTls().get(0).getSecretName());
         });
 
-        var tlsSecret = client.secrets()
-                .inNamespace(CONSOLE_NS)
-                .withName(CONSOLE_NAME + '-' + ConsoleTlsSecret.NAME)
-                .get();
-        assertNotNull(tlsSecret);
-        assertEquals("kubernetes.io/tls", tlsSecret.getType());
-        assertEquals(cert, decode(tlsSecret.getData().get("tls.crt")));
-        assertEquals(key, decode(tlsSecret.getData().get("tls.key")));
+        assertConsoleTlsSecret(cert, key);
 
         // The Console pod does not serve TLS itself
         assertConsoleConfig(consoleConfig -> assertNull(consoleConfig.getTls()));
@@ -516,18 +510,11 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
         assertServingCertAnnotation(DexService.NAME);
 
         if (edgeCert != null) {
-            var tlsSecret = client.secrets()
-                    .inNamespace(CONSOLE_NS)
-                    .withName(CONSOLE_NAME + '-' + ConsoleTlsSecret.NAME)
-                    .get();
-            assertNotNull(tlsSecret);
-            assertEquals("kubernetes.io/tls", tlsSecret.getType());
-            assertEquals(edgeCert, decode(tlsSecret.getData().get("tls.crt")));
-            assertEquals(edgeKey, decode(tlsSecret.getData().get("tls.key")));
+            assertConsoleTlsSecret(edgeCert, edgeKey);
         }
 
-        assertRouteConfiguration(ConsoleRoute.NAME, edgeCert, edgeKey);
-        assertRouteConfiguration(DexRoute.NAME, edgeCert, edgeKey);
+        assertRouteConfiguration(ConsoleRoute.NAME, Objects.nonNull(edgeCert));
+        assertRouteConfiguration(DexRoute.NAME, Objects.nonNull(edgeCert));
     }
 
     @Test
@@ -640,7 +627,18 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
         });
     }
 
-    private void assertRouteConfiguration(String routeName, String edgeCert, String edgeKey) {
+    private void assertConsoleTlsSecret(String tlsCert, String tlsKey) {
+        var tlsSecret = client.secrets()
+                .inNamespace(CONSOLE_NS)
+                .withName(CONSOLE_NAME + '-' + ConsoleTlsSecret.NAME)
+                .get();
+        assertNotNull(tlsSecret);
+        assertEquals("kubernetes.io/tls", tlsSecret.getType());
+        assertEquals(tlsCert, decode(tlsSecret.getData().get("tls.crt")));
+        assertEquals(tlsKey, decode(tlsSecret.getData().get("tls.key")));
+    }
+
+    private void assertRouteConfiguration(String routeName, boolean customCertificate) {
         var name = CONSOLE_NAME + '-' + routeName;
 
         // Verify the Route uses reencrypt TLS termination (insecureEdgeTerminationPolicy = Redirect)
@@ -651,7 +649,7 @@ class ConsoleReconcilerDexTest extends ConsoleReconcilerTestBase {
             assertEquals("Redirect", route.getSpec().getTls().getInsecureEdgeTerminationPolicy());
             assertNull(route.getSpec().getTls().getCertificate());
             assertNull(route.getSpec().getTls().getKey());
-            if (edgeCert != null) {
+            if (customCertificate) {
                 assertNotNull(route.getSpec().getTls().getExternalCertificate());
                 assertEquals(CONSOLE_NAME + '-' + ConsoleTlsSecret.NAME, route.getSpec().getTls().getExternalCertificate().getName());
             } else {

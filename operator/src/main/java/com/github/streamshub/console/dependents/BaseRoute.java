@@ -64,7 +64,7 @@ abstract class BaseRoute extends CRUDKubernetesDependentResource<Route, Console>
                     .withDestinationCACertificate(caBundlePem)
                     .withInsecureEdgeTerminationPolicy("Redirect");
 
-            if (ConsoleTlsSecret.required(primary, context)) {
+            if (ConsoleTlsSecret.required(primary)) {
                 tlsBuilder.withNewExternalCertificate()
                         .withName(tlsSecret.instanceName(primary))
                         .endExternalCertificate();

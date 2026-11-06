@@ -2,10 +2,13 @@ package com.github.streamshub.console.dependents.support;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
@@ -23,7 +26,12 @@ import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.config.v1.ClusterVersion;
+import io.fabric8.openshift.api.model.config.v1.ClusterVersionStatus;
 import io.fabric8.openshift.api.model.config.v1.FeatureGate;
+import io.fabric8.openshift.api.model.config.v1.FeatureGateAttributes;
+import io.fabric8.openshift.api.model.config.v1.FeatureGateDetails;
+import io.fabric8.openshift.api.model.config.v1.FeatureGateStatus;
+import io.fabric8.openshift.api.model.config.v1.Release;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 
 public class ConfigSupport {
@@ -192,30 +200,37 @@ public class ConfigSupport {
         }
 
         if (resourceSupported(context, ClusterVersion.class)) {
-            ClusterVersion clusterVersion = getResource(context, ClusterVersion.class, null, "version", true);
-            if (clusterVersion != null && clusterVersion.getStatus() != null && clusterVersion.getStatus().getDesired() != null) {
-                String version = clusterVersion.getStatus().getDesired().getVersion();
-                if (version != null && isOpenShiftVersionAtLeast(version, 4, 19)) {
-                    return true;
-                }
+            String version = Optional.ofNullable(getResource(context, ClusterVersion.class, null, "version", true))
+                    .map(ClusterVersion::getStatus)
+                    .map(ClusterVersionStatus::getDesired)
+                    .map(Release::getVersion)
+                    .orElse("");
+
+            // RouteExternalCertificate is GA on 4.19 and after
+            if (isOpenShiftVersionAtLeast(version, 4, 19)) {
+                return true;
             }
         }
 
         if (resourceSupported(context, FeatureGate.class)) {
-            FeatureGate featureGate = getResource(context, FeatureGate.class, null, "cluster", true);
-            if (featureGate != null && featureGate.getStatus() != null && featureGate.getStatus().getFeatureGates() != null) {
-                return featureGate.getStatus().getFeatureGates().stream()
-                        .filter(details -> details.getEnabled() != null)
-                        .flatMap(details -> details.getEnabled().stream())
-                        .anyMatch(attr -> "RouteExternalCertificate".equals(attr.getName()));
-            }
+            // Check whether the cluster-scope "cluster" FeatureGate CR has enabled RouteExternalCertificate
+            return Optional.ofNullable(getResource(context, FeatureGate.class, null, "cluster", true))
+                    .map(FeatureGate::getStatus)
+                    .map(FeatureGateStatus::getFeatureGates)
+                    .map(Collection::stream)
+                    .orElseGet(Stream::empty)
+                    .map(FeatureGateDetails::getEnabled)
+                    .filter(Objects::nonNull)
+                    .flatMap(Collection::stream)
+                    .map(FeatureGateAttributes::getName)
+                    .anyMatch("RouteExternalCertificate"::equals);
         }
 
         return false;
     }
 
     static boolean isOpenShiftVersionAtLeast(String version, int minMajor, int minMinor) {
-        var matcher = Pattern.compile("^([0-9]+)\\.([0-9]+)").matcher(version);
+        var matcher = Pattern.compile("^(\\d+)\\.(\\d+)").matcher(version);
         if (matcher.find()) {
             int major = Integer.parseInt(matcher.group(1));
             int minor = Integer.parseInt(matcher.group(2));
