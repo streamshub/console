@@ -442,6 +442,7 @@ class TopicsResourceIT {
                 .toList();
 
         topicUtils.createTopics(topicNames, 1);
+        topicUtils.awaitTopicLeaders(topicNames);
 
         AdminClientSpy.install(adminClient -> {
             doAnswer(inv -> {

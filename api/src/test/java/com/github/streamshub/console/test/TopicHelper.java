@@ -20,10 +20,12 @@ import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.AlterConfigOp;
+import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.NewPartitions;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.RecordsToDelete;
+import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -170,6 +172,38 @@ public class TopicHelper {
         }
 
         return topicIds;
+    }
+
+    /**
+     * Wait for every partition of the given topics to have an assigned leader.
+     * Topic visibility alone does not guarantee that leadership has been
+     * established, and operations that inspect replicas require a leader for
+     * each partition.
+     *
+     * @param topicNames names of the topics to wait for
+     */
+    public void awaitTopicLeaders(List<String> topicNames) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            await().atMost(Duration.ofSeconds(10))
+                .ignoreExceptions()
+                .until(() -> {
+                    // Explicitly bound the Admin call; the default Admin API timeout is 60s.
+                    Map<String, TopicDescription> descriptions = admin
+                        .describeTopics(topicNames, new DescribeTopicsOptions().timeoutMs(5_000))
+                        .allTopicNames()
+                        .toCompletionStage()
+                        .toCompletableFuture()
+                        .join();
+
+                    return descriptions.keySet().containsAll(topicNames)
+                        && descriptions.values().stream()
+                            .allMatch(description -> !description.partitions().isEmpty()
+                                && description.partitions().stream()
+                                    .allMatch(partition -> partition.leader() != null));
+                });
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
     public void createPartitions(String name, int totalPartitions) {
