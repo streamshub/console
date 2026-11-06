@@ -27,6 +27,7 @@ import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.net.URL;
@@ -92,12 +93,15 @@ class KafkaNodesIT {
         kafkaClusterService.setListUnconfigured(false);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
-        applyKafka();
+        resetStrimziResources();   
+        applyKafka();          
+        awaitNodesReady();   
+
     }
 
     @AfterEach
     void cleanup() {
-        client.resources(Kafka.class).inAnyNamespace().delete();
+        resetStrimziResources();
     }
 
     private static Pattern ci(String text) {
@@ -110,10 +114,10 @@ class KafkaNodesIT {
         Kafka kafka = utils.apply(client, new KafkaBuilder(
                 utils.buildKafkaResource("test-kafka1", clusterId, bootstrapServers))
                 .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
+                .addNewCondition()
+                .withType("Ready")
+                .withStatus("True")
+                .endCondition()
                 .endStatus()
                 .build());
 
@@ -122,6 +126,22 @@ class KafkaNodesIT {
                         .map(KafkaContext::clusterConfig)
                         .map(KafkaClusterConfig::clusterKey)
                         .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
+    }
+    
+    private void resetStrimziResources() {
+        client.resources(io.strimzi.api.kafka.model.nodepool.KafkaNodePool.class).inAnyNamespace().delete();
+        client.resources(Kafka.class).inAnyNamespace().delete();
+    }
+
+    private void awaitNodesReady() {
+        var request = context.request();
+        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
+            var response = request.get(home + "api/kafkas/" + clusterId + "/nodes");
+            String body = response.text();
+            assertTrue(response.ok(), "status " + response.status());
+            assertTrue(
+                ci("controller").matcher(body).find(), body);
+        });
     }
 
     private String nodesUrl(String suffix) {
@@ -268,7 +288,8 @@ class KafkaNodesIT {
     void overviewTabSummaryCardShowsSingleNodeCounts() {
         try (Page page = context.newPage()) {
             page.navigate(nodesUrl("/overview"));
-
+            System.out.println("PAGE TEXT:");
+            System.out.println(page.locator("body").innerText());
             assertThat(ouia(page, "total-node-count")).containsText(ONE);
             assertThat(ouia(page, "controller-node-count")).containsText(ONE);
             assertThat(ouia(page, "broker-node-count")).containsText(ONE);

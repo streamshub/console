@@ -94,10 +94,6 @@ class KafkaOverviewIT {
         client.resources(Kafka.class).inAnyNamespace().delete();
     }
 
-    // ---------------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------------
-
     private static Pattern ci(String text) {
         return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
     }
@@ -277,15 +273,18 @@ class KafkaOverviewIT {
 
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
-
-            Locator toggleButton = page.locator(".pf-v6-c-expandable-section__toggle button").first();
-            if (toggleButton.count() > 0 && "false".equals(toggleButton.getAttribute("aria-expanded"))) {
-                toggleButton.click();
+            assertThat(page.getByRole(AriaRole.HEADING,
+                    new Page.GetByRoleOptions().setName(CLUSTER_CARD_TITLE))).isVisible();
+                
+            Locator toggle = main(page).locator(".pf-v6-c-expandable-section__toggle button").first();
+            toggle.waitFor();
+            if ("false".equals(toggle.getAttribute("aria-expanded"))) {
+                toggle.click();
+                assertThat(toggle).hasAttribute("aria-expanded", "true");
             }
 
-            assertThat(page.getByRole(AriaRole.LIST,
-                    new Page.GetByRoleOptions().setName(ERRORS_WARNINGS_LIST))).isVisible();
-            assertThat(page.getByText(NO_MESSAGES)).isVisible();
+            assertThat(main(page).getByText(NO_MESSAGES)).isVisible();
+
         }
     }
 
