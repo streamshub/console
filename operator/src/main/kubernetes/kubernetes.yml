@@ -295,7 +295,7 @@ rules:
     resourceNames:
       - k8s
 
-  # Granted to Console instances to read the ClusterVersion and fetch the OpenShift version 
+  # Granted to Console instances to read the ClusterVersion and fetch the OpenShift version
   # for display.
   - verbs:
       - get
@@ -305,6 +305,16 @@ rules:
       - clusterversions
     resourceNames:
       - version
+
+  # Read FeatureGate to determine OpenShift capability support (e.g. RouteExternalCertificate)
+  - verbs:
+      - get
+    apiGroups:
+      - config.openshift.io
+    resources:
+      - featuregates
+    resourceNames:
+      - cluster
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
