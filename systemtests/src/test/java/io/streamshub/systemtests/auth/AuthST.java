@@ -1,0 +1,521 @@
+package io.streamshub.systemtests.auth;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.GroupProtocol;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.GroupState;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import io.streamshub.console.support.Identifiers;
+import io.streamshub.systemtests.AbstractST;
+import io.streamshub.systemtests.TestCaseConfig;
+import io.streamshub.systemtests.constants.AuthTestConstants;
+import io.streamshub.systemtests.constants.Constants;
+import io.streamshub.systemtests.constants.TestTags;
+import io.streamshub.systemtests.constants.TimeConstants;
+import io.streamshub.systemtests.enums.FilterType;
+import io.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
+import io.streamshub.systemtests.locators.ConsoleLocators;
+import io.streamshub.systemtests.locators.CssSelectors;
+import io.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
+import io.streamshub.systemtests.locators.TopicsPageSelectors;
+import io.streamshub.systemtests.logs.LogWrapper;
+import io.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
+import io.streamshub.systemtests.setup.keycloak.KeycloakInstanceSetup;
+import io.streamshub.systemtests.setup.keycloak.KeycloakOperatorSetup;
+import io.streamshub.systemtests.setup.keycloak.KeycloakTestConfig;
+import io.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import io.streamshub.systemtests.utils.Utils;
+import io.streamshub.systemtests.utils.playwright.PwPageUrls;
+import io.streamshub.systemtests.utils.playwright.PwUtils;
+import io.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
+import io.streamshub.systemtests.utils.resourceutils.console.ConsoleUtils;
+import io.streamshub.systemtests.utils.resourceutils.kafka.KafkaClientsUtils;
+import io.streamshub.systemtests.utils.resourceutils.kafka.KafkaNamingUtils;
+import io.streamshub.systemtests.utils.resourceutils.kafka.KafkaTopicUtils;
+import io.streamshub.systemtests.utils.testchecks.TopicChecks;
+import io.streamshub.systemtests.utils.testutils.TopicsTestUtils;
+
+import io.skodjob.kubetest4j.wait.Wait;
+
+import static io.streamshub.systemtests.utils.Utils.getTestCaseConfig;
+import static io.streamshub.systemtests.utils.Utils.runAsyncWithContext;
+import static io.streamshub.systemtests.utils.Utils.runComposableAsyncWithContext;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@Tag(TestTags.REGRESSION)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class AuthST extends AbstractST {
+    private static final Logger LOGGER = LogWrapper.getLogger(AuthST.class);
+    private TestCaseConfig tcc;
+
+    // Keycloak
+    protected KeycloakOperatorSetup keycloakOperator;
+    protected KeycloakInstanceSetup keycloakInstance;
+
+    /**
+     * Verifies that a developer user can log in via OIDC and access their assigned Kafka cluster.
+     *
+     * <p>The test covers end-to-end behavior for a dev user, including UI navigation, topic visibility,
+     * and filtering behavior:</p>
+     *
+     * <ul>
+     *   <li>Logs in as developer user "bob" and checks that the navbar correctly displays the logged-in username.</li>
+     *   <li>Validates that the user can see only the single Kafka cluster assigned to their team ({@code kc-team-dev})
+     *       and that the total count is correct.</li>
+     *   <li>Navigates to the Kafka overview and topics pages, verifying that all 3 (dev) replicated topics are
+     *       reported as fully replicated and available.</li>
+     *   <li>Ensures that topics belonging to the admin Kafka cluster (prefixed {@code admin-replicated}) are not
+     *       visible in search results for this user.</li>
+     * </ul>
+     *
+     * <p>This test ensures that access control, topic visibility, and UI elements behave correctly
+     * for a developer user, confirming both security restrictions and correct data display.</p>
+     */
+    @Order(1)
+    @Test
+    void testAccessDevUser() {
+        LOGGER.info("Verify dev user '{}' can access assigned Kafka cluster '{}'", AuthTestConstants.USER_DEV_BOB, AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_DEV_BOB, AuthTestConstants.USER_DEV_BOB);
+        // Check correct user is logged in
+        PwUtils.navigate(tcc, ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+
+        LOGGER.info("Verify navbar displays logged-in user '{}'", AuthTestConstants.USER_DEV_BOB);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_DEV_BOB, true);
+
+        LOGGER.info("Verify dashboard lists a single Kafka cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, AuthTestConstants.TEAM_DEV_KAFKA_NAME, true);
+        PwUtils.waitForLocatorCount(tcc, 1, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
+
+        LOGGER.info("Open Kafka cluster detail view from the dashboard list");
+        PwUtils.waitForLocatorAndClick(tcc, KafkaDashboardPageSelectors.getViewButton(1));
+
+
+        LOGGER.info("Verify navbar still shows user '{}' after opening the Kafka cluster view", AuthTestConstants.USER_DEV_BOB);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_DEV_BOB, true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "1", true);
+
+        LOGGER.info("Verify topic replication state on overview and topics pages for Kafka cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        TopicChecks.checkOverviewPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
+        TopicChecks.checkTopicsPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
+
+        LOGGER.info("Verify that Admin Kafka cluster '{}' topics won't appear in search", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
+
+        LOGGER.debug("Verify topic name containing {} cannot be retrieved", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_NO_RESULTS_FOUND, "No results found", false);
+
+        // // Logout and check user is no longer logged in
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_DEV_BOB, true);
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+    }
+
+    /**
+     * Verifies that an admin user can log in via OIDC and access all assigned Kafka clusters.
+     *
+     * <p>The test covers end-to-end behavior for an admin user, including UI navigation, topic visibility,
+     * and filtering behavior across multiple Kafka clusters:</p>
+     *
+     * <ul>
+     *   <li>Logs in as admin user "alice" and checks that the navbar correctly displays the logged-in username.</li>
+     *   <li>Validates that the user can see both Kafka clusters ({@code kc-team-dev} and {@code kc-team-admin})
+     *       and that the total count is correct.</li>
+     *   <li>Navigates to the dev Kafka cluster and verifies that all 3 (dev) replicated topics are reported as
+     *       fully replicated and available, and that admin cluster topics (prefixed {@code admin-replicated})
+     *       cannot be found via search.</li>
+     *   <li>Navigates to the admin Kafka cluster and verifies that all 5 (admin) replicated topics are reported as
+     *       fully replicated and available, that dev cluster topics (prefixed {@code dev-replicated}) cannot be
+     *       found via search, and that admin topics can be found via search.</li>
+     * </ul>
+     *
+     * <p>This test ensures that admin access control, topic visibility, and UI elements behave correctly,
+     * confirming both security restrictions and full access to all relevant Kafka resources.</p>
+     */
+    @Order(2)
+    @Test
+    void testAccessAdminUser() {
+        LOGGER.info("Verify admin user '{}' can access both Kafka clusters '{}' and '{}'", AuthTestConstants.USER_ADMIN_ALICE, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, AuthTestConstants.USER_ADMIN_ALICE);
+        // Check correct user is logged in
+        PwUtils.navigate(tcc, ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+
+        LOGGER.info("Verify navbar displays logged-in user '{}'", AuthTestConstants.USER_ADMIN_ALICE);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_ADMIN_ALICE, true);
+
+        LOGGER.info("Verify dashboard lists both Kafka clusters '{}' and '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        PwUtils.waitForLocatorCount(tcc, 2, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS + ":first-child", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, true);
+
+        LOGGER.info("Navigate to Dev Kafka cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+
+        LOGGER.info("Verify navbar shows user '{}' and total Kafka count on Dev cluster page", AuthTestConstants.USER_ADMIN_ALICE);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_ADMIN_ALICE, true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "2", true);
+
+        LOGGER.info("Verify topic replication state on overview and topics pages for Dev Kafka cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        TopicChecks.checkOverviewPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
+        TopicChecks.checkTopicsPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
+
+        LOGGER.info("Verify Dev Kafka cluster '{}' does not expose topics from Admin cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
+
+        LOGGER.debug("Verify topic name containing {} cannot be retrieved", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_NO_RESULTS_FOUND, "No results found", false);
+
+        LOGGER.info("Navigate to Admin Kafka cluster '{}'", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
+
+        LOGGER.info("Verify navbar shows user '{}' and total Kafka count on Admin cluster page", AuthTestConstants.USER_ADMIN_ALICE);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_ADMIN_ALICE, true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "2", true);
+
+        LOGGER.info("Verify topic replication state on overview and topics pages for Admin Kafka cluster '{}'", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        TopicChecks.checkOverviewPageTopicState(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, 0, 0);
+        TopicChecks.checkTopicsPageTopicState(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, 0, 0);
+
+        LOGGER.info("Verify Admin Kafka cluster '{}' does not expose topics from Dev cluster '{}'", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
+        TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
+
+        LOGGER.debug("Verify topic name containing {} cannot be retrieved from Admin Kafka", AuthTestConstants.TEAM_DEV_TOPIC_PREFIX);
+        PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, 1, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_NO_RESULTS_FOUND, "No results found", false);
+
+        LOGGER.info("Verify Admin Kafka cluster '{}' topics matching prefix '{}' can be found via search", AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX);
+        LOGGER.debug("Verify topic name containing {} can be retrieved", AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX);
+        PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+
+        // // Logout and check user is no longer logged in
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE, true);
+        // Dev
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+        // Admin
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME));
+        Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+    }
+
+    /**
+     * Verifies that a "topics-only" usergroup can access Kafka topic information but is restricted
+     * from viewing other administrative pages like Nodes and Groups.
+     *
+     * <p>The test covers the following behaviors:</p>
+     *
+     * <ul>
+     *   <li>Logs in as topics-only user "frank" and confirms the navbar displays the correct username.</li>
+     *   <li>Checks that the user can see only the single Kafka cluster they are authorized to access
+     *       ({@code kc-team-dev}) and verifies the total count.</li>
+     *   <li>Validates the overview and topics pages for the authorized dev Kafka cluster, confirming that all
+     *       3 replicated topics are reported as fully replicated and available.</li>
+     *   <li>Filters the Topics page by name and confirms the expected 3 replicated topics are returned.</li>
+     *   <li>Verifies that the Nodes page is restricted and displays a "Not Authorized" message.</li>
+     * </ul>
+     *
+     * <p>This test ensures that topic-level access control is enforced correctly while restricting
+     * access to administrative views, confirming both security and proper UI behavior.</p>
+     */
+    @Order(3)
+    @Test
+    void testAccessTopicsViewUser() {
+        LOGGER.info("Verify topics-only user '{}' can view topics but not administrative pages on Kafka cluster '{}'", AuthTestConstants.USER_TOPICONLY_FRANK, AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, AuthTestConstants.USER_TOPICONLY_FRANK);
+
+        // Check correct user is logged in
+        PwUtils.navigate(tcc, PwPageUrls.getConsoleUrl(tcc));
+
+        LOGGER.info("Verify navbar displays logged-in user '{}'", AuthTestConstants.USER_TOPICONLY_FRANK);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_TOPICONLY_FRANK, true);
+
+        LOGGER.info("Verify dashboard lists only the authorized Kafka cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, AuthTestConstants.TEAM_DEV_KAFKA_NAME, true);
+        PwUtils.waitForLocatorCount(tcc, 1, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
+
+        LOGGER.info("Verify Dev Kafka cluster '{}' is accessible", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+
+        LOGGER.info("Verify navbar shows user '{}' and total Kafka count on Dev cluster page", AuthTestConstants.USER_TOPICONLY_FRANK);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_TOPICONLY_FRANK, true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "1", true);
+
+        LOGGER.info("Verify topic replication state on overview and topics pages for Kafka cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        TopicChecks.checkOverviewPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
+        TopicChecks.checkTopicsPageTopicState(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 0, 0);
+
+        LOGGER.info("Verify topics page filtering by name prefix '{}' returns {} replicated topics", AuthTestConstants.TEAM_DEV_TOPIC_PREFIX, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT);
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
+        PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_INPUT, AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+
+        LOGGER.info("Verify Nodes page returns Not Authorized for topics-only user '{}'", AuthTestConstants.USER_TOPICONLY_FRANK);
+        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        PwUtils.waitForContainsText(tcc, ConsoleLocators.of(tcc.page()).nodesOverview().dataView().table().body().locator(), "Not Authorized", true);
+
+        LOGGER.info("Verify consumer groups page is unavailable");
+        String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "unauthorized-groups";
+        createConsumerGroup(KafkaNamingUtils.consumerGroupName(newTopicName), newTopicName);
+        String consumerGroupEncodedName = Identifiers.encode(KafkaNamingUtils.consumerGroupName(newTopicName));
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsMembersPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, consumerGroupEncodedName));
+        PwUtils.waitForContainsText(tcc, CssSelectors.BODY_EMPTY_STATE, "API Error: 403", true);
+
+        // Logout and check user is no longer logged in
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_TOPICONLY_FRANK, true);
+    }
+
+    /**
+     * Verifies that a "consumer-groups-only" user can access Kafka consumer group information
+     * but is restricted from viewing topics and other administrative pages.
+     *
+     * <p><b>Note that this test needs to be last in execution order because it performs messaging on shared topics</b></p>
+     *
+     * <p>The test covers the following behaviors:</p>
+     *
+     * <ul>
+     *   <li>Logs in as consumer-groups-only user "grace" and confirms the navbar displays the correct username.</li>
+     *   <li>Checks that the user can see only the single Kafka cluster they are authorized to access
+     *       ({@code kc-team-dev}) and verifies the total count.</li>
+     *   <li>Verifies that the Kafka overview page reports all topic metrics (fully replicated, under-replicated,
+     *       unavailable, total topics, total partitions) as "0" since topic details are not authorized for this user.</li>
+     *   <li>Verifies that the Topics page displays a "Not Authorized" message and the Nodes page displays a
+     *       "Not Authorized" message.</li>
+     *   <li>Verifies that the Groups page is accessible and initially shows "No groups available".</li>
+     *   <li>Creates a Kafka topic ({@code dev-continuous-msg}) along with producer and consumer clients, then
+     *       confirms the new consumer group appears on the Groups page.</li>
+     *   <li>Waits for the producer and consumer clients to complete successfully.</li>
+     * </ul>
+     *
+     * <p>This test ensures proper enforcement of access control for users limited to consumer-group operations,
+     * confirming both UI restrictions and functional availability where permitted.</p>
+     */
+    @Order(Integer.MAX_VALUE)
+    @Test
+    void testAccessGroupsViewUser() {
+        LOGGER.info("Verify consumer-groups-only user '{}' can access consumer groups but not topics on Kafka cluster '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE, AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.loginWithOidcUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, AuthTestConstants.USER_CONSUMERONLY_GRACE);
+
+        // Check correct user is logged in
+        PwUtils.navigate(tcc, ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true));
+
+        LOGGER.info("Verify navbar displays logged-in user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
+
+        LOGGER.info("Verify dashboard lists only the authorized Kafka cluster '{}'", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.waitForContainsText(tcc, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, AuthTestConstants.TEAM_DEV_KAFKA_NAME, true);
+        PwUtils.waitForLocatorCount(tcc, 1, KafkaDashboardPageSelectors.KDPS_KAFKA_CLUSTER_LIST_ITEMS, true);
+
+        LOGGER.info("Verify Dev Kafka cluster '{}' is accessible", AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        PwUtils.navigate(tcc, PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+
+        LOGGER.info("Verify navbar shows user '{}' and total Kafka count on Dev cluster page", AuthTestConstants.USER_CONSUMERONLY_GRACE);
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "1", true);
+        assertTrue(tcc.page().locator(CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON).allInnerTexts().toString().contains(AuthTestConstants.USER_CONSUMERONLY_GRACE));
+
+        LOGGER.info("Verify overview page topic metrics show 0 since topic details are not authorized");
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_FULLY_REPLICATED, "0", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_UNDER_REPLICATED, "0", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_UNAVAILABLE, "0", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_TOPICS, "0", true);
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD_TOTAL_PARTITIONS, "0", true);
+
+        LOGGER.info("Verify Topics page shows 'Not Authorized' for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
+        PwUtils.navigate(tcc, PwPageUrls.getTopicsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
+
+        LOGGER.info("Verify Nodes page returns Not Authorized for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
+        PwUtils.navigate(tcc, PwPageUrls.getNodesPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        PwUtils.waitForContainsText(tcc, ConsoleLocators.of(tcc.page()).nodesOverview().dataView().table().body().locator(), "Not Authorized", true);
+
+        LOGGER.info("Verify Groups page is accessible and initially shows no groups for user '{}'", AuthTestConstants.USER_CONSUMERONLY_GRACE);
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        PwUtils.waitForContainsText(tcc, ConsoleLocators.of(tcc.page()).groups().dataView().table().body().locator(), "No data available", true);
+
+        String newTopicName = AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + "continuous-msg";
+        LOGGER.info("Create topic '{}' with producer and consumer clients to generate a new consumer group", newTopicName);
+        createConsumerGroup(KafkaNamingUtils.consumerGroupName(newTopicName), newTopicName);
+
+        LOGGER.info("Verify consumer group '{}' appears on the Groups page", KafkaNamingUtils.consumerGroupName(newTopicName));
+        PwUtils.navigate(tcc, PwPageUrls.getGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
+        PwUtils.waitForContainsText(tcc, ConsoleLocators.of(tcc.page()).groups().dataView().table().body().locator(), KafkaNamingUtils.consumerGroupName(newTopicName), true);
+
+        // Logout and check user is no longer logged in
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
+    }
+
+    private void createConsumerGroup(String groupName, String topicName) {
+        KafkaTopicUtils.setupTopicsIfNeededAndReturn(
+                tcc.namespace(),
+                AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+                List.of(topicName),
+                1, 1, 1);
+
+        try (
+            Producer<String, String> producer = KafkaClientsUtils.createSecureClient(
+                    tcc.namespace(),
+                    AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+                    KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME),
+                    KafkaClientsUtils::stringProducer);
+            Consumer<String, String> consumer = KafkaClientsUtils.createSecureClient(
+                    tcc.namespace(),
+                    AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+                    KafkaNamingUtils.kafkaUserName(AuthTestConstants.TEAM_DEV_KAFKA_NAME),
+                    properties -> {
+                        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupName);
+                        properties.setProperty(ConsumerConfig.GROUP_PROTOCOL_CONFIG, GroupProtocol.CLASSIC.name.toLowerCase(Locale.ROOT));
+                        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+                        return KafkaClientsUtils.stringConsumer(properties);
+                    })
+        ) {
+            LOGGER.info("Producing and consuming {} messages to topic {} for group '{}'",
+                    Constants.MESSAGE_COUNT, topicName, groupName);
+
+            for (int i = 0; i < Constants.MESSAGE_COUNT; i++) {
+                producer.send(new ProducerRecord<String, String>(
+                        topicName,
+                        "key-" + i,
+                        "value-" + i
+                ));
+            }
+
+            consumer.subscribe(List.of(topicName));
+            consumer.seekToBeginning(Collections.emptySet());
+
+            int recordsRead = 0;
+            long timeLimit = Instant.now().plusSeconds(20).toEpochMilli();
+
+            while (recordsRead < Constants.MESSAGE_COUNT && System.currentTimeMillis() < timeLimit) {
+                var records = consumer.poll(Duration.ofSeconds(2));
+                recordsRead += records.count();
+            }
+        }
+    }
+
+    @BeforeAll
+    void testClassSetup() {
+        // Setup namespace and kafka + console instance
+        tcc = getTestCaseConfig();
+        NamespaceUtils.prepareNamespace(tcc.namespace());
+        // Setup keycloak operator
+        // Note from docs:
+        // It is currently not fully supported for the operator to watch multiple or all namespaces.
+        // In circumstances where you want to watch multiple namespaces, you can install multiple operators.
+        keycloakOperator = new KeycloakOperatorSetup(tcc.namespace());
+        keycloakOperator.setup();
+
+        keycloakInstance = new KeycloakInstanceSetup(tcc.namespace());
+        keycloakInstance.setup();
+
+        var kcImp = runAsyncWithContext(() -> {
+            // Import console auth realm
+            keycloakInstance.importConsoleRealm(ConsoleUtils.getConsoleUiUrl(tcc.consoleInstanceName(), true),
+                false,
+                KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_USER_MAPPING);
+        });
+
+        // Setup Kafkas for both teams
+        var kDev = runAsyncWithContext(() -> {
+            // Dev Kafka
+            KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+            KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+                false,
+                AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+                AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, 1, 1, 1);
+        });
+
+        var kAdm = runAsyncWithContext(() -> {
+            // Admin Kafka
+            KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+            KafkaTopicUtils.setupTopicsIfNeededAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME,
+                false,
+                AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+                AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, 1, 1, 1);
+        });
+
+        CompletableFuture.allOf(kcImp, kDev, kAdm)
+            .thenCompose(runComposableAsyncWithContext(() -> {
+                // Console instance
+                ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(),
+                        keycloakInstance, KeycloakTestConfig.DEFAULT_ROLE_MAPPING, KeycloakTestConfig.DEFAULT_KAFKA_CLUSTERS_MAPPING).build());
+            }))
+            .thenCompose(runComposableAsyncWithContext(() -> {
+                ConsoleUtils.patchConsoleNginxBuffer(tcc.namespace(), tcc.consoleInstanceName());
+            }))
+            .join();
+    }
+
+    @BeforeEach
+    void testCaseSetup() {
+        for (var clusterName : List.of(AuthTestConstants.TEAM_DEV_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_KAFKA_NAME)) {
+            try (Admin admin = KafkaClientsUtils.createSecureClient(
+                    tcc.namespace(),
+                    clusterName, 
+                    KafkaNamingUtils.kafkaUserName(clusterName),
+                    Admin::create)) {
+                Wait.until("Groups deleted", 2_000, 120_000, () -> {
+                    var groups = admin.listGroups().all().toCompletionStage().toCompletableFuture().join();
+
+                    if (!groups.isEmpty()) {
+                        var emptyGroups = groups.stream()
+                                .filter(l -> l.groupState().map(GroupState.EMPTY::equals).orElse(false))
+                                .map(l -> l.groupId()).toList();
+
+                        if (!emptyGroups.isEmpty()) {
+                            admin.deleteConsumerGroups(emptyGroups).all().toCompletionStage().toCompletableFuture().join();
+                        }
+
+                        groups = admin.listGroups().all().toCompletionStage().toCompletableFuture().join();
+                    }
+
+                    return groups.isEmpty();
+                });
+            }
+        }
+    }
+
+    @AfterEach
+    void testCaseTeardown() {
+        tcc.resetBrowserContext();
+    }
+
+    @AfterAll
+    void testClassTeardown() {
+        tcc.playwright().close();
+    }
+}

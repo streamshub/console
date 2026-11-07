@@ -61,7 +61,7 @@ Project policy disallows `@author` in Javadoc (hard to maintain).
 - Groups tests sharing resources (e.g., `@TestBucket(VARIOUS_TOPIC_TYPES_BUCKET)`)
 - Resources created once per bucket, not per test
 - Tests in same bucket run together (randomized order between buckets)
-- See `systemtests/src/main/java/com/github/streamshub/systemtests/interfaces/TestBucketExtension.java`
+- See `systemtests/src/main/java/io/streamshub/systemtests/interfaces/TestBucketExtension.java`
 
 **Test lifecycle:**
 - `AbstractST` base class provides `@BeforeAll` setup for operators

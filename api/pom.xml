@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.github.streamshub</groupId>
+        <groupId>io.streamshub</groupId>
         <artifactId>console</artifactId>
         <version>0.15.0-SNAPSHOT</version>
     </parent>
@@ -25,7 +25,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.streamshub</groupId>
+            <groupId>io.streamshub</groupId>
             <artifactId>console-common</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -337,7 +337,7 @@
                         </goals>
                         <configuration>
                             <excludes>
-                                <exclude>com/github/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
+                                <exclude>io/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
                             </excludes>
                             <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                             <destFile>${project.basedir}/target/jacoco.exec</destFile>
@@ -351,7 +351,7 @@
                         </goals>
                         <configuration>
                             <excludes>
-                                <exclude>com/github/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
+                                <exclude>io/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
                             </excludes>
                             <destFile>${project.basedir}/target/jacoco.exec</destFile>
                             <append>true</append>

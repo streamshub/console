@@ -29,7 +29,7 @@ The proposed stateless JWT/JWE cookie-based authentication approach for storing 
 
 ### Current Implementation Context
 
-#### Backend: [`ConsoleAuthenticationMechanism.java`](api/src/main/java/com/github/streamshub/console/api/security/ConsoleAuthenticationMechanism.java)
+#### Backend: [`ConsoleAuthenticationMechanism.java`](api/src/main/java/io/streamshub/console/api/security/ConsoleAuthenticationMechanism.java)
 
 - **Supported auth methods:**
   - OIDC (via Quarkus OIDC extension)
@@ -913,7 +913,7 @@ User → OIDC Provider → React App (OIDC token)
 - Store credentials in Kubernetes Secrets or HashiCorp Vault
 - Map OIDC subject/groups to Kafka credentials
 - Backend handles all Kafka authentication
-- Already partially implemented in [`ConsoleAuthenticationMechanism.java`](api/src/main/java/com/github/streamshub/console/api/security/ConsoleAuthenticationMechanism.java:108-110)
+- Already partially implemented in [`ConsoleAuthenticationMechanism.java`](api/src/main/java/io/streamshub/console/api/security/ConsoleAuthenticationMechanism.java:108-110)
 
 ---
 
@@ -1063,7 +1063,7 @@ This is the **best balance** of security, UX, and implementation complexity:
 ### OAuth Access Tokens
 - **Less Risky:** Access tokens are already short-lived
 - **Better Approach:** Store in memory, pass in Authorization header
-- **Current Implementation:** Already supported in [`ConsoleAuthenticationMechanism.java`](api/src/main/java/com/github/streamshub/console/api/security/ConsoleAuthenticationMechanism.java:297-317)
+- **Current Implementation:** Already supported in [`ConsoleAuthenticationMechanism.java`](api/src/main/java/io/streamshub/console/api/security/ConsoleAuthenticationMechanism.java:297-317)
 
 ---
 
@@ -1189,7 +1189,7 @@ Since poc-react has **no server-side component**, you must choose between:
 - [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 - [RFC 7519 - JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519)
 - [RFC 7516 - JSON Web Encryption (JWE)](https://tools.ietf.org/html/rfc7516)
-- Current implementation: [`ConsoleAuthenticationMechanism.java`](api/src/main/java/com/github/streamshub/console/api/security/ConsoleAuthenticationMechanism.java)
+- Current implementation: [`ConsoleAuthenticationMechanism.java`](api/src/main/java/io/streamshub/console/api/security/ConsoleAuthenticationMechanism.java)
 
 ---
 
