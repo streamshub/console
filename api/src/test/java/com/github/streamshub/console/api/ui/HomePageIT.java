@@ -83,7 +83,7 @@ class HomePageIT {
                     new Page.GetByRoleOptions().setName("test-kafka1")
             ).first().click();
 
-            page.waitForURL("**/kafka/*");
+            assertThat(page).hasURL("**/kafka/*/overview");
         }
     }
 }

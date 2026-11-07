@@ -206,7 +206,7 @@ class KafkaNodesIT {
         try (Page page = context.newPage()) {
             page.navigate(nodesUrl(""));
 
-            page.waitForURL("**/kafka/*/nodes/overview");
+            assertThat(page).hasURL(Pattern.compile(".*/kafka/[^/]+/nodes/overview/?$"));
         }
     }
 
