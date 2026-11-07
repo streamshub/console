@@ -1,11 +1,5 @@
 package com.github.streamshub.console.api.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,18 +12,24 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -48,6 +48,7 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.streamshub.console.api.model.KafkaRecord;
+import com.github.streamshub.console.api.model.RecordFilterParams;
 import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToOne;
 import com.github.streamshub.console.api.support.ContextualExecutorProvider;
@@ -59,6 +60,9 @@ import static java.util.Objects.requireNonNullElse;
 
 @ApplicationScoped
 public class RecordService {
+
+    static final String SSE_EVENT_HEARTBEAT = "heartbeat";
+    static final String SSE_EVENT_DONE = "done";
 
     @Inject
     Logger logger;
@@ -82,13 +86,65 @@ public class RecordService {
     @Inject
     TopicDescribeService topicService;
 
-    public List<KafkaRecord> consumeRecords(String topicId,
+    public List<KafkaRecord> consumeRecords(String topicId, List<String> include, RecordFilterParams params) {
+        ConsumerRecordsIterator iterator = prepareConsumer(
+                topicId,
+                params.getPartition(),
+                params.getOffset(),
+                params.getTimestamp(),
+                params.getLimit(),
+                searchPredicates(params),
+                pollTimeout
+        );
+
+        if (iterator == null) {
+            return Collections.emptyList();
+        }
+
+        var limitSet = new SizeLimitedSortedSet<ConsumerRecord<RecordData, RecordData>>(
+                buildComparator(params.getTimestamp(), params.getOffset()), params.getLimit());
+
+        Iterable<List<ConsumerRecord<RecordData, RecordData>>> poll = () -> iterator;
+
+        return StreamSupport.stream(poll.spliterator(), false)
+                .flatMap(List::stream)
+                .collect(Collectors.toCollection(() -> limitSet))
+                .stream()
+                .map(rec -> getItems(rec, topicId, include, params.getMaxValueLength()))
+                .toList();
+    }
+
+    public void consumeRecords(String topicId, List<String> include, RecordFilterParams params, SseEventSink sink, Sse sse) {
+        ConsumerRecordsIterator iterator = prepareConsumer(
+                topicId,
+                params.getPartition(),
+                params.getOffset(),
+                params.getTimestamp(),
+                params.getLimit(),
+                searchPredicates(params),
+                Duration.ofMinutes(30) // TODO: configurable?
+        );
+
+        if (iterator == null) {
+            sendSseDone(sink, sse, ConsumerRecordsIterator.EndReason.COMPLETE);
+            return;
+        }
+
+        consumeRecordsAsSse(iterator, topicId, include, params, sink, sse);
+    }
+
+    /**
+     * Resolves the topic, computes assignments, seeks to the requested position, and returns
+     * a ready-to-poll {@link ConsumerRecordsIterator}. Returns {@code null} when there are no
+     * assignments to read (empty partitions, no matching offset/timestamp, etc.).
+     */
+    private ConsumerRecordsIterator prepareConsumer(String topicId,
             Integer partition,
             Long offset,
             Instant timestamp,
             Integer limit,
-            List<String> include,
-            Integer maxValueLength) {
+            List<Predicate<ConsumerRecord<RecordData, RecordData>>> predicates,
+            Duration timeout) {
 
         String topicName = topicNameForId(topicId);
         List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
@@ -98,7 +154,7 @@ public class RecordService {
                 .collect(Collectors.toCollection(ArrayList::new));
 
         if (assignments.isEmpty()) {
-            return Collections.emptyList();
+            return null;
         }
 
         var beginningOffsets = consumer.beginningOffsets(assignments);
@@ -116,7 +172,7 @@ public class RecordService {
         });
 
         if (assignments.isEmpty()) {
-            return Collections.emptyList();
+            return null;
         }
 
         consumer.assign(assignments);
@@ -128,7 +184,7 @@ public class RecordService {
         }
 
         if (assignments.isEmpty()) {
-            return Collections.emptyList();
+            return null;
         }
 
         /*
@@ -137,16 +193,71 @@ public class RecordService {
          */
         consumer.assign(assignments);
 
-        Iterable<ConsumerRecords<RecordData, RecordData>> poll =
-                () -> new ConsumerRecordsIterator<>(consumer, endOffsets, limit, Instant.now().plus(pollTimeout));
-        var limitSet = new SizeLimitedSortedSet<ConsumerRecord<RecordData, RecordData>>(buildComparator(timestamp, offset), limit);
+        return new ConsumerRecordsIterator(consumer, endOffsets, limit, Instant.now().plus(timeout), predicates);
+    }
 
-        return StreamSupport.stream(poll.spliterator(), false)
-                .flatMap(records -> StreamSupport.stream(records.spliterator(), false))
-                .collect(Collectors.toCollection(() -> limitSet))
-                .stream()
-                .map(rec -> getItems(rec, topicId, include, maxValueLength))
-                .toList();
+    /**
+     * Search predicates (key, value, headers) requested by the client. An empty list
+     * means that all records are selected.
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static List<Predicate<ConsumerRecord<RecordData, RecordData>>> searchPredicates(RecordFilterParams params) {
+        return (List) params.getPredicates(ConsumerRecord.class);
+    }
+
+    private void consumeRecordsAsSse(
+            ConsumerRecordsIterator iterator,
+            String topicId,
+            List<String> include,
+            RecordFilterParams params,
+            SseEventSink sink,
+            Sse sse) {
+
+        try {
+            while (iterator.hasNext()) {
+                if (sink.isClosed()) {
+                    logger.debugf("SSE event sink for topic %s is closed - client has gone.", topicId);
+                    break;
+                }
+
+                List<KafkaRecord> batchItems = iterator.next().stream()
+                        .map(rec -> getItems(rec, topicId, include, params.getMaxValueLength()))
+                        .toList();
+
+                if (!batchItems.isEmpty()) {
+                    OutboundSseEvent event = sse.newEventBuilder()
+                            .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                            .data(List.class, batchItems)
+                            .build();
+                    sink.send(event);
+                }
+
+                /*
+                 * Report progress after every batch, including those without any
+                 * matching records, so clients can show how much has been scanned.
+                 */
+                sink.send(sse.newEventBuilder()
+                        .name(SSE_EVENT_HEARTBEAT)
+                        .data("{\"scanned\":" + iterator.totalConsumed()
+                                + ",\"progress\":" + iterator.scanProgress() + "}")
+                        .build());
+            }
+        } finally {
+            sendSseDone(sink, sse, iterator.endReason());
+        }
+    }
+
+    private static void sendSseDone(SseEventSink sink, Sse sse, ConsumerRecordsIterator.EndReason reason) {
+        try {
+            if (!sink.isClosed()) {
+                sink.send(sse.newEventBuilder()
+                        .name(SSE_EVENT_DONE)
+                        .data("{\"reason\":\"" + reason.value() + "\"}")
+                        .build());
+            }
+        } finally {
+            sink.close();
+        }
     }
 
     public KafkaRecord produceRecord(String topicId, KafkaRecord input) {
@@ -330,6 +441,7 @@ public class RecordService {
         setProperty(KafkaRecord.Fields.OFFSET, include, rec::offset, item::offset);
         setProperty(KafkaRecord.Fields.TIMESTAMP, include, () -> Instant.ofEpochMilli(rec.timestamp()), item::timestamp);
         setProperty(KafkaRecord.Fields.TIMESTAMP_TYPE, include, rec.timestampType()::name, item::timestampType);
+
         if (include.contains(KafkaRecord.Fields.KEY)) {
             FieldResult keyResult = encodeField(rec.key() != null ? rec.key().bytes() : null, maxValueLength);
             item.key(keyResult.value());
@@ -447,55 +559,20 @@ public class RecordService {
             return new FieldResult("", null);
         }
 
-        StringBuilder sb = new StringBuilder();
-        boolean binary = false;
+        Optional<String> text = RecordFilterParams.decodeText(bytes);
 
-        try (Reader reader = new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8
-                .newDecoder()
-                .onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT))) {
-            int cp;
-
-            while ((cp = reader.read()) != -1) {
-                if (isExcludedUnicodeC0(cp) || isUnicodeC1(cp)) {
-                    /*
-                     * Consider NUL, C0 controls (except common text whitespace), DEL,
-                     * and C1 controls to be indicative of "binary data" that will not 
-                     * be displayed as text in the UI.
-                     */
-                    binary = true;
-                    break;
-                }
-
-                sb.appendCodePoint(cp);
-            }
-        } catch (IOException e) {
-            binary = true;
-        }
-
-        if (binary) {
+        if (text.isEmpty()) {
             if (maxValueLength != null && bytes.length > maxValueLength) {
                 return new FieldResult(null, ContentMeta.forBinaryOmitted());
             }
             return new FieldResult(Base64.getEncoder().encodeToString(bytes), ContentMeta.forBinaryEncoded());
         }
 
-        // text path — sb already contains the full decoded string
-        String text = sb.toString();
-        if (maxValueLength != null && text.length() > maxValueLength) {
-            return new FieldResult(text.substring(0, maxValueLength), ContentMeta.forTextTruncated());
+        String decoded = text.get();
+        if (maxValueLength != null && decoded.length() > maxValueLength) {
+            return new FieldResult(decoded.substring(0, maxValueLength), ContentMeta.forTextTruncated());
         }
-        return new FieldResult(text, null);
-    }
-
-    /** Returns true for C0 control codes except common text whitespace (tab, LF, CR). */
-    private static boolean isExcludedUnicodeC0(int cp) {
-        return cp <= 0x1F && cp != '\t' && cp != '\n' && cp != '\r';
-    }
-
-    /** Returns true for DEL and C1 control codes (0x7F–0x9F). */
-    private static boolean isUnicodeC1(int cp) {
-        return cp >= 0x7F && cp <= 0x9F;
+        return new FieldResult(decoded, null);
     }
 
     /** Carries the processed string value alongside optional content metadata. */
@@ -562,24 +639,122 @@ public class RecordService {
         return new InvalidPartitionsException("Partition " + partition + " is not valid for topic " + topicId);
     }
 
-    static class ConsumerRecordsIterator<K, V> implements Iterator<ConsumerRecords<K, V>> {
+    /**
+     * Iterates over batches of records polled from the consumer. Each batch contains
+     * only the records that match the search predicates, if any were given.
+     *
+     * The {@code limit} is applied per partition to the records that <em>match</em> the
+     * predicates, not to the records scanned. The total number of records scanned
+     * (matching or not) is available from {@link #totalConsumed()}, and the estimated
+     * fraction of the requested offset range that has been scanned from
+     * {@link #scanProgress()}.
+     */
+    static class ConsumerRecordsIterator implements Iterator<List<ConsumerRecord<RecordData, RecordData>>> {
+        /**
+         * Why the iteration ended, reported to SSE clients in the final event.
+         */
+        enum EndReason {
+            /** All requested partitions were read to their end offsets. */
+            COMPLETE,
+            /** The requested number of matching records was found. */
+            LIMIT,
+            /** The time allowed for the request ran out before all records were read. */
+            TIMEOUT,
+            /** The iteration was stopped before completing, e.g. the client went away. */
+            CANCELLED;
+
+            String value() {
+                return name().toLowerCase(Locale.ROOT);
+            }
+        }
+
         private static final Logger LOGGER = Logger.getLogger(ConsumerRecordsIterator.class);
         private static final Duration MAX_POLL_TIME = Duration.ofMillis(100);
 
         private final Instant timeout;
         private int recordsConsumed = 0;
-        private Map<TopicPartition, Integer> partitionConsumed = new HashMap<>();
-        private final Consumer<K, V> consumer;
+        private Map<TopicPartition, Integer> partitionMatched = new HashMap<>();
+        private final Consumer<RecordData, RecordData> consumer;
         private final Set<TopicPartition> assignments;
         private final Map<TopicPartition, Long> endOffsets;
         private final int limit;
+        private final List<Predicate<ConsumerRecord<RecordData, RecordData>>> predicates;
 
-        public ConsumerRecordsIterator(Consumer<K, V> consumer, Map<TopicPartition, Long> endOffsets, int limit, Instant timeout) {
+        /** Offset at which reading started for each partition. */
+        private final Map<TopicPartition, Long> startOffsets = new HashMap<>();
+        /** Offset that will be read next for each partition. */
+        private final Map<TopicPartition, Long> nextOffsets = new HashMap<>();
+        /** Partitions that have nothing further to read, either at the end or the match limit was met. */
+        private final Set<TopicPartition> finished = new HashSet<>();
+        private boolean limitMet = false;
+        private boolean timedOut = false;
+
+        public ConsumerRecordsIterator(
+                Consumer<RecordData, RecordData> consumer,
+                Map<TopicPartition, Long> endOffsets,
+                int limit,
+                Instant timeout,
+                List<Predicate<ConsumerRecord<RecordData, RecordData>>> predicates) {
+
             this.consumer = consumer;
             this.assignments = new HashSet<>(consumer.assignment());
             this.endOffsets = endOffsets;
             this.limit = limit;
             this.timeout = timeout;
+            this.predicates = predicates;
+
+            for (var assignment : assignments) {
+                long position = consumer.position(assignment);
+                startOffsets.put(assignment, position);
+                nextOffsets.put(assignment, position);
+            }
+        }
+
+        /**
+         * Estimate of the fraction (0 to 100, as a whole number) of the offset range to
+         * be read that has been scanned. Measured in offsets rather than record counts
+         * because compaction and transaction markers leave gaps in the offsets.
+         */
+        public int scanProgress() {
+            long totalRange = 0;
+            long scannedRange = 0;
+
+            for (var entry : startOffsets.entrySet()) {
+                var partition = entry.getKey();
+                long range = Math.clamp(endOffsets.get(partition) - entry.getValue(), 0L, Long.MAX_VALUE);
+                totalRange += range;
+
+                if (finished.contains(partition)) {
+                    scannedRange += range;
+                } else {
+                    scannedRange += Math.clamp(nextOffsets.get(partition) - entry.getValue(), 0L, range);
+                }
+            }
+
+            return totalRange == 0 ? 100 : (int) (scannedRange * 100 / totalRange);
+        }
+
+        /**
+         * The reason iteration ended. Only meaningful once {@link #hasNext()} is false.
+         */
+        public EndReason endReason() {
+            if (finished.size() == startOffsets.size()) {
+                return limitMet ? EndReason.LIMIT : EndReason.COMPLETE;
+            }
+
+            if (timedOut || !Instant.now().isBefore(timeout)) {
+                return EndReason.TIMEOUT;
+            }
+
+            return EndReason.CANCELLED;
+        }
+
+        /**
+         * The total number of records polled so far, whether or not they matched
+         * the search predicates.
+         */
+        public int totalConsumed() {
+            return recordsConsumed;
         }
 
         @Override
@@ -593,43 +768,63 @@ public class RecordService {
             return moreRecords;
         }
 
+        /**
+         * Poll the next batch of records.
+         *
+         * @return the records of the batch that match the search predicates. May be
+         *         empty when none of the polled records matched.
+         */
         @Override
-        public ConsumerRecords<K, V> next() {
+        public List<ConsumerRecord<RecordData, RecordData>> next() {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
 
-            ConsumerRecords<K, V> records = ConsumerRecords.empty();
+            ConsumerRecords<RecordData, RecordData> records = ConsumerRecords.empty();
 
             while (records.isEmpty() && Instant.now().isBefore(timeout)) {
                 records = poll();
             }
 
+            List<ConsumerRecord<RecordData, RecordData>> matched = new ArrayList<>();
             int pollSize = 0;
 
             for (var partition : records.partitions()) {
                 var partitionRecords = records.records(partition);
                 int consumed = partitionRecords.size();
                 pollSize += consumed;
-                int total = partitionConsumed.compute(partition, (k, v) -> requireNonNullElse(v, 0) + consumed);
+                int matchCount = selectMatches(partitionRecords, matched);
+
+                final int partitionMatches = matchCount;
+                int total = partitionMatched.compute(partition, (k, v) -> requireNonNullElse(v, 0) + partitionMatches);
+
+                if (consumed > 0) {
+                    long maxOffset = partitionRecords.stream().mapToLong(ConsumerRecord::offset).max().getAsLong() + 1;
+                    nextOffsets.merge(partition, maxOffset, Math::max);
+                }
 
                 if (total >= limit) {
-                    // Consumed `limit` records for this partition
-                    LOGGER.tracef("Consumed %d records (more than limit %d) from partition %s", total, limit, partition);
+                    // Found `limit` matching records for this partition
+                    LOGGER.tracef("Matched %d records (more than limit %d) from partition %s", total, limit, partition);
                     assignments.remove(partition);
-                } else if (consumed > 0) {
-                    long maxOffset = partitionRecords.stream().mapToLong(ConsumerRecord::offset).max().getAsLong() + 1;
-
-                    if (maxOffset >= endOffsets.get(partition)) {
-                        // Reached the end of the partition
-                        LOGGER.tracef("Reached end of partition %s at offset %s", partition, maxOffset);
-                        assignments.remove(partition);
-                    }
+                    finished.add(partition);
+                    limitMet = true;
+                } else if (consumed > 0 && nextOffsets.get(partition) >= endOffsets.get(partition)) {
+                    // Reached the end of the partition
+                    LOGGER.tracef("Reached end of partition %s at offset %s", partition, nextOffsets.get(partition));
+                    assignments.remove(partition);
+                    finished.add(partition);
                 }
             }
 
             if (pollSize == 0) {
-                // End of stream, unsubscribe everything
+                // No records before the timeout, unsubscribe everything
+                timedOut = true;
+                assignments.clear();
+            } else if (filterLimitMet()) {
+                // There are filters and the match limit has been met, unsubscribe everything
+                limitMet = true;
+                finished.addAll(startOffsets.keySet());
                 assignments.clear();
             }
 
@@ -637,13 +832,46 @@ public class RecordService {
             recordsConsumed += pollSize;
 
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.tracef("next() consumed records: %d; total %s", pollSize, recordsConsumed);
+                LOGGER.tracef("next() consumed records: %d, matched: %d; total consumed %s",
+                        pollSize, matched.size(), recordsConsumed);
             }
 
-            return records;
+            return matched;
         }
 
-        ConsumerRecords<K, V> poll() {
+        private int selectMatches(List<ConsumerRecord<RecordData, RecordData>> partitionRecords,
+                List<ConsumerRecord<RecordData, RecordData>> matched) {
+
+            int matchCount = 0;
+
+            for (var rec : partitionRecords) {
+                if (matches(rec)) {
+                    matched.add(rec);
+                    matchCount++;
+                }
+            }
+
+            return matchCount;
+        }
+
+        /**
+         * A record is selected when no search predicates were requested or when at least
+         * one of the key/value/headers predicates matches (OR semantics).
+         */
+        private boolean matches(ConsumerRecord<RecordData, RecordData> rec) {
+            return predicates.isEmpty() || predicates.stream().anyMatch(p -> p.test(rec));
+        }
+
+        private boolean filterLimitMet() {
+            if (predicates.isEmpty()) {
+                return false;
+            }
+
+            var totalMatched = partitionMatched.values().stream().mapToLong(Integer::longValue).sum();
+            return totalMatched >= limit;
+        }
+
+        ConsumerRecords<RecordData, RecordData> poll() {
             var timeRemaining = Duration.between(Instant.now(), timeout);
             Duration pollTimeout;
 

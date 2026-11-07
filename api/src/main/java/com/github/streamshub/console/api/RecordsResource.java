@@ -8,6 +8,7 @@ import jakarta.inject.Named;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -22,6 +23,8 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.RuntimeDelegate;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
@@ -31,6 +34,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+
 
 import com.github.streamshub.console.api.model.KafkaRecord;
 import com.github.streamshub.console.api.model.RecordFilterParams;
@@ -62,6 +66,9 @@ public class RecordsResource {
     @Inject
     @Named("requestedFields")
     Consumer<List<String>> requestedFields;
+
+    @Context
+    Sse sse;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -132,16 +139,93 @@ public class RecordsResource {
         CacheControl noStore = RuntimeDelegate.getInstance().createHeaderDelegate(CacheControl.class).fromString("no-store");
         var records = recordService.consumeRecords(
                 topicId,
-                params.getPartition(),
-                params.getOffset(),
-                params.getTimestamp(),
-                params.getLimit(),
                 fields,
-                params.getMaxValueLength());
+                params);
 
         return Response.ok(new KafkaRecord.KafkaRecordDataList(records))
                 .cacheControl(noStore)
                 .build();
+    }
+
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @Operation(
+        summary = "Stream records from a topic",
+        description = "Stream records from a topic as Server-Sent Events. Each SSE data event "
+            + "contains a JSON array of matching record objects. After each batch of records "
+            + "polled from Kafka, an event named 'heartbeat' with data `{\"scanned\":<n>,\"progress\":<p>}` "
+            + "reports the total number of records scanned so far, whether or not they matched, and the "
+            + "estimated percentage (0-100) of the requested offset range that has been scanned. A terminal "
+            + "event named 'done' with data `{\"reason\":\"<reason>\"}` signals that scanning has ended. The reason "
+            + "is one of 'complete' (all requested records were read), 'limit' (the requested number of matches "
+            + "was found), 'timeout' (time ran out before all records were read), or 'cancelled'. "
+            + "The same filter and field parameters as the "
+            + "JSON endpoint are supported, including server-side filter[key], filter[value], "
+            + "and filter[headers] search using the 'like' operator.")
+    @APIResponse(
+        responseCode = "200",
+        description = "Stream of record batches as SSE data events, terminated by an event named 'done'.")
+    @APIResponse(responseCode = "404", ref = "NotFound")
+    @APIResponse(responseCode = "500", ref = "ServerError")
+    @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.LIST)
+    public void streamRecords(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @PathParam("topicId")
+            @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
+            @Parameter(description = "Topic identifier")
+            String topicId,
+
+            @Valid
+            @BeanParam
+            RecordFilterParams params,
+
+            @QueryParam(FIELDS_PARAM)
+            @DefaultValue(KafkaRecord.Fields.DEFAULT)
+            @StringEnumeration(
+                    source = FIELDS_PARAM,
+                    allowedValues = {
+                        KafkaRecord.Fields.PARTITION,
+                        KafkaRecord.Fields.OFFSET,
+                        KafkaRecord.Fields.TIMESTAMP,
+                        KafkaRecord.Fields.TIMESTAMP_TYPE,
+                        KafkaRecord.Fields.HEADERS,
+                        KafkaRecord.Fields.KEY,
+                        KafkaRecord.Fields.VALUE,
+                        KafkaRecord.Fields.SIZE,
+                        KafkaRecord.Fields.KEY_SCHEMA,
+                        KafkaRecord.Fields.VALUE_SCHEMA,
+                    },
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    allowEmptyValue = true,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                KafkaRecord.Fields.PARTITION,
+                                KafkaRecord.Fields.OFFSET,
+                                KafkaRecord.Fields.TIMESTAMP,
+                                KafkaRecord.Fields.TIMESTAMP_TYPE,
+                                KafkaRecord.Fields.HEADERS,
+                                KafkaRecord.Fields.KEY,
+                                KafkaRecord.Fields.VALUE,
+                                KafkaRecord.Fields.SIZE,
+                                KafkaRecord.Fields.KEY_SCHEMA,
+                                KafkaRecord.Fields.VALUE_SCHEMA,
+                            }))
+            List<String> fields,
+
+            SseEventSink sink) {
+
+        requestedFields.accept(fields);
+        recordService.consumeRecords(topicId, fields, params, sink, sse);
     }
 
     @POST

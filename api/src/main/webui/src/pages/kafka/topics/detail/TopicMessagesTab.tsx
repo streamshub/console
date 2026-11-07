@@ -1,8 +1,9 @@
 /**
  * Topic Messages Tab - Shows messages in a topic with advanced search and detail drawer
  *
- * - The server fetches `limit` records (partition / from / limit).
- * - The search term is applied in the browser to those fetched records.
+ * - Records are always streamed from the server (SSE) and added to the table
+ *   as they arrive.
+ * - The search term is applied on the server against the full record content.
  * - Only the table body shows loading, empty and error states.
  */
 
@@ -39,7 +40,7 @@ import { MessageDetails } from '@/components/kafka/topics/MessageDetails';
 import { AdvancedSearch } from '@/components/kafka/topics/AdvancedSearch';
 import { Column, ColumnsModal } from '@/components/kafka/topics/ColumnsModal';
 import { FromOptions } from '@/components/kafka/topics/MessageFilter/FetchFromSelector';
-import { filterMessages } from '@/components/kafka/topics/MessageFilter/messageFilter';
+import { MessagesStatus } from '@/components/kafka/topics/MessagesStatus';
 
 const defaultColumns: Column[] = [
   'offset-partition',
@@ -102,10 +103,16 @@ export function TopicMessagesTab() {
   const partitions = topicData?.attributes?.numPartitions || 0;
 
   const {
-    data: messages = [],
-    isLoading: isLoadingMessages,
-    error: messagesError,
-    refetch,
+    query: {
+      data: messages = [],
+      isLoading: isLoadingMessages,
+      isFetching: isFetchingMessages,
+      error: messagesError,
+      refetch,
+    },
+    cancel: cancelMessages,
+    scan,
+    stopped,
   } = useMessages(
     {
       kafkaId: kafkaId!,
@@ -115,17 +122,14 @@ export function TopicMessagesTab() {
       offset,
       timestamp,
       epoch,
+      query,
+      where,
       maxValueLength: 500,
     },
     {
       enabled: !!kafkaId && !!topicId,
       refetchInterval: limit === 'continuously' ? 1000 : false,
     }
-  );
-
-  const visibleMessages = useMemo(
-    () => filterMessages(messages, query, where),
-    [messages, query, where]
   );
 
   const selectedMessageId = useMemo(
@@ -369,9 +373,22 @@ export function TopicMessagesTab() {
                 </Toolbar>
               </div>
 
+              <MessagesStatus
+                count={messages.length}
+                scan={scan}
+                isSearching={query !== undefined}
+                // In continuous mode every poll is a fetch, don't flash the indicator
+                isStreaming={isFetchingMessages && limit !== 'continuously'}
+                isStopped={stopped}
+                hideState={limit === 'continuously'}
+                onCancel={cancelMessages}
+              />
+
               <MessagesTable
-                messages={visibleMessages}
+                messages={messages}
                 isLoading={isLoadingMessages}
+                scanned={scan.scanned}
+                isSearching={query !== undefined}
                 errorState={errorState}
                 selectedMessage={selectedMessage}
                 chosenColumns={chosenColumns}

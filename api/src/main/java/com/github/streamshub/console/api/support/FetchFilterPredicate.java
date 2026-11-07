@@ -14,18 +14,33 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
     public enum Operator {
         IN_LIST("in"),
         GREATER_THAN_OR_EQUAL_TO("gte"),
-        LIKE_PATTERN("like"),
+        LIKE_PATTERN("like", 0),
+        CASE_INSENSITIVE_LIKE_PATTERN("ilike", Pattern.CASE_INSENSITIVE),
         EQUAL_TO("eq"),
         CONTAINS("contains");
 
         private final String value;
+        private final int patternFlags;
+
+        private Operator(String value, int patternFlags) {
+            this.value = value;
+            this.patternFlags = patternFlags;
+        }
 
         private Operator(String value) {
-            this.value = value;
+            this(value, -1);
         }
 
         public String value() {
             return value;
+        }
+
+        public boolean buildPattern() {
+            return patternFlags > -1;
+        }
+
+        public int patternFlags() {
+            return patternFlags;
         }
 
         public static Operator fromValue(String value) {
@@ -53,7 +68,7 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
         this.operands = filter.getOperands().stream().map(operandParser).toList();
         this.fieldSource = fieldSource;
 
-        if (operator == Operator.LIKE_PATTERN) {
+        if (operator.buildPattern()) {
             // throws ClassCastException if this class is constructed with an incorrect operandParser (API bug)
             String firstOperand = (String) firstOperand();
             StringBuilder pattern = new StringBuilder();
@@ -86,7 +101,7 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
             });
 
             appendQuoted.run();
-            likePattern = Pattern.compile(pattern.toString());
+            likePattern = Pattern.compile(pattern.toString(), operator.patternFlags());
         } else {
             likePattern = null;
         }
@@ -153,7 +168,10 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
                 return firstOperand.compareTo(comparableField) <= 0;
             }
 
-            case LIKE_PATTERN: {
+            case CASE_INSENSITIVE_LIKE_PATTERN, LIKE_PATTERN: {
+                if (field == null) {
+                    return false;
+                }
                 // throws ClassCastException if this class is constructed with an incorrect fieldSource (API bug)
                 return likePattern.matcher((String) field).matches();
             }

@@ -4,6 +4,9 @@
 
 import { formatInTimeZone } from 'date-fns-tz';
 
+export const ZONED_DATETIME = 'yyyy-MM-dd HH:mm:ssXXX';
+export const ZONED_DATETIME_MILLIS = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
+
 /**
  * Convert an ISO 8601 string to the "YYYY-MM-DDTHH:mm" format required by
  * <input type="datetime-local">, expressed in the user's local timezone.
