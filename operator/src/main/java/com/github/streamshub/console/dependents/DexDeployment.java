@@ -45,8 +45,8 @@ public class DexDeployment extends BaseDeployment {
     String dexImage;
 
     @Inject
-    @ConfigProperty(name = "console.deployment.dex-command")
-    List<String> dexCommand;
+    @ConfigProperty(name = "console.deployment.dex-args")
+    List<String> dexArgs;
 
     public DexDeployment() {
         super(NAME);
@@ -82,7 +82,7 @@ public class DexDeployment extends BaseDeployment {
                         .endVolume()
                         .editMatchingContainer(c -> "dex".equals(c.getName()))
                             .withImage(dexImage)
-                            .withCommand(dexCommand)
+                            .withArgs(dexArgs)
                         .endContainer()
                     .endSpec()
                 .endTemplate()

@@ -148,15 +148,18 @@ api_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --fo
 api_image_with_digest="${image_registry}/${api_name}:${image_tag}@${api_image_digest}"
 echo "[DEBUG] Using API image: ${api_image_with_digest}"
 
-${YQ} eval -o yaml -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{
-  "name": "CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE",
-  "value": "'${api_image_with_digest}'"
-}]' "${CSV_FILE_PATH}"
-
 dex_image_with_tag=${image_registry}/${dex_name}:${image_tag}
 dex_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${dex_image_with_tag}")
 dex_image_with_digest="${image_registry}/${dex_name}:${image_tag}@${dex_image_digest}"
 echo "[DEBUG] Using API image: ${dex_image_with_digest}"
+
+${YQ} eval -o yaml -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{
+  "name": "CONSOLE_DEPLOYMENT_DEX_IMAGE",
+  "value": "'${dex_image_with_digest}'"
+}, {
+  "name": "CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE",
+  "value": "'${api_image_with_digest}'"
+}]' "${CSV_FILE_PATH}"
 
 # Add operator and operand images with digests to related images
 ${YQ} eval -o yaml -i '.spec.relatedImages = [{
