@@ -360,7 +360,7 @@ spec:
 * `security.ldap.userSearch` defines how users are located during authentication:
 ** `baseDN`: Base distinguished name for user searches.
 ** `filter`: Search filter combined with the username attribute query.
-** `username`: Attribute users enter at the login prompt (e.g. `mail` or `uid`).
+** `username`: Attribute users enter at the login prompt (for example, `mail` or `uid`).
 ** `idAttr`: Attribute used as the unique user identifier.
 ** `emailAttr`: (Required) Attribute mapped to the user email.
 ** `nameAttr`: Optional attribute mapped to the user's display name.
@@ -368,5 +368,5 @@ spec:
 * `security.ldap.groupSearch` defines how group memberships are resolved:
 ** `baseDN`: Base distinguished name for group searches.
 ** `filter`: Search filter combined with the user matching query.
-** `userMatchers`: Matches user attributes to group attributes (e.g. `userAttr: DN` with `groupAttr: member`).
+** `userMatchers`: Matches user attributes to group attributes (for example, `userAttr: DN` with `groupAttr: member`).
 ** `nameAttr`: Attribute containing the group name, which maps to values in `security.subjects`.
