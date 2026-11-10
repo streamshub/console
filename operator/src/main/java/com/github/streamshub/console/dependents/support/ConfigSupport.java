@@ -2,9 +2,13 @@ package com.github.streamshub.console.dependents.support;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
@@ -20,6 +24,14 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretEnvSource;
 import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.config.v1.ClusterVersion;
+import io.fabric8.openshift.api.model.config.v1.ClusterVersionStatus;
+import io.fabric8.openshift.api.model.config.v1.FeatureGate;
+import io.fabric8.openshift.api.model.config.v1.FeatureGateAttributes;
+import io.fabric8.openshift.api.model.config.v1.FeatureGateDetails;
+import io.fabric8.openshift.api.model.config.v1.FeatureGateStatus;
+import io.fabric8.openshift.api.model.config.v1.Release;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 
 public class ConfigSupport {
@@ -46,7 +58,7 @@ public class ConfigSupport {
     public static void setConfigVars(Console primary, Context<Console> context, Map<String, String> target, ConfigVars source) {
         String namespace = primary.getMetadata().getNamespace();
 
-        source.getValuesFrom().stream().forEach(fromSource -> {
+        source.getValuesFrom().forEach(fromSource -> {
             String prefix = fromSource.getPrefix();
             var configMapRef = fromSource.getConfigMapRef();
             var secretRef = fromSource.getSecretRef();
@@ -166,9 +178,8 @@ public class ConfigSupport {
         T resource;
 
         try {
-            resource = context.getClient()
-                .resources(resourceType)
-                .inNamespace(namespace)
+            var operation = context.getClient().resources(resourceType);
+            resource = (namespace != null ? operation.inNamespace(namespace) : operation)
                 .withName(name)
                 .get();
         } catch (KubernetesClientException e) {
@@ -183,4 +194,89 @@ public class ConfigSupport {
         return resource;
     }
 
+    public static boolean routeExternalCertificateSupported(Context<Console> context) {
+        if (!resourceSupported(context, Route.class)) {
+            return false;
+        }
+
+        if (resourceSupported(context, ClusterVersion.class)) {
+            String version = Optional.ofNullable(getResource(context, ClusterVersion.class, null, "version", true))
+                    .map(ClusterVersion::getStatus)
+                    .map(ClusterVersionStatus::getDesired)
+                    .map(Release::getVersion)
+                    .orElse("");
+
+            // RouteExternalCertificate is GA on 4.19 and after
+            if (isOpenShiftVersionAtLeast(version, 4, 19)) {
+                return true;
+            }
+        }
+
+        if (resourceSupported(context, FeatureGate.class)) {
+            // Check whether the cluster-scope "cluster" FeatureGate CR has enabled RouteExternalCertificate
+            return Optional.ofNullable(getResource(context, FeatureGate.class, null, "cluster", true))
+                    .map(FeatureGate::getStatus)
+                    .map(FeatureGateStatus::getFeatureGates)
+                    .map(Collection::stream)
+                    .orElseGet(Stream::empty)
+                    .map(FeatureGateDetails::getEnabled)
+                    .filter(Objects::nonNull)
+                    .flatMap(Collection::stream)
+                    .map(FeatureGateAttributes::getName)
+                    .anyMatch("RouteExternalCertificate"::equals);
+        }
+
+        return false;
+    }
+
+    static boolean isOpenShiftVersionAtLeast(String version, int minMajor, int minMinor) {
+        var matcher = Pattern.compile("^(\\d+)\\.(\\d+)").matcher(version);
+        if (matcher.find()) {
+            int major = Integer.parseInt(matcher.group(1));
+            int minor = Integer.parseInt(matcher.group(2));
+            return major > minMajor || major == minMajor && minor >= minMinor;
+        }
+        return false;
+    }
+
+    public static boolean dexIntegrationEnabled(Console primary) {
+        var security = primary.getSpec().getSecurity();
+
+        if (security == null) {
+            return false;
+        }
+
+        return security.getOpenshift() != null || security.getLdap() != null;
+    }
+
+    public static boolean dexOpenshiftIntegrationEnabled(Console primary) {
+        var security = primary.getSpec().getSecurity();
+
+        if (security == null) {
+            return false;
+        }
+
+        return security.getOpenshift() != null;
+    }
+
+    /**
+     * Check whether user-provided pass-through TLS is in effect for the Console CR.
+     * This is the case when the TLS certificate has been provided in the CR and Dex
+     * is not enabled (i.e. there is no need to have two routes with pass-based
+     * routing and re-encrypt TLS).
+     */
+    public static boolean userProvidedPassthroughTLS(Console primary) {
+        return !dexIntegrationEnabled(primary) && primary.getSpec().getTls() != null;
+    }
+
+    /**
+     * Check whether an OpenShift Route with re-encrypt TLS is in effect for the Console
+     * CR. This will be used when the operator is running in OpenShift and either Dex is
+     * enabled (we need to re-encrypt for path-based routing) or not user-provided TLS 
+     * certificate is available (we re-encrypt the backend where the user-facing ingress
+     * is using the OpenShift provided certificate).
+     */
+    public static boolean servingCertificateReencryptTLS(Console primary, Context<Console> context) {
+        return !userProvidedPassthroughTLS(primary) && resourceSupported(context, Route.class);
+    }
 }

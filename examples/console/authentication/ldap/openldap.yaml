@@ -1,0 +1,125 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openldap-data
+data:
+  70-structure.ldif: |+
+    dn: ou=people,dc=streamshub,dc=dev
+    objectClass: top
+    objectClass: organizationalUnit
+    ou: people
+
+    dn: ou=groups,dc=streamshub,dc=dev
+    objectClass: top
+    objectClass: organizationalUnit
+    ou: groups
+
+    dn: ou=system,dc=streamshub,dc=dev
+    objectClass: top
+    objectClass: organizationalUnit
+    ou: system
+
+  80-users.ldif: |+
+    dn: uid=alice,ou=people,dc=streamshub,dc=dev
+    objectClass: top
+    objectClass: person
+    objectClass: organizationalPerson
+    objectClass: inetOrgPerson
+    uid: alice
+    userPassword: alice
+    cn: Alice User
+    sn: User
+    mail: alice@streamshub.io
+
+    dn: uid=bob,ou=people,dc=streamshub,dc=dev
+    objectClass: top
+    objectClass: person
+    objectClass: organizationalPerson
+    objectClass: inetOrgPerson
+    uid: bob
+    userPassword: bob
+    cn: Bob User
+    sn: User
+    mail: bob@streamshub.io
+
+  90-groups.ldif: |+
+    dn: cn=developers,ou=groups,dc=streamshub,dc=dev
+    objectClass: top
+    objectClass: groupOfNames
+    cn: developers
+    description: Developers team
+    member: uid=alice,ou=people,dc=streamshub,dc=dev
+    member: uid=bob,ou=people,dc=streamshub,dc=dev
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openldap-deployment
+  labels:
+    app: openldap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openldap
+  template:
+    metadata:
+      labels:
+        app: openldap
+    spec:
+      securityContext:
+        runAsUser: 911
+        runAsGroup: 911
+        fsGroup: 911
+      volumes:
+        - name: custom-data
+          configMap:
+            name: openldap-data
+            defaultMode: 420
+      containers:
+      - name: openldap
+        image: osixia/openldap:2.6.15-alpha
+        args:
+        - --log-level=debug
+        env:
+        - name: OPENLDAP_BOOTSTRAP_ORGANIZATION
+          value: StreamsHub
+        - name: OPENLDAP_BOOTSTRAP_SUFFIX
+          value: dc=streamshub,dc=dev
+        - name: OPENLDAP_BOOTSTRAP_DATA_READONLY
+          value: 'true'
+        - name: OPENLDAP_BOOTSTRAP_DATA_READONLY_PASSWORD_HASHED
+          # password123, user is `cn=readonly,dc=streamshub,dc=dev`
+          value: "{SSHA}nXeprVzjM8uu2wYmqRYRJfQMxk/2/3G3"
+        volumeMounts:
+          - name: custom-data
+            readOnly: true
+            mountPath: /container/services/openldap-bootstrap/assets/ldif/data/custom/
+        ports:
+        - name: ldap
+          containerPort: 3890
+        - name: ldaps
+          containerPort: 6360
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openldap
+spec:
+  ports:
+  - name: ldap
+    port: 389
+    targetPort: 3890
+  - name: ldaps
+    port: 636
+    targetPort: 6360
+  selector:
+    app: openldap

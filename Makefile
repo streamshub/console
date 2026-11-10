@@ -1,5 +1,5 @@
 
-.PHONY: container-image-api container-images
+.PHONY: container-image-api container-image-dex container-image-operator container-images
 
 include *compose.env
 
@@ -9,6 +9,7 @@ VERSION ?= $(shell mvn help:evaluate -Dexpression=project.version -q -DforceStdo
 CSV_VERSION ?= $(VERSION)
 
 CONSOLE_API_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-api:$(VERSION)
+CONSOLE_DEX_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-dexidp:$(VERSION)
 
 CONSOLE_OPERATOR_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operator:$(VERSION)
 CONSOLE_OPERATOR_BUNDLE_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operator-bundle:$(VERSION)
@@ -31,14 +32,21 @@ container-image-api:
 container-image-api-push: container-image-api
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_API_IMAGE) docker://$(CONSOLE_API_IMAGE)
 
-container-image-operator:
+container-image-dex:
+	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_DEX_IMAGE) -f operator/src/main/docker/dex.Dockerfile operator/src/main/docker
+
+container-image-dex-push: container-image-dex
+	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_DEX_IMAGE) docker://$(CONSOLE_DEX_IMAGE)
+
+# The Dex image must exist before the bundle metadata is modified, the script resolves the image digest
+container-image-operator: container-image-dex
 	mvn package -am -pl operator -Pcontainer-image -DskipTests -DskipITs -Dquarkus.kubernetes.namespace='$${NAMESPACE}' -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
 	operator/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)" "PLATFORMS=$(PLATFORMS)"
 	operator/bin/generate-catalog.sh operator/target/bundle/streamshub-console-operator
 	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
 	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/src/main/docker/catalog.Dockerfile operator
 
-container-image-operator-push: container-image-operator
+container-image-operator-push: container-image-operator container-image-dex-push
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_IMAGE) docker://$(CONSOLE_OPERATOR_IMAGE)
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_BUNDLE_IMAGE) docker://$(CONSOLE_OPERATOR_BUNDLE_IMAGE)
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_CATALOG_IMAGE) docker://$(CONSOLE_OPERATOR_CATALOG_IMAGE)
