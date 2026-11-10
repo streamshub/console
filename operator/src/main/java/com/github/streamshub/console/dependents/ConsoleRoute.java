@@ -15,21 +15,15 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.fabric8.openshift.api.model.RouteStatus;
-import io.fabric8.openshift.api.model.TLSConfig;
-import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
-import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 
-import static com.github.streamshub.console.dependents.support.ConfigSupport.resourceSupported;
-
 @ApplicationScoped
 @KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
-public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console>
-        implements ConsoleResource<Route> {
+public class ConsoleRoute extends BaseRoute {
 
     public static final String NAME = "console-route";
 
@@ -37,17 +31,7 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
     ConsoleService service;
 
     public ConsoleRoute() {
-        super(Route.class);
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
-    }
-
-    @Override
-    public Optional<Route> getSecondaryResource(Console primary, Context<Console> context) {
-        return ConsoleResource.super.getSecondaryResource(primary, context);
+        super(NAME);
     }
 
     @Override
@@ -55,8 +39,6 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
         // hostname is optional on openshift — when null, the router auto-assigns one from the route
         // name, namespace, and cluster domain (issue #1471)
         String host = primary.getSpec().getHostname();
-        String serviceName = service.instanceName(primary);
-        boolean tls = primary.getSpec().getTls() != null;
 
         return new RouteBuilder()
             .withNewMetadata()
@@ -69,45 +51,12 @@ public class ConsoleRoute extends CRUDKubernetesDependentResource<Route, Console
                 .withHost(host)
                 .withNewTo()
                     .withKind("Service")
-                    .withName(serviceName)
+                    .withName(service.instanceName(primary))
                     .withWeight(100)
                 .endTo()
-                .withTls(buildTls(tls))
+                .withTls(buildTlsConfig(primary, context))
             .endSpec()
             .build();
-    }
-
-    private static TLSConfig buildTls(boolean tls) {
-        TLSConfigBuilder tlsBuilder = new TLSConfigBuilder();
-
-        if (tls) {
-            // The console terminates TLS itself; the router passes through the connection
-            tlsBuilder = tlsBuilder.withTermination("passthrough");
-        } else {
-            // The router terminates TLS at the edge and forwards plain HTTP to the console
-            tlsBuilder = tlsBuilder
-                .withTermination("edge")
-                .withInsecureEdgeTerminationPolicy("Redirect");
-        }
-
-        return tlsBuilder.build();
-    }
-
-    /**
-     * Used as BOTH {@code reconcilePrecondition} AND {@code activationCondition}
-     * in the workflow so that:
-     * <ul>
-     *   <li>No Route is reconciled on plain Kubernetes clusters.</li>
-     *   <li>No informer/watch for {@link Route} is registered on clusters that
-     *       lack the Route API, avoiding API-discovery errors on startup.</li>
-     * </ul>
-     * Note: not a CDI bean — conditions are instantiated by the operator SDK.
-     */
-    public static class Precondition implements Condition<Route, Console> {
-        @Override
-        public boolean isMet(DependentResource<Route, Console> dependentResource, Console primary, Context<Console> context) {
-            return resourceSupported(context, Route.class);
-        }
     }
 
     public static class Postcondition implements Condition<Route, Console> {

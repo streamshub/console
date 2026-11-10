@@ -30,7 +30,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.authorization.v1.SubjectAccessReviewBuilder;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
-import io.javaoperatorsdk.operator.api.reconciler.dependent.NameSetter;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.ReconcileResult;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 import io.strimzi.api.kafka.model.user.KafkaUser;
@@ -56,8 +55,7 @@ import static com.github.streamshub.console.dependents.support.ConfigSupport.get
  * default is {@code PRESERVE}; {@code IGNORE} is an explicit security bypass.
  */
 @ApplicationScoped
-public class ConsoleServiceAccountAccessReview
-        implements DependentResource<HasMetadata, Console>, NameSetter, ConsoleResource<HasMetadata> {
+public class ConsoleServiceAccountAccessReview extends BaseVirtualResource {
 
     public static final String NAME = "ConsoleServiceAccountAccessReview"; // NOSONAR
     public static final String DENIED_ACTION = "console.service-account.access-review.denied-action";
@@ -108,7 +106,6 @@ public class ConsoleServiceAccountAccessReview
     ConsoleServiceAccount serviceAccount;
 
     private AccessReviewDeniedAction deniedAction;
-    private String instanceName;
 
     public static class Postcondition implements Condition<HasMetadata, Console> {
         @Override
@@ -120,29 +117,13 @@ public class ConsoleServiceAccountAccessReview
         }
     }
 
+    public ConsoleServiceAccountAccessReview() {
+        super(NAME);
+    }
+
     @PostConstruct
     void initDeniedAction() {
         deniedAction = AccessReviewDeniedAction.fromValue(accessReviewDeniedAction);
-    }
-
-    @Override
-    public String name() {
-        return instanceName;
-    }
-
-    @Override
-    public void setName(String name) {
-        this.instanceName = name;
-    }
-
-    @Override
-    public Class<HasMetadata> resourceType() {
-        return HasMetadata.class;
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
     }
 
     @Override

@@ -58,7 +58,7 @@ SKOPEO_TRANSPORT="$(skopeo_transport_for "${CONTAINER_RUNTIME}")"
 PUSH_PREFIX="$(registry_host_for_push "${REGISTRY}")/${GROUP}"
 
 echo "Pushing images to ${REGISTRY} for kind cluster '${CLUSTER_NAME}'..."
-for img in console-api console-operator console-operator-bundle console-operator-catalog; do
+for img in console-api console-dexidp console-operator console-operator-bundle console-operator-catalog; do
   echo "  ${IMAGE_PREFIX}/${img}:${TAG}"
   # --preserve-digests matters: without it, skopeo re-serializes the
   # manifest on copy and the digest changes, which breaks the
