@@ -442,7 +442,7 @@ class TopicsResourceIT {
                 .toList();
 
         topicUtils.createTopics(topicNames, 1);
-        topicUtils.awaitTopicLeaders(topicNames);
+        topicUtils.awaitTopicLeadersAndStorage(topicNames);
 
         AdminClientSpy.install(adminClient -> {
             doAnswer(inv -> {
