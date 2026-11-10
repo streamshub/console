@@ -34,7 +34,7 @@
     "react-i18next": "^17.1.13",
     "react-json-view-lite": "^2.5.0",
     "react-router": "^8.5.1",
-    "victory": "^37.4.1",
+    "victory": "^38.0.0",
     "zustand": "^5.1.0"
   },
   "devDependencies": {
