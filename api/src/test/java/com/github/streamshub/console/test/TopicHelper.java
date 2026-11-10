@@ -7,20 +7,27 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.AlterConfigOp;
+import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
+import org.apache.kafka.clients.admin.LogDirDescription;
 import org.apache.kafka.clients.admin.NewPartitions;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.OffsetSpec;
@@ -32,11 +39,13 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.awaitility.core.ConditionTimeoutException;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
@@ -48,6 +57,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class TopicHelper {
 
+    private static final Duration READINESS_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration READINESS_POLL_INTERVAL = Duration.ofMillis(100);
+    private static final int ADMIN_TIMEOUT_MS = 5_000;
     static final Logger log = Logger.getLogger(TopicHelper.class);
     final URI bootstrapServers;
     final Config config;
@@ -175,35 +187,234 @@ public class TopicHelper {
     }
 
     /**
-     * Wait for every partition of the given topics to have an assigned leader.
-     * Topic visibility alone does not guarantee that leadership has been
-     * established, and operations that inspect replicas require a leader for
-     * each partition.
+     * Wait for every partition of the given topics to have an assigned leader
+     * and for each leader replica to appear in the leader broker's log
+     * directory information. Topic visibility and leader assignment alone do
+     * not guarantee that replicas are present in {@code describeLogDirs()}.
      *
      * @param topicNames names of the topics to wait for
      */
-    public void awaitTopicLeaders(List<String> topicNames) {
-        try (Admin admin = Admin.create(adminConfig)) {
-            await().atMost(Duration.ofSeconds(10))
-                .ignoreExceptions()
-                .until(() -> {
-                    // Explicitly bound the Admin call; the default Admin API timeout is 60s.
-                    Map<String, TopicDescription> descriptions = admin
-                        .describeTopics(topicNames, new DescribeTopicsOptions().timeoutMs(5_000))
-                        .allTopicNames()
-                        .toCompletionStage()
-                        .toCompletableFuture()
-                        .join();
+    public void awaitTopicLeadersAndStorage(List<String> topicNames) {
+        long deadlineNanos = System.nanoTime() + READINESS_TIMEOUT.toNanos();
+        Admin admin = null;
 
-                    return descriptions.keySet().containsAll(topicNames)
-                        && descriptions.values().stream()
-                            .allMatch(description -> !description.partitions().isEmpty()
-                                && description.partitions().stream()
-                                    .allMatch(partition -> partition.leader() != null));
-                });
+        try {
+            admin = Admin.create(adminConfig);
+            Admin readinessAdmin = admin;
+
+            long remainingNanos = deadlineRemainingNanos(deadlineNanos);
+            if (remainingNanos <= 0) {
+                fail("Topics did not become ready: readiness deadline exceeded during Admin client creation");
+            }
+
+            Duration awaitTimeout = Duration.ofMillis(Math.max(1, TimeUnit.NANOSECONDS.toMillis(remainingNanos)));
+            AtomicReference<String> readinessProblem = new AtomicReference<>("readiness check did not run");
+
+            try {
+                await().atMost(awaitTimeout)
+                    .pollInterval(READINESS_POLL_INTERVAL)
+                    .until(() -> {
+                        try {
+                            String problem = topicReadinessProblem(readinessAdmin, topicNames, deadlineNanos);
+                            readinessProblem.set(problem);
+                            return problem == null;
+                        } catch (Exception e) {
+                            if (e instanceof InterruptedException) {
+                                Thread.currentThread().interrupt();
+                            }
+                            readinessProblem.set("readiness check failed: " + e);
+                            return false;
+                        }
+                    });
+            } catch (ConditionTimeoutException e) {
+                fail("Topics did not become ready: " + readinessProblem.get(), e);
+            }
         } catch (Exception e) {
             fail(e);
+        } finally {
+            if (admin != null) {
+                closeAdmin(admin, deadlineNanos);
+            }
         }
+    }
+
+    private void closeAdmin(Admin admin, long deadlineNanos) {
+        long closeTimeoutMillis = Math.max(1, TimeUnit.NANOSECONDS.toMillis(deadlineRemainingNanos(deadlineNanos)));
+
+        try {
+            admin.close(Duration.ofMillis(closeTimeoutMillis));
+        } catch (Exception e) {
+            log.warn("Failed to close readiness Admin client", e);
+        }
+    }
+
+    private String topicReadinessProblem(Admin admin, List<String> topicNames, long deadlineNanos) throws Exception {
+        long remainingNanos = deadlineRemainingNanos(deadlineNanos);
+        if (remainingNanos <= 0) {
+            return "readiness deadline exceeded";
+        }
+
+        Set<String> topicProblems = new HashSet<>();
+        Map<String, TopicDescription> descriptions = describeTopics(
+                admin, topicNames, deadlineNanos, callTimeoutMillis(remainingNanos), topicProblems);
+
+        if (!topicProblems.isEmpty()) {
+            return "topics not ready: " + topicProblems;
+        }
+
+        Map<Integer, Set<TopicPartition>> leaderPartitions = new HashMap<>();
+        Set<TopicPartition> missingLeaders = new HashSet<>();
+        collectLeaderPartitions(topicNames, descriptions, leaderPartitions, missingLeaders);
+
+        if (!missingLeaders.isEmpty()) {
+            return "partitions without leaders: " + missingLeaders;
+        }
+
+        long logDirsRemainingNanos = deadlineRemainingNanos(deadlineNanos);
+        if (logDirsRemainingNanos <= 0) {
+            return "readiness deadline exceeded before checking leader log directories";
+        }
+
+        Map<Integer, CompletableFuture<Map<String, LogDirDescription>>> pendingLogDirs = describeLogDirs(
+                admin, leaderPartitions.keySet(), callTimeoutMillis(logDirsRemainingNanos));
+        waitForLogDirs(pendingLogDirs, deadlineRemainingNanos(deadlineNanos));
+
+        Set<String> missingReplicas = missingReplicas(leaderPartitions, pendingLogDirs);
+        return missingReplicas.isEmpty() ? null : "leader replica metadata missing: " + missingReplicas;
+    }
+
+    private Map<String, TopicDescription> describeTopics(Admin admin, List<String> topicNames, long deadlineNanos,
+            int timeoutMs, Set<String> topicProblems) throws InterruptedException {
+        Map<String, KafkaFuture<TopicDescription>> topicFutures = admin
+            .describeTopics(topicNames, new DescribeTopicsOptions().timeoutMs(timeoutMs))
+            .topicNameValues();
+
+        Map<String, TopicDescription> descriptions = new HashMap<>();
+
+        for (String topicName : topicNames) {
+            KafkaFuture<TopicDescription> pending = topicFutures.get(topicName);
+
+            if (pending == null) {
+                topicProblems.add(topicName + " (no response)");
+                continue;
+            }
+
+            long topicRemainingNanos = deadlineRemainingNanos(deadlineNanos);
+            if (topicRemainingNanos <= 0) {
+                topicProblems.add(topicName + " (readiness deadline exceeded)");
+                continue;
+            }
+
+            try {
+                descriptions.put(topicName, pending.get(topicRemainingNanos, TimeUnit.NANOSECONDS));
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                topicProblems.add(topicName + " (" + (cause != null ? cause : e) + ")");
+            } catch (TimeoutException e) {
+                topicProblems.add(topicName + " (timed out)");
+            }
+        }
+
+        return descriptions;
+    }
+
+    private void collectLeaderPartitions(List<String> topicNames, Map<String, TopicDescription> descriptions,
+            Map<Integer, Set<TopicPartition>> leaderPartitions, Set<TopicPartition> missingLeaders) {
+        for (String topicName : topicNames) {
+            TopicDescription description = descriptions.get(topicName);
+
+            if (description.partitions().isEmpty()) {
+                missingLeaders.add(new TopicPartition(topicName, -1));
+            }
+
+            for (TopicPartitionInfo partition : description.partitions()) {
+                if (partition.leader() == null) {
+                    missingLeaders.add(new TopicPartition(topicName, partition.partition()));
+                } else {
+                    leaderPartitions.computeIfAbsent(partition.leader().id(), id -> new HashSet<>())
+                        .add(new TopicPartition(topicName, partition.partition()));
+                }
+            }
+        }
+    }
+
+    private Map<Integer, CompletableFuture<Map<String, LogDirDescription>>> describeLogDirs(
+            Admin admin, Set<Integer> leaderIds, int timeoutMs) {
+        return admin.describeLogDirs(leaderIds, new DescribeLogDirsOptions().timeoutMs(timeoutMs))
+            .descriptions()
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey,
+                    entry -> entry.getValue().toCompletionStage().toCompletableFuture()));
+    }
+
+    private void waitForLogDirs(Map<Integer, CompletableFuture<Map<String, LogDirDescription>>> pendingLogDirs,
+            long remainingNanos) throws InterruptedException {
+        if (pendingLogDirs.isEmpty() || remainingNanos <= 0) {
+            return;
+        }
+
+        try {
+            CompletableFuture.allOf(pendingLogDirs.values().toArray(CompletableFuture[]::new))
+                .get(remainingNanos, TimeUnit.NANOSECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            // Individual broker failures and timeouts are reported by missingReplicas.
+        }
+    }
+
+    private Set<String> missingReplicas(Map<Integer, Set<TopicPartition>> leaderPartitions,
+            Map<Integer, CompletableFuture<Map<String, LogDirDescription>>> pendingLogDirs) {
+        Set<String> missingReplicas = new HashSet<>();
+
+        for (Map.Entry<Integer, Set<TopicPartition>> entry : leaderPartitions.entrySet()) {
+            String problem = brokerReplicaProblem(entry.getKey(), entry.getValue(), pendingLogDirs.get(entry.getKey()));
+
+            if (problem != null) {
+                missingReplicas.add(problem);
+            }
+        }
+
+        return missingReplicas;
+    }
+
+    private String brokerReplicaProblem(int leaderId, Set<TopicPartition> expectedPartitions,
+            CompletableFuture<Map<String, LogDirDescription>> pending) {
+        if (pending == null) {
+            return "describeLogDirs returned no result for broker " + leaderId + "; expected " + expectedPartitions;
+        }
+
+        Map<String, LogDirDescription> nodeLogDirs;
+
+        try {
+            nodeLogDirs = pending.getNow(null);
+        } catch (CompletionException e) {
+            Throwable cause = e.getCause();
+            return "describeLogDirs failed for broker " + leaderId + "; expected " + expectedPartitions
+                    + ": " + (cause != null ? cause : e);
+        }
+
+        if (nodeLogDirs == null) {
+            return "describeLogDirs did not complete for broker " + leaderId + "; expected " + expectedPartitions;
+        }
+
+        Set<TopicPartition> replicas = nodeLogDirs.values()
+            .stream()
+            .flatMap(description -> description.replicaInfos().keySet().stream())
+            .collect(Collectors.toSet());
+
+        Set<TopicPartition> missing = expectedPartitions.stream()
+            .filter(partition -> !replicas.contains(partition))
+            .collect(Collectors.toSet());
+
+        return missing.isEmpty() ? null : missing + " on broker " + leaderId;
+    }
+
+    private static long deadlineRemainingNanos(long deadlineNanos) {
+        return deadlineNanos - System.nanoTime();
+    }
+
+    private static int callTimeoutMillis(long remainingNanos) {
+        return (int) Math.min(ADMIN_TIMEOUT_MS, Math.max(1, TimeUnit.NANOSECONDS.toMillis(remainingNanos)));
     }
 
     public void createPartitions(String name, int totalPartitions) {
