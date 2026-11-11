@@ -51,6 +51,9 @@ public class TestPlainProfile implements QuarkusTestProfile {
 
     @Override
     public Map<String, String> getConfigOverrides() {
-        return Map.of("console.config-path", getClass().getResource("/config-testplain.yaml").getPath());
+        return Map.of(
+                "console.config-path", getClass().getResource("/config-testplain.yaml").getPath(),
+                "quarkus.quinoa", "true",
+                "quarkus.quinoa.dev-server", "false");
     }
 }
