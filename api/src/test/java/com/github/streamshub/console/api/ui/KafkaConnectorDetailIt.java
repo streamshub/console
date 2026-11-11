@@ -233,18 +233,6 @@ class KafkaConnectorDetailIT implements ClientRequestFilter {
                 new Page.GetByRoleOptions().setLevel(1).setName(connectorName))).isVisible();
     }
 
-    /**
-     * The description (dd) that belongs to the term (dt) starting with the given text.
-     * Taking the dd directly, rather than the term's parent, keeps each assertion on one
-     * value even if several term/description pairs share one container.
-     */
-    private static Locator detail(Page page, String term) {
-        return page.locator("dt")
-                .filter(new Locator.FilterOptions()
-                        .setHasText(Pattern.compile("^\\s*" + Pattern.quote(term))))
-                .locator("xpath=following-sibling::dd[1]");
-    }
-
     private static Locator tasksTable(Page page) {
         return page.locator("table[aria-label='Connector tasks']");
     }
@@ -252,10 +240,6 @@ class KafkaConnectorDetailIT implements ClientRequestFilter {
     private static Locator configTable(Page page) {
         return page.locator("table[aria-label='Connector configuration']");
     }
-
-    // ---------------------------------------------------------------------
-    // Header and summary
-    // ---------------------------------------------------------------------
 
     @Test
     void headerShowsConnectorNameAndManagedLabel() {

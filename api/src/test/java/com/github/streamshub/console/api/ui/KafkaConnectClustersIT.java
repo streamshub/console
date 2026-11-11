@@ -228,12 +228,6 @@ class KafkaConnectClustersIT implements ClientRequestFilter {
                 new Page.GetByRoleOptions().setName(ci(name)));
     }
 
-    /** Workers is the last column of the table. */
-    private static Locator workersCell(Page page, String clusterName) {
-        // Plain td locator: inside a role="grid" table the cells are "gridcell", not "cell"
-        return row(page, clusterName).locator("td").last();
-    }
-
     @Test
     void clustersPageShowsTableAndExpectedColumns() {
         try (Page page = context.newPage()) {

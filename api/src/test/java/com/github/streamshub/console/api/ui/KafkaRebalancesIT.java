@@ -86,7 +86,7 @@ class KafkaRebalancesIT {
     final String prefix = "ui-rebalance-" + UUID.randomUUID().toString().substring(0, 8) + "-";
 
     @BeforeEach
-    void setup() throws Exception {
+    void setup() {
         context.setDefaultTimeout(15_000);
         PlaywrightAssertions.setDefaultAssertionTimeout(15_000);
 

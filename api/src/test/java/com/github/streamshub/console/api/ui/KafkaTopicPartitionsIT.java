@@ -84,7 +84,7 @@ class KafkaTopicPartitionsIT {
     final String manyTopic = prefix + "many";
 
     @BeforeEach
-    void setup() throws Exception {
+    void setup() {
         context.setDefaultTimeout(15_000);
         PlaywrightAssertions.setDefaultAssertionTimeout(15_000);
 

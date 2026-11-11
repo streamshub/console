@@ -196,10 +196,6 @@ class KafkaUsersIT {
         return page.getByRole(AriaRole.COLUMNHEADER, new Page.GetByRoleOptions().setName(name)).first();
     }
 
-    private static Locator cell(Locator row, int index) {
-        return row.getByRole(AriaRole.CELL).nth(index);
-    }
-
     /** Names in the order the table currently shows them (first cell of every body row). */
     private static List<String> displayedNames(Page page) {
         return page.locator("tbody tr td:nth-child(1)").allTextContents().stream()

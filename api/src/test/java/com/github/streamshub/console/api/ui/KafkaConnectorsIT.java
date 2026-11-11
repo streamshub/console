@@ -238,12 +238,6 @@ class KafkaConnectorsIT implements ClientRequestFilter {
                 new Page.GetByRoleOptions().setName(ci(name)));
     }
 
-    /** Tasks is the last column of the table. */
-    private static Locator tasksCell(Page page, String connectorName) {
-        // Plain td locator: inside a role="grid" table the cells are "gridcell", not "cell"
-        return row(page, connectorName).locator("td").last();
-    }
-
     @Test
     void connectorsPageShowsTableAndExpectedColumns() {
         try (Page page = context.newPage()) {
