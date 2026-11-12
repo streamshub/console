@@ -10,7 +10,6 @@ import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -60,9 +59,6 @@ class KafkaUsersIT {
 
     static final Pattern USERS_TITLE = ci("users");
 
-    @InjectPlaywright
-    BrowserContext context;
-
     @TestHTTPResource("/")
     URL home;
 
@@ -71,6 +67,9 @@ class KafkaUsersIT {
 
     @Inject
     KubernetesClient client;
+
+    @InjectPlaywright
+    BrowserContext context;
 
     @Inject
     ConsoleConfig consoleConfig;
@@ -93,9 +92,7 @@ class KafkaUsersIT {
 
     @BeforeEach
     void setup() {
-        context.setDefaultTimeout(15_000);
-        PlaywrightAssertions.setDefaultAssertionTimeout(15_000);
-
+        PlaywrightTimeouts.configure(context);
         bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);

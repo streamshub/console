@@ -342,9 +342,6 @@ class KafkaOverviewIT {
 
         try (Page page = context.newPage()) {
             openOverviewViaClusterName(page, "test-kafka1");
-            System.out.println("Card titles: "
-                    + page.locator(".pf-v6-c-card__title-text").allTextContents());
-
             assertThat(cardTitle(page, "Topics")).isVisible();
         }
     }

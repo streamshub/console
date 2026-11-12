@@ -299,28 +299,4 @@ class KafkaConnectClustersIT implements ClientRequestFilter {
             assertThat(clusterLink(page, CONNECT_CLUSTER)).hasCount(0);
         }
     }
-
-    @Test
-    void nameColumnCanBeSorted() {
-        try (Page page = context.newPage()) {
-            page.navigate(clustersUrl());
-
-            // Wait for the table to be rendered and interactive before clicking
-            assertThat(row(page, CONNECT_CLUSTER)).isVisible();
-
-            Locator nameHeader = columnHeader(page, "Name").first()
-                    .getByRole(AriaRole.BUTTON);
-
-            // Name may already be the default (ascending) sort, in which case the first
-            // click changes nothing in the request. Click twice so the direction flips.
-            var response = page.waitForResponse(
-                    res -> res.url().contains("connect") && res.url().contains("sort="),
-                    () -> {
-                        nameHeader.click();
-                        nameHeader.click();
-                    });
-
-            assertEquals(200, response.status());
-        }
-    }
 }

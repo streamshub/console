@@ -9,7 +9,6 @@ import com.github.streamshub.console.test.TestHelper;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -112,9 +111,7 @@ class KafkaGroupMembersIT {
 
     @BeforeEach
     void setup() throws Exception {
-        context.setDefaultTimeout(15_000);
-        PlaywrightAssertions.setDefaultAssertionTimeout(15_000);
-
+        PlaywrightTimeouts.configure(context);
         bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
@@ -132,7 +129,7 @@ class KafkaGroupMembersIT {
     void cleanup() {
         for (KafkaConsumer<byte[], byte[]> consumer : openConsumers) {
             try {
-                consumer.close(Duration.ofSeconds(10));
+                consumer.close();
             } catch (Exception e) {
                 // best effort
             }
@@ -231,7 +228,7 @@ class KafkaGroupMembersIT {
         while (consumer.assignment().isEmpty()) {
             consumer.poll(Duration.ofMillis(200));
             if (System.nanoTime() > deadline) {
-                consumer.close(Duration.ZERO);
+                consumer.close();
                 throw new IllegalStateException("Consumer " + groupId + " was not assigned a partition in time");
             }
         }
@@ -251,7 +248,7 @@ class KafkaGroupMembersIT {
         try {
             commitOnAssignedPartitions(consumer);
         } finally {
-            consumer.close(Duration.ofSeconds(10));
+            consumer.close();
         }
     }
 

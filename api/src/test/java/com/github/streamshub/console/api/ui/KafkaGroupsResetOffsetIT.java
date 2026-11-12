@@ -11,7 +11,6 @@ import com.github.streamshub.console.test.TestHelper;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -111,8 +110,8 @@ class KafkaGroupsResetOffsetIT {
 
     @BeforeEach
     void setup() {
-        context.setDefaultTimeout(15_000);
-        PlaywrightAssertions.setDefaultAssertionTimeout(15_000);
+        PlaywrightTimeouts.configure(context);
+
 
         bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         utils = new TestHelper(bootstrapServers, config);
@@ -187,7 +186,7 @@ class KafkaGroupsResetOffsetIT {
         while (consumer.assignment().isEmpty()) {
             consumer.poll(Duration.ofMillis(200));
             if (System.nanoTime() > deadline) {
-                consumer.close(Duration.ZERO);
+                consumer.close();
                 throw new IllegalStateException("Consumer " + groupId + " was not assigned a partition in time");
             }
         }
@@ -669,7 +668,7 @@ class KafkaGroupsResetOffsetIT {
                 assertThat(resetDialog(page)).isVisible();        // modal stays open
                 assertThat(successAlert(page)).hasCount(0);
             } finally {
-                activeMember.close(Duration.ofSeconds(10));
+                activeMember.close();
             }
         }
 

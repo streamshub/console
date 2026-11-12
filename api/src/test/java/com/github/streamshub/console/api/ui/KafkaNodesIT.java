@@ -271,8 +271,6 @@ class KafkaNodesIT {
     void overviewTabSummaryCardShowsSingleNodeCounts() {
         try (Page page = context.newPage()) {
             page.navigate(nodesUrl("/overview"));
-            System.out.println("PAGE TEXT:");
-            System.out.println(page.locator("body").innerText());
             assertThat(ouia(page, "total-node-count")).containsText(ONE);
             assertThat(ouia(page, "controller-node-count")).containsText(ONE);
             assertThat(ouia(page, "broker-node-count")).containsText(ONE);

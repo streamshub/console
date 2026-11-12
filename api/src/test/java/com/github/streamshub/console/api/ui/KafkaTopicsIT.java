@@ -21,7 +21,6 @@ import com.github.streamshub.console.test.TopicHelper;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import com.microsoft.playwright.options.AriaRole;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -105,8 +104,8 @@ class KafkaTopicsIT {
     @BeforeEach
     void setup() {
 
-        context.setDefaultTimeout(15_000);
-        PlaywrightAssertions.setDefaultAssertionTimeout(15_000);
+        PlaywrightTimeouts.configure(context);
+
 
         bootstrapServers = URI.create(
                 config.getValue(
