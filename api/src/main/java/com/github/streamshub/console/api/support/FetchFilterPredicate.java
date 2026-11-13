@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 import com.github.streamshub.console.api.model.FetchFilter;
 
@@ -14,33 +13,37 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
     public enum Operator {
         IN_LIST("in"),
         GREATER_THAN_OR_EQUAL_TO("gte"),
-        LIKE_PATTERN("like", 0),
-        CASE_INSENSITIVE_LIKE_PATTERN("ilike", Pattern.CASE_INSENSITIVE),
+        LIKE_PATTERN("like", false),
+        CASE_INSENSITIVE_LIKE_PATTERN("ilike", true),
         EQUAL_TO("eq"),
         CONTAINS("contains");
 
         private final String value;
-        private final int patternFlags;
+        private final boolean glob;
+        private final boolean ignoreCase;
 
-        private Operator(String value, int patternFlags) {
+        private Operator(String value, boolean ignoreCase) {
             this.value = value;
-            this.patternFlags = patternFlags;
+            this.glob = true;
+            this.ignoreCase = ignoreCase;
         }
 
         private Operator(String value) {
-            this(value, -1);
+            this.value = value;
+            this.glob = false;
+            this.ignoreCase = false;
         }
 
         public String value() {
             return value;
         }
 
-        public boolean buildPattern() {
-            return patternFlags > -1;
+        public boolean isGlob() {
+            return glob;
         }
 
-        public int patternFlags() {
-            return patternFlags;
+        public boolean ignoreCase() {
+            return ignoreCase;
         }
 
         public static Operator fromValue(String value) {
@@ -60,7 +63,7 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
     private final Operator operator;
     private final List<F> operands;
     private final Function<B, Object> fieldSource;
-    private final Pattern likePattern;
+    private final GlobPattern likePattern;
 
     public FetchFilterPredicate(String name, FetchFilter filter, Function<String, F> operandParser, Function<B, Object> fieldSource) {
         this.name = name;
@@ -68,40 +71,10 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
         this.operands = filter.getOperands().stream().map(operandParser).toList();
         this.fieldSource = fieldSource;
 
-        if (operator.buildPattern()) {
+        if (operator.isGlob()) {
             // throws ClassCastException if this class is constructed with an incorrect operandParser (API bug)
             String firstOperand = (String) firstOperand();
-            StringBuilder pattern = new StringBuilder();
-            StringBuilder quoted = new StringBuilder();
-            Runnable appendQuoted = () -> {
-                if (!quoted.isEmpty()) {
-                    pattern.append(Pattern.quote(quoted.toString()));
-                    quoted.setLength(0);
-                }
-            };
-
-            firstOperand.chars().forEach(c -> {
-                switch (c) {
-                    case '.':
-                        appendQuoted.run();
-                        pattern.append("\\.");
-                        break;
-                    case '*':
-                        appendQuoted.run();
-                        pattern.append(".*");
-                        break;
-                    case '?':
-                        appendQuoted.run();
-                        pattern.append(".");
-                        break;
-                    default:
-                        quoted.append((char) c);
-                        break;
-                }
-            });
-
-            appendQuoted.run();
-            likePattern = Pattern.compile(pattern.toString(), operator.patternFlags());
+            likePattern = GlobPattern.compile(firstOperand, operator.ignoreCase());
         } else {
             likePattern = null;
         }
@@ -173,7 +146,7 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
                     return false;
                 }
                 // throws ClassCastException if this class is constructed with an incorrect fieldSource (API bug)
-                return likePattern.matcher((String) field).matches();
+                return likePattern.matches((String) field);
             }
 
             case EQUAL_TO:
