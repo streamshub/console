@@ -11,7 +11,6 @@ import com.github.streamshub.console.test.TestHelper;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -111,7 +110,9 @@ class KafkaGroupsResetOffsetIT {
 
     @BeforeEach
     void setup() {
+        // Sets both the action timeout and the (static, JVM-wide) assertion timeout
         PlaywrightTimeouts.configure(context);
+
         bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         utils = new TestHelper(bootstrapServers, config);
         consumerUtils = new ConsumerUtils(bootstrapServers, config);
@@ -198,6 +199,7 @@ class KafkaGroupsResetOffsetIT {
                 .collect(Collectors.toMap(e -> e.getKey().partition(), e -> e.getValue().offset()));
     }
 
+    // Kafka admin clients only, no Playwright objects: safe to poll from Awaitility's thread
     private void awaitCommittedOffsets(Map<Integer, Long> expected) {
         await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(expected, committedOffsets()));
     }
@@ -275,9 +277,20 @@ class KafkaGroupsResetOffsetIT {
         return resetDialog(page).locator("#datetime-input");
     }
 
+    /** Rendered dry-run rows as "partition current new", sorted: the table order is not stable. */
+    private static List<String> dryRunRows(Page page) {
+        return dryRunDialog(page).locator("tbody tr").allInnerTexts().stream()
+                .map(text -> text.replaceAll("\\s+", " ").trim())
+                .sorted()
+                .toList();
+    }
+
+    /** Playwright objects are not thread-safe, so poll on the test thread. */
     private static void awaitDryRunRows(Page page, String... expected) {
-        assertThat(dryRunDialog(page).locator("tbody tr"))
-                .hasText(expected, new LocatorAssertions.HasTextOptions().setUseInnerText(true));
+        List<String> sortedExpected = List.of(expected).stream().sorted().toList();
+        await().atMost(15, TimeUnit.SECONDS)
+                .pollInSameThread()
+                .untilAsserted(() -> assertEquals(sortedExpected, dryRunRows(page)));
     }
 
     @Test
@@ -525,12 +538,14 @@ class KafkaGroupsResetOffsetIT {
             selectOffset(page, EARLIEST);
             button(page, DRY_RUN).click();
             assertThat(dryRunDialog(page).locator("table").first()).isVisible();
-            assertThat(page.getByRole(AriaRole.DIALOG)).hasCount(2);   // anchor: reset modal + dry-run modal
 
             dryRunDialog(page).getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName(ci("cancel|close")))
                     .last().click();
 
-            assertThat(page.getByRole(AriaRole.DIALOG)).hasCount(1);   // only the reset modal is left
+            // The dry-run table was visible above, so this is a real "present -> gone" transition
+            assertThat(dryRunDialog(page).locator("table")).hasCount(0);
+            // The reset modal is accessible again with its form intact
+            assertThat(page.getByRole(AriaRole.DIALOG)).hasCount(1);
             assertThat(button(page, RESET_BUTTON)).isEnabled();
 
             button(page, RESET_BUTTON).click();
