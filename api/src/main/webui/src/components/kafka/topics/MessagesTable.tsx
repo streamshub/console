@@ -23,13 +23,15 @@ import {
 } from '@patternfly/react-icons';
 import { KafkaRecord } from '@/api/types';
 import { Column, useColumnLabels } from './ColumnsModal';
-import { formatDateTime } from '@/utils/dateTime';
-
-const MESSAGE_TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSXXX';
+import { formatDateTime, ZONED_DATETIME_MILLIS } from '@/utils/dateTime';
 
 interface MessagesTableProps {
   messages: KafkaRecord[];
   isLoading?: boolean;
+  /** Records scanned by the server for the current search; shown when nothing matched */
+  scanned?: number;
+  /** A search term is active */
+  isSearching?: boolean;
   errorState?: React.ReactNode;
   selectedMessage?: KafkaRecord;
   chosenColumns: Column[];
@@ -42,6 +44,8 @@ interface MessagesTableProps {
 export function MessagesTable({
   messages,
   isLoading = false,
+  scanned = 0,
+  isSearching = false,
   errorState,
   selectedMessage,
   chosenColumns,
@@ -49,7 +53,7 @@ export function MessagesTable({
   onSelectMessage,
   onReset,
 }: MessagesTableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const columnLabels = useColumnLabels();
 
   const truncate = (value: string | null, emptyText: string): React.ReactNode => {
@@ -114,14 +118,14 @@ export function MessagesTable({
     return formatDateTime({
       value: timestamp,
       timeZone: 'UTC',
-      format: MESSAGE_TIMESTAMP_FORMAT,
+      format: ZONED_DATETIME_MILLIS,
     });
   };
 
   const formatTimestampLocal = (timestamp: string): string => {
     return formatDateTime({
       value: timestamp,
-      format: MESSAGE_TIMESTAMP_FORMAT,
+      format: ZONED_DATETIME_MILLIS,
     });
   };
 
@@ -255,7 +259,12 @@ export function MessagesTable({
           {t('topics.messages.noDataTitle')}
         </Title>
         <EmptyStateBody>
-          {hasFilters
+          {isSearching && scanned > 0
+            ? t('topics.messages.noResultsScanned', {
+                count: scanned,
+                formatted: new Intl.NumberFormat(i18n.language).format(scanned),
+              })
+            : hasFilters
             ? t('topics.messages.noResultsBody')
             : t('topics.messages.noDataBody')}
         </EmptyStateBody>

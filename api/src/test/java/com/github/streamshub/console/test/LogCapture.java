@@ -50,7 +50,6 @@ public class LogCapture {
     }
 
     private LogCapture setLevel(Level newLevel) {
-        ROOT.setLevel(newLevel);
         inMemoryLogHandler.setLevel(newLevel);
         return this;
     }

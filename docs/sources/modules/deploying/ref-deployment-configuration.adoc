@@ -50,6 +50,24 @@ When omitted, the operator defaults to `IfNotPresent` for images specified by di
 `spec.deployment.spec.template.spec.serverContainer.resources`:: CPU and memory resource requests and limits for the console server container.
 `spec.deployment.spec.template.spec.serverContainer.env`:: Additional environment variables to set on the console server container.
 
+=== Message retrieval settings
+
+The *Messages* tab on a topic reads records from Kafka through the console server.
+You can limit the resources this uses by setting the following environment variables on the console server container using `spec.deployment.spec.template.spec.serverContainer.env`.
+
+`CONSOLE_TOPICS_RECORDS_STREAM_TIMEOUT`:: The maximum time that a single retrieval of messages can run before it is stopped and the messages found so far are returned.
+The value is a duration in ISO 8601 format, such as `PT30S` for 30 seconds or `PT10M` for 10 minutes.
+The default is `PT5M` (5 minutes).
++
+A search that has to scan many records is the most likely to reach this limit.
+When it does, the *Messages* tab reports that the search timed out with partial results.
+The time left before the limit is reached is also shown while a retrieval is running.
+
+`CONSOLE_TOPICS_RECORDS_MAX_CONCURRENT_STREAMS`:: The maximum number of message retrievals that can run at the same time in each console server pod.
+Each retrieval uses a thread and a Kafka consumer for as long as it runs.
+When the limit is reached, further retrievals are rejected with an HTTP `429 Too Many Requests` response until a running one finishes.
+The default is `10`.
+
 == Examples
 
 === Scheduling the console pod on specific nodes

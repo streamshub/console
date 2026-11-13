@@ -257,6 +257,23 @@
       "noResultsReset": "Show latest messages",
       "noResultsTitle": "No messages data",
       "tableAriaLabel": "Messages table",
+      "retrieving": "Retrieving messages...",
+      "searching": "Searching...",
+      "searchTime": "{{elapsed}} elapsed, {{remaining}} left",
+      "searchTimeTooltip": "The time the search has been running, and the maximum time left before it is stopped with partial results. The maximum time is configured. The search ends sooner if all records are read or the requested matches are found.",
+      "summaryWithDuration": "{{summary}} in {{elapsed}}",
+      "messagesCount_one": "{{formatted}} message",
+      "messagesCount_other": "{{formatted}} messages",
+      "matchesSummary_one": "{{formatted}} match from {{scanned}} scanned",
+      "matchesSummary_other": "{{formatted}} matches from {{scanned}} scanned",
+      "scanComplete": "Scan complete",
+      "scanStopped": "Stopped, partial results",
+      "scanLimitReached": "Found all requested matches",
+      "scanTimedOut": "Timed out, partial results",
+      "noResultsScanned_one": "No messages matched your search in the {{formatted}} record scanned.",
+      "noResultsScanned_other": "No messages matched your search in the {{formatted}} records scanned.",
+      "cancelRetrieval": "Cancel",
+      "cancelRetrievalAriaLabel": "Cancel retrieving messages",
       "schema": "Schema",
       "noKey": "No key",
       "noValue": "No value",
@@ -326,8 +343,7 @@
         "whereHeaders": "Headers",
         "whereEverywhere": "Everywhere",
         "messages": "Messages",
-        "retrieve": "Retrieve",
-        "continuously": "Continuously"
+        "retrieve": "Retrieve"
       },
       "columns": {
         "key": "Key",
@@ -340,12 +356,7 @@
       },
       "manage_columns": "Manage columns",
       "manage_columns_description": "Select and reorder columns to display in the messages table. Drag to reorder.",
-      "columns_list": "Columns list",
-      "continuousMode": {
-        "continue": "Continue",
-        "title": "The screen displays only the most recent 100 messages, with older messages rotating out.",
-        "pause": "Pause"
-      }
+      "columns_list": "Columns list"
     },
     "managedTooltip": "Managed topics are created using the KafkaTopic custom resource and are created and updated in the Kafka cluster by the Strimzi Topic Operator."
   },
