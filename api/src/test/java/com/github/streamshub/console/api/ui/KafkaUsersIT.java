@@ -43,7 +43,6 @@ import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
@@ -107,7 +106,6 @@ class KafkaUsersIT {
         deleteStrimziResources();
     }
 
-   
     private static Pattern ci(String text) {
         return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
     }
@@ -168,17 +166,19 @@ class KafkaUsersIT {
     }
 
     private void awaitUsersIndexed(String... names) {
-        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
-            APIResponse response = context.request().get(home + "api/kafkas/" + clusterId + "/users");
-            if (response.status() == 404) {
-                return;
-            }
-            String body = response.text();
-            assertTrue(response.ok(), "status " + response.status() + ": " + body);
-            for (String name : names) {
-                assertTrue(body.contains(name), "missing " + name + " in " + body);
-            }
-        });
+        await().atMost(15, TimeUnit.SECONDS)
+                .pollInSameThread()
+                .untilAsserted(() -> {
+                    APIResponse response = context.request().get(home + "api/kafkas/" + clusterId + "/users");
+                    if (response.status() == 404) {
+                        return;
+                    }
+                    String body = response.text();
+                    assertTrue(response.ok(), "status " + response.status() + ": " + body);
+                    for (String name : names) {
+                        assertTrue(body.contains(name), "missing " + name + " in " + body);
+                    }
+                });
     }
 
     private String usersUrl() {
@@ -193,11 +193,8 @@ class KafkaUsersIT {
         return page.getByRole(AriaRole.COLUMNHEADER, new Page.GetByRoleOptions().setName(name)).first();
     }
 
-    /** Names in the order the table currently shows them (first cell of every body row). */
-    private static List<String> displayedNames(Page page) {
-        return page.locator("tbody tr td:nth-child(1)").allTextContents().stream()
-                .map(String::trim)
-                .toList();
+    private static Locator displayedNames(Page page) {
+        return page.locator("tbody tr td:nth-child(1)");
     }
 
     @Test
@@ -331,16 +328,16 @@ class KafkaUsersIT {
             List<String> descending = ascending.stream().sorted(Comparator.reverseOrder()).toList();
 
             Locator nameHeader = header(page, ci("^name$"));
+            Locator names = displayedNames(page);
 
+            // Retrying Playwright assertions: run on the test thread, timeout from PlaywrightTimeouts
             nameHeader.getByRole(AriaRole.BUTTON).click();
             assertThat(nameHeader).hasAttribute("aria-sort", "ascending");
-            await().atMost(10, TimeUnit.SECONDS)
-                    .untilAsserted(() -> assertEquals(ascending, displayedNames(page)));
+            assertThat(names).hasText(ascending.toArray(new String[0]));
 
             nameHeader.getByRole(AriaRole.BUTTON).click();
             assertThat(nameHeader).hasAttribute("aria-sort", "descending");
-            await().atMost(10, TimeUnit.SECONDS)
-                    .untilAsserted(() -> assertEquals(descending, displayedNames(page)));
+            assertThat(names).hasText(descending.toArray(new String[0]));
         }
     }
 
@@ -362,7 +359,6 @@ class KafkaUsersIT {
 
     @Test
     void clusterWithoutUsersListsNoUsers() {
-        // no KafkaUser resources were created
         try (Page page = context.newPage()) {
             page.navigate(usersUrl());
 

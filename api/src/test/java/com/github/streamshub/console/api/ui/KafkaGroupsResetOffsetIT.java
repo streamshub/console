@@ -11,6 +11,7 @@ import com.github.streamshub.console.test.TestHelper;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -111,8 +112,6 @@ class KafkaGroupsResetOffsetIT {
     @BeforeEach
     void setup() {
         PlaywrightTimeouts.configure(context);
-
-
         bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         utils = new TestHelper(bootstrapServers, config);
         consumerUtils = new ConsumerUtils(bootstrapServers, config);
@@ -276,16 +275,9 @@ class KafkaGroupsResetOffsetIT {
         return resetDialog(page).locator("#datetime-input");
     }
 
-    private static List<String> dryRunRows(Page page) {
-        return dryRunDialog(page).locator("tbody tr").allInnerTexts().stream()
-                .map(text -> text.replaceAll("\\s+", " ").trim())
-                .sorted()
-                .toList();
-    }
-
     private static void awaitDryRunRows(Page page, String... expected) {
-        await().atMost(10, TimeUnit.SECONDS)
-                .untilAsserted(() -> assertEquals(List.of(expected), dryRunRows(page)));
+        assertThat(dryRunDialog(page).locator("tbody tr"))
+                .hasText(expected, new LocatorAssertions.HasTextOptions().setUseInnerText(true));
     }
 
     @Test
@@ -374,6 +366,9 @@ class KafkaGroupsResetOffsetIT {
             openResetModal(page);
             toggle(page, TOPIC_TOGGLE).click();
             Locator search = page.getByPlaceholder(ci("search"));
+
+            // Anchor: the list is loaded and the topic is present before we filter
+            assertThat(menuOption(page, topicName).first()).isVisible();
 
             search.fill("zzz-no-such-topic");
             assertThat(menuOption(page, topicName)).hasCount(0);
@@ -530,6 +525,7 @@ class KafkaGroupsResetOffsetIT {
             selectOffset(page, EARLIEST);
             button(page, DRY_RUN).click();
             assertThat(dryRunDialog(page).locator("table").first()).isVisible();
+            assertThat(page.getByRole(AriaRole.DIALOG)).hasCount(2);   // anchor: reset modal + dry-run modal
 
             dryRunDialog(page).getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName(ci("cancel|close")))
                     .last().click();

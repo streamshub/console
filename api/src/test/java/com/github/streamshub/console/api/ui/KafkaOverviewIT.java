@@ -78,7 +78,7 @@ class KafkaOverviewIT {
     @BeforeEach
     void setup() {
         // Fail fast instead of waiting 30s per step
-        context.setDefaultTimeout(15_000);
+        PlaywrightTimeouts.configure(context);
 
         bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         utils = new TestHelper(bootstrapServers, config);

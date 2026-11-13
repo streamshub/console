@@ -83,7 +83,7 @@ class KafkaNodesIT {
 
     @BeforeEach
     void setup() {
-        context.setDefaultTimeout(15_000);
+        PlaywrightTimeouts.configure(context);
 
         bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         utils = new TestHelper(bootstrapServers, config);

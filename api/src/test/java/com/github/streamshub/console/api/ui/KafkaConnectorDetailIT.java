@@ -114,7 +114,7 @@ class KafkaConnectorDetailIT implements ClientRequestFilter {
 
     @BeforeEach
     void setup() {
-        context.setDefaultTimeout(15_000);
+        PlaywrightTimeouts.configure(context);
 
         filterRequest = ctx -> {
             var uri = ctx.getUri();
