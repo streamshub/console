@@ -924,20 +924,16 @@ public class RecordService {
 
             List<ConsumerRecord<RecordData, RecordData>> matched = new ArrayList<>();
             int pollSize = 0;
+            boolean interrupted = false;
 
             for (var partition : records.partitions()) {
                 var partitionRecords = records.records(partition);
-                int consumed = partitionRecords.size();
-                pollSize += consumed;
-                int matchCount = selectMatches(partitionRecords, matched);
+                int matchedBefore = matched.size();
+                int scanned = selectMatches(partition, partitionRecords, matched);
+                pollSize += scanned;
 
-                final int partitionMatches = matchCount;
+                final int partitionMatches = matched.size() - matchedBefore;
                 int total = partitionMatched.compute(partition, (k, v) -> requireNonNullElse(v, 0) + partitionMatches);
-
-                if (consumed > 0) {
-                    long maxOffset = partitionRecords.stream().mapToLong(ConsumerRecord::offset).max().getAsLong() + 1;
-                    nextOffsets.merge(partition, maxOffset, Math::max);
-                }
 
                 if (total >= limit) {
                     // Found `limit` matching records for this partition
@@ -946,11 +942,27 @@ public class RecordService {
                     finished.add(partition);
                     limitMet = true;
                 }
+
+                if (scanned < partitionRecords.size()) {
+                    // The timeout was reached or the iteration was cancelled while matching
+                    interrupted = true;
+                    break;
+                }
             }
 
-            finishPartitionsAtEnd();
+            if (!interrupted) {
+                /*
+                 * Not when interrupted, some polled records were not scanned so the consumer
+                 * position does not show that the partitions were read to their end.
+                 */
+                finishPartitionsAtEnd();
+            }
 
-            if (pollSize == 0) {
+            if (interrupted && !filterLimitMet()) {
+                // The timeout was reached or the iteration was cancelled, unsubscribe everything
+                timedOut = !cancelled.getAsBoolean();
+                assignments.clear();
+            } else if (pollSize == 0) {
                 /*
                  * No records before the timeout or the iteration was cancelled,
                  * unsubscribe everything. Partitions that finished normally were
@@ -995,19 +1007,34 @@ public class RecordService {
             }
         }
 
-        private int selectMatches(List<ConsumerRecord<RecordData, RecordData>> partitionRecords,
+        /**
+         * Add the records matching the search predicates to {@code matched}. When there are
+         * predicates, the timeout and cancellation are checked before each record so that a
+         * batch of expensive matches can not run past the timeout.
+         *
+         * @return the number of records scanned, less than the number given when the scan was
+         *         stopped by the timeout or cancellation
+         */
+        private int selectMatches(TopicPartition partition,
+                List<ConsumerRecord<RecordData, RecordData>> partitionRecords,
                 List<ConsumerRecord<RecordData, RecordData>> matched) {
 
-            int matchCount = 0;
+            int scanned = 0;
 
             for (var rec : partitionRecords) {
+                if (!predicates.isEmpty() && (!Instant.now().isBefore(timeout) || cancelled.getAsBoolean())) {
+                    break;
+                }
+
                 if (matches(rec)) {
                     matched.add(rec);
-                    matchCount++;
                 }
+
+                scanned++;
+                nextOffsets.merge(partition, rec.offset() + 1, Math::max);
             }
 
-            return matchCount;
+            return scanned;
         }
 
         /**
