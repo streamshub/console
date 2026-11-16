@@ -92,7 +92,9 @@ jobs:
 
           git clean -ffdx --exclude=target/ && git reset --hard HEAD
 
+      ## Download UI coverage only for trusted push events
       - name: Download UI Coverage
+        if: github.event.workflow_run.event == 'push'
         uses: actions/download-artifact@v4
         with:
           name: ui-coverage
@@ -103,8 +105,9 @@ jobs:
 
       ## Verify that the LCOV report exists
       - name: Verify UI Coverage Report
+        if: github.event.workflow_run.event == 'push'
         run: |
-          ls -lh api/src/main/webui/coverage/lcov.info
+          test -s api/src/main/webui/coverage/lcov.info
 
       - name: Setup JDK
         uses: actions/setup-java@v6
