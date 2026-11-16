@@ -1,9 +1,14 @@
-name: "SonarCloud"
+name: 'SonarCloud'
 
 on:
   workflow_run:
-    workflows: [ Build ]
-    types: [ completed ]
+    workflows: [Build]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
 
 jobs:
   debug:
@@ -64,7 +69,7 @@ jobs:
         run: |
           unzip target.zip
 
-      ## Load the context from the build job - runs for any trigger to allow templates with `steps.build_context.outputs.content` 
+      ## Load the context from the build job - runs for any trigger to allow templates with `steps.build_context.outputs.content`
       ## to be accepted by GitHub Actions.
       - name: Read Build Context
         id: build_context
@@ -86,6 +91,20 @@ jobs:
           git checkout ${HEAD_SHA}
 
           git clean -ffdx --exclude=target/ && git reset --hard HEAD
+
+      - name: Download UI Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-coverage
+          path: api/src/main/webui/coverage
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          repository: ${{ github.repository }}
+
+      ## Verify that the LCOV report exists
+      - name: Verify UI Coverage Report
+        run: |
+          ls -lh api/src/main/webui/coverage/lcov.info
 
       - name: Setup JDK
         uses: actions/setup-java@v6
@@ -139,4 +158,5 @@ jobs:
             -Dsonar.projectKey=streamshub_console \
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.scm.revision=${HEAD_SHA} \
-            -Dsonar.branch.name=${HEAD_BRANCH}
+            -Dsonar.branch.name=${HEAD_BRANCH} \
+            -Dsonar.javascript.lcov.reportPaths=api/src/main/webui/coverage/lcov.info

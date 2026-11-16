@@ -16,7 +16,7 @@ on:
       - 'main'
       - '[0-9]+.[0-9]+.x'
       - 'systemtests'
-    types: [ opened, reopened, synchronize ]
+    types: [opened, reopened, synchronize]
     paths-ignore:
       - 'docs/**'
       - '*.md'
@@ -247,9 +247,16 @@ jobs:
         working-directory: api/src/main/webui
         run: node_modules/.bin/playwright install chromium --with-deps
 
-      - name: Test Storybook
+      - name: Test Storybook with Coverage
         working-directory: api/src/main/webui
-        run: npm run test-storybook
+        run: npm run test-storybook:coverage
+
+      - name: Upload UI Coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-coverage
+          path: api/src/main/webui/coverage/lcov.info
+          if-no-files-found: error
 
   Playwright:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}

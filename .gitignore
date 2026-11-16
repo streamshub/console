@@ -37,3 +37,6 @@ release.properties
 systemtests/screenshots/
 systemtests/config-local.yaml
 systemtests/tracing/
+
+# UI test coverage reports
+/api/src/main/webui/coverage/
