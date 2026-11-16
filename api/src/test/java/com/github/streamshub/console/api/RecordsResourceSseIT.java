@@ -886,6 +886,36 @@ class RecordsResourceSseIT {
     }
 
     @ParameterizedTest
+    @CsvSource({
+        "filter[key], like",
+        "filter[key], ilike",
+        "filter[value], like",
+        "filter[value], ilike",
+        "filter[headers], like",
+        "filter[headers], ilike"
+    })
+    void testStreamRecordsWithPatternTooLong(String filter, String operator) {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
+
+        assertInvalidQueryParameter(topicIds.get(topicName),
+                Map.of(filter, operator + "," + "a".repeat(101)),
+                filter);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "filter[key]", "filter[value]", "filter[headers]" })
+    void testStreamRecordsWithPatternAtMaxLength(String filter) {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
+
+        FrameSet result = stream(topicIds.get(topicName), Map.of(filter, "like," + "a".repeat(100)));
+
+        assertThat(result.records(), is(empty()));
+        assertThat(result.done().getString("reason"), is(equalTo("complete")));
+    }
+
+    @ParameterizedTest
     @ValueSource(ints = { 10, 20, 30, 40, 200 })
     void testStreamLatestRecords(int limit) {
         final String topicName = UUID.randomUUID().toString();

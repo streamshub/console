@@ -43,6 +43,7 @@ public class RecordFilterParams extends FilterParams {
     static final String FILTER_HEADERS = "filter[headers]";
     static final String PAGE_SIZE = "page[size]";
     static final String MAX_VALUE_LENGTH = "maxValueLength";
+    static final int MAX_PATTERN_LENGTH = 100;
 
     @QueryParam(FILTER_PARTITION)
     @Parameter(
@@ -178,6 +179,12 @@ public class RecordFilterParams extends FilterParams {
         message = "exactly 1 operand is required",
         payload = ErrorCategory.InvalidQueryParameter.class,
         node = FILTER_KEY)
+    @Expression(
+        when = "self != null && self.operands.size() == 1",
+        value = "self.firstOperand.length() <= " + MAX_PATTERN_LENGTH,
+        message = "pattern must not exceed " + MAX_PATTERN_LENGTH + " characters",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_KEY)
     FetchFilter keyFilter;
 
     @QueryParam(FILTER_VALUE)
@@ -199,6 +206,12 @@ public class RecordFilterParams extends FilterParams {
         when = "self != null",
         value = "self.operands.size() == 1",
         message = "exactly 1 operand is required",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_VALUE)
+    @Expression(
+        when = "self != null && self.operands.size() == 1",
+        value = "self.firstOperand.length() <= " + MAX_PATTERN_LENGTH,
+        message = "pattern must not exceed " + MAX_PATTERN_LENGTH + " characters",
         payload = ErrorCategory.InvalidQueryParameter.class,
         node = FILTER_VALUE)
     FetchFilter valueFilter;
@@ -223,6 +236,12 @@ public class RecordFilterParams extends FilterParams {
         when = "self != null",
         value = "self.operands.size() == 1",
         message = "exactly 1 operand is required",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = FILTER_HEADERS)
+    @Expression(
+        when = "self != null && self.operands.size() == 1",
+        value = "self.firstOperand.length() <= " + MAX_PATTERN_LENGTH,
+        message = "pattern must not exceed " + MAX_PATTERN_LENGTH + " characters",
         payload = ErrorCategory.InvalidQueryParameter.class,
         node = FILTER_HEADERS)
     FetchFilter headersFilter;
