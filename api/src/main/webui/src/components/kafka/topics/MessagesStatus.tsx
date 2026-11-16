@@ -161,9 +161,11 @@ export function MessagesStatus({
         ? 'topics.messages.scanLimitReached'
         : scan.endReason === 'timeout'
           ? 'topics.messages.scanTimedOut'
-          : scan.endReason === 'cancelled'
-            ? 'topics.messages.scanStopped'
-            : 'topics.messages.scanComplete';
+          : scan.endReason === 'scan_limit'
+            ? 'topics.messages.scanRecordLimitReached'
+            : scan.endReason === 'cancelled'
+              ? 'topics.messages.scanStopped'
+              : 'topics.messages.scanComplete';
 
     state = <Content component="small">{t(key)}</Content>;
   }

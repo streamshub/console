@@ -136,6 +136,7 @@ class RecordsResourceSseIT {
         System.clearProperty(RecordService.MAX_CONCURRENT_STREAMS_CONFIG);
         System.clearProperty(RecordService.MAX_CONCURRENT_STREAMS_PER_USER_CONFIG);
         System.clearProperty(RecordService.MAX_CONCURRENT_STREAMS_PER_CLUSTER_CONFIG);
+        System.clearProperty(RecordService.MAX_SCANNED_RECORDS_CONFIG);
         if (recordUtils != null) {
             recordUtils.close();
         }
@@ -730,6 +731,43 @@ class RecordsResourceSseIT {
         System.setProperty(limitConfig, "1");
 
         FrameSet result = stream(topicId);
+        assertThat(result.values(), containsInAnyOrder("a", "b", "c"));
+        assertThat(result.done().getString("reason"), is(equalTo("complete")));
+    }
+
+    @Test
+    void testStreamRecordsEndedWhenScanLimitReached() {
+        final String topicName = UUID.randomUUID().toString();
+        String[] values = new String[20];
+
+        for (int i = 0; i < values.length; i++) {
+            values[i] = "other-" + i;
+        }
+
+        String topicId = topicWithValues(topicName, values);
+        System.setProperty(RecordService.MAX_SCANNED_RECORDS_CONFIG, "5");
+
+        // Nothing matches, so the scan ends because the limit on records scanned is reached
+        FrameSet result = stream(topicId, Map.of(
+                "filter[value]", "like,no-such-value",
+                "filter[offset]", "gte,0"));
+
+        assertThat(result.records(), is(empty()));
+        assertThat(result.done().getString("reason"), is(equalTo("scan_limit")));
+
+        List<JsonObject> heartbeats = result.events("heartbeat");
+        assertThat(heartbeats.get(heartbeats.size() - 1).getInt("scanned"), is(equalTo(5)));
+    }
+
+    @Test
+    void testStreamRecordsScanLimitAboveRecordCountIsComplete() {
+        final String topicName = UUID.randomUUID().toString();
+        String topicId = topicWithValues(topicName, "a", "b", "c");
+
+        System.setProperty(RecordService.MAX_SCANNED_RECORDS_CONFIG, "100");
+
+        FrameSet result = stream(topicId);
+
         assertThat(result.values(), containsInAnyOrder("a", "b", "c"));
         assertThat(result.done().getString("reason"), is(equalTo("complete")));
     }

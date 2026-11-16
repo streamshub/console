@@ -107,6 +107,13 @@ public class RecordService {
      */
     public static final String MAX_CONCURRENT_STREAMS_PER_CLUSTER_CONFIG = "console.topics.records.max-concurrent-streams-per-cluster";
 
+    /**
+     * Config name of the maximum number of records a single SSE record stream may scan,
+     * whether or not they match the search. The stream is ended with the {@code scan_limit}
+     * reason when it is reached. Not limited when unset. Read for each request.
+     */
+    public static final String MAX_SCANNED_RECORDS_CONFIG = "console.topics.records.max-scanned-records";
+
     private final AtomicInteger activeStreams = new AtomicInteger();
     private final Map<String, Integer> userStreams = new ConcurrentHashMap<>();
     private final Map<String, Integer> clusterStreams = new ConcurrentHashMap<>();
@@ -231,6 +238,8 @@ public class RecordService {
                 .orElse(MAX_CONCURRENT_STREAMS_DEFAULT);
         Duration streamTimeout = config.getOptionalValue(STREAM_TIMEOUT_CONFIG, Duration.class)
                 .orElse(STREAM_TIMEOUT_DEFAULT);
+        int maxScanned = config.getOptionalValue(MAX_SCANNED_RECORDS_CONFIG, Integer.class)
+                .orElse(Integer.MAX_VALUE);
 
         if (activeStreams.incrementAndGet() > maxStreams) {
             activeStreams.decrementAndGet();
@@ -253,6 +262,7 @@ public class RecordService {
                     topicId,
                     params,
                     streamTimeout,
+                    maxScanned,
                     sink::isClosed
             );
 
@@ -311,6 +321,7 @@ public class RecordService {
                 endOffsets,
                 1,
                 Instant.now().plus(pollTimeout),
+                Integer.MAX_VALUE,
                 Collections.emptyList(),
                 () -> false
         );
@@ -325,6 +336,7 @@ public class RecordService {
             String topicId,
             RecordFilterParams params,
             Duration timeout,
+            int maxScanned,
             BooleanSupplier cancelled) {
 
         String topicName = topicNameForId(topicId);
@@ -384,6 +396,7 @@ public class RecordService {
                 endOffsets,
                 limit,
                 Instant.now().plus(timeout),
+                maxScanned,
                 predicates,
                 cancelled
         );
@@ -841,6 +854,8 @@ public class RecordService {
             LIMIT,
             /** The time allowed for the request ran out before all records were read. */
             TIMEOUT,
+            /** The maximum number of records to scan was reached before all records were read. */
+            SCAN_LIMIT,
             /** The iteration was stopped before completing, e.g. the client went away. */
             CANCELLED;
 
@@ -862,6 +877,8 @@ public class RecordService {
         private final Set<TopicPartition> assignments;
         private final Map<TopicPartition, Long> endOffsets;
         private final int limit;
+        /** The most records that may be scanned, matching or not. */
+        private final int maxScanned;
         private final List<Predicate<ConsumerRecord<RecordData, RecordData>>> predicates;
 
         /** Offset at which reading started for each partition. */
@@ -878,6 +895,7 @@ public class RecordService {
                 Map<TopicPartition, Long> endOffsets,
                 int limit,
                 Instant timeout,
+                int maxScanned,
                 List<Predicate<ConsumerRecord<RecordData, RecordData>>> predicates,
                 BooleanSupplier cancelled) {
 
@@ -887,6 +905,7 @@ public class RecordService {
             this.endOffsets = endOffsets;
             this.limit = limit;
             this.timeout = timeout;
+            this.maxScanned = maxScanned;
             this.predicates = predicates;
 
             for (var assignment : assignments) {
@@ -928,11 +947,23 @@ public class RecordService {
                 return limitMet ? EndReason.LIMIT : EndReason.COMPLETE;
             }
 
-            if (timedOut || !Instant.now().isBefore(timeout)) {
+            if (timedOut) {
+                return EndReason.TIMEOUT;
+            }
+
+            if (scanLimitReached()) {
+                return EndReason.SCAN_LIMIT;
+            }
+
+            if (!Instant.now().isBefore(timeout)) {
                 return EndReason.TIMEOUT;
             }
 
             return EndReason.CANCELLED;
+        }
+
+        private boolean scanLimitReached() {
+            return recordsConsumed >= maxScanned;
         }
 
         /**
@@ -960,6 +991,7 @@ public class RecordService {
 
         private boolean maybeMoreRecords() {
             return !assignments.isEmpty()
+                    && !scanLimitReached()
                     && Instant.now().isBefore(timeout)
                     && !cancelled.getAsBoolean();
         }
@@ -1009,7 +1041,7 @@ public class RecordService {
             for (var partition : records.partitions()) {
                 var partitionRecords = records.records(partition);
                 int matchedBefore = matched.size();
-                int scanned = selectMatches(partition, partitionRecords, matched);
+                int scanned = selectMatches(partition, partitionRecords, maxScanned - recordsConsumed - pollSize, matched);
                 pollSize += scanned;
 
                 final int partitionMatches = matched.size() - matchedBefore;
@@ -1024,7 +1056,7 @@ public class RecordService {
                 }
 
                 if (scanned < partitionRecords.size()) {
-                    // The timeout was reached or the iteration was cancelled while matching
+                    // The scan limit or timeout was reached, or the iteration was cancelled, while matching
                     interrupted = true;
                     break;
                 }
@@ -1038,9 +1070,9 @@ public class RecordService {
                 finishPartitionsAtEnd();
             }
 
+            recordsConsumed += pollSize;
             checkEndScan(pollSize, interrupted);
             consumer.assign(assignments);
-            recordsConsumed += pollSize;
 
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.tracef("next() consumed records: %d, matched: %d; total consumed %s",
@@ -1052,8 +1084,8 @@ public class RecordService {
 
         private void checkEndScan(int pollSize, boolean interrupted) {
             if (interrupted && !filterLimitMet()) {
-                // The timeout was reached or the iteration was cancelled, unsubscribe everything
-                timedOut = !cancelled.getAsBoolean();
+                // The scan limit or timeout was reached, or the iteration was cancelled, unsubscribe everything
+                timedOut = !cancelled.getAsBoolean() && !scanLimitReached();
                 assignments.clear();
             } else if (pollSize == 0) {
                 /*
@@ -1067,6 +1099,9 @@ public class RecordService {
                 // There are filters and the match limit has been met, unsubscribe everything
                 limitMet = true;
                 finished.addAll(startOffsets.keySet());
+                assignments.clear();
+            } else if (scanLimitReached()) {
+                // Partitions that were read to their end are finished, the others are left unread
                 assignments.clear();
             }
         }
@@ -1091,20 +1126,26 @@ public class RecordService {
         }
 
         /**
-         * Add the records matching the search predicates to {@code matched}. When there are
-         * predicates, the timeout and cancellation are checked before each record so that a
-         * batch of expensive matches can not run past the timeout.
+         * Add the records matching the search predicates to {@code matched}. No more than
+         * {@code budget} records are scanned. When there are predicates, the timeout and
+         * cancellation are checked before each record so that a batch of expensive matches
+         * can not run past the timeout.
          *
          * @return the number of records scanned, less than the number given when the scan was
-         *         stopped by the timeout or cancellation
+         *         stopped by the scan limit, the timeout, or cancellation
          */
         private int selectMatches(TopicPartition partition,
                 List<ConsumerRecord<RecordData, RecordData>> partitionRecords,
+                int budget,
                 List<ConsumerRecord<RecordData, RecordData>> matched) {
 
             int scanned = 0;
 
             for (var rec : partitionRecords) {
+                if (scanned >= budget) {
+                    break;
+                }
+
                 if (!predicates.isEmpty() && (!Instant.now().isBefore(timeout) || cancelled.getAsBoolean())) {
                     break;
                 }

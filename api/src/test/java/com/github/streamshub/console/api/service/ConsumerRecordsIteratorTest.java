@@ -58,8 +58,89 @@ class ConsumerRecordsIteratorTest {
                 Map.of(PARTITION, (long) RECORD_COUNT),
                 RECORD_COUNT,
                 timeout,
+                Integer.MAX_VALUE,
                 List.of(predicate),
                 cancelled::get);
+    }
+
+    private ConsumerRecordsIterator iterator(int maxScanned, Predicate<ConsumerRecord<RecordData, RecordData>> predicate) {
+        return new ConsumerRecordsIterator(
+                consumer,
+                Map.of(PARTITION, (long) RECORD_COUNT),
+                RECORD_COUNT,
+                Instant.now().plusSeconds(60),
+                maxScanned,
+                List.of(predicate),
+                () -> false);
+    }
+
+    @Test
+    void testScanLimitStopsScanWithinABatch() {
+        AtomicInteger tested = new AtomicInteger();
+
+        var iterator = iterator(2, rec -> {
+            tested.incrementAndGet();
+            return false;
+        });
+
+        var matched = iterator.next();
+
+        // The remaining records of the batch were neither tested nor counted
+        assertEquals(2, tested.get());
+        assertTrue(matched.isEmpty());
+        assertEquals(2, iterator.totalConsumed());
+        assertFalse(iterator.hasNext());
+        assertEquals(EndReason.SCAN_LIMIT, iterator.endReason());
+        assertEquals(2 * 100 / RECORD_COUNT, iterator.scanProgress());
+    }
+
+    @Test
+    void testMatchesWithinScanLimitAreReturned() {
+        var iterator = iterator(3, rec -> rec.offset() != 1);
+
+        var matched = iterator.next();
+
+        assertEquals(List.of(0L, 2L), matched.stream().map(ConsumerRecord::offset).toList());
+        assertEquals(EndReason.SCAN_LIMIT, iterator.endReason());
+    }
+
+    @Test
+    void testScanLimitEqualToRecordCountIsComplete() {
+        var iterator = iterator(RECORD_COUNT, rec -> false);
+
+        iterator.next();
+
+        // All of the records were read, the limit was not what ended the scan
+        assertEquals(RECORD_COUNT, iterator.totalConsumed());
+        assertFalse(iterator.hasNext());
+        assertEquals(EndReason.COMPLETE, iterator.endReason());
+        assertEquals(100, iterator.scanProgress());
+    }
+
+    @Test
+    void testScanLimitAboveRecordCountIsComplete() {
+        var iterator = iterator(RECORD_COUNT + 1, rec -> false);
+
+        iterator.next();
+
+        assertEquals(EndReason.COMPLETE, iterator.endReason());
+    }
+
+    @Test
+    void testMatchLimitMetBeforeScanLimitIsLimit() {
+        var iterator = new ConsumerRecordsIterator(
+                consumer,
+                Map.of(PARTITION, (long) RECORD_COUNT),
+                2,
+                Instant.now().plusSeconds(60),
+                3,
+                List.of(rec -> true),
+                () -> false);
+
+        iterator.next();
+
+        assertFalse(iterator.hasNext());
+        assertEquals(EndReason.LIMIT, iterator.endReason());
     }
 
     @Test
@@ -126,6 +207,7 @@ class ConsumerRecordsIteratorTest {
                 Map.of(PARTITION, (long) RECORD_COUNT),
                 2,
                 Instant.now().plusSeconds(60),
+                Integer.MAX_VALUE,
                 List.of(rec -> true),
                 () -> false);
 

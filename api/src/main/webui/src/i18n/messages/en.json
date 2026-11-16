@@ -270,6 +270,7 @@
       "scanStopped": "Stopped, partial results",
       "scanLimitReached": "Found all requested matches",
       "scanTimedOut": "Timed out, partial results",
+      "scanRecordLimitReached": "Record scan limit reached, partial results",
       "noResultsScanned_one": "No messages matched your search in the {{formatted}} record scanned.",
       "noResultsScanned_other": "No messages matched your search in the {{formatted}} records scanned.",
       "cancelRetrieval": "Cancel",

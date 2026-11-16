@@ -74,4 +74,5 @@ A search also shows why it ended:
 ** *Scan complete* means all records from the starting point were checked.
 ** *Found all requested matches* means the *Limit* was reached. More matches might exist.
 ** *Timed out, partial results* means the maximum time ran out before all records were checked. More matches might exist. To find them, narrow the search or ask your administrator to increase the maximum time.
+** *Record scan limit reached, partial results* means the maximum number of records to scan was reached before all records were checked. More matches might exist. To find them, narrow the search or ask your administrator to increase the maximum number of records.
 ** *Stopped, partial results* means the retrieval was cancelled.

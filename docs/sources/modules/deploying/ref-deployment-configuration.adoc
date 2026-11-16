@@ -88,6 +88,16 @@ By default, there is no per-cluster limit.
 All of the limits apply together.
 A retrieval is rejected if any of them has been reached.
 
+`CONSOLE_TOPICS_RECORDS_MAX_SCANNED_RECORDS`:: The maximum number of records that a single retrieval of messages can read from Kafka, whether or not they match a search.
+Use this setting to limit the read load that a search places on Kafka, in addition to the time limit set by `CONSOLE_TOPICS_RECORDS_STREAM_TIMEOUT`.
++
+When the limit is reached, the retrieval is stopped and the messages found so far are returned.
+The *Messages* tab reports that the record scan limit was reached with partial results.
+The limit applies to each retrieval, across all partitions of the topic.
+A retrieval that reads every record before reaching the limit completes normally.
++
+By default, the number of records is not limited.
+
 == Examples
 
 === Scheduling the console pod on specific nodes

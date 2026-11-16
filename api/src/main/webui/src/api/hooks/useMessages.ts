@@ -74,12 +74,18 @@ function appendSearchFilters(
 
 /**
  * Why the server stopped scanning:
- * - complete:  all requested records were read
- * - limit:     the requested number of matches was found
- * - timeout:   time ran out before all records were read
- * - cancelled: the server stopped before completing
+ * - complete:   all requested records were read
+ * - limit:      the requested number of matches was found
+ * - timeout:    time ran out before all records were read
+ * - scan_limit: the maximum number of records to scan was reached before all records were read
+ * - cancelled:  the server stopped before completing
  */
-export type EndReason = 'complete' | 'limit' | 'timeout' | 'cancelled';
+export type EndReason =
+  | 'complete'
+  | 'limit'
+  | 'timeout'
+  | 'scan_limit'
+  | 'cancelled';
 
 /** How far the server has got in scanning the topic. */
 export interface ScanState {
@@ -114,7 +120,7 @@ interface Heartbeat {
  *   event: heartbeat
  *   data: {"scanned":<n>,"progress":<p>,"elapsed":<ms>,"remaining":<ms>}   (after every poll batch)
  *   event: done
- *   data: {"reason":"complete|limit|timeout|cancelled"}
+ *   data: {"reason":"complete|limit|timeout|scan_limit|cancelled"}
  *
  * `onHeartbeat` receives the total number of records scanned so far, matching
  * or not, the estimated scan progress, and the time elapsed and remaining

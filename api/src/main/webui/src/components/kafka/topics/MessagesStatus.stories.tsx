@@ -101,6 +101,14 @@ export const SearchTimedOut: Story = {
   },
 };
 
+export const SearchRecordScanLimitReached: Story = {
+  args: {
+    count: 2,
+    isSearching: true,
+    scan: finished('scan_limit'),
+  },
+};
+
 export const SearchEndedByServer: Story = {
   args: {
     count: 2,
