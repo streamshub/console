@@ -68,6 +68,26 @@ Each retrieval uses a thread and a Kafka consumer for as long as it runs.
 When the limit is reached, further retrievals are rejected with an HTTP `429 Too Many Requests` response until a running one finishes.
 The default is `10`.
 
+`CONSOLE_TOPICS_RECORDS_MAX_CONCURRENT_STREAMS_PER_USER`:: The maximum number of message retrievals that a single user can run at the same time in each console server pod.
+Use this setting so that one user cannot take all of the retrievals allowed by `CONSOLE_TOPICS_RECORDS_MAX_CONCURRENT_STREAMS`.
+For example, with an overall limit of `10` and a per-user limit of `2`, no user can have more than 2 retrievals running, so it takes at least 5 users to use all 10.
++
+When the limit is reached, further retrievals by that user are rejected with an HTTP `429 Too Many Requests` response until one of their running retrievals finishes.
+Other users are not affected.
+By default, there is no per-user limit.
++
+If the console does not authenticate users, all requests are made as the same user, so this limit applies to all retrievals together.
+
+`CONSOLE_TOPICS_RECORDS_MAX_CONCURRENT_STREAMS_PER_CLUSTER`:: The maximum number of message retrievals that can run at the same time for a single Kafka cluster in each console server pod.
+Use this setting to limit the read load that the console places on each Kafka cluster when it is configured with more than one.
++
+When the limit is reached, further retrievals for that cluster are rejected with an HTTP `429 Too Many Requests` response until one of its running retrievals finishes.
+Retrievals for other clusters are not affected.
+By default, there is no per-cluster limit.
+
+All of the limits apply together.
+A retrieval is rejected if any of them has been reached.
+
 == Examples
 
 === Scheduling the console pod on specific nodes

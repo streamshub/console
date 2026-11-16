@@ -17,6 +17,8 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -60,6 +62,8 @@ import com.github.streamshub.console.api.support.ContextualExecutorProvider;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.serdes.RecordData;
 
+import io.quarkus.security.identity.SecurityIdentity;
+
 import static java.util.Objects.requireNonNullElse;
 
 @ApplicationScoped
@@ -90,10 +94,28 @@ public class RecordService {
     public static final String MAX_CONCURRENT_STREAMS_CONFIG = "console.topics.records.max-concurrent-streams";
     static final int MAX_CONCURRENT_STREAMS_DEFAULT = 10;
 
+    /**
+     * Config name of the maximum number of SSE record streams that may run at once for a
+     * single user, so that one user can not take all of the streams allowed by
+     * {@link #MAX_CONCURRENT_STREAMS_CONFIG}. Not limited when unset. Read for each request.
+     */
+    public static final String MAX_CONCURRENT_STREAMS_PER_USER_CONFIG = "console.topics.records.max-concurrent-streams-per-user";
+
+    /**
+     * Config name of the maximum number of SSE record streams that may run at once for a
+     * single Kafka cluster. Not limited when unset. Read for each request.
+     */
+    public static final String MAX_CONCURRENT_STREAMS_PER_CLUSTER_CONFIG = "console.topics.records.max-concurrent-streams-per-cluster";
+
     private final AtomicInteger activeStreams = new AtomicInteger();
+    private final Map<String, Integer> userStreams = new ConcurrentHashMap<>();
+    private final Map<String, Integer> clusterStreams = new ConcurrentHashMap<>();
 
     @Inject
     Config config;
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     @Inject
     KafkaContext kafkaContext;
@@ -156,6 +178,54 @@ public class RecordService {
         throw new NotFoundException("No such record");
     }
 
+    /**
+     * A stream slot taken from a limit, given back by closing it.
+     */
+    interface StreamSlot extends AutoCloseable {
+        StreamSlot UNLIMITED = () -> { };
+
+        @Override
+        void close();
+    }
+
+    /**
+     * Take a stream slot for {@code key}. The check against the limit and the increment are
+     * a single atomic operation.
+     *
+     * @param streams the counts of streams running for each key
+     * @param key the key to count the stream for, e.g. a user or cluster
+     * @param max the limit for each key, when empty there is no limit and no slot is taken
+     * @param scope description of the key used in the message when the limit is reached
+     * @return the slot, to be closed when the stream ends
+     * @throws TooManyRequestsException when {@code key} already holds {@code max} slots
+     */
+    static StreamSlot acquireStream(Map<String, Integer> streams, String key, Optional<Integer> max, String scope) {
+        if (max.isEmpty()) {
+            return StreamSlot.UNLIMITED;
+        }
+
+        AtomicBoolean acquired = new AtomicBoolean(false);
+
+        streams.compute(key, (k, count) -> {
+            int current = count != null ? count : 0;
+
+            if (current >= max.get()) {
+                return count;
+            }
+
+            acquired.set(true);
+            return current + 1;
+        });
+
+        if (!acquired.get()) {
+            throw new TooManyRequestsException(
+                    "Too many record streams are running for %s, retry later (limit: %d)".formatted(scope, max.get()));
+        }
+
+        // Remove the entry at zero so keys of users and clusters that are gone do not accumulate
+        return () -> streams.computeIfPresent(key, (k, count) -> count <= 1 ? null : count - 1);
+    }
+
     public void consumeRecords(String topicId, List<String> include, RecordFilterParams params, SseEventSink sink, Sse sse) {
         int maxStreams = config.getOptionalValue(MAX_CONCURRENT_STREAMS_CONFIG, Integer.class)
                 .orElse(MAX_CONCURRENT_STREAMS_DEFAULT);
@@ -168,7 +238,17 @@ public class RecordService {
                     "Too many record streams are running, retry later (limit: %d)".formatted(maxStreams));
         }
 
-        try {
+        try (var userSlot = acquireStream(
+                    userStreams,
+                    securityIdentity.getPrincipal().getName(),
+                    config.getOptionalValue(MAX_CONCURRENT_STREAMS_PER_USER_CONFIG, Integer.class),
+                    "this user");
+             var clusterSlot = acquireStream(
+                    clusterStreams,
+                    kafkaContext.clusterId(),
+                    config.getOptionalValue(MAX_CONCURRENT_STREAMS_PER_CLUSTER_CONFIG, Integer.class),
+                    "this Kafka cluster")) {
+
             ConsumerRecordsIterator iterator = prepareConsumer(
                     topicId,
                     params,
@@ -878,11 +958,15 @@ public class RecordService {
             return recordsConsumed;
         }
 
-        @Override
-        public boolean hasNext() {
-            boolean moreRecords = !assignments.isEmpty()
+        private boolean maybeMoreRecords() {
+            return !assignments.isEmpty()
                     && Instant.now().isBefore(timeout)
                     && !cancelled.getAsBoolean();
+        }
+
+        @Override
+        public boolean hasNext() {
+            boolean moreRecords = maybeMoreRecords();
 
             if (!moreRecords && LOGGER.isDebugEnabled()) {
                 LOGGER.debugf("Total consumed records: %d", recordsConsumed);
@@ -905,11 +989,7 @@ public class RecordService {
 
             ConsumerRecords<RecordData, RecordData> records = ConsumerRecords.empty();
 
-            while (records.isEmpty()
-                    && !assignments.isEmpty()
-                    && Instant.now().isBefore(timeout)
-                    && !cancelled.getAsBoolean()) {
-
+            while (records.isEmpty() && maybeMoreRecords()) {
                 records = poll();
 
                 if (records.isEmpty()) {
@@ -958,6 +1038,19 @@ public class RecordService {
                 finishPartitionsAtEnd();
             }
 
+            checkEndScan(pollSize, interrupted);
+            consumer.assign(assignments);
+            recordsConsumed += pollSize;
+
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.tracef("next() consumed records: %d, matched: %d; total consumed %s",
+                        pollSize, matched.size(), recordsConsumed);
+            }
+
+            return matched;
+        }
+
+        private void checkEndScan(int pollSize, boolean interrupted) {
             if (interrupted && !filterLimitMet()) {
                 // The timeout was reached or the iteration was cancelled, unsubscribe everything
                 timedOut = !cancelled.getAsBoolean();
@@ -976,16 +1069,6 @@ public class RecordService {
                 finished.addAll(startOffsets.keySet());
                 assignments.clear();
             }
-
-            consumer.assign(assignments);
-            recordsConsumed += pollSize;
-
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.tracef("next() consumed records: %d, matched: %d; total consumed %s",
-                        pollSize, matched.size(), recordsConsumed);
-            }
-
-            return matched;
         }
 
         /**

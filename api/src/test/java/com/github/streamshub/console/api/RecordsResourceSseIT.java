@@ -134,6 +134,8 @@ class RecordsResourceSseIT {
     void cleanupAfterEach() {
         System.clearProperty(RecordService.STREAM_TIMEOUT_CONFIG);
         System.clearProperty(RecordService.MAX_CONCURRENT_STREAMS_CONFIG);
+        System.clearProperty(RecordService.MAX_CONCURRENT_STREAMS_PER_USER_CONFIG);
+        System.clearProperty(RecordService.MAX_CONCURRENT_STREAMS_PER_CLUSTER_CONFIG);
         if (recordUtils != null) {
             recordUtils.close();
         }
@@ -697,6 +699,39 @@ class RecordsResourceSseIT {
         // Nor must a completed the stream above
         FrameSet again = stream(topicId);
         assertThat(again.values(), containsInAnyOrder("a", "b", "c"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        RecordService.MAX_CONCURRENT_STREAMS_PER_USER_CONFIG,
+        RecordService.MAX_CONCURRENT_STREAMS_PER_CLUSTER_CONFIG
+    })
+    void testStreamRecordsRejectedWhenScopedStreamLimitReached(String limitConfig) {
+        final String topicName = UUID.randomUUID().toString();
+        String topicId = topicWithValues(topicName, "a", "b", "c");
+
+        // The overall limit is not reached, the stream is rejected by the narrower limit
+        System.setProperty(RecordService.MAX_CONCURRENT_STREAMS_CONFIG, "10");
+        System.setProperty(limitConfig, "0");
+
+        whenRequesting(req -> req
+                .accept(MediaType.SERVER_SENT_EVENTS)
+                .get("", clusterId1, topicId))
+            .assertThat()
+            .statusCode(is(Status.TOO_MANY_REQUESTS.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("429"))
+            .body("errors[0].code", is("4291"));
+
+        // The rejected request must not hold on to a slot of either limit, nor the overall limit
+        await().atMost(2, TimeUnit.SECONDS)
+            .until(() -> recordService.activeStreams() == 0);
+
+        System.setProperty(limitConfig, "1");
+
+        FrameSet result = stream(topicId);
+        assertThat(result.values(), containsInAnyOrder("a", "b", "c"));
+        assertThat(result.done().getString("reason"), is(equalTo("complete")));
     }
 
     @Test
