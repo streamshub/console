@@ -21,6 +21,8 @@
 
         <!-- UI Libs -->
         <quarkus-quinoa.version>2.9.3</quarkus-quinoa.version>
+        <quarkus-playwright.version>2.3.10</quarkus-playwright.version>
+
     </properties>
 
     <dependencies>
@@ -203,6 +205,18 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit-mockito</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.playwright</groupId>
+            <artifactId>quarkus-playwright</artifactId>
+            <version>${quarkus-playwright.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa-testing</artifactId>
+            <version>${quarkus-quinoa.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
