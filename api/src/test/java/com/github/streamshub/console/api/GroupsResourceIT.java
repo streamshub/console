@@ -1,7 +1,10 @@
 package com.github.streamshub.console.api;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +14,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 import jakarta.json.Json;
@@ -46,8 +51,9 @@ import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -101,6 +107,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @QuarkusTest
@@ -262,11 +269,13 @@ class GroupsResourceIT {
 
     @Test
     void testListConsumerGroupsWithTwoAssignments() {
-        String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
 
-        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+        try (var consumer = groupUtils.consume(group1, client1, 2, 1)) {
+            await().atMost(10, TimeUnit.SECONDS)
+                .until(() -> GroupState.STABLE == groupUtils.consumerGroupState(group1));
+
             whenRequesting(req -> req
                     .param("fields[groups]", "simpleConsumerGroup,"
                             + "state,"
@@ -279,7 +288,7 @@ class GroupsResourceIT {
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(1))
-                .body("data[0].attributes.state", is(notNullValue(String.class)))
+                .body("data[0].attributes.state", is("STABLE"))
                 .body("data[0].attributes.simpleConsumerGroup", is(notNullValue(Boolean.class)))
                 .body("data[0].attributes.coordinator.id", is("0"))
                 .body("data[0].attributes.authorizedOperations.size()", is(greaterThanOrEqualTo(1)))
@@ -533,7 +542,7 @@ class GroupsResourceIT {
             KafkaFutureImpl<Map<TopicPartition, OffsetAndMetadata>> failure = new KafkaFutureImpl<>();
             failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
 
-            ListConsumerGroupOffsetsResult resultMock = Mockito.mock(ListConsumerGroupOffsetsResult.class);
+            ListConsumerGroupOffsetsResult resultMock = mock(ListConsumerGroupOffsetsResult.class);
 
             doAnswer(partitionsToOffsetAndMetadataArgs -> failure)
                 .when(resultMock)
@@ -573,7 +582,7 @@ class GroupsResourceIT {
             KafkaFutureImpl<Map<TopicPartition, SharePartitionOffsetInfo>> failure = new KafkaFutureImpl<>();
             failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
 
-            ListShareGroupOffsetsResult resultMock = Mockito.mock(ListShareGroupOffsetsResult.class);
+            ListShareGroupOffsetsResult resultMock = mock(ListShareGroupOffsetsResult.class);
 
             doAnswer(partitionsToOffsetInfoArgs -> failure)
                 .when(resultMock)
@@ -618,7 +627,7 @@ class GroupsResourceIT {
             KafkaFutureImpl<Map<TopicPartition, OffsetAndMetadata>> failure = new KafkaFutureImpl<>();
             failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
 
-            ListStreamsGroupOffsetsResult result = Mockito.mock(ListStreamsGroupOffsetsResult.class);
+            ListStreamsGroupOffsetsResult result = mock(ListStreamsGroupOffsetsResult.class);
             when(result.partitionsToOffsetAndMetadata(group1)).thenReturn(failure);
             return result;
         };
@@ -663,12 +672,14 @@ class GroupsResourceIT {
                 .listOffsets(anyMap());
         });
 
-        String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
-        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+        try (var consumer = groupUtils.consume(group1, client1, 2, 1)) {
+            await().atMost(10, TimeUnit.SECONDS)
+                .until(() -> GroupState.STABLE == groupUtils.consumerGroupState(group1));
+
             whenRequesting(req -> req
                     .param("fields[groups]", "offsets")
                     .get("{groupId}", clusterId1, group1Id))
@@ -841,11 +852,23 @@ class GroupsResourceIT {
         }
     }
 
+    static Stream<Arguments> testPatchConsumerGroupWithInvalidRequestCases() throws IOException {
+        try (var stream = GroupsResourceIT.class.getResourceAsStream("/patchConsumerGroup-invalid-requests.txt")) {
+            String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            return Arrays.stream(text.split("@"))
+                    .filter(Predicate.not(String::isBlank))
+                    .map(rec -> rec.split("\\|"))
+                    .map(elements -> Arguments.of(
+                            elements[0].strip(),
+                            elements[1].strip(),
+                            Status.valueOf(elements[2].strip()),
+                            elements[3].strip()
+                        ));
+        }
+    }
+
     @ParameterizedTest
-    @CsvFileSource(
-        delimiter = '|',
-        lineSeparator = "@\n",
-        resources = { "/patchConsumerGroup-invalid-requests.txt" })
+    @MethodSource("testPatchConsumerGroupWithInvalidRequestCases")
     void testPatchConsumerGroupWithInvalidRequest(String label, String requestBody, Status responseStatus, String expectedResponse)
             throws JSONException {
 

@@ -144,6 +144,13 @@
         <dependency>
             <groupId>io.apicurio</groupId>
             <artifactId>apicurio-registry-serde-kafka-common</artifactId>
+            <exclusions>
+                <exclusion>
+                    <!-- The Console uses the JDK HTTP client -->
+                    <groupId>io.apicurio</groupId>
+                    <artifactId>apicurio-registry-java-sdk-adapter-vertx</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.apicurio</groupId>
@@ -178,12 +185,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-mockito</artifactId>
+            <artifactId>quarkus-junit-mockito</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -288,6 +295,7 @@
             <plugin>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
+                <extensions>true</extensions>
                 <executions>
                     <execution>
                         <goals>
@@ -297,55 +305,6 @@
                             <properties>
                                 <git.revision>${git.commit.id.abbrev}</git.revision>
                             </properties>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>analyze</id>
-                        <goals>
-                            <goal>analyze-only</goal>
-                        </goals>
-                        <configuration>
-                            <failOnWarning>false</failOnWarning>
-                            <ignoredDependencies>
-                                <ignoredDependency>io.quarkus:quarkus-container-image-docker</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-container-image-jib</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-hibernate-validator</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-kafka-client</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-micrometer-registry-prometheus</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-smallrye-health</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-smallrye-jwt</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-smallrye-openapi</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-resteasy-reactive</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-resteasy-reactive-jackson</ignoredDependency>
-                                <ignoredDependency>io.quarkus:quarkus-vertx</ignoredDependency>
-                                <ignoredDependency>io.strimzi:kafka-oauth-client</ignoredDependency>
-                                <ignoredDependency>io.vertx:vertx-core</ignoredDependency>
-                                <ignoredDependency>io.vertx:vertx-web</ignoredDependency>
-                                <ignoredDependency>org.apache.logging.log4j:log4j-api</ignoredDependency>
-                                <ignoredDependency>org.eclipse.microprofile.config:microprofile-config-api</ignoredDependency>
-                                <ignoredDependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-api</ignoredDependency>
-                                <ignoredDependency>org.eclipse.microprofile.openapi:microprofile-openapi-api</ignoredDependency>
-                                <ignoredDependency>org.jboss.logmanager:jboss-logmanager-embedded</ignoredDependency>
-                                <ignoredDependency>org.jboss.logmanager:log4j2-jboss-logmanager</ignoredDependency>
-                                <ignoredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredDependency>
-                                <ignoredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredDependency>
-                                <ignoredDependency>org.junit.jupiter</ignoredDependency>
-                                <!-- Oauth kafka test dependencies -->
-                                <ignoredDependency>io.strimzi:kafka-oauth-common</ignoredDependency>
-                                <ignoredDependency>io.strimzi:kafka-oauth-server</ignoredDependency>
-                                <ignoredDependency>io.strimzi:kafka-oauth-server-plain</ignoredDependency>
-                                <ignoredDependency>io.strimzi:kafka-oauth-keycloak-authorizer</ignoredDependency>
-                                <ignoredDependency>org.keycloak:keycloak-core</ignoredDependency>
-                                <ignoredDependency>org.keycloak:keycloak-common</ignoredDependency>
-                                <ignoredDependency>org.bouncycastle:bcprov-jdk15on</ignoredDependency>
-                                <ignoredDependency>com.jayway.jsonpath:json-path</ignoredDependency>
-                            </ignoredDependencies>
                         </configuration>
                     </execution>
                 </executions>

@@ -16,11 +16,11 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.27.6</quarkus.platform.version>
+        <quarkus.platform.version>3.40.1.2</quarkus.platform.version>
         <strimzi-api.version>0.51.0</strimzi-api.version>
-        <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
-        <apicurio-registry.version>3.3.3</apicurio-registry.version>
-        <kafka.version>4.2.1</kafka.version>
+        <strimzi-oauth.version>0.18.2-RC1</strimzi-oauth.version>
+        <apicurio-registry.version>3.3.4</apicurio-registry.version>
+        <kafka.version>4.2.2</kafka.version>
 
         <!-- Test Dependencies -->
         <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
@@ -28,7 +28,6 @@
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.15.0</maven.compiler.version>
-        <maven.dependency.version>3.10.0</maven.dependency.version>
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
         <jandex-maven-plugin.version>3.5.3</jandex-maven-plugin.version>
@@ -100,27 +99,14 @@
             <dependency>
                 <groupId>com.squareup.wire</groupId>
                 <artifactId>wire-bom</artifactId>
-                <version>6.4.5</version>
+                <version>6.4.7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
             <dependency>
-                <groupId>at.yawk.lz4</groupId>
-                <artifactId>lz4-java</artifactId>
-                <version>1.11.4</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.xerial.snappy</groupId>
-                <artifactId>snappy-java</artifactId>
-                <version>1.1.10.11</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-core</artifactId>
-                <version>1.16.7</version>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>33.8.0-jre</version>
             </dependency>
 
             <dependency>
@@ -130,7 +116,7 @@
                 -->
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-bom</artifactId>
-                <version>4.36.1</version>
+                <version>4.36.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -151,7 +137,17 @@
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-java-sdk</artifactId>
+                <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
                 <artifactId>apicurio-registry-java-sdk-common</artifactId>
+                <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-serde-common</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
@@ -201,7 +197,7 @@
             <dependency>
                 <groupId>io.sundr</groupId>
                 <artifactId>builder-annotations</artifactId>
-                <version>0.240.1</version>
+                <version>0.400.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -239,11 +235,6 @@
                     <groupId>${quarkus.platform.group-id}</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${quarkus.platform.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>${maven.dependency.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

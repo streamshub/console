@@ -11,6 +11,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.streamshub.console.support.RootCause;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 
@@ -245,7 +246,11 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
             LOG.infof("Schema could not be resolved: %s. Message: %s", artifactReference, e.getMessage());
             return LOOKUP_FAILURE;
         } catch (RuntimeException e) {
-            if (LOG.isDebugEnabled()) {
+            Throwable cause = RootCause.of(e).orElse(e);
+
+            if (cause instanceof io.apicurio.registry.rest.client.v2.models.Error clientError) {
+                LOG.infof("Schema could not be resolved: %s. Message: %s", artifactReference, clientError.getMessageEscaped());
+            } else if (LOG.isDebugEnabled()) {
                 /*
                  * Only log the stack trace at debug level. Schema resolution will be attempted
                  * for every message consumed and will lead to excessive logging in case of a

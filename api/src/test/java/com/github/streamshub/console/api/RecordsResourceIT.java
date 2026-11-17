@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.logging.Level;
 import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
@@ -30,7 +31,9 @@ import org.awaitility.core.EvaluatedCondition;
 import org.awaitility.core.TimeoutEvent;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,10 +42,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.skyscreamer.jsonassert.JSONAssert;
 
 import com.github.streamshub.console.api.support.KafkaContext;
+import com.github.streamshub.console.api.support.serdes.MultiformatDeserializer;
 import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
+import com.github.streamshub.console.test.LogCapture;
 import com.github.streamshub.console.test.RecordHelper;
 import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.TopicHelper;
@@ -59,13 +64,17 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -73,6 +82,11 @@ import static org.hamcrest.Matchers.is;
 @TestHTTPEndpoint(RecordsResource.class)
 @TestProfile(TestPlainProfile.class)
 class RecordsResourceIT {
+
+    static LogCapture logCapture = LogCapture.with(logRecord -> logRecord
+            .getLoggerName()
+            .equals(MultiformatDeserializer.class.getName()),
+            Level.INFO);
 
     @Inject
     Config config;
@@ -93,8 +107,19 @@ class RecordsResourceIT {
     String clusterId3;
     String clusterIdY = "test-kafkaY";
 
+    @BeforeAll
+    static void initialize() {
+        logCapture.register();
+    }
+
+    @AfterAll
+    static void cleanup() {
+        logCapture.deregister();
+    }
+
     @BeforeEach
     void setup() {
+        logCapture.records().clear();
         URI bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
 
         topicUtils = new TopicHelper(bootstrapServers, config);
@@ -484,12 +509,41 @@ class RecordsResourceIT {
             .until(() -> topicUtils.getTopicSize(topicName) == 1);
 
         whenRequesting(req -> req
+                // Kafka Y has no associated registry
                 .get("", clusterIdY, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
             .body("data[0].attributes.offset", is(equalTo(0)))
             .body("data[0].attributes.value", is(equalTo("\u0000rest of value")));
+    }
+
+    @Test
+    void testConsumeRecordWithSchemaNotFound() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
+        recordUtils.produceRecord(topicName, null, null, null, "\u0000rest of value");
+
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) == 1);
+
+        whenRequesting(req -> req
+                .get("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data", hasSize(1))
+            .body("data[0].attributes.offset", is(equalTo(0)))
+            // The back-end consumes the NULL magic byte + 4 bytes as the schema ID,
+            // thus the missing "\u0000rest" from the value string. A future enhancement
+            // might "rewind" the byte buffer to keep the entire original value.
+            .body("data[0].attributes.value", is(equalTo(" of value")));
+
+        var logs = logCapture.records();
+
+        assertThat(logs, hasItem(hasProperty("message", containsString(
+                // 1919251316 = 64-bit long integer from bytes of `rest` string
+                "Message: No content with id/hash 'contentId-1919251316' was found"
+        ))));
     }
 
     @Test
