@@ -50,6 +50,54 @@ When omitted, the operator defaults to `IfNotPresent` for images specified by di
 `spec.deployment.spec.template.spec.serverContainer.resources`:: CPU and memory resource requests and limits for the console server container.
 `spec.deployment.spec.template.spec.serverContainer.env`:: Additional environment variables to set on the console server container.
 
+=== Message retrieval settings
+
+The *Messages* tab on a topic reads records from Kafka through the console server.
+You can limit the resources that this operation uses by setting the following environment variables on the console server container by using the `spec.deployment.spec.template.spec.serverContainer.env` field.
+
+`CONSOLE_TOPICS_RECORDS_STREAM_TIMEOUT`:: The maximum time that a single retrieval of messages can run before it is stopped and the messages found so far are returned.
+The value is a duration in ISO 8601 format, such as `PT30S` for 30 seconds or `PT10M` for 10 minutes.
+The default is `PT5M` (5 minutes).
++
+A search that has to scan many records is the most likely to reach this limit.
+When it does, the *Messages* tab reports that the search timed out with partial results.
+The time left before the limit is reached is also shown while a retrieval is running.
+
+`CONSOLE_TOPICS_RECORDS_MAX_CONCURRENT_STREAMS`:: The maximum number of message retrievals that can run at the same time in each console server pod.
+Each retrieval uses a thread and a Kafka consumer for as long as it runs.
+When the limit is reached, further retrievals are rejected with an HTTP `429 Too Many Requests` response until a running one finishes.
+The default is `10`.
+
+`CONSOLE_TOPICS_RECORDS_MAX_CONCURRENT_STREAMS_PER_USER`:: The maximum number of message retrievals that a single user can run at the same time in each console server pod.
+Use this setting so that one user cannot take all of the retrievals allowed by `CONSOLE_TOPICS_RECORDS_MAX_CONCURRENT_STREAMS`.
+For example, with an overall limit of `10` and a per-user limit of `2`, no user can have more than 2 retrievals running, so it takes at least 5 users to use all 10.
++
+When the limit is reached, further retrievals by that user are rejected with an HTTP `429 Too Many Requests` response until one of their running retrievals finishes.
+Other users are not affected.
+By default, there is no per-user limit.
++
+If the console does not authenticate users, all requests are made as the same user, so this limit applies to all retrievals together.
+
+`CONSOLE_TOPICS_RECORDS_MAX_CONCURRENT_STREAMS_PER_CLUSTER`:: The maximum number of message retrievals that can run at the same time for a single Kafka cluster in each console server pod.
+Use this setting to limit the read load that the console places on each Kafka cluster when it is configured with more than one.
++
+When the limit is reached, further retrievals for that cluster are rejected with an HTTP `429 Too Many Requests` response until one of its running retrievals finishes.
+Retrievals for other clusters are not affected.
+By default, there is no per-cluster limit.
+
+All of the limits apply together.
+A retrieval is rejected if any of them has been reached.
+
+`CONSOLE_TOPICS_RECORDS_MAX_SCANNED_RECORDS`:: The maximum number of records that a single retrieval of messages can read from Kafka, whether or not they match a search.
+Use this setting to limit the read load that a search places on Kafka, in addition to the time limit set by `CONSOLE_TOPICS_RECORDS_STREAM_TIMEOUT`.
++
+When the limit is reached, the retrieval is stopped and the messages found so far are returned.
+The *Messages* tab reports that the record scan limit was reached with partial results.
+The limit applies to each retrieval, across all partitions of the topic.
+A retrieval that reads every record before reaching the limit completes normally.
++
+By default, the number of records is not limited.
+
 == Examples
 
 === Scheduling the console pod on specific nodes

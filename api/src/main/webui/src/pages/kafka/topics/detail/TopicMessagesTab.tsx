@@ -1,8 +1,9 @@
 /**
  * Topic Messages Tab - Shows messages in a topic with advanced search and detail drawer
  *
- * - The server fetches `limit` records (partition / from / limit).
- * - The search term is applied in the browser to those fetched records.
+ * - Records are always streamed from the server (SSE) and added to the table
+ *   as they arrive.
+ * - The search term is applied on the server against the full record content.
  * - Only the table body shows loading, empty and error states.
  */
 
@@ -22,7 +23,6 @@ import {
   EmptyStateBody,
   Button,
   Spinner,
-  Alert,
   Title,
   Toolbar,
   ToolbarContent,
@@ -39,7 +39,7 @@ import { MessageDetails } from '@/components/kafka/topics/MessageDetails';
 import { AdvancedSearch } from '@/components/kafka/topics/AdvancedSearch';
 import { Column, ColumnsModal } from '@/components/kafka/topics/ColumnsModal';
 import { FromOptions } from '@/components/kafka/topics/MessageFilter/FetchFromSelector';
-import { filterMessages } from '@/components/kafka/topics/MessageFilter/messageFilter';
+import { MessagesStatus } from '@/components/kafka/topics/MessagesStatus';
 
 const defaultColumns: Column[] = [
   'offset-partition',
@@ -74,11 +74,7 @@ export function TopicMessagesTab() {
     fromParam && validFromOptions.includes(fromParam as FromOptions)
       ? (fromParam as FromOptions)
       : undefined;
-  const retrieveParam = searchParams.get('retrieve');
-  const limit =
-    retrieveParam === 'continuously'
-      ? ('continuously' as const)
-      : parseInt(retrieveParam || '50');
+  const limit = parseInt(searchParams.get('retrieve') || '50');
   const partitionParam = searchParams.get('partition');
   const partition = partitionParam ? parseInt(partitionParam) : undefined;
   const query = searchParams.get('query') || undefined;
@@ -102,30 +98,32 @@ export function TopicMessagesTab() {
   const partitions = topicData?.attributes?.numPartitions || 0;
 
   const {
-    data: messages = [],
-    isLoading: isLoadingMessages,
-    error: messagesError,
-    refetch,
+    query: {
+      data: messages = [],
+      isLoading: isLoadingMessages,
+      isFetching: isFetchingMessages,
+      error: messagesError,
+      refetch,
+    },
+    cancel: cancelMessages,
+    scan,
+    stopped,
   } = useMessages(
     {
       kafkaId: kafkaId!,
       topicId: topicId!,
-      pageSize: limit === 'continuously' ? 50 : limit,
+      pageSize: limit,
       partition,
       offset,
       timestamp,
       epoch,
+      query,
+      where,
       maxValueLength: 500,
     },
     {
       enabled: !!kafkaId && !!topicId,
-      refetchInterval: limit === 'continuously' ? 1000 : false,
     }
-  );
-
-  const visibleMessages = useMemo(
-    () => filterMessages(messages, query, where),
-    [messages, query, where]
   );
 
   const selectedMessageId = useMemo(
@@ -319,13 +317,6 @@ export function TopicMessagesTab() {
         >
           <DrawerContentBody>
             <PageSection isFilled>
-              {limit === 'continuously' && (
-                <Alert
-                  variant="info"
-                  isInline
-                  title={t('topics.messages.continuousMode.title')}
-                />
-              )}
               <div
                 style={{
                   display: 'grid',
@@ -369,9 +360,20 @@ export function TopicMessagesTab() {
                 </Toolbar>
               </div>
 
+              <MessagesStatus
+                count={messages.length}
+                scan={scan}
+                isSearching={query !== undefined}
+                isStreaming={isFetchingMessages}
+                isStopped={stopped}
+                onCancel={cancelMessages}
+              />
+
               <MessagesTable
-                messages={visibleMessages}
+                messages={messages}
                 isLoading={isLoadingMessages}
+                scanned={scan.scanned}
+                isSearching={query !== undefined}
                 errorState={errorState}
                 selectedMessage={selectedMessage}
                 chosenColumns={chosenColumns}

@@ -108,6 +108,13 @@ public abstract class ErrorCategory implements Payload {
     }
 
     @Singleton
+    public static class TooManyRequests extends ErrorCategory {
+        public TooManyRequests() {
+            super("4291", "Too many requests", Status.TOO_MANY_REQUESTS);
+        }
+    }
+
+    @Singleton
     public static class ServerError extends ErrorCategory {
         public ServerError() {
             super("5001", "Unexpected error", Status.INTERNAL_SERVER_ERROR);

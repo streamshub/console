@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
@@ -48,6 +49,11 @@ public abstract class AbstractExceptionHandler<T extends Throwable> implements S
 
         return Response.status(status)
                 .entity(new JsonApiErrors(errors))
+                /*
+                 * We need to set the content type of the response because a REST operation may
+                 * not declare it as a possible response type (e.g. SSE streamed Kafka records)
+                 */
+                .type(MediaType.APPLICATION_JSON)
                 .build();
     }
 

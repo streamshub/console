@@ -57,13 +57,9 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
       }
     } else if (p.indexOf("retrieve=") === 0) {
       const [, limit] = p.split("=");
-      if (limit === "continuously") {
-        sp.limit = "continuously";
-      } else {
-        const number = parseInt(limit, 10);
-        if (Number.isSafeInteger(number) && number >= 0) {
-          sp.limit = number;
-        }
+      const number = parseInt(limit, 10);
+      if (Number.isSafeInteger(number) && number >= 0) {
+        sp.limit = number;
       }
     } else if (p.indexOf("partition=") === 0) {
       const [, partition] = p.split("=");

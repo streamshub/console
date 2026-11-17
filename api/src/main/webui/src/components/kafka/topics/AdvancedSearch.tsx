@@ -17,7 +17,7 @@ interface AdvancedSearchProps {
   filterWhere?: 'key' | 'headers' | 'value';
   filterPartition?: number;
   filterOffset?: number;
-  filterLimit?: number | 'continuously';
+  filterLimit?: number;
   filterFrom?: FromOptions;
   onSearch: (params: SearchParams, selectedFrom: FromOptions) => void;
   filterTimestamp?: string;
@@ -59,7 +59,7 @@ export function AdvancedSearch({
         offset: filterOffset,
         timestamp: filterTimestamp,
         epoch: filterEpoch,
-        limit: typeof filterLimit === 'number' ? filterLimit : DEFAULT_LIMIT,
+        limit: filterLimit ?? DEFAULT_LIMIT,
         query: filterQuery ?? '',
         where: filterWhere,
       },

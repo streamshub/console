@@ -420,15 +420,15 @@ export interface KafkaRecord {
   };
 }
 
-export interface KafkaRecordsResponse {
-  data: KafkaRecord[];
+export interface KafkaRecordResponse {
+  data: KafkaRecord;
   meta?: Record<string, unknown> | null;
 }
 
 // Search params for messages
 export type SearchParams = {
   partition?: number;
-  limit: number | 'continuously';
+  limit: number;
   query?: {
     value: string;
     where: 'headers' | 'key' | 'value' | 'everywhere';

@@ -146,7 +146,12 @@ export function MessageTableFilter({
               <WhereSelector
                 where={where}
                 isDisabled={!searchEnabled}
-                onWhereChange={(next) => onChange({ where: next })}
+                onWhereChange={(next) =>
+                  // Without a search term there is nothing to re-run, only remember the choice
+                  query.trim()
+                    ? onChange({ where: next })
+                    : onDraftChange({ where: next })
+                }
               />
             </FlexItem>
             <FlexItem>
