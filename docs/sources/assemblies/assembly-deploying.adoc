@@ -42,6 +42,8 @@ include::../modules/deploying/ref-operator-configuration.adoc[leveloffset=+2]
 include::../modules/deploying/proc-connecting-console.adoc[leveloffset=+1]
 //TLS configuration for the console server
 include::../modules/deploying/ref-tls-configuration.adoc[leveloffset=+2]
+//Networking configuration (network policies, route and ingress templates)
+include::../modules/deploying/ref-networking-configuration.adoc[leveloffset=+2]
 //Deployment configuration (scheduling, container overrides)
 include::../modules/deploying/ref-deployment-configuration.adoc[leveloffset=+2]
 //virtual kafka clusters

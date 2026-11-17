@@ -329,12 +329,6 @@ public class ConsoleDeployment extends BaseDeployment {
                 .endTemplate()
             .endSpec();
     }
-    
-    private static Map<String, String> merge(Map<String, String> required, Optional<Map<String, String>> configured) {
-        Map<String, String> result = new LinkedHashMap<>(required);
-        configured.ifPresent(values -> values.forEach(result::putIfAbsent));
-        return result;
-    }
 
     private static List<EnvVar> buildEnvVars(Deployment base, List<Optional<List<EnvVar>>> configured) {
         List<EnvVar> envVars = new ArrayList<>(base.getSpec().getTemplate().getSpec().getContainers().get(0).getEnv());

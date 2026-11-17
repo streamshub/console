@@ -1,0 +1,201 @@
+:_mod-docs-content-type: REFERENCE
+
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='ref-networking-configuration-{context}']
+= Configuring networking, network policies, and routing
+
+[role="_abstract"]
+You can configure network isolation policies and customize generated routes and ingresses by using the `spec.networking` field of the `Console` custom resource.
+This field provides settings for Kubernetes `NetworkPolicy` generation, OpenShift `Route` metadata, and Kubernetes `Ingress` metadata.
+
+`spec.networking` is optional.
+When omitted, the operator deploys the console without creating `NetworkPolicy` resources (unless enabled globally at the operator level) and generates standard `Route` (on OpenShift) or `Ingress` (on Kubernetes) resources with default settings.
+
+== Network policy configuration
+
+You can protect console pods from unauthorized network access by enabling `NetworkPolicy` generation.
+When enabled, the operator automatically generates `NetworkPolicy` resources for each managed operand:
+
+* **Console server** (`<console-name>-console-network-policy`) — allows ingress traffic to the console container port (port `8080` for HTTP, or port `8443` when TLS is configured) from allowed ingress sources.
+* **Dex identity broker** (`<console-name>-dex-network-policy`) — when Dex is deployed, allows ingress traffic to port `5556` from the console pod, OpenShift routers (if default rules are enabled), and configured ingress sources.
+* **Prometheus server** (`<console-name>-prometheus-network-policy`) — when a private Prometheus instance is deployed, allows ingress traffic to port `9090` from the console pod and configured custom ingress sources.
+
+=== Network policy properties
+
+`spec.networking.networkPolicy.enabled`:: Controls whether the operator generates `NetworkPolicy` resources for this `Console` instance.
+When unset, inherits the operator-level default configured by `CONSOLE_NETWORK_POLICY_ENABLED` (default `false`).
+Accepted values are `true` and `false`.
+
+`spec.networking.networkPolicy.ingress.disableDefaultFrom`:: Controls whether to omit the operator-derived default router ingress source rules on OpenShift.
+Accepted values are `true` and `false` (default).
++
+By default on OpenShift, the operator automatically adds `from` peer rules matching OpenShift's default router namespace labels (`policy-group.network.openshift.io/ingress: ""` and `network.openshift.io/policy-group: ingress`).
+Set this property to `true` when using a custom ingress controller, a custom ingress gateway, or when restricting router traffic to specific namespaces.
+
+`spec.networking.networkPolicy.ingress.from`:: An optional list of Kubernetes `NetworkPolicyPeer` objects defining allowed sources of ingress traffic.
+Each entry can include `namespaceSelector`, `podSelector`, and `ipBlock` rules matching the standard Kubernetes `NetworkPolicy` specification.
+Configured peers are applied to the ingress rules for the console server, Dex identity broker, and Prometheus server.
+
+=== Indeterminate ingress source warning on Kubernetes
+
+On plain Kubernetes (or on OpenShift when `disableDefaultFrom: true` is set), the operator cannot automatically determine which ingress controller or gateway is in use.
+
+If `spec.networking.networkPolicy.ingress.from` is not configured:
+
+* The generated `NetworkPolicy` restricts access to the designated container ports (`8080`/`8443`), but allows traffic from any source IP or namespace (fails open on ingress source).
+* The operator sets a `Warning` condition on the `Console` resource:
++
+[source,yaml]
+----
+type: Warning
+status: "True"
+reason: IndeterminateIngressSource
+message: NetworkPolicy is enabled but ingress source cannot be determined and spec.networking.networkPolicy.ingress.from is not configured. Ingress traffic to the console will not be restricted by source.
+----
+
+To resolve this warning and restrict ingress traffic, specify the ingress controller namespace and pod labels in `spec.networking.networkPolicy.ingress.from`.
+
+== Route and Ingress metadata templates
+
+You can add custom labels and annotations to the generated OpenShift `Route` or Kubernetes `Ingress` resources using metadata templates.
+This is commonly used for:
+
+* Restricting access by client IP allowlisting (for example, `haproxy.router.openshift.io/ip_whitelist` or `nginx.ingress.kubernetes.io/whitelist-source-range`).
+* Configuring ingress timeouts, rewrite targets, or rate limits.
+* Specifying ingress controller class annotations.
+* Adding organization-specific tracking labels or annotations.
+
+=== Route template properties (OpenShift)
+
+`spec.networking.route.metadata.labels`:: Additional labels to apply to the generated OpenShift `Route` resources (for the console and Dex identity broker).
+`spec.networking.route.metadata.annotations`:: Additional annotations to apply to the generated OpenShift `Route` resources.
+
+=== Ingress template properties (Kubernetes)
+
+`spec.networking.ingress.metadata.labels`:: Additional labels to apply to the generated Kubernetes `Ingress` resource.
+`spec.networking.ingress.metadata.annotations`:: Additional annotations to apply to the generated Kubernetes `Ingress` resource.
++
+NOTE: The operator automatically maintains required annotations, such as `nginx.ingress.kubernetes.io/backend-protocol: HTTPS` when TLS is enabled, and merges them with custom annotations.
+
+== Examples
+
+=== Enabling NetworkPolicies on Kubernetes with ingress controller source rules
+
+The following example enables network policies on plain Kubernetes and restricts ingress traffic to the `ingress-nginx` ingress controller running in the `ingress-nginx` namespace.
+
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  networking:
+    networkPolicy:
+      enabled: true
+      ingress:
+        from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: ingress-nginx
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+----
+
+=== Disabling default router rules on OpenShift with custom ingress source
+
+The following example enables network policies on OpenShift, disables the automatic OpenShift default router rules, and restricts ingress traffic to a custom gateway namespace.
+
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  networking:
+    networkPolicy:
+      enabled: true
+      ingress:
+        disableDefaultFrom: true
+        from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: custom-gateway
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+----
+
+=== Applying IP allowlist annotations to OpenShift Routes
+
+The following example adds an HAProxy IP allowlist annotation to the generated OpenShift `Route` to restrict access to a specific CIDR range.
+
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  networking:
+    route:
+      metadata:
+        annotations:
+          haproxy.router.openshift.io/ip_whitelist: "192.0.2.0/24 198.51.100.0/24"
+        labels:
+          environment: production
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+----
+
+=== Applying IP allowlist annotations to Kubernetes Ingress
+
+The following example adds NGINX Ingress annotations to the generated Kubernetes `Ingress` to restrict access to a specific CIDR range.
+
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  networking:
+    ingress:
+      metadata:
+        annotations:
+          nginx.ingress.kubernetes.io/whitelist-source-range: "192.0.2.0/24, 198.51.100.0/24"
+        labels:
+          environment: production
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+----

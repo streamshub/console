@@ -10,6 +10,9 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.api.v1alpha1.spec.networking.Networking;
+import com.github.streamshub.console.api.v1alpha1.spec.networking.RouteTemplate;
+import com.github.streamshub.console.api.v1alpha1.spec.template.MetadataTemplate;
 
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
@@ -40,11 +43,20 @@ public class ConsoleRoute extends BaseRoute {
         // name, namespace, and cluster domain (issue #1471)
         String host = primary.getSpec().getHostname();
 
+        Optional<MetadataTemplate> routeMetaTemplate = Optional.ofNullable(primary.getSpec().getNetworking())
+                .map(Networking::getRoute)
+                .map(RouteTemplate::getMetadata);
+
         return new RouteBuilder()
             .withNewMetadata()
                 .withName(instanceName(primary))
                 .withNamespace(primary.getMetadata().getNamespace())
-                .withLabels(commonLabels("console"))
+                .withLabels(merge(
+                        commonLabels("console"),
+                        routeMetaTemplate.map(MetadataTemplate::getLabels)))
+                .withAnnotations(merge(
+                        Collections.emptyMap(),
+                        routeMetaTemplate.map(MetadataTemplate::getAnnotations)))
             .endMetadata()
             .withNewSpec()
                 // null is valid — OpenShift assigns the host automatically
