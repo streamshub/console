@@ -1,9 +1,15 @@
 package io.streamshub.console.dependents;
 
+import java.util.Collections;
+import java.util.Optional;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.streamshub.console.api.v1alpha1.Console;
+import io.streamshub.console.api.v1alpha1.spec.networking.Networking;
+import io.streamshub.console.api.v1alpha1.spec.networking.RouteTemplate;
+import io.streamshub.console.api.v1alpha1.spec.template.MetadataTemplate;
 import io.streamshub.console.dependents.conditions.DexPrecondition;
 import io.streamshub.console.dependents.conditions.OpenShiftPrecondition;
 
@@ -34,11 +40,20 @@ public class DexRoute extends BaseRoute {
         // DexRoute runs, the hostname is known from the admitted Route status.
         String host = getAttribute(context, "host", String.class);
 
+        Optional<MetadataTemplate> routeMetaTemplate = Optional.ofNullable(primary.getSpec().getNetworking())
+                .map(Networking::getRoute)
+                .map(RouteTemplate::getMetadata);
+
         return new RouteBuilder()
             .withNewMetadata()
                 .withName(instanceName(primary))
                 .withNamespace(primary.getMetadata().getNamespace())
-                .withLabels(commonLabels("dex"))
+                .withLabels(merge(
+                        commonLabels("dex"),
+                        routeMetaTemplate.map(MetadataTemplate::getLabels)))
+                .withAnnotations(merge(
+                        Collections.emptyMap(),
+                        routeMetaTemplate.map(MetadataTemplate::getAnnotations)))
             .endMetadata()
             .withNewSpec()
                 .withHost(host)

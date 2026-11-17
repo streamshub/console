@@ -1,6 +1,7 @@
 package io.streamshub.console.dependents;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -9,6 +10,9 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import io.streamshub.console.api.v1alpha1.Console;
+import io.streamshub.console.api.v1alpha1.spec.networking.IngressTemplate;
+import io.streamshub.console.api.v1alpha1.spec.networking.Networking;
+import io.streamshub.console.api.v1alpha1.spec.template.MetadataTemplate;
 import io.streamshub.console.dependents.support.ConfigSupport;
 
 import io.fabric8.kubernetes.api.model.networking.v1.HTTPIngressPath;
@@ -60,13 +64,23 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
         int servicePort = tls ? 443 : 80;
         String serviceName = service.instanceName(primary);
 
+        Optional<MetadataTemplate> ingressMetaTemplate = Optional.ofNullable(primary.getSpec().getNetworking())
+                .map(Networking::getIngress)
+                .map(IngressTemplate::getMetadata);
+
+        Map<String, String> requiredAnnotations = Map.of("nginx.ingress.kubernetes.io/backend-protocol", backendProtocol);
+
         var builder = load(context, "console.ingress.yaml", Ingress.class)
             .edit()
             .editMetadata()
                 .withName(instanceName(primary))
                 .withNamespace(primary.getMetadata().getNamespace())
-                .withLabels(commonLabels("console"))
-                .addToAnnotations("nginx.ingress.kubernetes.io/backend-protocol", backendProtocol)
+                .withLabels(merge(
+                        commonLabels("console"),
+                        ingressMetaTemplate.map(MetadataTemplate::getLabels)))
+                .withAnnotations(merge(
+                        requiredAnnotations,
+                        ingressMetaTemplate.map(MetadataTemplate::getAnnotations)))
             .endMetadata()
             .editSpec()
                 // Plain Kubernetes (non-OCP) clusters don't need a class name; the

@@ -10,11 +10,15 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.streamshub.console.ReconciliationException;
 import io.streamshub.console.api.v1alpha1.Console;
 import io.streamshub.console.api.v1alpha1.spec.ConfigVars;
 import io.streamshub.console.api.v1alpha1.spec.Value;
 import io.streamshub.console.api.v1alpha1.spec.ValueReference;
+import io.streamshub.console.api.v1alpha1.spec.networking.NetworkPolicySpec;
+import io.streamshub.console.api.v1alpha1.spec.networking.Networking;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapEnvSource;
@@ -237,6 +241,15 @@ public class ConfigSupport {
             return major > minMajor || major == minMajor && minor >= minMinor;
         }
         return false;
+    }
+
+    public static boolean networkPolicyEnabled(Console primary) {
+        return Optional.ofNullable(primary.getSpec().getNetworking())
+                .map(Networking::getNetworkPolicy)
+                .map(NetworkPolicySpec::getEnabled)
+                .orElseGet(() -> ConfigProvider.getConfig()
+                        .getOptionalValue("console.network-policy.enabled", Boolean.class)
+                        .orElse(false));
     }
 
     public static boolean dexIntegrationEnabled(Console primary) {
