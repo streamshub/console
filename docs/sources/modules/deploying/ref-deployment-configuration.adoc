@@ -53,7 +53,7 @@ When omitted, the operator defaults to `IfNotPresent` for images specified by di
 === Message retrieval settings
 
 The *Messages* tab on a topic reads records from Kafka through the console server.
-You can limit the resources this uses by setting the following environment variables on the console server container using `spec.deployment.spec.template.spec.serverContainer.env`.
+You can limit the resources that this operation uses by setting the following environment variables on the console server container by using the `spec.deployment.spec.template.spec.serverContainer.env` field.
 
 `CONSOLE_TOPICS_RECORDS_STREAM_TIMEOUT`:: The maximum time that a single retrieval of messages can run before it is stopped and the messages found so far are returned.
 The value is a duration in ISO 8601 format, such as `PT30S` for 30 seconds or `PT10M` for 10 minutes.

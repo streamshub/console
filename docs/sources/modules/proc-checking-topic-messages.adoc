@@ -63,7 +63,7 @@ Choose a narrower starting point, such as a specific partition or a recent time,
 
 Retrieval status:: The status below the filter shows progress while messages are being retrieved. 
 +
-* While retrieving, the status shows the time the retrieval has been running and the maximum time left, for example `0:12 elapsed, 4:48 left`. 
+* While retrieving, the status shows the duration of the retrieval and the maximum time remaining. For example, `0:12 elapsed, 4:48 left`.
 During a search, a progress bar estimates how much of the topic has been scanned.
 The maximum time is set by the administrator who deployed the console. 
 The retrieval ends sooner if all records are read or the requested number of messages is found.
