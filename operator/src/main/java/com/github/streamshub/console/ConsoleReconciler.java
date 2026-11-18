@@ -25,7 +25,9 @@ import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
+import com.github.streamshub.console.dependents.ConsoleNetworkPolicy;
 import com.github.streamshub.console.dependents.ConsoleTlsSecret;
+import com.github.streamshub.console.dependents.DexNetworkPolicy;
 import com.github.streamshub.console.dependents.ConsoleMonitoringClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleRoute;
@@ -46,9 +48,11 @@ import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
 import com.github.streamshub.console.dependents.PrometheusConfigMap;
 import com.github.streamshub.console.dependents.PrometheusDeployment;
+import com.github.streamshub.console.dependents.PrometheusNetworkPolicy;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
+import com.github.streamshub.console.dependents.conditions.NetworkPolicyPrecondition;
 import com.github.streamshub.console.dependents.conditions.DexPrecondition;
 import com.github.streamshub.console.dependents.conditions.OpenShiftPrecondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
@@ -159,6 +163,21 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     name = ConsoleService.NAME,
                     type = ConsoleService.class,
                     readyPostcondition = ServingCertReadyCondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = ConsoleNetworkPolicy.NAME,
+                    type = ConsoleNetworkPolicy.class,
+                    reconcilePrecondition = NetworkPolicyPrecondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = PrometheusNetworkPolicy.NAME,
+                    type = PrometheusNetworkPolicy.class,
+                    reconcilePrecondition = PrometheusNetworkPolicy.Precondition.class,
+                    dependsOn = ConfigurationProcessor.NAME),
+            @Dependent(
+                    name = DexNetworkPolicy.NAME,
+                    type = DexNetworkPolicy.class,
+                    reconcilePrecondition = DexNetworkPolicy.Precondition.class,
                     dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = DexServiceAccount.NAME,

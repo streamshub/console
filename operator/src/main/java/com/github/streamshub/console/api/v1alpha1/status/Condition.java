@@ -168,5 +168,6 @@ public class Condition {
         public static final String DEPRECATED_CONFIGURATION = "DeprecatedConfiguration";
         public static final String RECONCILIATION_EXCEPTION = "ReconciliationException";
         public static final String ACCESS_DENIED = "AccessDenied";
+        public static final String INDETERMINATE_INGRESS_SOURCE = "IndeterminateIngressSource";
     }
 }

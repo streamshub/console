@@ -77,6 +77,31 @@ If access is denied while using `PRESERVE`, grant the per-Console ServiceAccount
 to run again. See xref:proc-connecting-console-{context}[Deploying and connecting the
 console to a Kafka cluster] for the Role and RoleBinding examples.
 
+== Default NetworkPolicy enablement
+
+By default, the operator does not generate Kubernetes `NetworkPolicy` resources for `Console` instances unless explicitly enabled in the custom resource (`spec.networking.networkPolicy.enabled: true`).
+You can enable `NetworkPolicy` generation globally for all managed `Console` instances by configuring the operator.
+
+`CONSOLE_NETWORK_POLICY_ENABLED`::
+Controls whether the operator generates `NetworkPolicy` resources for managed `Console` instances by default.
+Supported values are `true` and `false` (default).
++
+When set to `true`, the operator creates `NetworkPolicy` resources for the console server, Dex identity broker (if deployed), and Prometheus server (if deployed) for all `Console` instances that do not explicitly set `spec.networking.networkPolicy.enabled`.
+An individual `Console` custom resource can still override this behavior by setting `spec.networking.networkPolicy.enabled: false`.
++
+The actual MicroProfile configuration property is `console.network-policy.enabled`.
+When configuring the operator through environment variables, replace periods with underscores and use the upper-case form shown above.
+
+[source,yaml]
+----
+# OLM Subscription or operator Deployment container environment
+- name: CONSOLE_NETWORK_POLICY_ENABLED
+  value: "true"
+----
+
+Changes take effect after the operator pod restarts.
+For more information about configuring network policies on individual `Console` instances, see xref:ref-networking-configuration-{context}[Configuring networking, network policies, and routing].
+
 == Default API image
 
 The operator uses a built-in default API container image when a `Console` instance does not specify one explicitly.
