@@ -3,7 +3,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.streamshub</groupId>
+    <groupId>io.streamshub</groupId>
     <artifactId>console</artifactId>
     <packaging>pom</packaging>
     <version>0.15.0-SNAPSHOT</version>
@@ -39,12 +39,12 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>streamshub</sonar.organization>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../coverage/target/coverage/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.exclusions>api/src/main/java/com/github/streamshub/console/api/support/TrustAllCertificateManager.java</sonar.exclusions>
+        <sonar.exclusions>api/src/main/java/io/streamshub/console/api/support/TrustAllCertificateManager.java</sonar.exclusions>
         <!-- Ignore duplicates in configuration and model classes -->
         <sonar.cpd.exclusions>
-            api/src/main/java/com/github/streamshub/console/api/model/**/*.java,
-            common/src/main/java/com/github/streamshub/console/config/*.java,
-            operator/src/main/java/com/github/streamshub/console/api/v1alpha1/**/*.java
+            api/src/main/java/io/streamshub/console/api/model/**/*.java,
+            common/src/main/java/io/streamshub/console/config/*.java,
+            operator/src/main/java/io/streamshub/console/api/v1alpha1/**/*.java
         </sonar.cpd.exclusions>
         <sonar.coverage.exclusions>
             systemtests/**

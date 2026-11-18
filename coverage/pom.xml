@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.github.streamshub</groupId>
+        <groupId>io.streamshub</groupId>
         <artifactId>console</artifactId>
         <version>0.15.0-SNAPSHOT</version>
     </parent>
@@ -45,12 +45,12 @@
                         <phase>verify</phase>
                         <configuration>
                             <excludes>
-                                <exclude>**/com/github/streamshub/console/config/**/*Builder.class</exclude>
-                                <exclude>**/com/github/streamshub/console/config/**/*Fluent.class</exclude>
-                                <exclude>**/com/github/streamshub/console/config/**/*Nested.class</exclude>
-                                <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Builder.class</exclude>
-                                <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Fluent.class</exclude>
-                                <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Nested.class</exclude>
+                                <exclude>**/io/streamshub/console/config/**/*Builder.class</exclude>
+                                <exclude>**/io/streamshub/console/config/**/*Fluent.class</exclude>
+                                <exclude>**/io/streamshub/console/config/**/*Nested.class</exclude>
+                                <exclude>**/io/streamshub/console/api/v1alpha1/**/*Builder.class</exclude>
+                                <exclude>**/io/streamshub/console/api/v1alpha1/**/*Fluent.class</exclude>
+                                <exclude>**/io/streamshub/console/api/v1alpha1/**/*Nested.class</exclude>
                             </excludes>
                             <outputDirectory>${project.build.directory}/coverage</outputDirectory>
                         </configuration>
