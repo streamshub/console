@@ -1,6 +1,7 @@
 package io.streamshub.console.api;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -59,6 +60,9 @@ public class NodesResource {
     @Inject
     @Named("requestedFields")
     Consumer<List<String>> requestedFields;
+
+    @Inject
+    FieldFilter fieldFilter;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -152,9 +156,40 @@ public class NodesResource {
 
             @PathParam("nodeId")
             @Parameter(description = "Node identifier")
-            String nodeId) {
+            String nodeId,
 
-        return nodeService.describeConfigs(nodeId)
+            @QueryParam(ConfigEntry.FIELDS_PARAM)
+            @DefaultValue(ConfigEntry.Fields.DEFAULT)
+            @StringEnumeration(
+                    source = ConfigEntry.FIELDS_PARAM,
+                    allowedValues = {
+                        ConfigEntry.Fields.VALUE,
+                        ConfigEntry.Fields.SOURCE,
+                        ConfigEntry.Fields.SENSITIVE,
+                        ConfigEntry.Fields.READ_ONLY,
+                        ConfigEntry.Fields.TYPE,
+                        ConfigEntry.Fields.DOCUMENTATION,
+                    },
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                ConfigEntry.Fields.VALUE,
+                                ConfigEntry.Fields.SOURCE,
+                                ConfigEntry.Fields.SENSITIVE,
+                                ConfigEntry.Fields.READ_ONLY,
+                                ConfigEntry.Fields.TYPE,
+                                ConfigEntry.Fields.DOCUMENTATION,
+                            }))
+            List<String> configFields) {
+
+        fieldFilter.setTypedFields(Map.of(ConfigEntry.FIELDS_PARAM, configFields));
+
+        return nodeService.describeConfigs(nodeId, configFields.contains(ConfigEntry.Fields.DOCUMENTATION))
             .thenApply(ConfigEntry.ConfigResponse::new)
             .thenApply(Response::ok)
             .thenApply(Response.ResponseBuilder::build);

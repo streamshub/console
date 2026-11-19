@@ -24,7 +24,9 @@ export function NodeDetailPage() {
   const location = useLocation();
 
   // Fetch node configuration to verify node exists
-  const { data, isLoading, error } = useNodeConfig(kafkaId, nodeId);
+  const { data, isLoading, error } = useNodeConfig(kafkaId, nodeId, {
+    includeDocumentation: true,
+  });
 
   usePageTitle(t('nodes.brokerTitle', { nodeId }));
 

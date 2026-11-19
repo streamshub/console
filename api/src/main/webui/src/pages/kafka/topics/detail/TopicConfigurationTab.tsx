@@ -50,6 +50,10 @@ import { ConfigValue } from '@/api/types';
 import { apiClient } from '@/api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { hasPrivilege } from '@/utils/privileges';
+import {
+  ConfigDocumentation,
+  useExpandedConfigRows,
+} from '@/components/kafka/configs/ConfigDocumentation';
 
 type SortableColumn = 'property' | 'value';
 
@@ -108,7 +112,9 @@ export function TopicConfigurationTab() {
 
   const { data, isLoading, error } = useTopic(kafkaId, topicId, {
     fields: ['name', 'configs'],
+    includeDocumentation: true,
   });
+  const { expandedRows, toggleRow } = useExpandedConfigRows();
 
   const [propertyFilter, setPropertyFilter] = useState('');
   const [selectedDataSources, setSelectedDataSources] = useState<string[]>([]);
@@ -161,13 +167,20 @@ export function TopicConfigurationTab() {
     }
   };
 
+  const sortableColumnIndices: Record<SortableColumn, number> = {
+    property: 1,
+    value: 2,
+  };
+
+  const sortBy = {
+    index: sortableColumnIndices[sortColumn],
+    direction: sortDirection,
+  };
+
   const getSortParams = (column: SortableColumn): ThProps['sort'] => ({
-    sortBy: {
-      index: 0,
-      direction: sortColumn === column ? sortDirection : undefined,
-    },
+    sortBy,
     onSort: () => handleSort(column),
-    columnIndex: 0,
+    columnIndex: sortableColumnIndices[column],
   });
 
   const handleReset = useCallback(() => {
@@ -347,19 +360,28 @@ export function TopicConfigurationTab() {
         <Table ouiaId={"topic-configuration-table"} aria-label="Topic configuration table" variant="compact">
           <Thead>
             <Tr>
+              <Th aria-label={t('topics.configuration.expandRow')} />
               <Th width={40} sort={getSortParams('property')}>
                 {t('topics.configuration.property')}
               </Th>
               <Th sort={getSortParams('value')}>{t('topics.configuration.value')}</Th>
             </Tr>
           </Thead>
-          <Tbody>
-            {filteredAndSortedData.map(([name, property]) => {
-              const isEditingRow = isEditing[name] !== undefined;
-              const validated = fieldErrors[name] ? 'error' : 'default';
+          {filteredAndSortedData.map(([name, property], rowIndex) => {
+            const isEditingRow = isEditing[name] !== undefined;
+            const validated = fieldErrors[name] ? 'error' : 'default';
+            const isExpanded = expandedRows.has(name);
 
-              return (
-                <Tr key={name}>
+            return (
+              <Tbody key={name} isExpanded={isExpanded}>
+                <Tr>
+                  <Td
+                    expand={{
+                      rowIndex,
+                      isExpanded,
+                      onToggle: () => toggleRow(name),
+                    }}
+                  />
                   <Td dataLabel={t('topics.configuration.property')} style={{ verticalAlign: 'middle' }}>
                     <div>{name}</div>
                     <LabelGroup>
@@ -440,9 +462,14 @@ export function TopicConfigurationTab() {
                       ))}
                   </Td>
                 </Tr>
-              );
-            })}
-          </Tbody>
+                <ConfigDocumentation
+                  documentation={property.documentation}
+                  colSpan={4}
+                  isExpanded={isExpanded}
+                />
+              </Tbody>
+            );
+          })}
         </Table>
       )}
     </PageSection>

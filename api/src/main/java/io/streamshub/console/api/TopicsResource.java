@@ -1,6 +1,7 @@
 package io.streamshub.console.api;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -36,6 +37,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import io.streamshub.console.api.model.ConfigEntry;
 import io.streamshub.console.api.model.Group;
 import io.streamshub.console.api.model.ListFetchParams;
 import io.streamshub.console.api.model.NewTopic;
@@ -78,6 +80,9 @@ public class TopicsResource {
     @Named("requestedFields")
     Consumer<List<String>> requestedFields;
 
+    @Inject
+    FieldFilter fieldFilter;
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -112,6 +117,8 @@ public class TopicsResource {
 
         final UriBuilder location = uriInfo.getRequestUriBuilder();
         final boolean validateOnly = Boolean.TRUE.equals(topic.meta("validateOnly"));
+
+        fieldFilter.setTypedFields(Map.of(ConfigEntry.FIELDS_PARAM, ConfigEntry.Fields.DEFAULT_FIELDS));
 
         return topicService.createTopic(topic.getData().getAttributes(), validateOnly)
             .thenApply(NewTopic.NewTopicDocument::new)
@@ -187,6 +194,35 @@ public class TopicsResource {
                             }))
             List<String> fields,
 
+            @QueryParam(ConfigEntry.FIELDS_PARAM)
+            @DefaultValue(ConfigEntry.Fields.DEFAULT)
+            @StringEnumeration(
+                    source = ConfigEntry.FIELDS_PARAM,
+                    allowedValues = {
+                        ConfigEntry.Fields.VALUE,
+                        ConfigEntry.Fields.SOURCE,
+                        ConfigEntry.Fields.SENSITIVE,
+                        ConfigEntry.Fields.READ_ONLY,
+                        ConfigEntry.Fields.TYPE,
+                        ConfigEntry.Fields.DOCUMENTATION,
+                    },
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                ConfigEntry.Fields.VALUE,
+                                ConfigEntry.Fields.SOURCE,
+                                ConfigEntry.Fields.SENSITIVE,
+                                ConfigEntry.Fields.READ_ONLY,
+                                ConfigEntry.Fields.TYPE,
+                                ConfigEntry.Fields.DOCUMENTATION,
+                            }))
+            List<String> configFields,
+
             @QueryParam("offsetSpec")
             @DefaultValue("latest")
             @KafkaOffsetSpec(payload = ErrorCategory.InvalidQueryParameter.class)
@@ -209,6 +245,7 @@ public class TopicsResource {
             TopicFilterParams filters) {
 
         requestedFields.accept(fields);
+        fieldFilter.setTypedFields(Map.of(ConfigEntry.FIELDS_PARAM, configFields));
 
         ListRequestContext<Topic> listSupport = new ListRequestContext<>(
                 filters,
@@ -217,7 +254,10 @@ public class TopicsResource {
                 listParams,
                 Topic::fromCursor);
 
-        return topicService.listTopics(fields, offsetSpec, listSupport)
+        boolean includeDocumentation = fields.contains(Topic.Fields.CONFIGS)
+                && configFields.contains(ConfigEntry.Fields.DOCUMENTATION);
+
+        return topicService.listTopics(fields, offsetSpec, listSupport, includeDocumentation)
                 .thenApply(topics -> new Topic.ListResponse(topics, listSupport))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
@@ -277,6 +317,35 @@ public class TopicsResource {
                             }))
             List<String> fields,
 
+            @QueryParam(ConfigEntry.FIELDS_PARAM)
+            @DefaultValue(ConfigEntry.Fields.DEFAULT)
+            @StringEnumeration(
+                    source = ConfigEntry.FIELDS_PARAM,
+                    allowedValues = {
+                        ConfigEntry.Fields.VALUE,
+                        ConfigEntry.Fields.SOURCE,
+                        ConfigEntry.Fields.SENSITIVE,
+                        ConfigEntry.Fields.READ_ONLY,
+                        ConfigEntry.Fields.TYPE,
+                        ConfigEntry.Fields.DOCUMENTATION,
+                    },
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                ConfigEntry.Fields.VALUE,
+                                ConfigEntry.Fields.SOURCE,
+                                ConfigEntry.Fields.SENSITIVE,
+                                ConfigEntry.Fields.READ_ONLY,
+                                ConfigEntry.Fields.TYPE,
+                                ConfigEntry.Fields.DOCUMENTATION,
+                            }))
+            List<String> configFields,
+
             @QueryParam("offsetSpec")
             @DefaultValue(KafkaOffsetSpec.LATEST)
             @KafkaOffsetSpec(payload = ErrorCategory.InvalidQueryParameter.class)
@@ -291,8 +360,12 @@ public class TopicsResource {
             String offsetSpec) {
 
         requestedFields.accept(fields);
+        fieldFilter.setTypedFields(Map.of(ConfigEntry.FIELDS_PARAM, configFields));
 
-        return topicService.describeTopic(topicId, fields, offsetSpec)
+        boolean includeDocumentation = fields.contains(Topic.Fields.CONFIGS)
+                && configFields.contains(ConfigEntry.Fields.DOCUMENTATION);
+
+        return topicService.describeTopic(topicId, fields, offsetSpec, includeDocumentation)
                 .thenApply(Topic.SingleResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
@@ -357,6 +430,7 @@ public class TopicsResource {
             ListFetchParams listParams) {
 
         requestedFields.accept(fields);
+        fieldFilter.setTypedFields(Map.of(ConfigEntry.FIELDS_PARAM, ConfigEntry.Fields.DEFAULT_FIELDS));
         ListRequestContext<Group> listSupport = new ListRequestContext<>(Group.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, Group::fromCursor);
 
         return consumerGroupService.listGroups(topicId, fields, listSupport)

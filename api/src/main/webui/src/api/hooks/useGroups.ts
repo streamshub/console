@@ -4,6 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../client';
+import { CONFIG_DOCUMENTATION_FIELDS } from '../configFields';
 import {
   GroupsResponse,
   Group,
@@ -101,10 +102,11 @@ export function useGroup(
   groupId: string | undefined,
   params?: {
     fields?: string;
+    includeDocumentation?: boolean;
   }
 ) {
   return useQuery({
-    queryKey: ['groups', kafkaId, groupId, params?.fields],
+    queryKey: ['groups', kafkaId, groupId, params?.fields, params?.includeDocumentation],
     queryFn: async () => {
       if (!kafkaId || !groupId) {
         throw new Error('Kafka ID and Group ID are required');
@@ -117,6 +119,10 @@ export function useGroup(
         'fields[groups]',
         params?.fields ?? 'groupId,type,protocol,state,simpleConsumerGroup,members,offsets,coordinator,partitionAssignor,configs'
       );
+
+      if (params?.includeDocumentation) {
+        searchParams.set('fields[configs]', CONFIG_DOCUMENTATION_FIELDS);
+      }
 
       const path = `/api/kafkas/${kafkaId}/groups/${encodeURIComponent(groupId)}?${searchParams}`;
 

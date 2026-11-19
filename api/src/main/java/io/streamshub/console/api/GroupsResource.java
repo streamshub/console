@@ -1,6 +1,7 @@
 package io.streamshub.console.api;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -33,6 +34,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import io.streamshub.console.api.model.ConfigEntry;
 import io.streamshub.console.api.model.Group;
 import io.streamshub.console.api.model.GroupFilterParams;
 import io.streamshub.console.api.model.ListFetchParams;
@@ -64,6 +66,9 @@ public class GroupsResource {
     @Inject
     @Named("requestedFields")
     Consumer<List<String>> requestedFields;
+
+    @Inject
+    FieldFilter fieldFilter;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -116,6 +121,35 @@ public class GroupsResource {
                             }))
             List<String> fields,
 
+            @QueryParam(ConfigEntry.FIELDS_PARAM)
+            @DefaultValue(ConfigEntry.Fields.DEFAULT)
+            @StringEnumeration(
+                    source = ConfigEntry.FIELDS_PARAM,
+                    allowedValues = {
+                        ConfigEntry.Fields.VALUE,
+                        ConfigEntry.Fields.SOURCE,
+                        ConfigEntry.Fields.SENSITIVE,
+                        ConfigEntry.Fields.READ_ONLY,
+                        ConfigEntry.Fields.TYPE,
+                        ConfigEntry.Fields.DOCUMENTATION,
+                    },
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                ConfigEntry.Fields.VALUE,
+                                ConfigEntry.Fields.SOURCE,
+                                ConfigEntry.Fields.SENSITIVE,
+                                ConfigEntry.Fields.READ_ONLY,
+                                ConfigEntry.Fields.TYPE,
+                                ConfigEntry.Fields.DOCUMENTATION,
+                            }))
+            List<String> configFields,
+
             @BeanParam
             @Valid
             ListFetchParams listParams,
@@ -125,6 +159,7 @@ public class GroupsResource {
             GroupFilterParams filters) {
 
         requestedFields.accept(fields);
+        fieldFilter.setTypedFields(Map.of(ConfigEntry.FIELDS_PARAM, configFields));
         ListRequestContext<Group> listSupport = new ListRequestContext<>(
                 filters,
                 Group.Fields.COMPARATOR_BUILDER,
@@ -132,7 +167,10 @@ public class GroupsResource {
                 listParams,
                 Group::fromCursor);
 
-        return groupService.listGroups(fields, listSupport)
+        boolean includeDocumentation = fields.contains(Group.Fields.CONFIGS)
+                && configFields.contains(ConfigEntry.Fields.DOCUMENTATION);
+
+        return groupService.listGroups(fields, listSupport, includeDocumentation)
                 .thenApply(groups -> new Group.DataList(groups, listSupport))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
@@ -193,11 +231,44 @@ public class GroupsResource {
                                 Group.Fields.PARTITION_ASSIGNOR,
                                 Group.Fields.CONFIGS,
                             }))
-            List<String> fields) {
+            List<String> fields,
+
+            @QueryParam(ConfigEntry.FIELDS_PARAM)
+            @DefaultValue(ConfigEntry.Fields.DEFAULT)
+            @StringEnumeration(
+                    source = ConfigEntry.FIELDS_PARAM,
+                    allowedValues = {
+                        ConfigEntry.Fields.VALUE,
+                        ConfigEntry.Fields.SOURCE,
+                        ConfigEntry.Fields.SENSITIVE,
+                        ConfigEntry.Fields.READ_ONLY,
+                        ConfigEntry.Fields.TYPE,
+                        ConfigEntry.Fields.DOCUMENTATION,
+                    },
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                ConfigEntry.Fields.VALUE,
+                                ConfigEntry.Fields.SOURCE,
+                                ConfigEntry.Fields.SENSITIVE,
+                                ConfigEntry.Fields.READ_ONLY,
+                                ConfigEntry.Fields.TYPE,
+                                ConfigEntry.Fields.DOCUMENTATION,
+                            }))
+            List<String> configFields) {
 
         requestedFields.accept(fields);
+        fieldFilter.setTypedFields(Map.of(ConfigEntry.FIELDS_PARAM, configFields));
 
-        return groupService.describeGroup(groupId, fields)
+        boolean includeDocumentation = fields.contains(Group.Fields.CONFIGS)
+                && configFields.contains(ConfigEntry.Fields.DOCUMENTATION);
+
+        return groupService.describeGroup(groupId, fields, includeDocumentation)
                 .thenApply(Group.Data::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
@@ -248,6 +319,8 @@ public class GroupsResource {
             Group.Data patch) {
 
         final boolean dryRun = Boolean.TRUE.equals(patch.meta("dryRun"));
+
+        fieldFilter.setTypedFields(Map.of(ConfigEntry.FIELDS_PARAM, ConfigEntry.Fields.DEFAULT_FIELDS));
 
         if (dryRun) {
             requestedFields.accept(List.of(
