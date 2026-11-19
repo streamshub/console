@@ -110,6 +110,14 @@ public class TopicDescribeService {
     GroupService groupService;
 
     public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
+        return listTopics(fields, offsetSpec, listSupport, false);
+    }
+
+    public CompletionStage<List<Topic>> listTopics(
+            List<String> fields,
+            String offsetSpec,
+            ListRequestContext<Topic> listSupport,
+            boolean includeDocumentation) {
         Set<String> fetchList = new LinkedHashSet<>(fields);
         List<String> sortFields = listSupport.getSortNames();
 
@@ -131,7 +139,7 @@ public class TopicDescribeService {
         return listTopics(true, true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
             .thenComposeAsync(
-                    list -> augmentList(adminClient, list, new ArrayList<>(fetchList), offsetSpec),
+                    list -> augmentList(adminClient, list, new ArrayList<>(fetchList), offsetSpec, includeDocumentation),
                     threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
                     .filter(listSupport.filter(Topic.class))
@@ -192,6 +200,14 @@ public class TopicDescribeService {
     }
 
     public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {
+        return describeTopic(topicId, fields, offsetSpec, false);
+    }
+
+    public CompletionStage<Topic> describeTopic(
+            String topicId,
+            List<String> fields,
+            String offsetSpec,
+            boolean includeDocumentation) {
         Admin adminClient = kafkaContext.admin();
         Uuid id = Uuid.fromString(topicId);
 
@@ -208,7 +224,7 @@ public class TopicDescribeService {
             var topics = Map.of(id, topic);
 
             return CompletableFuture.allOf(
-                    maybeDescribeConfigs(adminClient, topics, fields),
+                    maybeDescribeConfigs(adminClient, topics, fields, includeDocumentation),
                     maybeFetchConsumerGroups(topics, fields))
                 .thenApply(nothing -> topic);
         }, threadContext.currentContextExecutor());
@@ -242,8 +258,17 @@ public class TopicDescribeService {
     }
 
     CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> fields, String offsetSpec) {
+        return augmentList(adminClient, list, fields, offsetSpec, false);
+    }
+
+    CompletionStage<List<Topic>> augmentList(
+            Admin adminClient,
+            List<Topic> list,
+            List<String> fields,
+            String offsetSpec,
+            boolean includeDocumentation) {
         Map<Uuid, Topic> topics = list.stream().collect(Collectors.toMap(t -> Uuid.fromString(t.getId()), Function.identity()));
-        CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, fields);
+        CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, fields, includeDocumentation);
         CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, fields, offsetSpec);
         CompletableFuture<Void> consumerGroupPromise = maybeFetchConsumerGroups(topics, fields);
 
@@ -252,6 +277,14 @@ public class TopicDescribeService {
     }
 
     CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields) {
+        return maybeDescribeConfigs(adminClient, topics, fields, false);
+    }
+
+    CompletableFuture<Void> maybeDescribeConfigs(
+            Admin adminClient,
+            Map<Uuid, Topic> topics,
+            List<String> fields,
+            boolean includeDocumentation) {
         if (fields.contains(Topic.Fields.CONFIGS)) {
             Map<String, Uuid> topicIds = new HashMap<>();
             List<ConfigResource> keys = topics.values().stream()
@@ -263,7 +296,7 @@ public class TopicDescribeService {
                     .map(name -> new ConfigResource(ConfigResource.Type.TOPIC, name))
                     .toList();
 
-            return configService.describeConfigs(adminClient, keys)
+            return configService.describeConfigs(adminClient, keys, includeDocumentation)
                 .thenAccept(configs ->
                     configs.forEach((name, either) -> topics.get(topicIds.get(name)).addConfigs(either)))
                 .toCompletableFuture();

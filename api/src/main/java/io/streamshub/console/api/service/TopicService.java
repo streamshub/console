@@ -115,11 +115,27 @@ public class TopicService {
     }
 
     public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
-        return topicDescribe.listTopics(fields, offsetSpec, listSupport);
+        return listTopics(fields, offsetSpec, listSupport, false);
+    }
+
+    public CompletionStage<List<Topic>> listTopics(
+            List<String> fields,
+            String offsetSpec,
+            ListRequestContext<Topic> listSupport,
+            boolean includeDocumentation) {
+        return topicDescribe.listTopics(fields, offsetSpec, listSupport, includeDocumentation);
     }
 
     public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {
-        return topicDescribe.describeTopic(topicId, fields, offsetSpec);
+        return describeTopic(topicId, fields, offsetSpec, false);
+    }
+
+    public CompletionStage<Topic> describeTopic(
+            String topicId,
+            List<String> fields,
+            String offsetSpec,
+            boolean includeDocumentation) {
+        return topicDescribe.describeTopic(topicId, fields, offsetSpec, includeDocumentation);
     }
 
     /**

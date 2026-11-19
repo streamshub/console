@@ -243,7 +243,10 @@
       "noResultsTitle": "No results found",
       "noResultsBody": "No properties match the current filter criteria.",
       "noResultsReset": "Clear all filters",
-      "source": "Source"
+      "source": "Source",
+      "documentation": "Documentation",
+      "noDocumentation": "No documentation available for this property.",
+      "expandRow": "Row expander"
     },
     "messages": {
       "title": "Messages",

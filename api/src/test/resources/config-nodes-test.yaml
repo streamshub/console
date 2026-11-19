@@ -1,0 +1,8 @@
+kubernetes:
+  enabled: false
+kafka:
+  clusters:
+    - name: test-kafka1
+      id: k1-id
+      properties:
+        bootstrap.servers: localhost:9092

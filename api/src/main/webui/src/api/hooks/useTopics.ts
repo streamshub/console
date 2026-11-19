@@ -4,6 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../client';
+import { CONFIG_DOCUMENTATION_FIELDS } from '../configFields';
 import { Topic } from '../types';
 import { ResourceListParams, useResourceList } from './useResourceList';
 
@@ -32,10 +33,11 @@ export function useTopic(
   topicId: string | undefined,
   params?: {
     fields?: string[];
+    includeDocumentation?: boolean;
   }
 ) {
   return useQuery({
-    queryKey: ['topic', kafkaId, topicId, params?.fields],
+    queryKey: ['topic', kafkaId, topicId, params?.fields, params?.includeDocumentation],
     queryFn: async () => {
       if (!kafkaId || !topicId) {
         throw new Error('Kafka ID and Topic ID are required');
@@ -46,6 +48,10 @@ export function useTopic(
       const defaultFields =
         'name,status,visibility,partitions,numPartitions,authorizedOperations,configs,totalLeaderLogBytes,groups';
       searchParams.set('fields[topics]', params?.fields?.join(',') || defaultFields);
+
+      if (params?.includeDocumentation) {
+        searchParams.set('fields[configs]', CONFIG_DOCUMENTATION_FIELDS);
+      }
 
       const path = `/api/kafkas/${kafkaId}/topics/${topicId}?${searchParams}`;
 

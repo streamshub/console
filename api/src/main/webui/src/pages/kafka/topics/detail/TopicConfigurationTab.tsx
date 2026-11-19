@@ -39,6 +39,7 @@ export function TopicConfigurationTab() {
 
   const { data, isLoading, error } = useTopic(kafkaId, topicId, {
     fields: ['name', 'configs'],
+    includeDocumentation: true,
   });
 
   const [isEditing, setIsEditing] = useState<
@@ -206,6 +207,7 @@ export function TopicConfigurationTab() {
       isFilled
       renderValue={renderValue}
       renderActions={renderActions}
+      showDocumentation
     />
   );
 }

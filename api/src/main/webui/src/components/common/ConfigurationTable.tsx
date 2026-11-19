@@ -31,6 +31,10 @@ import {
 } from '@patternfly/react-table';
 import { SearchIcon } from '@patternfly/react-icons';
 import { ConfigValue } from '@/api/types';
+import {
+  ConfigDocumentation,
+  useExpandedConfigRows,
+} from '@/components/kafka/configs/ConfigDocumentation';
 
 type SortableColumn = 'property' | 'source' | 'value';
 
@@ -38,6 +42,12 @@ const COLUMN_INDEX: Record<SortableColumn, number> = {
   property: 0,
   source: 1,
   value: 2,
+};
+
+const DOCUMENTATION_COLUMN_INDEX: Record<SortableColumn, number> = {
+  property: 1,
+  source: 2,
+  value: 3,
 };
 
 export function formatConfigValue(property: ConfigValue): React.ReactNode {
@@ -98,6 +108,7 @@ export interface ConfigurationTableProps {
   defaultComparator?: (a: string, b: string) => number;
   renderValue?: (name: string, property: ConfigValue) => React.ReactNode;
   renderActions?: (name: string, property: ConfigValue) => React.ReactNode;
+  showDocumentation?: boolean;
 }
 
 export function ConfigurationTable({
@@ -108,8 +119,10 @@ export function ConfigurationTable({
   defaultComparator,
   renderValue,
   renderActions,
+  showDocumentation,
 }: ConfigurationTableProps) {
   const { t } = useTranslation();
+  const { expandedRows, toggleRow } = useExpandedConfigRows();
 
   const [propertyFilter, setPropertyFilter] = useState('');
   const [selectedDataSources, setSelectedDataSources] = useState<string[]>([]);
@@ -188,13 +201,17 @@ export function ConfigurationTable({
     }
   };
 
+  const columnIndices = showDocumentation
+    ? DOCUMENTATION_COLUMN_INDEX
+    : COLUMN_INDEX;
+
   const getSortParams = (column: SortableColumn): ThProps['sort'] => ({
     sortBy: {
-      index: sortColumn ? COLUMN_INDEX[sortColumn] : undefined,
+      index: sortColumn ? columnIndices[sortColumn] : undefined,
       direction: sortColumn ? sortDirection : undefined,
     },
     onSort: () => handleSort(column),
-    columnIndex: COLUMN_INDEX[column],
+    columnIndex: columnIndices[column],
   });
 
   const handleReset = useCallback(() => {
@@ -299,6 +316,9 @@ export function ConfigurationTable({
         <Table ouiaId={ouiaId} aria-label={ariaLabel} variant="compact">
           <Thead>
             <Tr>
+              {showDocumentation && (
+                <Th aria-label={t('topics.configuration.expandRow')} />
+              )}
               <Th width={40} sort={getSortParams('property')}>
                 {t('topics.configuration.property')}
               </Th>
@@ -311,44 +331,64 @@ export function ConfigurationTable({
               {renderActions && <Th screenReaderText={t('common.actions')} />}
             </Tr>
           </Thead>
-          <Tbody>
-            {filteredAndSortedData.map(([name, property]) => (
-              <Tr key={name}>
-                <Td
-                  dataLabel={t('topics.configuration.property')}
-                  style={{ verticalAlign: 'middle' }}
-                >
-                  <div>{name}</div>
-                  <LabelGroup>
-                    {property.readOnly && (
-                      <Label isCompact color="grey">
-                        {t('topics.configuration.readOnly')}
-                      </Label>
-                    )}
-                  </LabelGroup>
-                </Td>
-                <Td
-                  dataLabel={t('topics.configuration.source')}
-                  style={{ verticalAlign: 'middle' }}
-                >
-                  {property.source}
-                </Td>
-                <Td
-                  dataLabel={t('topics.configuration.value')}
-                  style={{ verticalAlign: 'middle' }}
-                >
-                  {renderValue
-                    ? renderValue(name, property)
-                    : formatConfigValue(property)}
-                </Td>
-                {renderActions && (
-                  <Td isActionCell style={{ verticalAlign: 'middle' }}>
-                    {renderActions(name, property)}
+          {filteredAndSortedData.map(([name, property], rowIndex) => {
+            const isExpanded = expandedRows.has(name);
+
+            return (
+              <Tbody key={name} isExpanded={isExpanded}>
+                <Tr>
+                  {showDocumentation && (
+                    <Td
+                      expand={{
+                        rowIndex,
+                        isExpanded,
+                        onToggle: () => toggleRow(name),
+                      }}
+                    />
+                  )}
+                  <Td
+                    dataLabel={t('topics.configuration.property')}
+                    style={{ verticalAlign: 'middle' }}
+                  >
+                    <div>{name}</div>
+                    <LabelGroup>
+                      {property.readOnly && (
+                        <Label isCompact color="grey">
+                          {t('topics.configuration.readOnly')}
+                        </Label>
+                      )}
+                    </LabelGroup>
                   </Td>
+                  <Td
+                    dataLabel={t('topics.configuration.source')}
+                    style={{ verticalAlign: 'middle' }}
+                  >
+                    {property.source}
+                  </Td>
+                  <Td
+                    dataLabel={t('topics.configuration.value')}
+                    style={{ verticalAlign: 'middle' }}
+                  >
+                    {renderValue
+                      ? renderValue(name, property)
+                      : formatConfigValue(property)}
+                  </Td>
+                  {renderActions && (
+                    <Td isActionCell style={{ verticalAlign: 'middle' }}>
+                      {renderActions(name, property)}
+                    </Td>
+                  )}
+                </Tr>
+                {showDocumentation && (
+                  <ConfigDocumentation
+                    documentation={property.documentation}
+                    colSpan={4 + (renderActions ? 1 : 0)}
+                    isExpanded={isExpanded}
+                  />
                 )}
-              </Tr>
-            ))}
-          </Tbody>
+              </Tbody>
+            );
+          })}
         </Table>
       )}
     </PageSection>
