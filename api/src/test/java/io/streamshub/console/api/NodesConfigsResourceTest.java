@@ -159,7 +159,7 @@ class NodesConfigsResourceTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.kubernetes-client.devservices.enabled", "false",
-                    "console.config-path", configPath("/config-nodes-test.yaml"));
+                    "console.config-path", configPath("/config-testplain-nok8s.yaml"));
         }
 
         static String configPath(String resourceName) {
