@@ -1,7 +1,6 @@
 package io.streamshub.console.api;
 
-import java.net.URISyntaxException;
-import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -10,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import io.streamshub.console.api.model.ConfigEntry;
 import io.streamshub.console.api.service.NodeService;
+import io.streamshub.console.kafka.systemtest.TestPlainNoK8sProfile;
 
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
@@ -153,23 +153,16 @@ class NodesConfigsResourceTest {
         return entry;
     }
 
-    public static class TestProfile implements QuarkusTestProfile {
+    public static class TestProfile extends TestPlainNoK8sProfile {
 
         @Override
-        public Map<String, String> getConfigOverrides() {
-            return Map.of(
-                    "quarkus.kubernetes-client.devservices.enabled", "false",
-                    "console.config-path", configPath("/config-testplain-nok8s.yaml"));
+        public List<QuarkusTestProfile.TestResourceEntry> testResources() {
+            return List.of();
         }
 
-        static String configPath(String resourceName) {
-            try {
-                return Path.of(TestProfile.class.getResource(resourceName).toURI())
-                        .toAbsolutePath()
-                        .toString();
-            } catch (URISyntaxException e) {
-                throw new IllegalStateException("Invalid URL for test resource " + resourceName, e);
-            }
+        @Override
+        public String getConfigProfile() {
+            return null;
         }
     }
 }
