@@ -1,6 +1,6 @@
 package io.streamshub.systemtests.kroxylicious;
 
-import io.streamshub.console.config.ClusterKind;
+import io.streamshub.console.api.v1alpha1.spec.ClusterKind;
 import io.streamshub.systemtests.AbstractST;
 import io.streamshub.systemtests.Environment;
 import io.streamshub.systemtests.TestCaseConfig;

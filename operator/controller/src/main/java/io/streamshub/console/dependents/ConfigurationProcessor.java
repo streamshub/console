@@ -60,6 +60,7 @@ import io.streamshub.console.api.v1alpha1.status.Condition.Reasons;
 import io.streamshub.console.api.v1alpha1.status.Condition.Types;
 import io.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import io.streamshub.console.api.v1alpha1.status.ConsoleStatus;
+import io.streamshub.console.config.ClusterKind;
 import io.streamshub.console.config.ConsoleConfig;
 import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.config.KafkaConnectConfig;
@@ -1019,7 +1020,7 @@ public class ConfigurationProcessor extends BaseVirtualResource {
         kcConfig.setNamespace(namespace);
         kcConfig.setName(name);
         kcConfig.setListener(listenerName);
-        kcConfig.setKind(kafkaRef.getKind());
+        kcConfig.setKind(mapEnumByName(kafkaRef.getKind(), ClusterKind::valueOf, null));
         kcConfig.setSchemaRegistry(kafkaRef.getSchemaRegistry());
 
         if (kafkaRef.getMetricsSource() == null) {

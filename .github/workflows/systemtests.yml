@@ -98,7 +98,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Fetch Operator Framework Utilities
-        run: ./operator/bin/fetch-operator-utilities.sh
+        run: ./operator/controller/bin/fetch-operator-utilities.sh
 
       - name: Create minikube cluster
         working-directory: systemtests/cluster-setup
@@ -133,7 +133,7 @@ jobs:
         run: |
           set -x
           echo "Preparing YAML-based installation..."
-          operator/bin/generate-non-olm-install.sh > ./target/streamshub-console-operator.yaml
+          operator/controller/bin/generate-non-olm-install.sh > ./target/streamshub-console-operator.yaml
 
           # Export as environment variable
           echo "CONSOLE_INSTALL_TYPE=yaml" >> $GITHUB_ENV

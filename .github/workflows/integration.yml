@@ -52,10 +52,10 @@ jobs:
         run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Operator Version Check
-        run: ./operator/bin/version-check.sh "${{ env.PROJECT_VERSION }}"
+        run: ./operator/controller/bin/version-check.sh "${{ env.PROJECT_VERSION }}"
 
       - name: Fetch Operator Framework Utilities
-        run: ./operator/bin/fetch-operator-utilities.sh
+        run: ./operator/controller/bin/fetch-operator-utilities.sh
 
       - name: Set Up JDK
         uses: actions/setup-java@v6
@@ -98,39 +98,39 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
-          file: operator/src/main/docker/dex.Dockerfile
+          file: operator/controller/src/main/docker/dex.Dockerfile
           tags: |
             localhost:5000/streamshub/console-dexidp:${{ env.PROJECT_VERSION }}
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
-        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.PROJECT_VERSION }}" "PLATFORMS=${{ env.PLATFORMS }}"
+        run: ./operator/controller/bin/modify-bundle-metadata.sh "VERSION=${{ env.PROJECT_VERSION }}" "PLATFORMS=${{ env.PLATFORMS }}"
 
       - name: Build Operator Bundle Image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: operator/target/bundle/streamshub-console-operator/
+          context: operator/controller/target/bundle/streamshub-console-operator/
           platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
-          file: operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
+          file: operator/controller/target/bundle/streamshub-console-operator/bundle.Dockerfile
           tags: |
             localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
 
       # ==================== Operator-Catalog ====================
       - name: Generate Operator Catalog Config
         run: |
-          operator/bin/generate-catalog.sh localhost:5000/streamshub/console-operator-bundle true
+          operator/controller/bin/generate-catalog.sh localhost:5000/streamshub/console-operator-bundle true
 
       - name: Build Operator Catalog Image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: operator/
+          context: operator/controller/
           platforms: ${{ env.PLATFORMS }}
           network: none
           provenance: false
           push: true
-          file: operator/src/main/docker/catalog.Dockerfile
+          file: operator/controller/src/main/docker/catalog.Dockerfile
           tags: |
             localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
 
@@ -140,9 +140,9 @@ jobs:
         with:
           name: k8s-resources
           path: |
-            operator/target/bundle/
-            operator/target/catalog/
-            operator/target/kubernetes/*.yml
+            operator/controller/target/bundle/
+            operator/controller/target/catalog/
+            operator/controller/target/kubernetes/*.yml
 
       - name: Save [API, Dex, Operator, Operator-Bundle, Operator-Catalog] Images To Files
         run: |

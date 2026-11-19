@@ -47,7 +47,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Fetch Operator Framework Utilities (operator-sdk, opm)
-        run: ./operator/bin/fetch-operator-utilities.sh
+        run: ./operator/controller/bin/fetch-operator-utilities.sh
 
       - name: Create minikube cluster
         working-directory: systemtests/cluster-setup

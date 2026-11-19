@@ -3,7 +3,6 @@ package io.streamshub.console.api.v1alpha1.spec;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.streamshub.console.api.v1alpha1.spec.security.KafkaSecurity;
-import io.streamshub.console.config.ClusterKind;
 
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.generator.annotation.ValidationRule;

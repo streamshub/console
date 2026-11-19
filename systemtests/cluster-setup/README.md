@@ -235,7 +235,7 @@ mechanism (port-forward or tunnel) is currently running.
 
 Builds the Console images (`console-api`, `console-dexidp`, `console-operator`,
 `console-operator-bundle`, `console-operator-catalog`) from local source via
-Maven + the bundle/catalog build scripts under `operator/bin/` — mirrors the
+Maven + the bundle/catalog build scripts under `operator/controller/bin/` — mirrors the
 build half of the project's old `systemtests/scripts/setup-minikube.sh`.
 Nothing is pushed
 anywhere; images are tagged `<registry>/<group>/<image>:<tag>` and left in

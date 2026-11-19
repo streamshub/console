@@ -44,7 +44,7 @@
         <sonar.cpd.exclusions>
             api/src/main/java/io/streamshub/console/api/model/**/*.java,
             common/src/main/java/io/streamshub/console/config/*.java,
-            operator/src/main/java/io/streamshub/console/api/v1alpha1/**/*.java
+            operator/api/src/main/java/io/streamshub/console/api/v1alpha1/**/*.java
         </sonar.cpd.exclusions>
         <sonar.coverage.exclusions>
             systemtests/**

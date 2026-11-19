@@ -24,7 +24,7 @@ public class VersionModificationDataLoader {
     private static final Logger LOGGER = LogManager.getLogger(VersionModificationDataLoader.class);
 
     // Output produced by a normal build in .github/workflows/release.yml, which joins the same two files into release operator YAML bundle.
-    private static final String OPERATOR_KUBERNETES_DIR = System.getProperty("user.dir") + "/../operator/target/kubernetes/";
+    private static final String OPERATOR_KUBERNETES_DIR = System.getProperty("user.dir") + "/../operator/controller/target/kubernetes/";
     private static final Path OPERATOR_CRD_FILE = Paths.get(OPERATOR_KUBERNETES_DIR, "consoles.console.streamshub.github.com-v1.yml");
     private static final Path OPERATOR_RESOURCES_FILE = Paths.get(OPERATOR_KUBERNETES_DIR, "kubernetes.yml");
 
