@@ -40,21 +40,23 @@ interface GroupOutletContext {
   group: Group;
 }
 
-type SortableColumn = 'property' | 'value';
+type SortableColumn = 'property' | 'value' | 'source';
 
 function formatConfigValue(property: ConfigValue): React.ReactNode {
   switch (property.type) {
     case 'INT':
     case 'LONG':
-      return property.value ? parseInt(property.value, 10).toLocaleString() : '-';
+      return property.value
+        ? parseInt(property.value, 10).toLocaleString()
+        : '-';
     case 'STRING':
       if (property.source === 'STATIC_BROKER_CONFIG') {
         // STATIC_BROKER_CONFIG strings are actually lists in disguise
         return (
           <List isPlain isBordered>
-            {property.value
-              ?.split(',')
-              .map((v, idx) => <ListItem key={idx}>{v || '-'}</ListItem>)}
+            {property.value?.split(',').map((v, idx) => (
+              <ListItem key={idx}>{v || '-'}</ListItem>
+            ))}
           </List>
         );
       }
@@ -62,9 +64,9 @@ function formatConfigValue(property: ConfigValue): React.ReactNode {
     case 'LIST':
       return (
         <List isPlain isBordered>
-          {property.value
-            ?.split(',')
-            .map((v, idx) => <ListItem key={idx}>{v || '-'}</ListItem>)}
+          {property.value?.split(',').map((v, idx) => (
+            <ListItem key={idx}>{v || '-'}</ListItem>
+          ))}
         </List>
       );
     default:
@@ -115,9 +117,13 @@ export function GroupConfigurationTab() {
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
     let filtered = allData
-      .filter(([name]) => (propertyFilter ? name.includes(propertyFilter) : true))
+      .filter(([name]) =>
+        propertyFilter ? name.includes(propertyFilter) : true
+      )
       .filter(([, property]) =>
-        selectedDataSources.length > 0 ? selectedDataSources.includes(property.source) : true
+        selectedDataSources.length > 0
+          ? selectedDataSources.includes(property.source)
+          : true
       );
 
     // Sort
@@ -157,7 +163,9 @@ export function GroupConfigurationTab() {
 
   const handleDataSourceToggle = (source: string) => {
     setSelectedDataSources((prev) =>
-      prev.includes(source) ? prev.filter((s) => s !== source) : [...prev, source]
+      prev.includes(source)
+        ? prev.filter((s) => s !== source)
+        : [...prev, source]
     );
   };
 
@@ -176,7 +184,8 @@ export function GroupConfigurationTab() {
     );
   }
 
-  const isFiltered = propertyFilter !== '' || selectedDataSources.length !== dataSources.length;
+  const isFiltered =
+    propertyFilter !== '' || selectedDataSources.length !== dataSources.length;
   const showEmptyState = isFiltered && filteredAndSortedData.length === 0;
 
   return (
@@ -197,12 +206,16 @@ export function GroupConfigurationTab() {
               id="data-source-select"
               isOpen={isDataSourceSelectOpen}
               selected={selectedDataSources}
-              onSelect={(_, selection) => handleDataSourceToggle(selection as string)}
+              onSelect={(_, selection) =>
+                handleDataSourceToggle(selection as string)
+              }
               onOpenChange={(isOpen) => setIsDataSourceSelectOpen(isOpen)}
               toggle={(toggleRef) => (
                 <MenuToggle
                   ref={toggleRef}
-                  onClick={() => setIsDataSourceSelectOpen(!isDataSourceSelectOpen)}
+                  onClick={() =>
+                    setIsDataSourceSelectOpen(!isDataSourceSelectOpen)
+                  }
                   isExpanded={isDataSourceSelectOpen}
                 >
                   {t('topics.configuration.dataSource')} (
@@ -246,18 +259,23 @@ export function GroupConfigurationTab() {
               <Th width={40} sort={getSortParams('property')}>
                 {t('topics.configuration.property')}
               </Th>
-              <Th sort={getSortParams('value')}>{t('topics.configuration.value')}</Th>
+              <Th sort={getSortParams('source')}>
+                {t('topics.configuration.source')}
+              </Th>
+              <Th sort={getSortParams('value')}>
+                {t('topics.configuration.value')}
+              </Th>
             </Tr>
           </Thead>
           <Tbody>
             {filteredAndSortedData.map(([name, property]) => (
               <Tr key={name}>
-                <Td dataLabel={t('topics.configuration.property')} style={{ verticalAlign: 'middle' }}>
+                <Td
+                  dataLabel={t('topics.configuration.property')}
+                  style={{ verticalAlign: 'middle' }}
+                >
                   <div>{name}</div>
                   <LabelGroup>
-                    <Label isCompact color="teal">
-                      source={property.source}
-                    </Label>
                     {property.readOnly && (
                       <Label isCompact color="grey">
                         {t('topics.configuration.readOnly')}
@@ -265,7 +283,16 @@ export function GroupConfigurationTab() {
                     )}
                   </LabelGroup>
                 </Td>
-                <Td dataLabel={t('topics.configuration.value')} style={{ verticalAlign: 'middle' }}>
+                <Td
+                  dataLabel={t('topics.configuration.source')}
+                  style={{ verticalAlign: 'middle' }}
+                >
+                  {property.source}
+                </Td>
+                <Td
+                  dataLabel={t('topics.configuration.value')}
+                  style={{ verticalAlign: 'middle' }}
+                >
                   {formatConfigValue(property)}
                 </Td>
               </Tr>

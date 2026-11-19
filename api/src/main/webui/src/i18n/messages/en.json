@@ -242,7 +242,8 @@
       "noConfigurationDescription": "This topic does not have any configuration properties.",
       "noResultsTitle": "No results found",
       "noResultsBody": "No properties match the current filter criteria.",
-      "noResultsReset": "Clear all filters"
+      "noResultsReset": "Clear all filters",
+      "source": "Source"
     },
     "messages": {
       "title": "Messages",
