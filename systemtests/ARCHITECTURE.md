@@ -10,7 +10,7 @@
 
 ## AbstractST - Base Class for All Tests
 
-Every test class extends `AbstractST` (`src/test/java/com/github/streamshub/systemtests/AbstractST.java`), which uses JUnit 5's `@BeforeAll`/`@AfterAll` to set up operators and namespaces before tests run and tear them down afterward (unless `CLEANUP_ENVIRONMENT: false`). Test classes just implement the scenarios.
+Every test class extends `AbstractST` (`src/test/java/io/streamshub/systemtests/AbstractST.java`), which uses JUnit 5's `@BeforeAll`/`@AfterAll` to set up operators and namespaces before tests run and tear them down afterward (unless `CLEANUP_ENVIRONMENT: false`). Test classes just implement the scenarios.
 
 Extends `AbstractST`: `MessagesST`, `AuthST`, `ApicurioST`, `KroxyST`, and the other `*ST` classes.
 

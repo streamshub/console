@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.github.streamshub</groupId>
+        <groupId>io.streamshub</groupId>
         <artifactId>console</artifactId>
         <version>0.15.0-SNAPSHOT</version>
     </parent>
