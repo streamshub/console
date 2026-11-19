@@ -65,7 +65,7 @@ async function navigateToGroupConfiguration(page: Page, authenticatedPage: Authe
 }
 
 function groupConfigurationTable(page: Page) {
-  return page.getByRole("table", { name: "Group configuration table" });
+  return page.getByRole("grid", { name: "Group configuration table" });
 }
 
 function groupConfigurationRows(page: Page, property: string) {
