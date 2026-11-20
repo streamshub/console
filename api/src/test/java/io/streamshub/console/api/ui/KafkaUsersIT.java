@@ -1,42 +1,25 @@
 package io.streamshub.console.api.ui;
 
-import io.streamshub.console.api.service.KafkaClusterService;
-import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
-import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
-import io.streamshub.console.test.TestHelper;
 import com.microsoft.playwright.APIResponse;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserAuthentication;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication;
 import io.strimzi.api.kafka.model.user.KafkaUserTlsClientAuthentication;
-import jakarta.inject.Inject;
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.eclipse.microprofile.config.Config;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.net.URL;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -48,9 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaUsersIT {
-    static final String KAFKA_NAME = "test-kafka1";
-    static final String KAFKA_KEY  = "default/" + KAFKA_NAME;
+class KafkaUsersIT extends BaseKafkaIT {
     static final String NAMESPACE  = "default";
     static final String CLUSTER_LABEL = "strimzi.io/cluster";
 
@@ -61,28 +42,6 @@ class KafkaUsersIT {
     @TestHTTPResource("/")
     URL home;
 
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @InjectPlaywright
-    BrowserContext context;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
-
-    TestHelper utils;
-    URI bootstrapServers;
-    String clusterId;
-
     final String prefix  = "ui-users-" + UUID.randomUUID().toString().substring(0, 8) + "-";
     final String alpha   = prefix + "alpha";
     final String bravo   = prefix + "bravo";
@@ -90,49 +49,14 @@ class KafkaUsersIT {
     final String other   = prefix + "other";
 
     @BeforeEach
-    void setup() {
-        PlaywrightTimeouts.configure(context);
-        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        utils = new TestHelper(bootstrapServers, config);
-        utils.resetSecurity(consoleConfig, false);
-        kafkaClusterService.setListUnconfigured(false);
-
-        deleteStrimziResources();
+    void usersSetup() {
         applyKafka();
     }
 
-    @AfterEach
-    void cleanup() {
-        deleteStrimziResources();
-    }
-
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
-    }
-
-    private void deleteStrimziResources() {
+    @Override
+    protected void deleteStrimziResources() {
         client.resources(KafkaUser.class).inAnyNamespace().delete();
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-    private void applyKafka() {
-        clusterId = consoleConfig.getKafka().getCluster(KAFKA_KEY).get().getId(); // "k1-id"
-
-        Kafka kafka = utils.apply(client, new KafkaBuilder(
-                utils.buildKafkaResource(KAFKA_NAME, clusterId, bootstrapServers))
-                .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
-                .endStatus()
-                .build());
-
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> configuredContexts.values().stream()
-                        .map(KafkaContext::clusterConfig)
-                        .map(KafkaClusterConfig::clusterKey)
-                        .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
+        super.deleteStrimziResources();
     }
 
     private KafkaUser user(String name, String kafkaCluster, KafkaUserAuthentication auth, String username) {
@@ -330,7 +254,6 @@ class KafkaUsersIT {
             Locator nameHeader = header(page, ci("^name$"));
             Locator names = displayedNames(page);
 
-            // Retrying Playwright assertions: run on the test thread, timeout from PlaywrightTimeouts
             nameHeader.getByRole(AriaRole.BUTTON).click();
             assertThat(nameHeader).hasAttribute("aria-sort", "ascending");
             assertThat(names).hasText(ascending.toArray(new String[0]));

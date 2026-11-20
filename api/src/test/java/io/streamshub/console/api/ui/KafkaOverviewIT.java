@@ -1,35 +1,20 @@
 package io.streamshub.console.api.ui;
 
-import io.streamshub.console.api.service.KafkaClusterService;
 import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
 import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
-import io.streamshub.console.test.TestHelper;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import jakarta.inject.Inject;
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.eclipse.microprofile.config.Config;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
-import java.net.URL;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -39,7 +24,7 @@ import static org.awaitility.Awaitility.await;
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaOverviewIT {
+class KafkaOverviewIT extends BaseKafkaIT {
 
     static final Pattern OVERVIEW_HEADER      = ci("Cluster overview");
     static final Pattern CONNECTION_BTN       = ci("Cluster connection details");
@@ -50,53 +35,6 @@ class KafkaOverviewIT {
     static final Pattern NO_MESSAGES          = ci("No errors or warnings");
     static final String PAUSED_WARNING =
             "Cluster reconciliation paused. Changes to the Kafka resource will not be applied.";
-
-    @InjectPlaywright
-    BrowserContext context;
-
-    @TestHTTPResource("/")
-    URL home;
-
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
-
-    TestHelper utils;
-    URI bootstrapServers;
-
-    @BeforeEach
-    void setup() {
-        // Fail fast instead of waiting 30s per step
-        PlaywrightTimeouts.configure(context);
-
-        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        utils = new TestHelper(bootstrapServers, config);
-        utils.resetSecurity(consoleConfig, false);
-        kafkaClusterService.setListUnconfigured(false);
-
-        // Start every test from a clean slate. Each test applies the Kafka CR it needs.
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-    @AfterEach
-    void cleanup() {
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
-    }
 
     private static Locator main(Page page) {
         return page.getByRole(AriaRole.MAIN);
