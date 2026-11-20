@@ -68,7 +68,7 @@ class KafkaConnectorsIT extends BaseKafkaIT implements ClientRequestFilter {
     @BeforeAll
     static void initialize() throws IOException {
         try (InputStream in = KafkaConnectorsIT.class.getResourceAsStream(
-                "/com/github/streamshub/console/api/KafkaConnect-fixtures.yaml")) {
+                "/io/streamshub/console/api/KafkaConnect-fixtures.yaml")) {
             fixtures = (ObjectNode) new ObjectMapper(new YAMLFactory()).readTree(in);
         }
     }
