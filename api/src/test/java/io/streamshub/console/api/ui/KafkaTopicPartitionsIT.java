@@ -1,134 +1,58 @@
 package io.streamshub.console.api.ui;
 
-import io.streamshub.console.api.service.KafkaClusterService;
-import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
-import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
-import io.streamshub.console.test.TestHelper;
 import io.streamshub.console.test.TopicHelper;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import jakarta.inject.Inject;
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaTopicPartitionsIT {
-    static final String KAFKA_NAME = "test-kafka1";
-    static final String KAFKA_KEY  = "default/" + KAFKA_NAME;
-
+class KafkaTopicPartitionsIT extends BaseKafkaIT {
     static final int PARTITIONS = 3;
-    static final int MANY_PARTITIONS = 25; // more than the default page size of 20
+    static final int MANY_PARTITIONS = 25;
 
     static final List<Pattern> HEADERS = List.of(
             ci("Partition"), ci("Status"), ci("Preferred leader"),
             ci("Leader"), ci("Replicas"), ci("Size|Storage"));
 
-    @InjectPlaywright
-    BrowserContext context;
-
     @TestHTTPResource("/")
     URL home;
 
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
-
-    TestHelper utils;
     TopicHelper topicUtils;
-    URI bootstrapServers;
-    String clusterId;
 
     final String prefix = "ui-partitions-" + UUID.randomUUID().toString().substring(0, 8) + "-";
     final String topic     = prefix + "topic";
     final String manyTopic = prefix + "many";
 
     @BeforeEach
-    void setup() {
-        PlaywrightTimeouts.configure(context);
-
-
-        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        utils = new TestHelper(bootstrapServers, config);
+    void partitionsSetup() {
         topicUtils = new TopicHelper(bootstrapServers, config);
-        utils.resetSecurity(consoleConfig, false);
-        kafkaClusterService.setListUnconfigured(false);
 
-        client.resources(Kafka.class).inAnyNamespace().delete();
         applyKafka();
 
         topicUtils.createTopics(List.of(topic), PARTITIONS);
     }
 
     @AfterEach
-    void cleanup() {
-        // deleteTopics ignores topics that do not exist (e.g. manyTopic in most tests)
+    void partitionsCleanup() {
         topicUtils.deleteTopics(topic, manyTopic);
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
-    }
-
-    private void applyKafka() {
-        clusterId = consoleConfig.getKafka().getCluster(KAFKA_KEY).get().getId(); // "k1-id"
-
-        Kafka kafka = utils.apply(client, new KafkaBuilder(
-                utils.buildKafkaResource(KAFKA_NAME, clusterId, bootstrapServers))
-                .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
-                .endStatus()
-                .build());
-
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> configuredContexts.values().stream()
-                        .map(KafkaContext::clusterConfig)
-                        .map(KafkaClusterConfig::clusterKey)
-                        .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
     }
 
     private String topicsUrl() {
@@ -140,7 +64,6 @@ class KafkaTopicPartitionsIT {
                 .filter(new Locator.FilterOptions().setHasText(topicName));
     }
 
-    /** Opens the Partitions tab through the partition-count link on the topics list. */
     private void openPartitions(Page page, String topicName, int partitionCount) {
         page.navigate(topicsUrl());
 
@@ -160,18 +83,15 @@ class KafkaTopicPartitionsIT {
         return partitionsTable(page).locator("tbody tr");
     }
 
-    /** Column order: id, status, preferred leader, leader, replicas, size. */
     private static Locator cell(Locator row, int column) {
         return row.locator("td").nth(column);
     }
-
 
     @Test
     void partitionCountLinkOpensPartitionsTab() {
         try (Page page = context.newPage()) {
             openPartitions(page, topic, PARTITIONS);
 
-            // The topic detail page header is shown above the tab content
             assertThat(page.getByRole(AriaRole.HEADING,
                     new Page.GetByRoleOptions().setLevel(1).setName(topic))).isVisible();
             assertThat(page.getByRole(AriaRole.TAB,
@@ -248,8 +168,6 @@ class KafkaTopicPartitionsIT {
 
         try (Page page = context.newPage()) {
             openPartitions(page, topic, PARTITIONS);
-
-            // Either a formatted size or "N/A" when storage information is not available yet
             assertThat(cell(partitionRows(page).first(), 5))
                     .hasText(Pattern.compile("N/A|[\\d.]+ (B|KB|MB|GB|TB)"));
         }
@@ -264,7 +182,6 @@ class KafkaTopicPartitionsIT {
             assertThat(page.locator("#in-sync")).containsText("(" + PARTITIONS + ")");
             assertThat(page.locator("#under-replicated")).containsText("(0)");
             assertThat(page.locator("#offline")).containsText("(0)");
-
             assertThat(page.locator("#all")).hasAttribute("aria-pressed", "true");
         }
     }
@@ -287,8 +204,6 @@ class KafkaTopicPartitionsIT {
             openPartitions(page, topic, PARTITIONS);
 
             page.locator("#offline").click();
-
-            // No offline partitions, so an empty state replaces the table
             assertThat(partitionsTable(page)).hasCount(0);
 
             page.locator("#all").click();
@@ -303,8 +218,6 @@ class KafkaTopicPartitionsIT {
 
         try (Page page = context.newPage()) {
             openPartitions(page, manyTopic, MANY_PARTITIONS);
-
-            // Default page size is 20
             assertThat(partitionRows(page)).hasCount(20);
 
             page.getByRole(AriaRole.BUTTON,

@@ -1,40 +1,24 @@
 package io.streamshub.console.api.ui;
 
-import io.streamshub.console.api.service.KafkaClusterService;
-import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
-import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
 import io.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
 import io.streamshub.console.kafka.systemtest.utils.ConsumerUtils.ConsumerType;
-import io.streamshub.console.test.TestHelper;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import jakarta.inject.Inject;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
-import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -52,10 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaGroupsResetOffsetIT {
-    static final String KAFKA_NAME = "test-kafka1";
-    static final String KAFKA_KEY  = "default/" + KAFKA_NAME;
-
+class KafkaGroupsResetOffsetIT extends BaseKafkaIT {
     static final int PARTITIONS       = 2;
     static final int RECORDS_PER_PART = 10;
     static final long INITIAL_OFFSET  = 5;
@@ -76,31 +57,7 @@ class KafkaGroupsResetOffsetIT {
     static final Pattern EPOCH    = ci("epoch|unix");
     static final Pattern ISO      = ci("iso|8601");
 
-    @InjectPlaywright
-    BrowserContext context;
-
-    @TestHTTPResource("/")
-    URL home;
-
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
-
-    TestHelper utils;
     ConsumerUtils consumerUtils;
-    URI bootstrapServers;
-    String clusterId;
 
     long beforeRecordsMs;
 
@@ -110,16 +67,7 @@ class KafkaGroupsResetOffsetIT {
 
     @BeforeEach
     void setup() {
-        // Sets both the action timeout and the (static, JVM-wide) assertion timeout
-        PlaywrightTimeouts.configure(context);
-
-        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        utils = new TestHelper(bootstrapServers, config);
         consumerUtils = new ConsumerUtils(bootstrapServers, config);
-        utils.resetSecurity(consoleConfig, false);
-        kafkaClusterService.setListUnconfigured(false);
-
-        client.resources(Kafka.class).inAnyNamespace().delete();
         applyKafka();
 
         createEmptyGroupAtOffset(INITIAL_OFFSET);
@@ -128,31 +76,7 @@ class KafkaGroupsResetOffsetIT {
     @AfterEach
     void cleanup() {
         consumerUtils.deleteGroups();
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
-    }
-
-    private void applyKafka() {
-        clusterId = consoleConfig.getKafka().getCluster(KAFKA_KEY).get().getId(); // "k1-id"
-
-        Kafka kafka = utils.apply(client, new KafkaBuilder(
-                utils.buildKafkaResource(KAFKA_NAME, clusterId, bootstrapServers))
-                .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
-                .endStatus()
-                .build());
-
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> configuredContexts.values().stream()
-                        .map(KafkaContext::clusterConfig)
-                        .map(KafkaClusterConfig::clusterKey)
-                        .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
+        // The Kafka CR is deleted by BaseKafkaIT.baseCleanup()
     }
 
     private void createEmptyGroupAtOffset(long offset) {
@@ -199,7 +123,6 @@ class KafkaGroupsResetOffsetIT {
                 .collect(Collectors.toMap(e -> e.getKey().partition(), e -> e.getValue().offset()));
     }
 
-    // Kafka admin clients only, no Playwright objects: safe to poll from Awaitility's thread
     private void awaitCommittedOffsets(Map<Integer, Long> expected) {
         await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(expected, committedOffsets()));
     }
@@ -285,7 +208,6 @@ class KafkaGroupsResetOffsetIT {
                 .toList();
     }
 
-    /** Playwright objects are not thread-safe, so poll on the test thread. */
     private static void awaitDryRunRows(Page page, String... expected) {
         List<String> sortedExpected = List.of(expected).stream().sorted().toList();
         await().atMost(15, TimeUnit.SECONDS)

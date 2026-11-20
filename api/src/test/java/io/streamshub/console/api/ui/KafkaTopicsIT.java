@@ -1,59 +1,36 @@
 
 package io.streamshub.console.api.ui;
 
-import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
-import io.streamshub.console.api.service.KafkaClusterService;
-import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
-import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
 import io.streamshub.console.test.TopicHelper;
 
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-
-import jakarta.inject.Inject;
-
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.concurrent.TimeUnit;
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaTopicsIT {
-
-    static final String KAFKA_NAME = "test-kafka1";
-    static final String KAFKA_KEY = "default/" + KAFKA_NAME;
-
+class KafkaTopicsIT extends BaseKafkaIT {
     static final Pattern TOPICS_TITLE = ci("Topics");
     static final Pattern NAME_COLUMN = ci("Name");
     static final Pattern STATUS_COLUMN = ci("Status");
@@ -68,31 +45,10 @@ class KafkaTopicsIT {
     static final String LISTING_FIELDS =
             "name,status,numPartitions,totalLeaderLogBytes,groups";
 
-    @InjectPlaywright
-    BrowserContext context;
-
     @TestHTTPResource("/")
     URL home;
 
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
-
     TopicHelper topicHelper;
-
-    URI bootstrapServers;
-    String clusterId;
 
     final String prefix =
             "ui-topics-" + UUID.randomUUID().toString().substring(0, 8) + "-";
@@ -102,24 +58,8 @@ class KafkaTopicsIT {
     final String eventsTopic = prefix + "events";
 
     @BeforeEach
-    void setup() {
-
-        PlaywrightTimeouts.configure(context);
-
-
-        bootstrapServers = URI.create(
-                config.getValue(
-                        org.apache.kafka.clients.CommonClientConfigs
-                                .BOOTSTRAP_SERVERS_CONFIG,
-                        String.class));
-
+    void topicsSetup() {
         topicHelper = new TopicHelper(bootstrapServers, config);
-
-        kafkaClusterService.setListUnconfigured(false);
-
-        client.resources(Kafka.class)
-                .inAnyNamespace()
-                .delete();
 
         applyKafka();
 
@@ -127,72 +67,19 @@ class KafkaTopicsIT {
     }
 
     @AfterEach
-    void cleanup() {
-
+    void topicsCleanup() {
         if (topicHelper != null) {
             topicHelper.deleteTopics(
                     ordersTopic,
                     paymentsTopic,
                     eventsTopic);
         }
-
-        client.resources(Kafka.class)
-                .inAnyNamespace()
-                .delete();
-    }
-
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
-    }
-
-    private void applyKafka() {
-
-        clusterId = consoleConfig.getKafka()
-                .getCluster(KAFKA_KEY)
-                .get()
-                .getId();
-
-        Kafka kafka = new KafkaBuilder(
-                new io.streamshub.console.test.TestHelper(
-                        bootstrapServers,
-                        config)
-                        .buildKafkaResource(
-                                KAFKA_NAME,
-                                clusterId,
-                                bootstrapServers))
-                .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
-                .endStatus()
-                .build();
-
-        new io.streamshub.console.test.TestHelper(
-                bootstrapServers,
-                config)
-                .apply(client, kafka);
-
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> configuredContexts.values()
-                        .stream()
-                        .map(KafkaContext::clusterConfig)
-                        .map(KafkaClusterConfig::clusterKey)
-                        .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
     }
 
     private void createTopics() {
-        topicHelper.createTopics(
-                List.of(ordersTopic),
-                3);
-
-        topicHelper.createTopics(
-                List.of(paymentsTopic),
-                1);
-
-        topicHelper.createTopics(
-                List.of(eventsTopic),
-                2);
+        topicHelper.createTopics(List.of(ordersTopic), 3);
+        topicHelper.createTopics(List.of(paymentsTopic), 1);
+        topicHelper.createTopics(List.of(eventsTopic), 2);
     }
 
     private String topicsUrl() {
@@ -207,9 +94,7 @@ class KafkaTopicsIT {
 
     @Test
     void headerShowsTitleAndTotal() {
-
         try (Page page = context.newPage()) {
-
             page.navigate(topicsUrl());
 
             assertThat(page.getByRole(
@@ -226,9 +111,7 @@ class KafkaTopicsIT {
 
     @Test
     void tableShowsExpectedColumns() {
-
         try (Page page = context.newPage()) {
-
             page.navigate(topicsUrl());
 
             for (Pattern header : List.of(
@@ -250,35 +133,23 @@ class KafkaTopicsIT {
 
     @Test
     void tableListsCreatedTopics() {
-
         try (Page page = context.newPage()) {
-
             page.navigate(topicsUrl());
 
-            assertThat(rowFor(page, ordersTopic))
-                    .hasCount(1);
-
-            assertThat(rowFor(page, paymentsTopic))
-                    .hasCount(1);
-
-            assertThat(rowFor(page, eventsTopic))
-                    .hasCount(1);
+            assertThat(rowFor(page, ordersTopic)).hasCount(1);
+            assertThat(rowFor(page, paymentsTopic)).hasCount(1);
+            assertThat(rowFor(page, eventsTopic)).hasCount(1);
         }
     }
 
     @Test
     void topicRowLinksPointToTopicPages() {
-
         try (Page page = context.newPage()) {
-
             page.navigate(topicsUrl());
 
             Locator row = rowFor(page, ordersTopic);
 
-            assertThat(row)
-                    .hasCount(1);
-
-            // Topic name links to the topic page.
+            assertThat(row).hasCount(1);
             assertThat(row.getByRole(
                     AriaRole.LINK,
                     new Locator.GetByRoleOptions()
@@ -290,7 +161,6 @@ class KafkaTopicsIT {
                                     + clusterId
                                     + "/topics/[^/]+$"));
 
-            // Partition count links to the partitions tab.
             assertThat(row.getByRole(
                     AriaRole.LINK,
                     new Locator.GetByRoleOptions()
@@ -301,7 +171,6 @@ class KafkaTopicsIT {
                             Pattern.compile(
                                     ".*/topics/[^/]+/partitions$"));
 
-            // Consumer group count links to the groups tab.
             assertThat(row.getByRole(
                     AriaRole.LINK,
                     new Locator.GetByRoleOptions()
@@ -316,9 +185,7 @@ class KafkaTopicsIT {
 
     @Test
     void partitionCountsMatchCreatedTopics() {
-
         try (Page page = context.newPage()) {
-
             page.navigate(topicsUrl());
 
             assertThat(rowFor(page, paymentsTopic)
@@ -341,13 +208,10 @@ class KafkaTopicsIT {
 
     @Test
     void unmanagedTopicsHaveNoManagedLabel() {
-
         try (Page page = context.newPage()) {
-
             page.navigate(topicsUrl());
 
-            assertThat(rowFor(page, ordersTopic))
-                    .hasCount(1);
+            assertThat(rowFor(page, ordersTopic)).hasCount(1);
 
             assertThat(rowFor(page, ordersTopic))
                     .not()
@@ -357,11 +221,8 @@ class KafkaTopicsIT {
 
     @Test
     void listRequestAsksForListingFields() {
-
         try (Page page = context.newPage()) {
-
-            List<String> requests =
-                    new CopyOnWriteArrayList<>();
+            List<String> requests = new CopyOnWriteArrayList<>();
 
             page.onRequest(request ->
                     requests.add(URLDecoder.decode(
@@ -370,8 +231,7 @@ class KafkaTopicsIT {
 
             page.navigate(topicsUrl());
 
-            assertThat(rowFor(page, ordersTopic))
-                    .hasCount(1);
+            assertThat(rowFor(page, ordersTopic)).hasCount(1);
 
             assertTrue(
                     requests.stream().anyMatch(url ->
@@ -389,29 +249,19 @@ class KafkaTopicsIT {
 
     @Test
     void filteringByNameShowsOnlyMatchingTopics() {
-
         try (Page page = context.newPage()) {
-
             page.navigate(topicsUrl());
 
-            assertThat(rowFor(page, paymentsTopic))
-                    .hasCount(1);
-
-            // The first text input is the name filter.
-            Locator filter =
-                    page.getByRole(AriaRole.TEXTBOX).first();
+            assertThat(rowFor(page, paymentsTopic)).hasCount(1);
+            Locator filter = page.getByRole(AriaRole.TEXTBOX).first();
 
             filter.fill(ordersTopic);
             filter.press("Enter");
 
-            assertThat(rowFor(page, ordersTopic))
-                    .hasCount(1);
-
-            assertThat(rowFor(page, paymentsTopic))
-                    .hasCount(0);
-
-            assertThat(rowFor(page, eventsTopic))
-                    .hasCount(0);
+            assertThat(rowFor(page, ordersTopic)).hasCount(1);
+            assertThat(rowFor(page, paymentsTopic)).hasCount(0);
+            assertThat(rowFor(page, eventsTopic)).hasCount(0);
         }
     }
 }
+

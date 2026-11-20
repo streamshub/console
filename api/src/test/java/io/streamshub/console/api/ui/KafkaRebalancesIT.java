@@ -1,35 +1,18 @@
 package io.streamshub.console.api.ui;
 
-import io.streamshub.console.api.service.KafkaClusterService;
-import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
-import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
-import io.streamshub.console.test.TestHelper;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceBuilder;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
-import jakarta.inject.Inject;
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.eclipse.microprofile.config.Config;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.net.URL;
 import java.util.Map;
 import java.util.UUID;
@@ -42,98 +25,32 @@ import static org.awaitility.Awaitility.await;
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaRebalancesIT {
-    static final String KAFKA_NAME = "test-kafka1";
-    static final String KAFKA_KEY  = "default/" + KAFKA_NAME;
+class KafkaRebalancesIT extends BaseKafkaIT {
     static final String NAMESPACE  = "default";
-
     static final String REBALANCE_ANNOTATION = "strimzi.io/rebalance";
-
-    // Column order: expander, name, status, data to move, partitions to move,
-    // leadership updates, last updated, actions
     static final int COL_NAME = 1;
     static final int COL_STATUS = 2;
     static final int COL_DATA = 3;
     static final int COL_PARTITIONS = 4;
     static final int COL_LEADERSHIP = 5;
 
-    @InjectPlaywright
-    BrowserContext context;
-
     @TestHTTPResource("/")
     URL home;
 
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
-
-    TestHelper utils;
-    URI bootstrapServers;
-    String clusterId;
-
     final String prefix = "ui-rebalance-" + UUID.randomUUID().toString().substring(0, 8) + "-";
 
-    @BeforeEach
-    void setup() {
-        PlaywrightTimeouts.configure(context);
-
-
-        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        utils = new TestHelper(bootstrapServers, config);
-        utils.resetSecurity(consoleConfig, false);
-        kafkaClusterService.setListUnconfigured(false);
-
+    @Override
+    protected void deleteStrimziResources() {
         client.resources(KafkaRebalance.class).inAnyNamespace().delete();
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-    @AfterEach
-    void cleanup() {
-        client.resources(KafkaRebalance.class).inAnyNamespace().delete();
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
+        super.deleteStrimziResources();
     }
 
     private void applyKafka(boolean cruiseControlEnabled) {
-        clusterId = consoleConfig.getKafka().getCluster(KAFKA_KEY).get().getId();
-
-        KafkaBuilder builder = new KafkaBuilder(utils.buildKafkaResource(KAFKA_NAME, clusterId, bootstrapServers));
-
-        if (cruiseControlEnabled) {
-            builder.editOrNewSpec().withNewCruiseControl().endCruiseControl().endSpec();
-        }
-
-        Kafka kafka = utils.apply(client, builder
-                .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
-                .endStatus()
-                .build());
-
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> configuredContexts.values().stream()
-                        .map(KafkaContext::clusterConfig)
-                        .map(KafkaClusterConfig::clusterKey)
-                        .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
+        applyKafka(builder -> cruiseControlEnabled
+                ? builder.editOrNewSpec().withNewCruiseControl().endCruiseControl().endSpec()
+                : builder);
     }
 
-    /** Creates a KafkaRebalance whose status is already in the given state (no operator runs in tests). */
     private KafkaRebalance createRebalance(String name, String state, Map<String, Object> optimizationResult) {
         return utils.apply(client, new KafkaRebalanceBuilder()
                 .withNewMetadata()
@@ -171,7 +88,6 @@ class KafkaRebalancesIT {
         return home + "kafka/" + clusterId + "/nodes";
     }
 
-    /** Opens the Rebalances tab the way a user would: nodes page -> Rebalance tab. */
     private void openRebalances(Page page) {
         page.navigate(nodesUrl());
 
@@ -207,7 +123,6 @@ class KafkaRebalancesIT {
     private static Locator modalButton(Page page, String ouiaId) {
         return confirmationModal(page).locator("[data-ouia-component-id='" + ouiaId + "']");
     }
-
 
     @Test
     void notEnabledMessageShownWithoutCruiseControl() {
@@ -336,7 +251,6 @@ class KafkaRebalancesIT {
             assertThat(confirmationModal(page)).isHidden();
         }
 
-        // Give a (wrongly) issued patch a moment to land before asserting that nothing happened
         await().during(2, TimeUnit.SECONDS)
                 .atMost(5, TimeUnit.SECONDS)
                 .until(() -> rebalanceAnnotation(name) == null);

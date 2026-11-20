@@ -1,88 +1,47 @@
 package io.streamshub.console.api.ui;
 
-import io.streamshub.console.api.service.KafkaClusterService;
-import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
-import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
 import io.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
 import io.streamshub.console.kafka.systemtest.utils.ConsumerUtils.ConsumerResponse;
 import io.streamshub.console.kafka.systemtest.utils.ConsumerUtils.ConsumerType;
-import io.streamshub.console.test.TestHelper;
 import io.streamshub.console.test.TopicHelper;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import jakarta.inject.Inject;
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.Base64;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaTopicGroupsIT {
-    static final String KAFKA_NAME = "test-kafka1";
-    static final String KAFKA_KEY  = "default/" + KAFKA_NAME;
-
+class KafkaTopicGroupsIT extends BaseKafkaIT {
     static final int PARTITIONS = 2;
 
     static final List<Pattern> HEADERS = List.of(
             ci("Group ID"), ci("Type"), ci("Protocol"), ci("State"),
             ci("Overall lag"), ci("Members"), ci("Topics"));
 
-    @InjectPlaywright
-    BrowserContext context;
-
     @TestHTTPResource("/")
     URL home;
 
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
-
-    TestHelper utils;
     TopicHelper topicUtils;
     ConsumerUtils consumerUtils;
-    URI bootstrapServers;
-    String clusterId;
 
     final List<ConsumerResponse<?>> consumers = new ArrayList<>();
 
@@ -91,57 +50,23 @@ class KafkaTopicGroupsIT {
     final String otherTopic = prefix + "other";
 
     @BeforeEach
-    void setup() {
-        PlaywrightTimeouts.configure(context);
-
-
-        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        utils = new TestHelper(bootstrapServers, config);
+    void groupsSetup() {
         topicUtils = new TopicHelper(bootstrapServers, config);
         consumerUtils = new ConsumerUtils(bootstrapServers, config);
-        utils.resetSecurity(consoleConfig, false);
-        kafkaClusterService.setListUnconfigured(false);
 
-        client.resources(Kafka.class).inAnyNamespace().delete();
         applyKafka();
 
         topicUtils.createTopics(List.of(topic), PARTITIONS);
     }
 
     @AfterEach
-    void cleanup() {
+    void groupsCleanup() {
         consumers.forEach(ConsumerResponse::close);
         consumers.clear();
         consumerUtils.deleteGroups();
         topicUtils.deleteTopics(topic, otherTopic);
-        client.resources(Kafka.class).inAnyNamespace().delete();
     }
 
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
-    }
-
-    private void applyKafka() {
-        clusterId = consoleConfig.getKafka().getCluster(KAFKA_KEY).get().getId();
-
-        Kafka kafka = utils.apply(client, new KafkaBuilder(
-                utils.buildKafkaResource(KAFKA_NAME, clusterId, bootstrapServers))
-                .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
-                .endStatus()
-                .build());
-
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> configuredContexts.values().stream()
-                        .map(KafkaContext::clusterConfig)
-                        .map(KafkaClusterConfig::clusterKey)
-                        .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
-    }
-
-    /** Starts a consumer on an already-created topic and keeps it open until cleanup. */
     private void startConsumer(ConsumerType type, String groupId, String topicName, int messages, boolean autoClose) {
         ConsumerResponse<AutoCloseable> response = consumerUtils.request(type)
                 .groupId(groupId)
@@ -162,7 +87,6 @@ class KafkaTopicGroupsIT {
                 .filter(new Locator.FilterOptions().setHasText(text));
     }
 
-    /** Opens the Groups tab the way a user would: topics list -> topic name link -> Groups tab. */
     private void openGroups(Page page, String topicName) {
         page.navigate(topicsUrl());
 
@@ -193,17 +117,14 @@ class KafkaTopicGroupsIT {
         return groupRows(page).filter(new Locator.FilterOptions().setHasText(groupId));
     }
 
-    /** Column order: group id, type, protocol, state, overall lag, members, topics. */
     private static Locator cell(Locator row, int column) {
         return row.locator("td").nth(column);
     }
-
 
     @Test
     void emptyStateShownWhenNoGroupConsumesTopic() {
         try (Page page = context.newPage()) {
             openGroups(page, topic);
-
             assertThat(page.getByText("No groups are currently consuming from this topic.")).isVisible();
             assertThat(groupsTable(page)).hasCount(0);
         }
@@ -218,7 +139,6 @@ class KafkaTopicGroupsIT {
 
             Locator headers = groupsTable(page).locator("thead th");
             assertThat(headers).hasCount(HEADERS.size());
-
             for (int i = 0; i < HEADERS.size(); i++) {
                 assertThat(headers.nth(i)).containsText(HEADERS.get(i));
             }
@@ -250,15 +170,12 @@ class KafkaTopicGroupsIT {
     void overallLagReflectsUnconsumedMessages() {
         String groupId = prefix + "lag";
         startConsumer(ConsumerType.CLASSIC, groupId, topic, 2, false);
-
-        // The open consumer no longer polls, so these records stay unconsumed
         for (int i = 0; i < 3; i++) {
             topicUtils.produceRecord(topic, 0, null, Map.of(), "k" + i, "extra-" + i);
         }
 
         try (Page page = context.newPage()) {
             openGroups(page, topic);
-
             assertThat(cell(groupRow(page, groupId), 4)).hasText("3");
         }
     }
@@ -266,7 +183,6 @@ class KafkaTopicGroupsIT {
     @Test
     void groupWithoutMembersIsEmpty() {
         String groupId = prefix + "empty";
-        // autoClose=true: the consumer leaves the group after reading, offsets stay committed
         startConsumer(ConsumerType.CLASSIC, groupId, topic, 2, true);
 
         try (Page page = context.newPage()) {
@@ -308,9 +224,7 @@ class KafkaTopicGroupsIT {
 
         try (Page page = context.newPage()) {
             openGroups(page, topic);
-
             cell(groupRow(page, groupId), 0).getByRole(AriaRole.LINK).click();
-
             assertThat(page).hasURL(
                 home + "kafka/" + clusterId + "/groups/" + encodedGroupId + "/members");
         }
@@ -322,9 +236,7 @@ class KafkaTopicGroupsIT {
 
         try (Page page = context.newPage()) {
             openGroups(page, topic);
-
             groupsTable(page).locator("thead th").nth(3).locator("svg").hover();
-
             assertThat(page.getByText("Reflects the current operational state of the group.")).isVisible();
         }
     }

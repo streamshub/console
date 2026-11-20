@@ -2,10 +2,7 @@ package io.streamshub.console.api.ui;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -18,8 +15,6 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,26 +24,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.streamshub.console.api.support.KafkaConnectAPI;
-import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
-import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
-import io.streamshub.console.test.TestHelper;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.strimzi.api.kafka.model.connector.KafkaConnector;
 import io.strimzi.api.kafka.model.connector.KafkaConnectorBuilder;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+
+import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -64,37 +51,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaConnectorsIT implements ClientRequestFilter {
+class KafkaConnectorsIT extends BaseKafkaIT implements ClientRequestFilter {
 
     static final String CONNECTOR_1 = "connect1-connector1";
     static final String CONNECTOR_2 = "connect1-connector2";
 
     static final Pattern RUNNING = ci("Running");
 
-    @InjectPlaywright
-    BrowserContext context;
-
-    @TestHTTPResource("/")
-    URL home;
-
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
     @Inject
     KafkaConnectAPI.Client connectClient;
-
-    TestHelper utils;
-    URI bootstrapServers;
-    String clusterId;
 
     Consumer<ClientRequestContext> filterRequest;
 
@@ -115,8 +80,6 @@ class KafkaConnectorsIT implements ClientRequestFilter {
 
     @BeforeEach
     void setup() {
-        PlaywrightTimeouts.configure(context);
-
         filterRequest = ctx -> {
             var uri = ctx.getUri();
             String host = uri.getHost();
@@ -140,56 +103,12 @@ class KafkaConnectorsIT implements ClientRequestFilter {
 
         connectClient.setAdditionalFilter(Optional.of(this));
 
-        bootstrapServers = URI.create(
-                config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-
-        utils = new TestHelper(bootstrapServers, config);
-        utils.resetSecurity(consoleConfig, false);
-
-        clusterId = consoleConfig.getKafka()
-                .getCluster("default/test-kafka1")
-                .orElseThrow()
-                .getId();
-
-        resetStrimziResources();
-        applyKafkaAndConnectResources();
-        awaitKafkaReady();
-    }
-
-    @AfterEach
-    void cleanup() {
-        connectClient.setAdditionalFilter(Optional.empty());
-        resetStrimziResources();
-    }
-
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
-    }
-
-    private void resetStrimziResources() {
-        client.resources(io.strimzi.api.kafka.model.connector.KafkaConnector.class)
-                .inAnyNamespace().delete();
-
-        client.resources(io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2.class)
-                .inAnyNamespace().delete();
-
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-    private void applyKafkaAndConnectResources() {
-        Kafka kafka = utils.apply(client,
-                new KafkaBuilder(
-                        utils.buildKafkaResource("test-kafka1", clusterId, bootstrapServers))
-                        .editOrNewStatus()
-                            .addNewCondition()
-                                .withType("Ready")
-                                .withStatus("True")
-                            .endCondition()
-                            .addNewKafkaNodePool()
-                                .withName("my-node-pool")
-                            .endKafkaNodePool()
-                        .endStatus()
-                        .build());
+        applyKafka(builder -> builder
+                .editOrNewStatus()
+                    .addNewKafkaNodePool()
+                        .withName("my-node-pool")
+                    .endKafkaNodePool()
+                .endStatus());
 
         utils.apply(client, new KafkaConnectorBuilder()
                 .withNewMetadata()
@@ -202,21 +121,31 @@ class KafkaConnectorsIT implements ClientRequestFilter {
                 .endStatus()
                 .build());
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> configuredContexts.values()
-                        .stream()
-                        .map(KafkaContext::clusterConfig)
-                        .map(KafkaClusterConfig::clusterKey)
-                        .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
+        awaitKafkaReady();
+    }
+
+    @AfterEach
+    void cleanup() {
+        connectClient.setAdditionalFilter(Optional.empty());
+    }
+
+    @Override
+    protected void deleteStrimziResources() {
+        client.resources(KafkaConnector.class).inAnyNamespace().delete();
+        client.resources(KafkaMirrorMaker2.class).inAnyNamespace().delete();
+        super.deleteStrimziResources();
     }
 
     private void awaitKafkaReady() {
         var request = context.request();
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-            var response = request.get(home + "api/kafkas/" + clusterId);
-            assertEquals(200, response.status(), response.text());
-        });
+        // Playwright objects are not thread-safe: poll on the test thread
+        await().atMost(30, TimeUnit.SECONDS)
+                .pollInSameThread()
+                .untilAsserted(() -> {
+                    var response = request.get(home + "api/kafkas/" + clusterId);
+                    assertEquals(200, response.status(), response.text());
+                });
     }
 
     private String connectorsUrl() {
@@ -237,7 +166,7 @@ class KafkaConnectorsIT implements ClientRequestFilter {
         return page.getByRole(AriaRole.COLUMNHEADER,
                 new Page.GetByRoleOptions().setName(ci(name)));
     }
-
+    
     @Test
     void connectorsPageShowsTableAndExpectedColumns() {
         try (Page page = context.newPage()) {
@@ -328,14 +257,17 @@ class KafkaConnectorsIT implements ClientRequestFilter {
         try (Page page = context.newPage()) {
             page.navigate(connectorsUrl());
 
+            assertThat(connectorLink(page, CONNECTOR_1)).isVisible();
+            assertThat(connectorLink(page, CONNECTOR_2)).isVisible();
+
             Locator filter = page.getByPlaceholder(ci("Filter by name"));
             assertThat(filter).isVisible();
 
             filter.fill(CONNECTOR_1);
             filter.press("Enter");
 
-            assertThat(connectorLink(page, CONNECTOR_1)).isVisible();
             assertThat(connectorLink(page, CONNECTOR_2)).hasCount(0);
+            assertThat(connectorLink(page, CONNECTOR_1)).isVisible();
         }
     }
 }
