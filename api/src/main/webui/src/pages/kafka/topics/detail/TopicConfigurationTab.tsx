@@ -51,21 +51,23 @@ import { apiClient } from '@/api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { hasPrivilege } from '@/utils/privileges';
 
-type SortableColumn = 'property' | 'value';
+type SortableColumn = 'property' | 'source' | 'value';
 
 function formatConfigValue(property: ConfigValue): React.ReactNode {
   switch (property.type) {
     case 'INT':
     case 'LONG':
-      return property.value ? parseInt(property.value, 10).toLocaleString() : '-';
+      return property.value
+        ? parseInt(property.value, 10).toLocaleString()
+        : '-';
     case 'STRING':
       if (property.source === 'STATIC_BROKER_CONFIG') {
         // STATIC_BROKER_CONFIG strings are actually lists in disguise
         return (
           <List isPlain isBordered>
-            {property.value
-              ?.split(',')
-              .map((v, idx) => <ListItem key={idx}>{v || '-'}</ListItem>)}
+            {property.value?.split(',').map((v, idx) => (
+              <ListItem key={idx}>{v || '-'}</ListItem>
+            ))}
           </List>
         );
       }
@@ -73,9 +75,9 @@ function formatConfigValue(property: ConfigValue): React.ReactNode {
     case 'LIST':
       return (
         <List isPlain isBordered>
-          {property.value
-            ?.split(',')
-            .map((v, idx) => <ListItem key={idx}>{v || '-'}</ListItem>)}
+          {property.value?.split(',').map((v, idx) => (
+            <ListItem key={idx}>{v || '-'}</ListItem>
+          ))}
         </List>
       );
     default:
@@ -103,7 +105,10 @@ function NoResultsEmptyState({ onReset }: { onReset: () => void }) {
 
 export function TopicConfigurationTab() {
   const { t } = useTranslation();
-  const { kafkaId, topicId } = useParams<{ kafkaId: string; topicId: string }>();
+  const { kafkaId, topicId } = useParams<{
+    kafkaId: string;
+    topicId: string;
+  }>();
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useTopic(kafkaId, topicId, {
@@ -115,7 +120,9 @@ export function TopicConfigurationTab() {
   const [isDataSourceSelectOpen, setIsDataSourceSelectOpen] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortableColumn>('property');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [isEditing, setIsEditing] = useState<Record<string, 'editing' | 'saving' | undefined>>({});
+  const [isEditing, setIsEditing] = useState<
+    Record<string, 'editing' | 'saving' | undefined>
+  >({});
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -136,9 +143,13 @@ export function TopicConfigurationTab() {
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
     let filtered = allData
-      .filter(([name]) => (propertyFilter ? name.includes(propertyFilter) : true))
+      .filter(([name]) =>
+        propertyFilter ? name.includes(propertyFilter) : true
+      )
       .filter(([, property]) =>
-        selectedDataSources.length > 0 ? selectedDataSources.includes(property.source) : true
+        selectedDataSources.length > 0
+          ? selectedDataSources.includes(property.source)
+          : true
       );
 
     filtered = [...filtered].sort((a, b) => {
@@ -177,15 +188,17 @@ export function TopicConfigurationTab() {
 
   const handleDataSourceToggle = (source: string) => {
     setSelectedDataSources((prev) =>
-      prev.includes(source) ? prev.filter((s) => s !== source) : [...prev, source]
+      prev.includes(source)
+        ? prev.filter((s) => s !== source)
+        : [...prev, source]
     );
   };
 
   const handleSaveProperty = async (name: string, value: string) => {
     if (!kafkaId || !topicId) return;
-    
+
     setIsEditing((prev) => ({ ...prev, [name]: 'saving' }));
-    
+
     try {
       // Call the API to update the topic configuration
       await apiClient.patch(`/api/kafkas/${kafkaId}/topics/${topicId}`, {
@@ -201,10 +214,12 @@ export function TopicConfigurationTab() {
           },
         },
       });
-      
+
       // Invalidate and refetch the topic data
-      await queryClient.invalidateQueries({ queryKey: ['topic', kafkaId, topicId] });
-      
+      await queryClient.invalidateQueries({
+        queryKey: ['topic', kafkaId, topicId],
+      });
+
       setIsEditing((prev) => ({ ...prev, [name]: undefined }));
       setEditValues((prev) => {
         const newValues = { ...prev };
@@ -279,7 +294,8 @@ export function TopicConfigurationTab() {
     );
   }
 
-  const isFiltered = propertyFilter !== '' || selectedDataSources.length !== dataSources.length;
+  const isFiltered =
+    propertyFilter !== '' || selectedDataSources.length !== dataSources.length;
   const showEmptyState = isFiltered && filteredAndSortedData.length === 0;
 
   return (
@@ -290,7 +306,10 @@ export function TopicConfigurationTab() {
             <SearchInput
               placeholder={t('topics.configuration.searchPlaceholder')}
               value={propertyFilter}
-              onChange={(_event: React.FormEvent<HTMLInputElement>, value: string) => setPropertyFilter(value)}
+              onChange={(
+                _event: React.FormEvent<HTMLInputElement>,
+                value: string
+              ) => setPropertyFilter(value)}
               onClear={() => setPropertyFilter('')}
               aria-label={t('topics.configuration.searchPlaceholder')}
             />
@@ -300,13 +319,19 @@ export function TopicConfigurationTab() {
               id="data-source-select"
               isOpen={isDataSourceSelectOpen}
               selected={selectedDataSources}
-              onSelect={(_event: React.MouseEvent<Element, MouseEvent> | undefined, selection: string | number | undefined) =>
-                handleDataSourceToggle(selection as string)}
-              onOpenChange={(isOpen: boolean) => setIsDataSourceSelectOpen(isOpen)}
+              onSelect={(
+                _event: React.MouseEvent<Element, MouseEvent> | undefined,
+                selection: string | number | undefined
+              ) => handleDataSourceToggle(selection as string)}
+              onOpenChange={(isOpen: boolean) =>
+                setIsDataSourceSelectOpen(isOpen)
+              }
               toggle={(toggleRef: React.Ref<HTMLButtonElement>) => (
                 <MenuToggle
                   ref={toggleRef}
-                  onClick={() => setIsDataSourceSelectOpen(!isDataSourceSelectOpen)}
+                  onClick={() =>
+                    setIsDataSourceSelectOpen(!isDataSourceSelectOpen)
+                  }
                   isExpanded={isDataSourceSelectOpen}
                 >
                   {t('topics.configuration.dataSource')} (
@@ -344,13 +369,22 @@ export function TopicConfigurationTab() {
       {showEmptyState ? (
         <NoResultsEmptyState onReset={handleReset} />
       ) : (
-        <Table ouiaId={"topic-configuration-table"} aria-label="Topic configuration table" variant="compact">
+        <Table
+          ouiaId={'topic-configuration-table'}
+          aria-label="Topic configuration table"
+          variant="compact"
+        >
           <Thead>
             <Tr>
               <Th width={40} sort={getSortParams('property')}>
                 {t('topics.configuration.property')}
               </Th>
-              <Th sort={getSortParams('value')}>{t('topics.configuration.value')}</Th>
+              <Th sort={getSortParams('source')}>
+                {t('topics.configuration.source')}
+              </Th>
+              <Th sort={getSortParams('value')}>
+                {t('topics.configuration.value')}
+              </Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -360,12 +394,12 @@ export function TopicConfigurationTab() {
 
               return (
                 <Tr key={name}>
-                  <Td dataLabel={t('topics.configuration.property')} style={{ verticalAlign: 'middle' }}>
+                  <Td
+                    dataLabel={t('topics.configuration.property')}
+                    style={{ verticalAlign: 'middle' }}
+                  >
                     <div>{name}</div>
                     <LabelGroup>
-                      <Label isCompact color="teal">
-                        source={property.source}
-                      </Label>
                       {property.readOnly && (
                         <Label isCompact color="grey">
                           {t('topics.configuration.readOnly')}
@@ -373,15 +407,30 @@ export function TopicConfigurationTab() {
                       )}
                     </LabelGroup>
                   </Td>
-                  <Td dataLabel={t('topics.configuration.value')} style={{ verticalAlign: 'middle' }}>
+                  <Td
+                    dataLabel={t('topics.configuration.source')}
+                    style={{ verticalAlign: 'middle' }}
+                  >
+                    {property.source}
+                  </Td>
+                  <Td
+                    dataLabel={t('topics.configuration.value')}
+                    style={{ verticalAlign: 'middle' }}
+                  >
                     {isEditingRow ? (
                       <FormGroup fieldId={name}>
                         <TextInput
                           id={`property-${name}`}
                           placeholder={property.value}
                           value={editValues[name] ?? property.value}
-                          onChange={(_event: React.FormEvent<HTMLInputElement>, value: string) => {
-                            setEditValues((prev) => ({ ...prev, [name]: value }));
+                          onChange={(
+                            _event: React.FormEvent<HTMLInputElement>,
+                            value: string
+                          ) => {
+                            setEditValues((prev) => ({
+                              ...prev,
+                              [name]: value,
+                            }));
                           }}
                           validated={validated}
                           isDisabled={isEditing[name] === 'saving'}
@@ -401,7 +450,8 @@ export function TopicConfigurationTab() {
                     )}
                   </Td>
                   <Td isActionCell style={{ verticalAlign: 'middle' }}>
-                    {!property.readOnly && hasUpdatePrivilege &&
+                    {!property.readOnly &&
+                      hasUpdatePrivilege &&
                       (isEditingRow ? (
                         <div className="pf-v6-c-inline-edit pf-m-inline-editable">
                           <div className="pf-v6-c-inline-edit__group pf-m-action-group pf-m-icon-group">
@@ -412,7 +462,10 @@ export function TopicConfigurationTab() {
                                 isLoading={isEditing[name] === 'saving'}
                                 isDisabled={isEditing[name] === 'saving'}
                                 onClick={() =>
-                                  handleSaveProperty(name, editValues[name] ?? property.value)
+                                  handleSaveProperty(
+                                    name,
+                                    editValues[name] ?? property.value
+                                  )
                                 }
                                 aria-label={t('common.save')}
                               />
@@ -433,7 +486,10 @@ export function TopicConfigurationTab() {
                           icon={<PencilAltIcon />}
                           variant="plain"
                           onClick={() =>
-                            setIsEditing((prev) => ({ ...prev, [name]: 'editing' }))
+                            setIsEditing((prev) => ({
+                              ...prev,
+                              [name]: 'editing',
+                            }))
                           }
                           aria-label={t('common.edit')}
                         />
