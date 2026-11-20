@@ -12,4 +12,4 @@ patch: {}
 exclude:
   global:
     # CWE-295 TrustAllCertificateManager is non-production code, therefore exclusion is reasonable
-    - ./api/src/main/java/com/github/streamshub/console/api/support/TrustAllCertificateManager.java
+    - ./api/src/main/java/io/streamshub/console/api/support/TrustAllCertificateManager.java

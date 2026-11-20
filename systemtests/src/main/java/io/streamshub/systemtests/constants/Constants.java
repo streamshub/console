@@ -1,0 +1,136 @@
+package io.streamshub.systemtests.constants;
+
+public class Constants {
+    public static final String NGINX_INGRESS_NAMESPACE = "ingress-nginx";
+
+    // As of now for strimzi operator 0.49.0, it is required to convert all resources to `apiVersion: v1`
+    // Best way is to hard-set this value when creating strimzi CRs to avoid long upgrading process described in:
+    // https://strimzi.io/docs/operators/0.49.0/deploying.html#proc-convert-custom-resources-cluster-str
+    public static final String STRIMZI_API_V1 = "v1";
+
+    private Constants() {}
+
+    // --------------------------------
+    // ------------ General -----------
+    // --------------------------------
+    public static final int DEFAULT_ACTION_RETRIES = 10;
+    public static final int LOGOUT_RETRIES = 5;
+    public static final int SELECTOR_RETRIES = 7;
+
+    /**
+     * Commands
+     */
+    public static final String BASH_CMD = "/bin/bash";
+
+    /**
+     * Namespaces
+     */
+    public static final String CO_NAMESPACE = "co-namespace";
+
+    /**
+     * Test values
+     */
+    public static final String VALUE_ATTRIBUTE = "value";
+    public static final String CHECKED_ATTRIBUTE = "checked";
+    public static final int DEFAULT_TOPICS_PER_PAGE = 10;
+
+    // Topic Prefixes
+    public static final String REPLICATED_TOPICS_PREFIX = "replicated";
+    public static final String UNMANAGED_REPLICATED_TOPICS_PREFIX = "unmanaged-replicated";
+    public static final String UNDER_REPLICATED_TOPICS_PREFIX = "underreplicated";
+    public static final String UNAVAILABLE_TOPICS_PREFIX = "unavailable";
+
+    /**
+     * Messages
+     */
+    public static final int MESSAGE_COUNT = 100;
+    public static final int MESSAGE_COUNT_HIGH = 10_000;
+
+    /**
+     *  Kafka
+     */
+    public static final String KAFKA_USER_PREFIX = "ku";
+    public static final String KAFKA_CLUSTER_PREFIX = "kc";
+    public static final String KAFKA_TOPIC_PREFIX = "kt";
+    public static final String KAFKA_CONNECT_CLUSTER_PREFIX = "kcc";
+    public static final String BROKER_ROLE_PREFIX = "brk";
+    public static final String CONTROLLER_ROLE_PREFIX = "ctrl";
+    public static final int REGULAR_BROKER_REPLICAS = 3;
+    public static final int REGULAR_CONTROLLER_REPLICAS = 3;
+    public static final int REGULAR_KAFKA_CONNECT_REPLICAS = 1;
+
+    public static final String CONNECT_BUILD_IMAGE_NAME = "st-connect-build";
+    public static final String DEFAULT_SINK_FILE_PATH = "/tmp/test-file-sink.txt";
+    public static final int CONNECT_SERVICE_PORT = 8083;
+
+    /**
+     * Listeners
+     */
+    public static final String PLAIN_LISTENER_NAME = "plain";
+    public static final String SCRAMSHA_PLAIN_LISTENER_NAME = "scramplain";
+    public static final String SECURE_LISTENER_NAME = "secure";
+
+
+    // --------------------------------
+    // ------------ Console -----------
+    // --------------------------------
+    /**
+     * CRDs
+     */
+    public static final String CONSOLE_INSTANCE = "console-instance";
+
+    /**
+     * OLM
+     */
+    public static final String CONSOLE_OLM_SUBSCRIPTION_NAME = "console-sub";
+
+    /**
+     * Keycloak
+     */
+    public static final String PASSWORD_KEY_NAME = "password"; // NOSONAR - test password
+    public static final String TRUST_STORE_KEY_NAME = "truststore";
+
+    // --------------------------------
+    // ------------- Kroxy ------------
+    // --------------------------------
+    public static final String KAFKA_PROTOCOL_FILTER_PREFIX = "kpf";
+    public static final String KAFKA_PROXY_INGRESS_PREFIX = "kpi";
+    public static final String KAFKA_PROXY_PREFIX = "kp";
+    public static final String KAFKA_SERVICE_PREFIX = "ks";
+    public static final String VIRTUAL_KAFKA_CLUSTER_PREFIX = "vkc";
+
+    public static final int REGULAR_KAFKA_PROXY_REPLICAS = 1;
+
+    public static final String CONFIG_MAP_PREFIX = "cm";
+    public static final String ACL_CONGIF_MAP_RULES_FIELD = "acl-rules";
+
+    // --------------------------------
+    // ------------ Apicurio ----------
+    // --------------------------------
+    public static final String APICURIO_PREFIX = "apicurio";
+    public static final String APICURIO_API_V3_SUFFIX = "/apis/registry/v3";
+    public static final String APICURIO_VALUE_GROUP_ID = "apicurio.value.groupId";
+    public static final String APICURIO_VALUE_ARTIFACT_ID = "apicurio.value.artifactId";
+    public static final String APICURIO_DEFAULT_GROUP = "default";
+    public static final String APICURIO_DEFAULT_ARTIFACT_VERSION = "1";
+    // Artifact
+    public static final String ARTIFACT_TYPE_PROTOBUF = "protobuf";
+    public static final String ARTIFACT_TYPE_AVRO = "avro";
+    public static final String ARTIFACT_TYPE_JSON = "json";
+    public static final String ARTIFACT_TYPE_XML = "xml";
+    public static final String PLAIN_VALUE_TYPE = "Plain";
+    // Content type
+    public static final String CONTENT_TYPE_PROTOBUF = "application/x-protobuf";
+    public static final String CONTENT_TYPE_JSON = "application/json";
+    public static final String CONTENT_TYPE_XML = "application/xml";
+    // Serializers
+    public static final String SERIALIZER_PROTOBUF = "io.apicurio.registry.serde.protobuf.ProtobufKafkaSerializer";
+    public static final String SERIALIZER_AVRO = "io.apicurio.registry.serde.avro.AvroKafkaSerializer";
+    public static final String SERIALIZER_JSON = "io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaSerializer";
+
+    // --------------------------------
+    // ------------ Keycloak ----------
+    // --------------------------------
+    public static final String KEYCLOAK = "keycloak";
+    public static final String POSTGRES = "postgres";
+}

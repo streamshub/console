@@ -1,0 +1,416 @@
+package io.streamshub.console.dependents;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+
+import io.streamshub.console.ReconciliationException;
+import io.streamshub.console.api.v1alpha1.Console;
+import io.streamshub.console.api.v1alpha1.spec.Images;
+import io.streamshub.console.api.v1alpha1.spec.containers.ContainerSpec;
+import io.streamshub.console.api.v1alpha1.spec.containers.ContainerTemplateSpec;
+import io.streamshub.console.api.v1alpha1.spec.containers.Containers;
+import io.streamshub.console.api.v1alpha1.spec.template.ContainerTemplate;
+import io.streamshub.console.api.v1alpha1.spec.template.ContainerTemplate.ImagePullPolicy;
+import io.streamshub.console.api.v1alpha1.spec.template.DeploymentSpecTemplate;
+import io.streamshub.console.api.v1alpha1.spec.template.DeploymentTemplate;
+import io.streamshub.console.api.v1alpha1.spec.template.MetadataTemplate;
+import io.streamshub.console.api.v1alpha1.spec.template.PodSpecTemplate;
+import io.streamshub.console.api.v1alpha1.spec.template.PodTemplate;
+import io.streamshub.console.api.v1alpha1.status.Condition.Reasons;
+import io.streamshub.console.api.v1alpha1.status.Condition.Types;
+import io.streamshub.console.api.v1alpha1.status.ConditionBuilder;
+import io.streamshub.console.dependents.support.ConfigSupport;
+
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.IntOrString;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
+import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
+import io.javaoperatorsdk.operator.api.config.informer.Informer;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
+import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
+
+@ApplicationScoped
+@KubernetesDependent(
+    informer = @Informer(
+        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
+public class ConsoleDeployment extends BaseDeployment {
+
+    public static final String NAME = "console-deployment";
+    static final String ALLOWED_IMAGE_PREFIXES = "console.deployment.allowed-image-prefixes";
+    private static final Predicate<ContainerBuilder> API_CONTAINER = c -> "console-api".equals(c.getName());
+
+    @Inject
+    Logger logger;
+
+    @Inject
+    ConsoleServiceAccount serviceAccount;
+
+    @Inject
+    ConsoleSecret secret;
+
+    @Inject
+    ConsoleTrustBundle trustBundle;
+
+    @Inject
+    ConsoleService service;
+
+    @Inject
+    @ConfigProperty(name = "console.deployment.default-api-image")
+    String defaultAPIImage;
+
+    @Inject
+    @ConfigProperty(name = ALLOWED_IMAGE_PREFIXES)
+    Optional<List<String>> allowedImagePrefixes;
+
+    List<Pattern> allowedImagePatterns;
+
+    @PostConstruct
+    void initAllowedImagePatterns() {
+        allowedImagePatterns = allowedImagePrefixes
+                .map(prefixes -> prefixes.stream().map(ConsoleDeployment::startsWithPattern).toList())
+                .orElseGet(() -> List.of(defaultAllowedPrefix(defaultAPIImage)));
+
+        if (allowedImagePatterns.stream().map(p -> p.matcher(defaultAPIImage)).noneMatch(Matcher::find)) {
+            logger.warnf(
+                    "Configured `%s` of %s blocks use of default API image `%s`",
+                    ALLOWED_IMAGE_PREFIXES,
+                    allowedImagePrefixes.orElseGet(Collections::emptyList),
+                    defaultAPIImage);
+        }
+    }
+
+    /**
+     * The prefix pattern permitted when no allowlist is configured: everything in
+     * the default image up to and including its last {@code /}. An image without a
+     * {@code /} has no such prefix pattern and returning an empty prefix would
+     * permit every image. Therefore, in the case of a default image containing no
+     * {@code /}, this method will return the pattern matching only the default
+     * image name itself.
+     */
+    static Pattern defaultAllowedPrefix(String defaultImage) {
+        int lastSlash = defaultImage.lastIndexOf('/');
+
+        if (lastSlash < 0) {
+            return Pattern.compile('^' + Pattern.quote(defaultImage) + '$');
+        }
+
+        return startsWithPattern(defaultImage.substring(0, lastSlash + 1));
+    }
+
+    static Pattern startsWithPattern(String value) {
+        return Pattern.compile('^' + Pattern.quote(value));
+    }
+
+    public ConsoleDeployment() {
+        super(NAME);
+    }
+
+    @Override
+    protected Deployment desired(Console primary, Context<Console> context) {
+        Deployment desired = load(context, "console.deployment.yaml", Deployment.class);
+        String name = instanceName(primary);
+        String configSecretName = secret.instanceName(primary);
+
+        var template = Optional.ofNullable(primary.getSpec().getDeployment());
+        var metaTemplate = template.map(DeploymentTemplate::getMetadata);
+
+        var podTemplate = template.map(DeploymentTemplate::getSpec).map(DeploymentSpecTemplate::getTemplate);
+        var podMetaTemplate = podTemplate.map(PodTemplate::getMetadata);
+        var podSpecTemplate = podTemplate.map(PodTemplate::getSpec);
+        var podRequiredLabels = Map.of(INSTANCE_LABEL, name);
+        var podRequiredAnnotations = Map.of("streamshub.github.com/dependency-digest",
+                getOptionalAttribute(context, "console-digest", String.class).orElse(DEFAULT_DIGEST));
+        var containerTemplate = podSpecTemplate.map(PodSpecTemplate::getServerContainer);
+
+        // deprecated
+        var containers = Optional.ofNullable(primary.getSpec().getContainers());
+        var templateAPI = containers.map(Containers::getApi).map(ContainerTemplateSpec::getSpec);
+        var images = Optional.ofNullable(primary.getSpec().getImages());
+        var envs = Optional.ofNullable(primary.getSpec().getEnv());
+        warnDeprecations(primary, containers, images, envs);
+
+        String image = containerTemplate.map(ContainerTemplate::getImage)
+                .or(() -> templateAPI.map(ContainerSpec::getImage))
+                .or(() -> images.map(Images::getApi))
+                .orElse(defaultAPIImage);
+        validateImage(image, allowedImagePatterns);
+        String imagePullPolicy = containerTemplate.map(ContainerTemplate::getImagePullPolicy)
+                .map(ImagePullPolicy::value)
+                .orElseGet(() -> pullPolicy(image));
+        var containerResources = containerTemplate.map(ContainerTemplate::getResources)
+                .or(() -> templateAPI.map(ContainerSpec::getResources))
+                .orElse(null);
+
+        // On OpenShift the service CA issues a serving cert for the API Service,
+        // enabling re-encrypt TLS termination. The pod must serve HTTPS in that case.
+        boolean servingCert = ConfigSupport.servingCertificateReencryptTLS(primary, context);
+        boolean tls = servingCert || ConfigSupport.userProvidedPassthroughTLS(primary);
+        String portName = tls ? "https" : "http";
+        int containerPort = tls ? 8443 : 8080;
+        String probeScheme = tls ? "HTTPS" : "HTTP";
+
+        var edit = desired.edit()
+            .editMetadata()
+                .withName(name)
+                .withNamespace(primary.getMetadata().getNamespace())
+                .withLabels(merge(
+                        commonLabels("console"),
+                        metaTemplate.map(MetadataTemplate::getLabels)
+                ))
+                .addToAnnotations(metaTemplate.map(MetadataTemplate::getAnnotations)
+                        .orElseGet(Collections::emptyMap))
+            .endMetadata()
+            .editSpec()
+                .editSelector()
+                    .withMatchLabels(podRequiredLabels)
+                .endSelector()
+                .editTemplate()
+                    .editMetadata()
+                        .addToLabels(merge(
+                                podRequiredLabels,
+                                podMetaTemplate.map(MetadataTemplate::getLabels)
+                        ))
+                        .addToAnnotations(merge(
+                                podRequiredAnnotations,
+                                podMetaTemplate.map(MetadataTemplate::getAnnotations)
+                        ))
+                    .endMetadata()
+                    .editSpec()
+                        .withAffinity(podSpecTemplate
+                                .map(PodSpecTemplate::getAffinity)
+                                .orElse(null))
+                        .withTolerations(podSpecTemplate
+                                .map(PodSpecTemplate::getTolerations)
+                                .orElse(null))
+                        .withTopologySpreadConstraints(podSpecTemplate
+                                .map(PodSpecTemplate::getTopologySpreadConstraints)
+                                .orElse(null))
+                        .withNodeSelector(podSpecTemplate
+                                .map(PodSpecTemplate::getNodeSelector)
+                                .orElse(null))
+                        .withServiceAccountName(serviceAccount.instanceName(primary))
+                        .editMatchingVolume(vol -> "config".equals(vol.getName()))
+                            .editSecret()
+                                .withSecretName(configSecretName)
+                            .endSecret()
+                        .endVolume()
+                        // Set API container image and port options
+                        .editMatchingContainer(API_CONTAINER)
+                            .withImage(image)
+                            .withImagePullPolicy(imagePullPolicy)
+                            .withResources(containerResources)
+                            .withEnv(buildEnvVars(desired, List.of(
+                                    // new way, preferred
+                                    containerTemplate.map(ContainerTemplate::getEnv),
+                                    // deprecated, lower precedence
+                                    templateAPI.map(ContainerSpec::getEnv),
+                                    envs)
+                            ))
+                            .editFirstPort()
+                                .withName(portName)
+                                .withContainerPort(containerPort)
+                            .endPort()
+                            .editStartupProbe()
+                                .editHttpGet()
+                                    .withPort(new IntOrString(portName))
+                                    .withScheme(probeScheme)
+                                .endHttpGet()
+                            .endStartupProbe()
+                            .editLivenessProbe()
+                                .editHttpGet()
+                                    .withPort(new IntOrString(portName))
+                                    .withScheme(probeScheme)
+                                .endHttpGet()
+                            .endLivenessProbe()
+                            .editReadinessProbe()
+                                .editHttpGet()
+                                    .withPort(new IntOrString(portName))
+                                    .withScheme(probeScheme)
+                                .endHttpGet()
+                            .endReadinessProbe()
+                        .endContainer()
+                    .endSpec()
+                .endTemplate()
+            .endSpec();
+
+        // On OpenShift, mount the service-CA-issued serving cert so Quarkus can
+        // terminate TLS for re-encrypt. The cert/key live at /etc/tls and are
+        // referenced by Quarkus TLS configuration. The CA bundle is mounted so the
+        // console can trust the (re-encrypt) HTTPS endpoint of Dex.
+        if (servingCert) {
+            edit = addCertificateDigests(context, mountTrustBundle(primary, mountServingCert(primary, edit)));
+        }
+
+        return edit.build();
+    }
+
+    /**
+     * The serving certificate and CA bundle are only read at startup. Their digests
+     * change the pod template, and so restart the pods, when OpenShift reissues them.
+     */
+    private DeploymentBuilder addCertificateDigests(Context<Console> context, DeploymentBuilder edit) {
+        var digests = new LinkedHashMap<String, String>();
+        getOptionalAttribute(context, service.digestName(), String.class)
+            .ifPresent(digest -> digests.put("streamshub.github.com/tls-digest", digest));
+        getOptionalAttribute(context, trustBundle.digestName(), String.class)
+            .ifPresent(digest -> digests.put("streamshub.github.com/ca-digest", digest));
+
+        return edit
+            .editSpec()
+                .editTemplate()
+                    .editMetadata()
+                        .addToAnnotations(digests)
+                    .endMetadata()
+                .endTemplate()
+            .endSpec();
+    }
+
+    private DeploymentBuilder mountTrustBundle(Console primary, DeploymentBuilder edit) {
+        return edit
+                .editSpec()
+                .editTemplate()
+                    .editSpec()
+                        .addToVolumes(new VolumeBuilder()
+                            .withName("service-ca")
+                            .withNewConfigMap()
+                                .withName(trustBundle.instanceName(primary))
+                            .endConfigMap()
+                            .build())
+                        .editMatchingContainer(API_CONTAINER)
+                            .addToVolumeMounts(new VolumeMountBuilder()
+                                .withName("service-ca")
+                                .withMountPath(ConsoleTrustBundle.MOUNT_PATH)
+                                .withReadOnly(true)
+                                .build())
+                        .endContainer()
+                    .endSpec()
+                .endTemplate()
+            .endSpec();
+    }
+
+    private DeploymentBuilder mountServingCert(Console primary, DeploymentBuilder edit) {
+        return edit
+                .editSpec()
+                .editTemplate()
+                    .editSpec()
+                        .addToVolumes(new VolumeBuilder()
+                            .withName("tls")
+                            .withNewSecret()
+                                .withSecretName(service.servingCertSecretName(primary))
+                            .endSecret()
+                            .build())
+                        .editMatchingContainer(API_CONTAINER)
+                            .addToVolumeMounts(new VolumeMountBuilder()
+                                .withName("tls")
+                                .withMountPath("/etc/tls")
+                                .withReadOnly(true)
+                                .build())
+                        .endContainer()
+                    .endSpec()
+                .endTemplate()
+            .endSpec();
+    }
+    
+    private static Map<String, String> merge(Map<String, String> required, Optional<Map<String, String>> configured) {
+        Map<String, String> result = new LinkedHashMap<>(required);
+        configured.ifPresent(values -> values.forEach(result::putIfAbsent));
+        return result;
+    }
+
+    private static List<EnvVar> buildEnvVars(Deployment base, List<Optional<List<EnvVar>>> configured) {
+        List<EnvVar> envVars = new ArrayList<>(base.getSpec().getTemplate().getSpec().getContainers().get(0).getEnv());
+
+        configured.stream()
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .flatMap(Collection::stream)
+            .forEach(envVar -> {
+                String configuredName = envVar.getName();
+
+                if (envVars.stream().map(EnvVar::getName).noneMatch(configuredName::equals)) {
+                    envVars.add(envVar);
+                }
+            });
+
+        return envVars;
+    }
+
+    static void validateImage(String image, List<Pattern> allowedPatterns) {
+        if (allowedPatterns.stream().map(p -> p.matcher(image)).noneMatch(Matcher::find)) {
+            throw new ReconciliationException(
+                "Console API image '%s' is not permitted. Allowed patterns: %s"
+                    .formatted(image, allowedPatterns));
+        }
+    }
+
+    private static String pullPolicy(String image) {
+        return image.contains("sha256:")
+                ? ImagePullPolicy.IF_NOT_PRESENT.value()
+                : ImagePullPolicy.ALWAYS.value();
+    }
+
+    private static void warnDeprecations(Console primary, Optional<?> containers, Optional<?> images, Optional<?> envs) {
+        StringBuilder deprecationWarnings = new StringBuilder();
+
+        if (containers.isPresent()) {
+            deprecationWarnings.append("""
+                    spec.containers is deprecated and will be removed \
+                    in a future release. Please use \
+                    spec.deployment.spec.template.spec.serverContainer \
+                    to configure the server container.""");
+        }
+
+        if (images.isPresent()) {
+            if (!deprecationWarnings.isEmpty()) {
+                deprecationWarnings.append(' ');
+            }
+
+            deprecationWarnings.append("""
+                    spec.images is deprecated and will be removed \
+                    in a future release. Please use \
+                    spec.deployment.spec.template.spec.serverContainer.image \
+                    to configure the server container image.""");
+        }
+
+        if (envs.isPresent()) {
+            if (!deprecationWarnings.isEmpty()) {
+                deprecationWarnings.append(' ');
+            }
+
+            deprecationWarnings.append("""
+                    spec.env is deprecated and will be removed \
+                    in a future release. Please use \
+                    spec.deployment.spec.template.spec.serverContainer.env \
+                    to configure the server container.""");
+        }
+
+        if (!deprecationWarnings.isEmpty()) {
+            primary.getOrCreateStatus().updateCondition(new ConditionBuilder()
+                    .withType(Types.WARNING)
+                    .withStatus("True")
+                    .withLastTransitionTime(Instant.now().toString())
+                    .withReason(Reasons.DEPRECATED_CONFIGURATION)
+                    .withMessage(deprecationWarnings.toString())
+                    .build());
+        }
+    }
+}
