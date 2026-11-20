@@ -1,0 +1,395 @@
+package io.streamshub.console.api.support;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.common.config.SaslConfigs;
+import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.streamshub.console.api.security.ConsoleAuthenticationMechanism;
+import io.streamshub.console.api.support.serdes.ForceCloseable;
+import io.streamshub.console.api.support.serdes.MultiformatDeserializer;
+import io.streamshub.console.api.support.serdes.MultiformatSerializer;
+import io.streamshub.console.config.KafkaClusterConfig;
+import io.streamshub.console.config.SchemaRegistryConfig;
+
+import io.apicurio.registry.resolver.client.RegistryClientFacade;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.kafka.KafkaSpec;
+import io.strimzi.api.kafka.model.kafka.KafkaStatus;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustom;
+import io.strimzi.kafka.oauth.client.ClientConfig;
+
+public class KafkaContext implements Closeable {
+
+    public static final KafkaContext EMPTY = new KafkaContext(null, null, Collections.emptyMap(), null);
+    private static final Logger LOGGER = Logger.getLogger(KafkaContext.class);
+    private static final Pattern OAUTH_TOKEN_URI_PATTERN = Pattern.compile(
+            Pattern.quote(ClientConfig.OAUTH_TOKEN_ENDPOINT_URI) + "=\"([^\"]+)\"");
+
+    /**
+     * Container type to manager Kafka contexts (cluster configurations and
+     * connections) created and used for API requests. This class synchronizes
+     * access to ensure connections are only closed when no longer used to service
+     * requests.
+     */
+    public static class Manager {
+        private static final Logger LOGGER = Logger.getLogger(Manager.class);
+        private final Map<String, KafkaContext> contexts = new ConcurrentHashMap<>();
+
+        public Map<String, KafkaContext> contexts() {
+            return Collections.unmodifiableMap(contexts);
+        }
+
+        /**
+         * Obtains a context by ID and marks it as "in use".
+         */
+        public synchronized KafkaContext acquire(String clusterId) {
+            KafkaContext ctx = contexts.get(clusterId);
+
+            if (ctx != null) {
+                ctx.users.incrementAndGet();
+            }
+
+            return ctx;
+        }
+
+        /**
+         * Removes a context by ID. Underlying connections will be closed if the context
+         * is not in use. Used contexts will be closed later when they are no longer
+         * needed by a request and they are {@link #release(KafkaContext) released}.
+         */
+        public synchronized void remove(String clusterId) {
+            KafkaContext previous = contexts.remove(clusterId);
+
+            if (previous != null && !previous.hasUsers()) {
+                previous.close();
+            }
+        }
+
+        /**
+         * Replaces a context, typically in response to changes in configuration due to
+         * updates in the associated Strimzi Kafka CR. Underlying connections will be
+         * closed if the context is not in use. Used contexts will be closed later when
+         * they are no longer needed by a request and they are
+         * {@link #release(KafkaContext) released}.
+         */
+        public synchronized void replace(String clusterId, String clusterKey, KafkaContext ctx) {
+            KafkaContext previous = contexts.put(clusterId, ctx);
+
+            if (previous == null) {
+                LOGGER.infof("Added KafkaContext for cluster %s, id=%s, global=%s", clusterKey, clusterId, ctx.admin != null);
+            } else {
+                var closed = false;
+                var users = previous.userCount();
+
+                if (!previous.hasUsers()) {
+                    previous.close();
+                    closed = true;
+                }
+
+                LOGGER.infof("Replaced KafkaContext for cluster %s, id=%s, global=%s, users=%d, closed=%s",
+                        clusterKey, clusterId, previous.admin() != null, users, closed);
+            }
+        }
+
+        /**
+         * Release the provided context (decrement its user count) and close it if not
+         * in use by any other requests.
+         */
+        public synchronized void release(KafkaContext ctx) {
+            if (ctx.applicationScoped()) {
+                ctx.users.decrementAndGet();
+            }
+
+            if (!contexts.values().contains(ctx)) {
+                var clusterKey = ctx.clusterConfig().clusterKey();
+
+                if (ctx.hasUsers()) {
+                    LOGGER.infof("Out-of-date KafkaContext still has %d users: %s", ctx.userCount(), clusterKey);
+                } else {
+                    if (ctx.applicationScoped()) {
+                        LOGGER.infof("Closing out-of-date KafkaContext: %s", clusterKey);
+                    } else {
+                        LOGGER.debugf("Closing request-scoped KafkaContext: %s", clusterKey);
+                    }
+
+                    ctx.close();
+                }
+            }
+        }
+    }
+
+    final AtomicInteger users = new AtomicInteger(0);
+    final KafkaClusterConfig clusterConfig;
+    final Kafka resource;
+    final Map<Class<?>, Map<String, Object>> configs;
+    final Admin admin;
+    boolean applicationScoped;
+    final HttpAuthenticationMechanism formAuthentication;
+    SchemaRegistryContext schemaRegistryContext;
+    PrometheusAPI prometheus;
+
+    public KafkaContext(KafkaClusterConfig clusterConfig, Kafka resource, Map<Class<?>, Map<String, Object>> configs, Admin admin) {
+        this.clusterConfig = clusterConfig;
+        this.resource = resource;
+        this.configs = Map.copyOf(configs);
+        this.admin = admin;
+        this.applicationScoped = true;
+
+        if (clusterConfig != null && admin == null) {
+            String id = clusterId(clusterConfig, Optional.ofNullable(resource));
+            this.formAuthentication = ConsoleAuthenticationMechanism.form(id);
+        } else {
+            this.formAuthentication = null;
+        }
+    }
+
+    public KafkaContext(KafkaContext other, Admin admin) {
+        this(other.clusterConfig, other.resource, other.configs, admin);
+        this.applicationScoped = false;
+        this.schemaRegistryContext = other.schemaRegistryContext;
+        this.prometheus = other.prometheus;
+    }
+
+    public static String clusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
+        return Optional.ofNullable(clusterConfig.getId())
+                .or(() -> kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId))
+                .orElseGet(clusterConfig::clusterKeyEncoded);
+    }
+
+    public boolean hasUsers() {
+        return users.get() > 0;
+    }
+
+    public int userCount() {
+        return users.get();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof KafkaContext)) {
+            return false;
+        }
+
+        KafkaContext other = (KafkaContext) obj;
+        return Objects.equals(clusterConfig, other.clusterConfig)
+                && Objects.equals(resource, other.resource)
+                && Objects.equals(configs, other.configs)
+                && Objects.equals(admin, other.admin);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(clusterConfig, resource, configs, admin);
+    }
+
+    @Override
+    public void close() {
+        if (admin != null) {
+            admin.close();
+        }
+        /*
+         * Do not close the registry context when the KafkaContext has client-provided
+         * credentials. I.e., only close when the context is global (with configured
+         * credentials).
+         */
+        if (applicationScoped && schemaRegistryContext != null) {
+            try {
+                schemaRegistryContext.close();
+            } catch (IOException e) {
+                LOGGER.warnf("Exception closing schema registry context: %s", e.getMessage());
+            }
+        }
+    }
+
+    public String clusterId() {
+        return clusterId(clusterConfig, Optional.ofNullable(resource));
+    }
+
+    public KafkaClusterConfig clusterConfig() {
+        return clusterConfig;
+    }
+
+    public Kafka resource() {
+        return resource;
+    }
+
+    public Map<Class<?>, Map<String, Object>> configs() {
+        return configs;
+    }
+
+    public Map<String, Object> configs(Class<?> type) {
+        return configs.get(type);
+    }
+
+    public Admin admin() {
+        return admin;
+    }
+
+    public boolean applicationScoped() {
+        return applicationScoped;
+    }
+
+    public HttpAuthenticationMechanism formAuthentication() {
+        return formAuthentication;
+    }
+
+    public void schemaRegistryClient(RegistryClientFacade registryClient, SchemaRegistryConfig config, ObjectMapper objectMapper) {
+        schemaRegistryContext = new SchemaRegistryContext(registryClient, config, objectMapper);
+    }
+
+    public SchemaRegistryContext schemaRegistryContext() {
+        return schemaRegistryContext;
+    }
+
+    public void prometheus(PrometheusAPI prometheus) {
+        this.prometheus = prometheus;
+    }
+
+    public PrometheusAPI prometheus() {
+        return prometheus;
+    }
+
+    public String saslMechanism(Class<?> clientType) {
+        return configs(clientType).get(SaslConfigs.SASL_MECHANISM) instanceof String auth ? auth : "";
+    }
+
+    public boolean hasCredentials(Class<?> clientType) {
+        return configs(clientType).get(SaslConfigs.SASL_JAAS_CONFIG) instanceof String;
+    }
+
+    public Optional<String> tokenUrl() {
+        return Optional.ofNullable(clusterConfig.getProperties().get(ClientConfig.OAUTH_TOKEN_ENDPOINT_URI))
+            .or(() -> Optional.ofNullable(resource())
+                    .map(Kafka::getSpec)
+                    .map(KafkaSpec::getKafka)
+                    .map(KafkaClusterSpec::getListeners)
+                    .map(Collection::stream)
+                    .orElseGet(Stream::empty)
+                    .filter(listener -> listener.getName().equals(clusterConfig.getListener()))
+                    .findFirst()
+                    .map(GenericKafkaListener::getAuth)
+                    .filter(KafkaListenerAuthenticationCustom.class::isInstance)
+                    .map(KafkaListenerAuthenticationCustom.class::cast)
+                    .map(KafkaContext::tokenUrlCustom));
+    }
+
+    private static String tokenUrlCustom(KafkaListenerAuthenticationCustom custom) {
+        for (var entry : custom.getListenerConfig().entrySet()) {
+            if (entry.getKey().endsWith(".sasl.jaas.config")) {
+                String jaasConfig = entry.getValue().toString();
+                Matcher tokenUriMatcher = OAUTH_TOKEN_URI_PATTERN.matcher(jaasConfig);
+
+                if (tokenUriMatcher.find()) {
+                    return tokenUriMatcher.group(1);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public String securityResourcePath(String subresource) {
+        return "kafkas/" + clusterId() + '/' + subresource;
+    }
+
+    public String auditDisplayResourcePath(String subresource) {
+        return "kafkas/[" + clusterConfig.clusterKey() + "]/" + subresource;
+    }
+
+    /**
+     * The SchemaRegistryContext contains a per-Kafka registry client
+     * and key/value SerDes classes to be used to handle message browsing.
+     *
+     * The client and SerDes instances will be kept open and reused until
+     * the parent KafkaContext is disposed of at application shutdown.
+     */
+    public class SchemaRegistryContext implements Closeable {
+        private final SchemaRegistryConfig config;
+        private final RegistryClientFacade registryClient;
+        private final MultiformatDeserializer keyDeserializer;
+        private final MultiformatDeserializer valueDeserializer;
+        private final MultiformatSerializer keySerializer;
+        private final MultiformatSerializer valueSerializer;
+
+        SchemaRegistryContext(RegistryClientFacade registryClient, SchemaRegistryConfig config, ObjectMapper objectMapper) {
+            this.config = config;
+            this.registryClient = registryClient;
+
+            keyDeserializer = new MultiformatDeserializer(registryClient, objectMapper);
+            keyDeserializer.configure(configs(Consumer.class), true);
+
+            valueDeserializer = new MultiformatDeserializer(registryClient, objectMapper);
+            valueDeserializer.configure(configs(Consumer.class), false);
+
+            keySerializer = new MultiformatSerializer(registryClient, objectMapper);
+            keySerializer.configure(configs(Producer.class), true);
+
+            valueSerializer = new MultiformatSerializer(registryClient, objectMapper);
+            valueSerializer.configure(configs(Producer.class), false);
+        }
+
+        public SchemaRegistryConfig getConfig() {
+            return config;
+        }
+
+        public RegistryClientFacade registryClient() {
+            return registryClient;
+        }
+
+        public MultiformatDeserializer keyDeserializer() {
+            return keyDeserializer;
+        }
+
+        public MultiformatDeserializer valueDeserializer() {
+            return valueDeserializer;
+        }
+
+        public MultiformatSerializer keySerializer() {
+            return keySerializer;
+        }
+
+        public MultiformatSerializer valueSerializer() {
+            return valueSerializer;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (registryClient != null) {
+                // nothing to close otherwise
+                closeOptionally("key deserializer", keyDeserializer);
+                closeOptionally("value deserializer", valueDeserializer);
+                closeOptionally("key serializer", keySerializer);
+                closeOptionally("value serializer", valueSerializer);
+            }
+        }
+
+        private void closeOptionally(String name, ForceCloseable closeable) {
+            if (closeable != null) {
+                try {
+                    closeable.forceClose();
+                } catch (Exception e) {
+                    LOGGER.infof("Exception closing resource %s: %s", name, e.getMessage());
+                }
+            }
+        }
+    }
+}
