@@ -38,6 +38,10 @@ import {
 import { SearchIcon } from '@patternfly/react-icons';
 import { useNodeConfig } from '@/api/hooks/useNodes';
 import { ConfigValue } from '@/api/types';
+import {
+  ConfigDocumentation,
+  useExpandedConfigRows,
+} from '@/components/kafka/configs/ConfigDocumentation';
 
 type SortableColumn = 'property' | 'value';
 
@@ -93,7 +97,10 @@ export function NodeConfigurationTab() {
   const { t } = useTranslation();
   const { kafkaId, nodeId } = useParams<{ kafkaId: string; nodeId: string }>();
 
-  const { data, isLoading, error } = useNodeConfig(kafkaId, nodeId);
+  const { data, isLoading, error } = useNodeConfig(kafkaId, nodeId, {
+    includeDocumentation: true,
+  });
+  const { expandedRows, toggleRow } = useExpandedConfigRows();
 
   const [propertyFilter, setPropertyFilter] = useState('');
   const [selectedDataSources, setSelectedDataSources] = useState<string[]>([]);
@@ -142,13 +149,20 @@ export function NodeConfigurationTab() {
     }
   };
 
+  const sortableColumnIndices: Record<SortableColumn, number> = {
+    property: 1,
+    value: 2,
+  };
+
+  const sortBy = {
+    index: sortableColumnIndices[sortColumn],
+    direction: sortDirection,
+  };
+
   const getSortParams = (column: SortableColumn): ThProps['sort'] => ({
-    sortBy: {
-      index: 0,
-      direction: sortColumn === column ? sortDirection : undefined,
-    },
+    sortBy,
     onSort: () => handleSort(column),
-    columnIndex: 0,
+    columnIndex: sortableColumnIndices[column],
   });
 
   const handleReset = useCallback(() => {
@@ -271,34 +285,51 @@ export function NodeConfigurationTab() {
         <Table ouiaId={"node-configuration-listing"} aria-label="Node configuration table" variant="compact">
           <Thead>
             <Tr>
+              <Th aria-label={t('topics.configuration.expandRow')} />
               <Th width={40} sort={getSortParams('property')}>
                 {t('topics.configuration.property')}
               </Th>
               <Th sort={getSortParams('value')}>{t('topics.configuration.value')}</Th>
             </Tr>
           </Thead>
-          <Tbody>
-            {filteredAndSortedData.map(([name, property]) => (
-              <Tr key={name}>
-                <Td dataLabel={t('topics.configuration.property')} style={{ verticalAlign: 'middle' }}>
-                  <div>{name}</div>
-                  <LabelGroup>
-                    <Label isCompact color="teal">
-                      source={property.source}
-                    </Label>
-                    {property.readOnly && (
-                      <Label isCompact color="grey">
-                        {t('topics.configuration.readOnly')}
+          {filteredAndSortedData.map(([name, property], rowIndex) => {
+            const isExpanded = expandedRows.has(name);
+
+            return (
+              <Tbody key={name} isExpanded={isExpanded}>
+                <Tr>
+                  <Td
+                    expand={{
+                      rowIndex,
+                      isExpanded,
+                      onToggle: () => toggleRow(name),
+                    }}
+                  />
+                  <Td dataLabel={t('topics.configuration.property')} style={{ verticalAlign: 'middle' }}>
+                    <div>{name}</div>
+                    <LabelGroup>
+                      <Label isCompact color="teal">
+                        source={property.source}
                       </Label>
-                    )}
-                  </LabelGroup>
-                </Td>
-                <Td dataLabel={t('topics.configuration.value')} style={{ verticalAlign: 'middle' }}>
-                  {formatConfigValue(property)}
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
+                      {property.readOnly && (
+                        <Label isCompact color="grey">
+                          {t('topics.configuration.readOnly')}
+                        </Label>
+                      )}
+                    </LabelGroup>
+                  </Td>
+                  <Td dataLabel={t('topics.configuration.value')} style={{ verticalAlign: 'middle' }}>
+                    {formatConfigValue(property)}
+                  </Td>
+                </Tr>
+                <ConfigDocumentation
+                  documentation={property.documentation}
+                  colSpan={3}
+                  isExpanded={isExpanded}
+                />
+              </Tbody>
+            );
+          })}
         </Table>
       )}
     </PageSection>

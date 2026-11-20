@@ -41,7 +41,9 @@ export function GroupDetailPage() {
   }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { data: group, isLoading, error } = useGroup(kafkaId, groupId);
+  const { data: group, isLoading, error } = useGroup(kafkaId, groupId, {
+    includeDocumentation: true,
+  });
 
   const groupName = group?.attributes.groupId || groupId || '';
   usePageTitle(groupName || undefined);

@@ -40,6 +40,7 @@ import jakarta.ws.rs.core.Response.Status;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AlterConfigOp;
 import org.apache.kafka.clients.admin.ConfigEntry;
+import org.apache.kafka.clients.admin.DescribeConfigsOptions;
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
 import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeLogDirsResult;
@@ -1394,8 +1395,9 @@ class TopicsResourceIT {
         };
 
         AdminClientSpy.install(adminClient -> {
-            // Mock describeTopics
-            doAnswer(describeConfigsFailed).when(adminClient).describeConfigs(anyCollection());
+            // Mock describeConfigs
+            doAnswer(describeConfigsFailed).when(adminClient)
+                .describeConfigs(anyCollection(), any(DescribeConfigsOptions.class));
         });
 
         whenRequesting(req -> req

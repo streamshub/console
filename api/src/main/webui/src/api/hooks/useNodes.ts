@@ -4,6 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../client';
+import { CONFIG_DOCUMENTATION_FIELDS } from '../configFields';
 import {
   NodeConfigResponse,
   Node,
@@ -39,16 +40,26 @@ export function useNodes(
  */
 export function useNodeConfig(
   kafkaId: string | undefined,
-  nodeId: string | undefined
+  nodeId: string | undefined,
+  params?: {
+    includeDocumentation?: boolean;
+  }
 ) {
   return useQuery({
-    queryKey: ['nodeConfig', kafkaId, nodeId],
+    queryKey: ['nodeConfig', kafkaId, nodeId, params?.includeDocumentation],
     queryFn: async () => {
       if (!kafkaId || !nodeId) {
         throw new Error('Kafka ID and Node ID are required');
       }
 
-      const path = `/api/kafkas/${kafkaId}/nodes/${nodeId}/configs`;
+      const searchParams = new URLSearchParams();
+
+      if (params?.includeDocumentation) {
+        searchParams.set('fields[configs]', CONFIG_DOCUMENTATION_FIELDS);
+      }
+
+      const queryString = searchParams.toString();
+      const path = `/api/kafkas/${kafkaId}/nodes/${nodeId}/configs${queryString ? `?${queryString}` : ''}`;
 
       return apiClient.get<NodeConfigResponse>(path);
     },

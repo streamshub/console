@@ -1,5 +1,6 @@
 package io.streamshub.console.api.model;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -8,6 +9,7 @@ import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -17,7 +19,32 @@ import io.streamshub.console.api.model.jsonapi.None;
 
 @Schema(name = "ConfigAttributes")
 @JsonInclude(Include.NON_NULL)
+@JsonFilter(ConfigEntry.FIELDS_PARAM)
 public class ConfigEntry {
+
+    public static final String API_TYPE = "configs";
+    public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
+
+    public static final class Fields {
+        public static final String VALUE = "value";
+        public static final String SOURCE = "source";
+        public static final String SENSITIVE = "sensitive";
+        public static final String READ_ONLY = "readOnly";
+        public static final String TYPE = "type";
+        public static final String DOCUMENTATION = "documentation";
+
+        public static final String DEFAULT = VALUE +
+                ", " + SOURCE +
+                ", " + SENSITIVE +
+                ", " + READ_ONLY +
+                ", " + TYPE;
+
+        public static final List<String> DEFAULT_FIELDS = List.of(DEFAULT.split(", "));
+
+        private Fields() {
+            // Prevent instances
+        }
+    }
 
     public static class ConfigResponse extends JsonApiRootData<ConfigResource> {
         public ConfigResponse(Map<String, ConfigEntry> data) {
@@ -31,7 +58,7 @@ public class ConfigEntry {
     @Schema(name = "Config")
     public static final class ConfigResource extends JsonApiResource<Map<String, ConfigEntry>, None> {
         public ConfigResource(Map<String, ConfigEntry> data) {
-            super(null, "configs", data);
+            super(null, ConfigEntry.API_TYPE, data);
         }
     }
 

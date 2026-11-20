@@ -39,6 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
+import io.streamshub.console.api.model.ConfigEntry;
 import io.streamshub.console.api.service.MetricsService;
 import io.streamshub.console.api.support.KafkaContext;
 import io.streamshub.console.config.ConsoleConfig;
@@ -84,6 +85,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -620,7 +622,20 @@ class NodesResourceIT implements ClientRequestFilter {
                             hasKey("source"),
                             hasKey("sensitive"),
                             hasKey("readOnly"),
-                            hasKey("type"))));
+                            hasKey("type"))))
+            .body("data.attributes.findAll { it }.collect { it.value }",
+                    everyItem(not(hasKey("documentation"))));
+    }
+
+    @Test
+    void testDescribeConfigsWithDocumentation() {
+        whenRequesting(req -> req
+                .param(ConfigEntry.FIELDS_PARAM, ConfigEntry.Fields.DEFAULT + "," + ConfigEntry.Fields.DOCUMENTATION)
+                .get("{nodeId}/configs", clusterId, "0"))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data", not(anEmptyMap()))
+            .body("data.attributes.'log.dirs'.documentation", notNullValue());
     }
 
     @Test

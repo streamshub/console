@@ -65,10 +65,9 @@ export function KafkaLayout() {
   );
 
   // Fetch group data if we're on a group detail page
-  const { data: groupData } = useGroup(
-    kafkaId,
-    groupId,
-  );
+  const { data: groupData } = useGroup(kafkaId, groupId, {
+    includeDocumentation: true,
+  });
 
   const { data: connectorData } = useConnector(
     connectorId,
