@@ -164,10 +164,9 @@ class KafkaConnectorsIT extends BaseKafkaIT implements ClientRequestFilter {
 
     private static Locator columnHeader(Page page, String name) {
         return page.getByRole(AriaRole.COLUMNHEADER,
-                new Page.GetByRoleOptions().setName(
-                        Pattern.compile("^" + Pattern.quote(name) + "$", Pattern.CASE_INSENSITIVE)));
+                new Page.GetByRoleOptions().setName(ci(name)));
     }
-
+    
     @Test
     void connectorsPageShowsTableAndExpectedColumns() {
         try (Page page = context.newPage()) {
