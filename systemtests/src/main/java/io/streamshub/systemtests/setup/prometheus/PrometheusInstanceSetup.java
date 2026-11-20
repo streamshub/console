@@ -1,0 +1,89 @@
+package io.streamshub.systemtests.setup.prometheus;
+
+import io.streamshub.systemtests.constants.Labels;
+import io.streamshub.systemtests.exceptions.SetupException;
+import io.streamshub.systemtests.logs.LogWrapper;
+import io.streamshub.systemtests.utils.SetupUtils;
+import io.streamshub.systemtests.utils.WaitUtils;
+import io.streamshub.systemtests.utils.resourceutils.ResourceOrder;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.skodjob.kubetest4j.KubeTestEnv;
+import io.skodjob.kubetest4j.resources.KubeResourceManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
+public class PrometheusInstanceSetup {
+    private static final Logger LOGGER = LogWrapper.getLogger(PrometheusInstanceSetup.class);
+    private static final String PROMETHEUS_INSTANCE_NAME = "console-prometheus";
+    private static final String PROMETHEUS_INSTANCE_EXAMPLES = KubeTestEnv.USER_PATH + "/../examples/prometheus";
+    private List<HasMetadata> allResources = new ArrayList<>();
+
+    private final String deploymentNamespace;
+    private final String deploymentName;
+
+    public PrometheusInstanceSetup(String namespace) {
+        this.deploymentNamespace = namespace;
+        this.deploymentName = PROMETHEUS_INSTANCE_NAME;
+
+        try {
+            Path directory = Paths.get(PROMETHEUS_INSTANCE_EXAMPLES);
+            LOGGER.debug("Scanning Prometheus instance example YAMLs in '{}'", directory);
+            try (Stream<Path> paths = Files.list(directory)) {
+                paths.filter(Files::isRegularFile)
+                     .filter(path -> path.toString().endsWith(".yaml") || path.toString().endsWith(".yml"))
+                     .forEach(path -> {
+                         try (InputStream stream = Files.newInputStream(path)) {
+                             List<HasMetadata> resources = KubeResourceManager.get()
+                                 .kubeClient()
+                                 .getClient()
+                                 .load(stream)
+                                 .items();
+                             allResources.addAll(resources);
+                         } catch (IOException e) {
+                             throw new UncheckedIOException(e);
+                         }
+                     });
+            }
+        } catch (IOException e) {
+            throw new SetupException("Unable to parse prometheus examples: " + e.getMessage());
+        }
+
+        allResources = ResourceOrder.sort(allResources);
+        LOGGER.info("Loaded {} resources from Prometheus instance example YAMLs", allResources.size());
+        preparePrometheusCrs();
+    }
+
+    private void preparePrometheusCrs() {
+        LOGGER.debug("Setting namespace '{}' on {} Prometheus instance resources", deploymentNamespace, allResources.size());
+        allResources.forEach(resource -> {
+            SetupUtils.setNamespaceOnNamespacedResources(resource, deploymentNamespace);
+            SetupUtils.fixClusterRoleBindingNamespace(resource, deploymentNamespace);
+        });
+    }
+
+    public void setup() {
+        LOGGER.info("Deploying Prometheus instance '{}' in namespace '{}'", deploymentName, deploymentNamespace);
+        allResources.forEach(resource -> KubeResourceManager.get().createOrUpdateResourceWithoutWait(resource));
+        // Additional check that Prometheus pod is running
+        LOGGER.debug("Waiting for Prometheus instance pod to become ready and stable in namespace '{}'", deploymentNamespace);
+        WaitUtils.waitForPodsReadyAndStable(deploymentNamespace, Labels.getPrometheusInstanceLabel(deploymentName), 1, true);
+        LOGGER.info("Prometheus instance '{}' is ready in namespace '{}'", deploymentName, deploymentNamespace);
+    }
+
+    public String getName() {
+        return this.deploymentName;
+    }
+
+    public String getPrometheusServerUrl() {
+        return "http://" + this.deploymentName + "." + this.deploymentNamespace + ".svc.cluster.local:9090";
+    }
+}
