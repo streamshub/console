@@ -806,8 +806,15 @@ class RecordsResourceSseIT {
         assertThat(result.done().getString("reason"), is(equalTo("complete")));
     }
 
+    /**
+     * Receives records from the stream, closes the client-side source, verifies that the
+     * records received before closing are valid, and waits for the stream to be cleaned up.
+     * A small topic may finish naturally before the client's close reaches the server, so no
+     * claim is made about server-side cancellation here; that is covered by a deterministic
+     * service-level test.
+     */
     @Test
-    void testStreamRecordsClientCancellationStopsReceivingMoreRecords() throws InterruptedException {
+    void testStreamRecordsClientClosesStreamAfterReceivingRecords() throws InterruptedException {
         final String topicName = UUID.randomUUID().toString();
         String[] values = new String[20];
         for (int i = 0; i < values.length; i++) {
@@ -847,9 +854,6 @@ class RecordsResourceSseIT {
         // Verify that initial records were received prior to cancellation
         assertThat(receivedRecords, is(not(empty())));
         receivedRecords.forEach(rec -> assertThat(rec.getString("type"), is(equalTo("records"))));
-
-        // The client closed the stream before receiving the terminal "done" event
-        assertThat(receivedEvents, not(hasItem("done")));
     }
 
     private void assertInvalidQueryParameter(String topicId, Map<String, Object> params, String parameter) {
