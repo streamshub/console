@@ -165,7 +165,6 @@ export function ConfigurationTable({
 
       const directed = sortDirection === 'asc' ? comparison : -comparison;
 
-      // Break ties by the default order so the result is stable
       if (directed === 0 && sortColumn !== 'property') {
         return byName(a[0], b[0]);
       }

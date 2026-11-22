@@ -105,7 +105,12 @@ const withGroup =
 
 const meta = {
   component: GroupConfigurationTab,
-  decorators: [withGroup(configs)],
+  decorators: [
+    (Story, context) =>
+      withGroup(
+        (context.parameters.groupConfigs as Record<string, unknown>) ?? configs
+      )(Story),
+  ],
 } satisfies Meta<typeof GroupConfigurationTab>;
 
 export default meta;
@@ -114,12 +119,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const SortBySourceUsesSourceValues: Story = {
-  decorators: [],
-  parameters: {},
-  render: () => {
-    const Wrapped = withGroup(sortableConfigs)(GroupConfigurationTab);
-    return Wrapped;
-  },
+  parameters: { groupConfigs: sortableConfigs },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const sourceHeader = await canvas.findByRole('columnheader', {
@@ -144,8 +144,8 @@ export const SortBySourceUsesSourceValues: Story = {
     expect(propertyNames(canvasElement)).toEqual([
       'd.static',
       'c.dynamic',
-      'b.default',
       'a.default',
+      'b.default',
     ]);
   },
 };

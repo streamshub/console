@@ -174,8 +174,8 @@ export const SortBySourceUsesSourceValues: Story = {
     expect(propertyNames(canvasElement)).toEqual([
       'd.static',
       'c.dynamic',
-      'b.default',
       'a.default',
+      'b.default',
     ]);
   },
 };
