@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'; // or '@storybook/react'
 import { MemoryRouter, Route, Routes } from 'react-router';
+import { expect, userEvent, within } from 'storybook/test';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TopicConfigurationTab } from './TopicConfigurationTab';
 
@@ -37,6 +38,43 @@ const configs = {
   },
 };
 
+const sortableConfigs = {
+  'd.static': {
+    type: 'STRING',
+    value: '3',
+    source: 'STATIC_BROKER_CONFIG',
+    sensitive: false,
+    readOnly: false,
+  },
+  'b.default': {
+    type: 'STRING',
+    value: '4',
+    source: 'DEFAULT_CONFIG',
+    sensitive: false,
+    readOnly: false,
+  },
+  'c.dynamic': {
+    type: 'STRING',
+    value: '1',
+    source: 'DYNAMIC_TOPIC_CONFIG',
+    sensitive: false,
+    readOnly: false,
+  },
+  'a.default': {
+    type: 'STRING',
+    value: '2',
+    source: 'DEFAULT_CONFIG',
+    sensitive: false,
+    readOnly: false,
+  },
+};
+
+function propertyNames(canvasElement: HTMLElement): string[] {
+  return Array.from(canvasElement.querySelectorAll('tbody tr')).map((row) =>
+    row.querySelector('td')!.firstElementChild!.textContent!.trim()
+  );
+}
+
 const originalFetch = window.fetch;
 
 function withTopic(topicConfigs: object, privileges: string[] = ['UPDATE']) {
@@ -50,7 +88,6 @@ function withTopic(topicConfigs: object, privileges: string[] = ['UPDATE']) {
       },
     };
 
-    // Answer any /api/ request with the mock topic, pass everything else through
     window.fetch = async (input, init) => {
       const url =
         typeof input === 'string'
@@ -68,7 +105,6 @@ function withTopic(topicConfigs: object, privileges: string[] = ['UPDATE']) {
       return originalFetch(input, init);
     };
 
-    // New client per render so cached data doesn't leak between stories
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -91,6 +127,7 @@ function withTopic(topicConfigs: object, privileges: string[] = ['UPDATE']) {
     );
   };
 }
+
 const meta = {
   component: TopicConfigurationTab,
 } satisfies Meta<typeof TopicConfigurationTab>;
@@ -108,4 +145,35 @@ export const ReadOnlyUser: Story = {
 
 export const NoConfiguration: Story = {
   decorators: [withTopic({})],
+};
+
+export const SortBySourceUsesSourceValues: Story = {
+  decorators: [withTopic(sortableConfigs)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const sourceHeader = await canvas.findByRole('columnheader', {
+      name: /source/i,
+    });
+    const propertyHeader = canvas.getByRole('columnheader', {
+      name: /property/i,
+    });
+
+    await userEvent.click(within(sourceHeader).getByRole('button'));
+    expect(sourceHeader).toHaveAttribute('aria-sort', 'ascending');
+    expect(propertyHeader).not.toHaveAttribute('aria-sort', 'ascending');
+    expect(propertyNames(canvasElement)).toEqual([
+      'a.default',
+      'b.default',
+      'c.dynamic',
+      'd.static',
+    ]);
+    await userEvent.click(within(sourceHeader).getByRole('button'));
+    expect(sourceHeader).toHaveAttribute('aria-sort', 'descending');
+    expect(propertyNames(canvasElement)).toEqual([
+      'd.static',
+      'c.dynamic',
+      'b.default',
+      'a.default',
+    ]);
+  },
 };
