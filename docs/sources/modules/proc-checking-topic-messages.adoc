@@ -53,8 +53,8 @@ Use the following wildcards in the term:
 * `*` to match any sequence of characters, including none.
 * `?` to match any single character.
 +
-For example, `order-*-failed` matches `order-1234-failed`, and `order-?-failed` matches `order-7-failed` but not `order-12-failed`.
-Because the term can match any part of the text, you do not need to add `*` at the start or end.
+For example, `+order-*-failed+` matches `order-1234-failed`, and `order-?-failed` matches `order-7-failed` but not `order-12-failed`.
+Because the term can match any part of the text, you do not need to add `+*+` at the start or end.
 +
 Because the full key, headers, and value are checked, a message is found even if the matching text is beyond the part shown in the table.
 +
