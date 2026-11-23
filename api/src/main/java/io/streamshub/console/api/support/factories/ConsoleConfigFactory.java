@@ -108,7 +108,7 @@ public class ConsoleConfigFactory {
 
         for (Reference ref : path) {
             if (ref.getFieldName() != null) {
-                if (pathString.length() > 0) {
+                if (!pathString.isEmpty()) {
                     pathString.append('.');
                 }
                 pathString.append(ref.getFieldName());
