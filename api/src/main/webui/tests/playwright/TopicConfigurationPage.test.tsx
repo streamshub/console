@@ -181,7 +181,7 @@ test('Topic configuration preserves property, value, and actions while expanded'
   );
   const propertyName = cleanupRow.getByText(cleanupProperty, { exact: true });
   const propertyValue = cleanupRow.getByText('delete', { exact: true });
-  const sourceCell = cleanupRow.getByRole('cell', { name: 'DEFAULT_CONFIG', exact: true });
+  const sourceCell = cleanupRow.getByRole('gridcell', { name: 'DEFAULT_CONFIG', exact: true });
   const editAction = cleanupRow.getByRole('button', { name: 'Edit' });
 
   await expect(propertyName).toBeVisible();

@@ -159,7 +159,7 @@ test("Node configuration preserves property details while documentation is expan
 
   const propertyName = rackRow.getByText(rackProperty, { exact: true });
   const propertyValue = rackRow.getByText("rack-a", { exact: true });
-  const sourceCell = rackRow.getByRole("cell", { name: "PER_BROKER_CONFIG", exact: true });
+  const sourceCell = rackRow.getByRole("gridcell", { name: "PER_BROKER_CONFIG", exact: true });
   const readOnlyLabel = rackRow.getByText("Read-only", { exact: true });
 
   await expect(propertyName).toBeVisible();

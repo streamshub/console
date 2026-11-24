@@ -146,10 +146,10 @@ test("Group configuration preserves property details while documentation is expa
 
   const resetName = resetRow.getByText(resetProperty, { exact: true });
   const resetValue = resetRow.getByText("latest", { exact: true });
-  const resetSource = resetRow.getByRole("cell", { name: "DEFAULT_CONFIG", exact: true });
+  const resetSource = resetRow.getByRole("gridcell", { name: "DEFAULT_CONFIG", exact: true });
   const timeoutName = timeoutRow.getByText(timeoutProperty, { exact: true });
   const timeoutValue = timeoutRow.getByText("45000", { exact: true });
-  const timeoutSource = timeoutRow.getByRole("cell", { name: "PER_GROUP_CONFIG", exact: true });
+  const timeoutSource = timeoutRow.getByRole("gridcell", { name: "PER_GROUP_CONFIG", exact: true });
   const timeoutReadOnlyLabel = timeoutRow.getByText("Read-only", { exact: true });
 
   await expect(resetName).toBeVisible();
