@@ -53,6 +53,11 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          server-id: central # Value of the <publishingServerId> in operator/api/pom.xml
+          server-username: MAVEN_CENTRAL_USERNAME # env variable for username in deploy
+          server-password: MAVEN_CENTRAL_PASSWORD # env variable for token in deploy
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # ASCII-armored secret key
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -99,21 +104,13 @@ jobs:
             '-Drelease.arguments=-Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}'
 
       # ==================== Maven Central ====================
-      - name: Import GPG signing key
-        run: |
-          echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | base64 -d > signing.gpg
-          gpg --batch --import signing.gpg
-          rm -f signing.gpg
-
       - name: Publish console-operator-api to Maven Central
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          GPG_EXECUTABLE: gpg
-          GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
         run: |
           mvn -B -f target/checkout/pom.xml -pl operator/api --no-transfer-progress \
-            -s .github/mvn-central-settings.xml \
             -P central \
             -DskipTests -DskipITs \
             deploy
