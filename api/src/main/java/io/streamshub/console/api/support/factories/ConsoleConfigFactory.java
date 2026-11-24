@@ -1,8 +1,11 @@
 package io.streamshub.console.api.support.factories;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -15,6 +18,8 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -72,9 +77,47 @@ public class ConsoleConfigFactory {
         // Replace properties specified within string values in the configuration model
         processNode(tree);
 
-        return UncheckedIO.call(
-                () -> mapper.treeToValue(tree, ConsoleConfig.class),
-                () -> "Failed to load configuration model");
+        return bindConfig(tree);
+    }
+
+    /**
+     * Binds the given configuration tree to a {@linkplain ConsoleConfig} instance.
+     *
+     * By the time this is called, {@link #processNode(JsonNode)} has already replaced
+     * any {@code ${...}} placeholders in the tree with their real values (e.g. a
+     * secret pulled from the environment). If a value then turns out to be the wrong
+     * type for its field, Jackson's error message would normally quote that
+     * already-resolved value verbatim, which could leak a secret into the application
+     * log. To avoid that, we catch binding failures here and report only the path of
+     * the offending property, never the original exception's message.
+     */
+    ConsoleConfig bindConfig(JsonNode tree) {
+        try {
+            return mapper.treeToValue(tree, ConsoleConfig.class);
+        } catch (JsonMappingException e) {
+            throw new UncheckedIOException(
+                    "Failed to load configuration model: invalid value at `%s`".formatted(formatPath(e.getPath())),
+                    new IOException(e.getClass().getName()));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to load configuration model", e);
+        }
+    }
+
+    private static String formatPath(List<Reference> path) {
+        var pathString = new StringBuilder();
+
+        for (Reference ref : path) {
+            if (ref.getFieldName() != null) {
+                if (!pathString.isEmpty()) {
+                    pathString.append('.');
+                }
+                pathString.append(ref.getFieldName());
+            } else {
+                pathString.append('[').append(ref.getIndex()).append(']');
+            }
+        }
+
+        return pathString.isEmpty() ? "<root>" : pathString.toString();
     }
 
     private void processNode(JsonNode node) {
