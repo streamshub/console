@@ -117,7 +117,7 @@ public class ConsoleConfigFactory {
             }
         }
 
-        return !pathString.isEmpty() ? pathString.toString() : "<root>";
+        return pathString.isEmpty() ? "<root>" : pathString.toString();
     }
 
     private void processNode(JsonNode node) {
