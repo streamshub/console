@@ -1,4 +1,4 @@
-package com.github.streamshub.console.api.support.factories;
+package io.streamshub.console.api.support.factories;
 
 import java.io.UncheckedIOException;
 
