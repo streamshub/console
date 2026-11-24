@@ -81,6 +81,7 @@ test("Group configuration expands documentation beneath the matching property ro
 
   await test.step("Sortable headers expose correct sort metadata", async () => {
     await expect(page.getByRole("columnheader", { name: "Property" })).toHaveAttribute("aria-sort", "ascending");
+    await expect(page.getByRole("columnheader", { name: "Source" })).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Value" })).not.toHaveAttribute("aria-sort");
   });
 
@@ -100,6 +101,7 @@ test("Group configuration expands documentation beneath the matching property ro
   await test.step("Expand the correct row with the property's documentation", async () => {
     await resetToggle.click();
     await expect(resetDocs).toBeVisible();
+    await expect(resetDocs.locator("xpath=ancestor::td")).toHaveAttribute("colspan", "4");
     await expect(resetDocs.getByRole("heading", { name: "Documentation" })).toBeVisible();
     await expect(resetDocs).toContainText(resetDocumentation.trim());
 
@@ -144,18 +146,18 @@ test("Group configuration preserves property details while documentation is expa
 
   const resetName = resetRow.getByText(resetProperty, { exact: true });
   const resetValue = resetRow.getByText("latest", { exact: true });
-  const resetSourceLabel = resetRow.getByText("source=DEFAULT_CONFIG", { exact: true });
+  const resetSource = resetRow.getByRole("cell", { name: "DEFAULT_CONFIG", exact: true });
   const timeoutName = timeoutRow.getByText(timeoutProperty, { exact: true });
   const timeoutValue = timeoutRow.getByText("45000", { exact: true });
-  const timeoutSourceLabel = timeoutRow.getByText("source=PER_GROUP_CONFIG", { exact: true });
+  const timeoutSource = timeoutRow.getByRole("cell", { name: "PER_GROUP_CONFIG", exact: true });
   const timeoutReadOnlyLabel = timeoutRow.getByText("Read-only", { exact: true });
 
   await expect(resetName).toBeVisible();
   await expect(resetValue).toBeVisible();
-  await expect(resetSourceLabel).toBeVisible();
+  await expect(resetSource).toBeVisible();
   await expect(timeoutName).toBeVisible();
   await expect(timeoutValue).toBeVisible();
-  await expect(timeoutSourceLabel).toBeVisible();
+  await expect(timeoutSource).toBeVisible();
   await expect(timeoutReadOnlyLabel).toBeVisible();
 
   const beforeExpansion = await resetRow.innerText();
@@ -166,10 +168,10 @@ test("Group configuration preserves property details while documentation is expa
 
   await expect(resetName).toBeVisible();
   await expect(resetValue).toBeVisible();
-  await expect(resetSourceLabel).toBeVisible();
+  await expect(resetSource).toBeVisible();
   await expect(timeoutName).toBeVisible();
   await expect(timeoutValue).toBeVisible();
-  await expect(timeoutSourceLabel).toBeVisible();
+  await expect(timeoutSource).toBeVisible();
   await expect(timeoutReadOnlyLabel).toBeVisible();
   expect(await resetRow.innerText()).toBe(beforeExpansion);
   expect(await timeoutRow.innerText()).toBe(beforeOtherRowExpansion);

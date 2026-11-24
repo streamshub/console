@@ -46,7 +46,7 @@ class ConfigServiceTest {
     }
 
     @Test
-    void testLegacyTypeNameOverloadDoesNotRequestDocumentation() throws Exception {
+    void testTypeNameWithExplicitFalseDoesNotRequestDocumentation() throws Exception {
         Admin admin = mock(Admin.class);
         ArgumentCaptor<DescribeConfigsOptions> options = stubDescribeConfigs(admin, false);
         KafkaContext kafkaContext = mock(KafkaContext.class);
@@ -54,7 +54,7 @@ class ConfigServiceTest {
 
         ConfigService configService = new ConfigService();
         configService.kafkaContext = kafkaContext;
-        configService.describeConfigs(ConfigResource.Type.BROKER, "0")
+        configService.describeConfigs(ConfigResource.Type.BROKER, "0", false)
             .toCompletableFuture()
             .get(10, TimeUnit.SECONDS);
 
@@ -62,12 +62,12 @@ class ConfigServiceTest {
     }
 
     @Test
-    void testLegacyAdminOverloadDoesNotRequestDocumentation() throws Exception {
+    void testAdminWithExplicitFalseDoesNotRequestDocumentation() throws Exception {
         Admin admin = mock(Admin.class);
         ArgumentCaptor<DescribeConfigsOptions> options = stubDescribeConfigs(admin, false);
 
         new ConfigService()
-            .describeConfigs(admin, List.of(BROKER))
+            .describeConfigs(admin, List.of(BROKER), false)
             .toCompletableFuture()
             .get(10, TimeUnit.SECONDS);
 

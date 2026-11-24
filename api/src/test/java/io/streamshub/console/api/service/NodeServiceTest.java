@@ -34,13 +34,13 @@ class NodeServiceTest {
     }
 
     @Test
-    void testLegacyDescribeConfigsDoesNotRequestDocumentation() throws Exception {
+    void testDescribeConfigsWithExplicitFalseDoesNotRequestDocumentation() throws Exception {
         ConfigService configService = mock(ConfigService.class);
         when(configService.describeConfigs(ConfigResource.Type.BROKER, "0", false))
             .thenReturn(CompletableFuture.completedFuture(Map.of()));
 
         NodeService nodeService = nodeService(configService);
-        nodeService.describeConfigs("0").toCompletableFuture().get(10, TimeUnit.SECONDS);
+        nodeService.describeConfigs("0", false).toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         verify(configService).describeConfigs(ConfigResource.Type.BROKER, "0", false);
     }

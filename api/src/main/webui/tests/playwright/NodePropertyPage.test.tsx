@@ -74,6 +74,7 @@ test("Node property page", async ({ page, authenticatedPage }) => {
   });
   await test.step("Sortable headers expose correct sort metadata", async () => {
     await expect(page.getByRole('columnheader', { name: 'Property' })).toHaveAttribute('aria-sort', 'ascending');
+    await expect(page.getByRole('columnheader', { name: 'Source' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Value' })).not.toHaveAttribute('aria-sort');
   });
   await test.step("Node page should display properties", async () => {
@@ -115,6 +116,7 @@ test("Node configuration expands documentation beneath the matching property row
   await test.step("Expand the correct row with the property's documentation", async () => {
     await rackToggle.click();
     await expect(rackDocs).toBeVisible();
+    await expect(rackDocs.locator("xpath=ancestor::td")).toHaveAttribute("colspan", "4");
     await expect(rackDocs.getByRole("heading", { name: "Documentation" })).toBeVisible();
     await expect(rackDocs).toContainText(rackDocumentation.trim());
 
@@ -157,12 +159,12 @@ test("Node configuration preserves property details while documentation is expan
 
   const propertyName = rackRow.getByText(rackProperty, { exact: true });
   const propertyValue = rackRow.getByText("rack-a", { exact: true });
-  const sourceLabel = rackRow.getByText("source=PER_BROKER_CONFIG", { exact: true });
+  const sourceCell = rackRow.getByRole("cell", { name: "PER_BROKER_CONFIG", exact: true });
   const readOnlyLabel = rackRow.getByText("Read-only", { exact: true });
 
   await expect(propertyName).toBeVisible();
   await expect(propertyValue).toBeVisible();
-  await expect(sourceLabel).toBeVisible();
+  await expect(sourceCell).toBeVisible();
   await expect(readOnlyLabel).toBeVisible();
 
   const beforeExpansion = await rackRow.innerText();
@@ -172,7 +174,7 @@ test("Node configuration preserves property details while documentation is expan
 
   await expect(propertyName).toBeVisible();
   await expect(propertyValue).toBeVisible();
-  await expect(sourceLabel).toBeVisible();
+  await expect(sourceCell).toBeVisible();
   await expect(readOnlyLabel).toBeVisible();
   expect(await rackRow.innerText()).toBe(beforeExpansion);
 });

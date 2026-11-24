@@ -31,11 +31,11 @@ class TopicServiceTest {
     }
 
     @Test
-    void testLegacyListTopicsDoesNotRequestDocumentation() {
+    void testListTopicsWithExplicitFalseDoesNotRequestDocumentation() {
         when(topicDescribe.listTopics(anyList(), anyString(), any(), eq(false)))
                 .thenReturn(CompletableFuture.completedFuture(List.of()));
 
-        topicService.listTopics(List.of(), "latest", listSupport()).toCompletableFuture().join();
+        topicService.listTopics(List.of(), "latest", listSupport(), false).toCompletableFuture().join();
 
         verify(topicDescribe).listTopics(anyList(), anyString(), any(), eq(false));
     }
@@ -51,12 +51,12 @@ class TopicServiceTest {
     }
 
     @Test
-    void testLegacyDescribeTopicDoesNotRequestDocumentation() {
+    void testDescribeTopicWithExplicitFalseDoesNotRequestDocumentation() {
         Topic topic = topic();
         when(topicDescribe.describeTopic(anyString(), anyList(), anyString(), eq(false)))
                 .thenReturn(CompletableFuture.completedFuture(topic));
 
-        topicService.describeTopic(topic.getId(), List.of(), "latest").toCompletableFuture().join();
+        topicService.describeTopic(topic.getId(), List.of(), "latest", false).toCompletableFuture().join();
 
         verify(topicDescribe).describeTopic(anyString(), anyList(), anyString(), eq(false));
     }

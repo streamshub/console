@@ -112,10 +112,6 @@ public class GroupService {
     @Inject
     ValidationProxy validationService;
 
-    public CompletionStage<List<Group>> listGroups(List<String> fields, ListRequestContext<Group> listSupport) {
-        return listGroups(fields, listSupport, false);
-    }
-
     public CompletionStage<List<Group>> listGroups(
             List<String> fields,
             ListRequestContext<Group> listSupport,
@@ -214,10 +210,6 @@ public class GroupService {
             .orElse(null);
     }
 
-    public CompletionStage<Group> describeGroup(String requestGroupId, List<String> includes) {
-        return describeGroup(requestGroupId, includes, false);
-    }
-
     public CompletionStage<Group> describeGroup(
             String requestGroupId,
             List<String> includes,
@@ -257,7 +249,8 @@ public class GroupService {
                     threadContext.currentContextExecutor())
             .thenComposeAsync(groups -> augmentList(adminClient, groups, List.of(
                     Group.Fields.MEMBERS,
-                    Group.Fields.OFFSETS)),
+                    Group.Fields.OFFSETS),
+                    false),
                     threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
                     .map(group -> Map.entry(
@@ -453,7 +446,7 @@ public class GroupService {
             Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> alterRequest) {
         var pendingTopicsIds = fetchTopicIdMap();
 
-        return describeGroups(adminClient, List.of(group), Collections.emptyList())
+        return describeGroups(adminClient, List.of(group), Collections.emptyList(), false)
             .thenApply(groups -> groups.get(group.groupId()))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
             .thenCombine(pendingTopicsIds, (describedGroup, topicIds) -> {
@@ -537,10 +530,6 @@ public class GroupService {
                 .toCompletionStage();
     }
 
-    private CompletionStage<List<Group>> augmentList(Admin adminClient, List<Group> list, List<String> fields) {
-        return augmentList(adminClient, list, fields, false);
-    }
-
     CompletionStage<List<Group>> augmentList(
             Admin adminClient,
             List<Group> list,
@@ -592,13 +581,6 @@ public class GroupService {
             group.authorizedOperations(describedGroup.authorizedOperations());
             group.configs(describedGroup.configs());
         }
-    }
-
-    private CompletionStage<Map<String, Either<Group, Throwable>>> describeGroups(
-            Admin adminClient,
-            Collection<Group> groups,
-            List<String> fields) {
-        return describeGroups(adminClient, groups, fields, false);
     }
 
     private CompletionStage<Map<String, Either<Group, Throwable>>> describeGroups(
@@ -967,10 +949,6 @@ public class GroupService {
             Collections.sort(offsets);
             group.offsets(offsets);
         }
-    }
-
-    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<String, Group> groups, List<String> fields) {
-        return maybeDescribeConfigs(adminClient, groups, fields, false);
     }
 
     CompletableFuture<Void> maybeDescribeConfigs(

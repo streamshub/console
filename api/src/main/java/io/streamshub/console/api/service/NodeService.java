@@ -133,10 +133,6 @@ public class NodeService {
             .thenComposeAsync(nothing -> getNodes(clusterResult, quorumResult), threadContext.currentContextExecutor());
     }
 
-    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId) {
-        return describeConfigs(nodeId, false);
-    }
-
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId, boolean includeDocumentation) {
         return kafkaContext.admin().describeCluster().nodes()
             .thenApply(nodes -> {

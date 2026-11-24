@@ -53,8 +53,8 @@ class TopicDescribeServiceTest {
     }
 
     @Test
-    void testLegacyMaybeDescribeConfigsDoesNotRequestDocumentation() throws Exception {
-        topicDescribeService.maybeDescribeConfigs(admin, topics, List.of(Topic.Fields.CONFIGS))
+    void testMaybeDescribeConfigsWithExplicitFalseDoesNotRequestDocumentation() throws Exception {
+        topicDescribeService.maybeDescribeConfigs(admin, topics, List.of(Topic.Fields.CONFIGS), false)
                 .get(10, TimeUnit.SECONDS);
 
         verify(configService).describeConfigs(admin, topicKeys(), false);

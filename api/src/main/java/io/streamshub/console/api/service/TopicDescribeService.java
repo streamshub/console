@@ -109,10 +109,6 @@ public class TopicDescribeService {
     @Inject
     GroupService groupService;
 
-    public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
-        return listTopics(fields, offsetSpec, listSupport, false);
-    }
-
     public CompletionStage<List<Topic>> listTopics(
             List<String> fields,
             String offsetSpec,
@@ -199,10 +195,6 @@ public class TopicDescribeService {
                     .map(TopicListing::name));
     }
 
-    public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {
-        return describeTopic(topicId, fields, offsetSpec, false);
-    }
-
     public CompletionStage<Topic> describeTopic(
             String topicId,
             List<String> fields,
@@ -257,10 +249,6 @@ public class TopicDescribeService {
             .orElse(true);
     }
 
-    CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> fields, String offsetSpec) {
-        return augmentList(adminClient, list, fields, offsetSpec, false);
-    }
-
     CompletionStage<List<Topic>> augmentList(
             Admin adminClient,
             List<Topic> list,
@@ -274,10 +262,6 @@ public class TopicDescribeService {
 
         return CompletableFuture.allOf(configPromise, describePromise, consumerGroupPromise)
                 .thenApply(nothing -> list);
-    }
-
-    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields) {
-        return maybeDescribeConfigs(adminClient, topics, fields, false);
     }
 
     CompletableFuture<Void> maybeDescribeConfigs(

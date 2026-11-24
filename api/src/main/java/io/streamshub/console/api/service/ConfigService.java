@@ -31,10 +31,6 @@ public class ConfigService {
     @Inject
     KafkaContext kafkaContext;
 
-    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(ConfigResource.Type type, String name) {
-        return describeConfigs(type, name, false);
-    }
-
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(ConfigResource.Type type, String name, boolean includeDocumentation) {
         ConfigResource nodeKey = new ConfigResource(type, name);
 
@@ -65,10 +61,6 @@ public class ConfigService {
             .values()
             .get(resourceKey)
             .toCompletionStage();
-    }
-
-    CompletionStage<Map<String, Either<Map<String, ConfigEntry>, Throwable>>> describeConfigs(Admin adminClient, List<ConfigResource> keys) {
-        return describeConfigs(adminClient, keys, false);
     }
 
     CompletionStage<Map<String, Either<Map<String, ConfigEntry>, Throwable>>> describeConfigs(

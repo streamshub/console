@@ -88,8 +88,8 @@ class GroupServiceTest {
     }
 
     @Test
-    void testLegacyMaybeDescribeConfigsDoesNotRequestDocumentation() throws Exception {
-        groupService.maybeDescribeConfigs(admin, groups, List.of(Group.Fields.CONFIGS))
+    void testMaybeDescribeConfigsWithExplicitFalseDoesNotRequestDocumentation() throws Exception {
+        groupService.maybeDescribeConfigs(admin, groups, List.of(Group.Fields.CONFIGS), false)
             .get(10, TimeUnit.SECONDS);
 
         verify(configService).describeConfigs(admin, groupKeys(), false);
@@ -238,7 +238,7 @@ class GroupServiceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    void testLegacyListGroupsOverloadDefaultsDocumentationFalse() throws Exception {
+    void testListGroupsWithExplicitFalse() throws Exception {
         GroupService service = spy(new GroupService());
         ListRequestContext<Group> listSupport = mock(ListRequestContext.class);
 
@@ -246,7 +246,7 @@ class GroupServiceTest {
             .when(service)
             .listGroups(anyList(), same(listSupport), eq(false));
 
-        service.listGroups(List.of(Group.Fields.GROUP_ID), listSupport)
+        service.listGroups(List.of(Group.Fields.GROUP_ID), listSupport, false)
             .toCompletableFuture()
             .get(10, TimeUnit.SECONDS);
 
@@ -254,7 +254,7 @@ class GroupServiceTest {
     }
 
     @Test
-    void testLegacyDescribeGroupOverloadDefaultsDocumentationFalse() throws Exception {
+    void testDescribeGroupWithExplicitFalse() throws Exception {
         GroupService service = spy(new GroupService());
         Group group = group("test-group");
 
@@ -262,7 +262,7 @@ class GroupServiceTest {
             .when(service)
             .describeGroup(anyString(), anyList(), eq(false));
 
-        service.describeGroup(Group.encodeGroupId("test-group"), List.of(Group.Fields.GROUP_ID))
+        service.describeGroup(Group.encodeGroupId("test-group"), List.of(Group.Fields.GROUP_ID), false)
             .toCompletableFuture()
             .get(10, TimeUnit.SECONDS);
 

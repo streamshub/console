@@ -79,6 +79,9 @@ test('Topics configuration', async ({ page, authenticatedPage }) => {
       page.getByRole('columnheader', { name: 'Property' })
     ).toHaveAttribute('aria-sort', 'ascending');
     await expect(
+      page.getByRole('columnheader', { name: 'Source' })
+    ).toBeVisible();
+    await expect(
       page.getByRole('columnheader', { name: 'Value' })
     ).not.toHaveAttribute('aria-sort');
   });
@@ -132,6 +135,7 @@ test('Topic configuration expands documentation beneath the matching property ro
   await test.step('Expand the correct row with trimmed documentation', async () => {
     await cleanupToggle.click();
     await expect(cleanupDocs).toBeVisible();
+    await expect(cleanupDocs.locator('xpath=ancestor::td')).toHaveAttribute('colspan', '5');
     await expect(cleanupDocs).toContainText(cleanupDocumentation.trim());
 
     const rawDocumentation = await cleanupDocs
@@ -177,10 +181,12 @@ test('Topic configuration preserves property, value, and actions while expanded'
   );
   const propertyName = cleanupRow.getByText(cleanupProperty, { exact: true });
   const propertyValue = cleanupRow.getByText('delete', { exact: true });
+  const sourceCell = cleanupRow.getByRole('cell', { name: 'DEFAULT_CONFIG', exact: true });
   const editAction = cleanupRow.getByRole('button', { name: 'Edit' });
 
   await expect(propertyName).toBeVisible();
   await expect(propertyValue).toBeVisible();
+  await expect(sourceCell).toBeVisible();
   await expect(editAction).toBeVisible();
 
   const beforeExpansion = await cleanupRow.innerText();
@@ -190,7 +196,88 @@ test('Topic configuration preserves property, value, and actions while expanded'
 
   await expect(propertyName).toBeVisible();
   await expect(propertyValue).toBeVisible();
+  await expect(sourceCell).toBeVisible();
   await expect(editAction).toBeVisible();
   await expect(editAction).toBeEnabled();
   expect(await cleanupRow.innerText()).toBe(beforeExpansion);
+});
+
+async function mockTopicPatch(page: Page, status: number) {
+  await page.route(/\/api\/kafkas\/[^/]+\/topics\/[^/]+$/, async (route) => {
+    if (route.request().method() !== 'PATCH') {
+      await route.continue();
+      return;
+    }
+
+    await route.fulfill({
+      status,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        status === 200 ? {} : { errors: [{ status: String(status), detail: 'Unable to save' }] }
+      ),
+    });
+  });
+}
+
+test('Topic inline editing works while documentation is expanded', async ({
+  page,
+  authenticatedPage,
+}) => {
+  await mockTopicConfiguration(page);
+  await mockTopicPatch(page, 200);
+  await authenticatedPage.clickTab('Configuration');
+  await expect(
+    page.getByRole('columnheader', { name: 'Property' })
+  ).toBeVisible();
+
+  const cleanupRows = configurationRow(page, cleanupProperty);
+  const cleanupRow = cleanupRows.locator('tr').first();
+  const docs = cleanupRows.getByTestId('config-documentation-content');
+  const edit = cleanupRow.getByRole('button', { name: 'Edit' });
+
+  await edit.click();
+  await expect(cleanupRow.getByRole('textbox')).toBeVisible();
+  await expect(cleanupRow.getByRole('button', { name: 'Save' })).toBeVisible();
+  await expect(cleanupRow.getByRole('button', { name: 'Cancel' })).toBeVisible();
+
+  await cleanupRows.getByRole('button', { name: 'Details' }).click();
+  await expect(docs).toBeVisible();
+  await expect(cleanupRow.getByRole('textbox')).toBeVisible();
+
+  await cleanupRow.getByRole('button', { name: 'Cancel' }).click();
+  await expect(cleanupRow.getByRole('textbox')).toHaveCount(0);
+  await expect(docs).toBeVisible();
+
+  await edit.click();
+  await cleanupRow.getByRole('textbox').fill('create,compact');
+  await cleanupRow.getByRole('button', { name: 'Save' }).click();
+  await expect(cleanupRow.getByRole('textbox')).toHaveCount(0);
+  await expect(docs).toBeVisible();
+});
+
+test('Topic inline editing reports save errors while documentation is expanded', async ({
+  page,
+  authenticatedPage,
+}) => {
+  await mockTopicConfiguration(page);
+  await mockTopicPatch(page, 500);
+  await authenticatedPage.clickTab('Configuration');
+  await expect(
+    page.getByRole('columnheader', { name: 'Property' })
+  ).toBeVisible();
+
+  const cleanupRows = configurationRow(page, cleanupProperty);
+  const cleanupRow = cleanupRows.locator('tr').first();
+  const docs = cleanupRows.getByTestId('config-documentation-content');
+
+  await cleanupRow.getByRole('button', { name: 'Edit' }).click();
+  await cleanupRows.getByRole('button', { name: 'Details' }).click();
+  await expect(docs).toBeVisible();
+
+  await cleanupRow.getByRole('textbox').fill('create,compact');
+  await cleanupRow.getByRole('button', { name: 'Save' }).click();
+
+  await expect(cleanupRow.getByRole('textbox')).toBeVisible();
+  await expect(page.getByText(/API Error: 500/)).toBeVisible();
+  await expect(docs).toBeVisible();
 });
