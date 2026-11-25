@@ -17,6 +17,10 @@
         <module>controller</module>
     </modules>
 
+    <properties>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../../coverage/target/coverage/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
