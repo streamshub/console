@@ -18,6 +18,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,6 +50,9 @@ import io.streamshub.console.api.v1alpha1.spec.KafkaConnect;
 import io.streamshub.console.api.v1alpha1.spec.SchemaRegistry;
 import io.streamshub.console.api.v1alpha1.spec.TrustStore;
 import io.streamshub.console.api.v1alpha1.spec.Value;
+import io.streamshub.console.api.v1alpha1.spec.networking.NetworkPolicyIngressSpec;
+import io.streamshub.console.api.v1alpha1.spec.networking.NetworkPolicySpec;
+import io.streamshub.console.api.v1alpha1.spec.networking.Networking;
 import io.streamshub.console.api.v1alpha1.spec.authentication.Authentication;
 import io.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import io.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
@@ -88,6 +92,7 @@ import io.streamshub.console.support.KafkaConfigs;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyPeer;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -392,7 +397,40 @@ public class ConfigurationProcessor extends BaseVirtualResource {
             addErrorCondition(primary, illegalProperties);
         }
 
+        validateNetworking(primary, context);
+
         return !missingHost && violations.isEmpty() && illegalProperties.isEmpty();
+    }
+
+    private void validateNetworking(Console primary, Context<Console> context) {
+        if (!ConfigSupport.networkPolicyEnabled(primary)) {
+            return;
+        }
+
+        List<NetworkPolicyPeer> fromPeers = Optional.ofNullable(primary.getSpec().getNetworking())
+                .map(Networking::getNetworkPolicy)
+                .map(NetworkPolicySpec::getIngress)
+                .map(NetworkPolicyIngressSpec::getFrom)
+                .orElseGet(Collections::emptyList);
+
+        boolean disableDefaultFrom = Optional.ofNullable(primary.getSpec().getNetworking())
+                .map(Networking::getNetworkPolicy)
+                .map(NetworkPolicySpec::getIngress)
+                .map(NetworkPolicyIngressSpec::getDisableDefaultFrom)
+                .orElse(false);
+
+        boolean isOpenshift = resourceSupported(context, Route.class);
+        boolean hasDefaultPeer = isOpenshift && !disableDefaultFrom;
+
+        if (!hasDefaultPeer && fromPeers.isEmpty()) {
+            primary.getOrCreateStatus().updateCondition(new ConditionBuilder()
+                    .withType(Types.WARNING)
+                    .withStatus("True")
+                    .withLastTransitionTime(Instant.now().toString())
+                    .withReason(Reasons.INDETERMINATE_INGRESS_SOURCE)
+                    .withMessage("NetworkPolicy is enabled but ingress source cannot be determined and spec.networking.networkPolicy.ingress.from is not configured. Ingress traffic to the console will not be restricted by source.")
+                    .build());
+        }
     }
 
     private String getIllegalKafkaPropertiesMessage(ConsoleConfig consoleConfig) {

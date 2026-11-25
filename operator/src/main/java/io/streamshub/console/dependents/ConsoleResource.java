@@ -135,4 +135,11 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
     default <T> List<T> coalesce(List<T> value, Supplier<List<T>> defaultValue) {
         return value != null ? value : defaultValue.get();
     }
+
+    default Map<String, String> merge(Map<String, String> required, Optional<Map<String, String>> configured) {
+        Map<String, String> result = new LinkedHashMap<>();
+        configured.ifPresent(result::putAll);
+        result.putAll(required);
+        return result;
+    }
 }

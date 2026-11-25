@@ -147,4 +147,4 @@ console-kafka  1/1    1       1
 +
 When the console is running, use the hostname specified in the `Console` resource (`spec.hostname`) to access the user interface.
 If TLS is enabled, use `https://` to access the console.
-For more information, see xref:ref-tls-configuration-{context}[Configuring TLS for the console server].
+For more information, see xref:ref-tls-configuration-{context}[Configuring TLS for the console server] and xref:ref-networking-configuration-{context}[Configuring networking, network policies, and routing].

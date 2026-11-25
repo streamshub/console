@@ -1,0 +1,49 @@
+#
+# This example demonstrates how to configure NetworkPolicies on OpenShift when you
+# want to disable the default OpenShift router ingress rules and specify custom
+# ingress peers using `disableDefaultFrom: true` and `from`.
+#
+# By default on OpenShift, the operator automatically generates NetworkPolicy ingress
+# rules that permit traffic from OpenShift default router namespaces
+# (`policy-group.network.openshift.io/ingress: ""` and `network.openshift.io/policy-group: "ingress"`).
+#
+# When `disableDefaultFrom` is set to true, those default router rules are omitted,
+# and only the ingress sources specified under `from` (plus inter-pod rules such as
+# Console -> Dex and Console -> Prometheus) are permitted.
+#
+# !!IMPORTANT!!
+# This example uses a Strimzi KafkaUser custom resource credentials for
+# authentication with the Kafka cluster. Access to the user's credentials secret
+# must be granted to the Console using a role and role binding, as shown in
+# kafkauser-role-rolebinding.yaml.
+#
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  networking:
+    networkPolicy:
+      enabled: true
+      ingress:
+        # Disable the default OpenShift router namespace selector rules
+        disableDefaultFrom: true
+        # Define explicit custom ingress sources
+        from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: custom-ingress-gateway
+
+  kafkaClusters:
+    # Kafka cluster configuration.
+    # The example uses the Kafka cluster configuration from `examples/kafka`.
+    # Adjust the values to match your environment.
+    - name: console-kafka             # Name of the `Kafka` CR representing the cluster
+      namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
+      listener: secure                # Listener name from the `Kafka` CR to connect the console
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1   # Name of the `KafkaUser` CR used to connect to the Kafka cluster

@@ -6,14 +6,15 @@ import java.util.Optional;
 import io.streamshub.console.api.v1alpha1.Console;
 import io.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 
-public class PrometheusPrecondition implements Condition<Object, Console> {
+public class PrometheusPrecondition<T extends HasMetadata> implements Condition<T, Console> {
 
     @Override
-    public boolean isMet(DependentResource<Object, Console> dependentResource, Console primary, Context<Console> context) {
+    public boolean isMet(DependentResource<T, Console> dependentResource, Console primary, Context<Console> context) {
         var metricsSources = Optional.ofNullable(primary.getSpec().getMetricsSources())
                 .orElseGet(Collections::emptyList);
 

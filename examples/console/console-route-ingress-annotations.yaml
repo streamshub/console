@@ -1,0 +1,53 @@
+#
+# This example demonstrates how to apply custom labels and annotations to the
+# generated OpenShift Route and Kubernetes Ingress resources using the
+# `spec.networking.route.metadata` and `spec.networking.ingress.metadata` templates.
+#
+# Common use cases include:
+#   - Restricting client access by IP allowlisting / CIDR ranges
+#   - Configuring ingress timeouts, rewrite targets, or rate limiting
+#   - Setting ingress class or TLS annotations
+#
+# !!IMPORTANT!!
+# This example uses a Strimzi KafkaUser custom resource credentials for
+# authentication with the Kafka cluster. Access to the user's credentials secret
+# must be granted to the Console using a role and role binding, as shown in
+# kafkauser-role-rolebinding.yaml.
+#
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  networking:
+    # OpenShift Route metadata template (applied on OpenShift clusters)
+    route:
+      metadata:
+        annotations:
+          # Restrict traffic to specific IP/CIDR ranges at the OpenShift HAProxy router
+          haproxy.router.openshift.io/ip_whitelist: "192.0.2.0/24 198.51.100.0/24"
+        labels:
+          environment: production
+
+    # Kubernetes Ingress metadata template (applied on Kubernetes clusters)
+    ingress:
+      metadata:
+        annotations:
+          # Restrict traffic to specific IP/CIDR ranges at the NGINX Ingress controller
+          nginx.ingress.kubernetes.io/whitelist-source-range: "192.0.2.0/24, 198.51.100.0/24"
+        labels:
+          environment: production
+
+  kafkaClusters:
+    # Kafka cluster configuration.
+    # The example uses the Kafka cluster configuration from `examples/kafka`.
+    # Adjust the values to match your environment.
+    - name: console-kafka             # Name of the `Kafka` CR representing the cluster
+      namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
+      listener: secure                # Listener name from the `Kafka` CR to connect the console
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1   # Name of the `KafkaUser` CR used to connect to the Kafka cluster

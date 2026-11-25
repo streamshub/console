@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.streamshub.console.api.v1alpha1.spec.containers.Containers;
 import io.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import io.streamshub.console.api.v1alpha1.spec.security.GlobalSecurity;
+import io.streamshub.console.api.v1alpha1.spec.networking.Networking;
 import io.streamshub.console.api.v1alpha1.spec.template.DeploymentTemplate;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -54,6 +55,11 @@ public class ConsoleSpec {
             Use `deployment.spec.template.spec.serverContainer.image` property instead.
             """)
     Images images;
+
+    @JsonPropertyDescription("""
+            Network and policy configuration for Console operands, routes, and ingresses.
+            """)
+    Networking networking;
 
     GlobalSecurity security;
 
@@ -109,6 +115,14 @@ public class ConsoleSpec {
 
     public void setImages(Images images) {
         this.images = images;
+    }
+
+    public Networking getNetworking() {
+        return networking;
+    }
+
+    public void setNetworking(Networking networking) {
+        this.networking = networking;
     }
 
     public GlobalSecurity getSecurity() {
