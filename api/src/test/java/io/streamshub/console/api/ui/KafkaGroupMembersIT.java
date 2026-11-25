@@ -1,25 +1,12 @@
 package io.streamshub.console.api.ui;
 
-import io.streamshub.console.api.service.KafkaClusterService;
-import io.streamshub.console.api.support.KafkaContext;
-import io.streamshub.console.config.ConsoleConfig;
-import io.streamshub.console.config.KafkaClusterConfig;
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
-import io.streamshub.console.test.TestHelper;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import jakarta.inject.Inject;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -32,13 +19,10 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
-import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 /**
  * Full-stack tests for the group "Members" tab (GroupMembersTab), opened by clicking the group id in
@@ -65,39 +48,12 @@ import static org.awaitility.Awaitility.await;
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class KafkaGroupMembersIT {
-    static final String KAFKA_NAME = "test-kafka1";
-    static final String KAFKA_KEY  = "default/" + KAFKA_NAME;
+class KafkaGroupMembersIT extends BaseKafkaIT {
 
     static final int PARTITIONS       = 2;
     static final int RECORDS_PER_PART = 10;
     static final long COMMITTED       = 5;
     static final String TOTAL_LAG     = String.valueOf(PARTITIONS * (RECORDS_PER_PART - COMMITTED));
-
-    @InjectPlaywright
-    BrowserContext context;
-
-    @TestHTTPResource("/")
-    URL home;
-
-    @Inject
-    Config config;
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    ConsoleConfig consoleConfig;
-
-    @Inject
-    Map<String, KafkaContext> configuredContexts;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
-
-    TestHelper utils;
-    URI bootstrapServers;
-    String clusterId;
 
     // Unique per test instance (JUnit creates a new instance for every test method)
     final String prefix      = "ui-members-" + UUID.randomUUID().toString().substring(0, 8) + "-";
@@ -111,13 +67,6 @@ class KafkaGroupMembersIT {
 
     @BeforeEach
     void setup() throws Exception {
-        PlaywrightTimeouts.configure(context);
-        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        utils = new TestHelper(bootstrapServers, config);
-        utils.resetSecurity(consoleConfig, false);
-        kafkaClusterService.setListUnconfigured(false);
-
-        client.resources(Kafka.class).inAnyNamespace().delete();
         applyKafka();
 
         createTopicWithRecords();
@@ -149,36 +98,7 @@ class KafkaGroupMembersIT {
         } catch (Exception e) {
             // best effort
         }
-
-        client.resources(Kafka.class).inAnyNamespace().delete();
-    }
-
-    // ---------------------------------------------------------------------
-    // Backend state
-    // ---------------------------------------------------------------------
-
-    private static Pattern ci(String text) {
-        return Pattern.compile(text, Pattern.CASE_INSENSITIVE);
-    }
-
-    private void applyKafka() {
-        clusterId = consoleConfig.getKafka().getCluster(KAFKA_KEY).get().getId(); // "k1-id"
-
-        Kafka kafka = utils.apply(client, new KafkaBuilder(
-                utils.buildKafkaResource(KAFKA_NAME, clusterId, bootstrapServers))
-                .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
-                .endStatus()
-                .build());
-
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> configuredContexts.values().stream()
-                        .map(KafkaContext::clusterConfig)
-                        .map(KafkaClusterConfig::clusterKey)
-                        .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
+        // The Kafka CR is deleted by BaseKafkaIT.baseCleanup()
     }
 
     private String bootstrap() {
@@ -252,16 +172,11 @@ class KafkaGroupMembersIT {
         }
     }
 
-    /** One consumer with a known client id that stays connected until cleanup(). */
     private void createActiveGroup() {
         KafkaConsumer<byte[], byte[]> consumer = joinedConsumer(activeGroup, clientId);
         openConsumers.add(consumer);
         commitOnAssignedPartitions(consumer);
     }
-
-    // ---------------------------------------------------------------------
-    // UI helpers
-    // ---------------------------------------------------------------------
 
     private String groupsUrl() {
         return home + "kafka/" + clusterId + "/groups";
@@ -271,7 +186,6 @@ class KafkaGroupMembersIT {
         return page.getByRole(AriaRole.ROW).filter(new Locator.FilterOptions().setHasText(groupId));
     }
 
-    /** Opens the members tab the way a user does: click the group id in the groups table. */
     private void openMembersViaGroupsTable(Page page, String groupId) {
         page.navigate(groupsUrl());
         assertThat(rowFor(page, groupId)).hasCount(1);
@@ -283,21 +197,15 @@ class KafkaGroupMembersIT {
         assertThat(page).hasURL(Pattern.compile(".*/kafka/" + clusterId + "/groups/[^/]+/members/?$"));
     }
 
-    /** The members table (its aria-label is a literal in GroupMembersTab). */
     private static Locator membersTable(Page page) {
         return page.getByRole(AriaRole.GRID, new Page.GetByRoleOptions().setName("Group members"))
                 .or(page.getByRole(AriaRole.TABLE, new Page.GetByRoleOptions().setName("Group members")))
                 .first();
     }
 
-    /** All cells of a column, addressed by the data-label of GroupMembersTab. */
     private static Locator cells(Page page, String dataLabel) {
         return membersTable(page).locator("td[data-label='" + dataLabel + "']");
     }
-
-    // ---------------------------------------------------------------------
-    // Navigation
-    // ---------------------------------------------------------------------
 
     @Test
     void clickingGroupIdInTableOpensMembersPage() {
@@ -310,15 +218,12 @@ class KafkaGroupMembersIT {
 
     @Test
     void membersPageCanBeOpenedByUrl() {
-        // The {groupId} route segment is the group's resource id, which is not necessarily the Kafka
-        // group name: take the URL the UI generates when the group is clicked in the table.
         String membersUrl;
         try (Page first = context.newPage()) {
             openMembersViaGroupsTable(first, activeGroup);
             membersUrl = first.url();
         }
 
-        // Fresh page: a real deep link, not in-app navigation
         try (Page page = context.newPage()) {
             page.navigate(membersUrl);
 
@@ -326,10 +231,6 @@ class KafkaGroupMembersIT {
             assertThat(membersTable(page)).isVisible();
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Table
-    // ---------------------------------------------------------------------
 
     @Test
     void tableShowsExpectedColumns() {
@@ -390,7 +291,6 @@ class KafkaGroupMembersIT {
         first.subscribe(List.of(topicName));
         second.subscribe(List.of(topicName));
 
-        // Both consumers must keep polling for the rebalance to complete: one partition each
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(40);
         while (first.assignment().size() != 1 || second.assignment().size() != 1) {
             first.poll(Duration.ofMillis(100));
@@ -416,10 +316,6 @@ class KafkaGroupMembersIT {
                 String.valueOf(RECORDS_PER_PART - COMMITTED), String.valueOf(RECORDS_PER_PART - COMMITTED) });
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Expandable rows (LagTable)
-    // ---------------------------------------------------------------------
 
     @Test
     void rowIsCollapsedInitiallyAndExpandsToShowTheLagTable() {
@@ -463,10 +359,6 @@ class KafkaGroupMembersIT {
             assertThat(membersTable(page).getByText(topicName).first()).isVisible();
         }
     }
-
-    // ---------------------------------------------------------------------
-    // Help tooltips
-    // ---------------------------------------------------------------------
 
     @Test
     void helpIconsExplainClientIdAndOverallLag() {

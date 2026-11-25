@@ -1,52 +1,34 @@
 package io.streamshub.console.api.ui;
 
 import io.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.quarkiverse.playwright.InjectPlaywright;
 import io.quarkiverse.playwright.WithPlaywright;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import org.junit.jupiter.api.Test;
 import java.util.regex.Pattern;
-
-import java.net.URL;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 @QuarkusTest
 @WithPlaywright
 @TestProfile(TestPlainProfile.class)
-class HomePageIT {
+class HomePageIT extends BaseKafkaIT {
 
-    @InjectPlaywright
-    BrowserContext context;
-
-    @TestHTTPResource("/")
-    URL home;
+    private static Locator clusterButton(Page page, String clusterName) {
+        return page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(clusterName));
+    }
 
     @Test
     void listsConfiguredClusters() {
         try (Page page = context.newPage()) {
             page.navigate(home.toString());
 
-            // Verify Kafka clusters configured in config-testplain.yaml
-            assertThat(page.getByRole(
-                    AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("test-kafka1")
-            ).first()).isVisible();
-
-            assertThat(page.getByRole(
-                    AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("test-kafka2")
-            ).first()).isVisible();
-
-            assertThat(page.getByRole(
-                    AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("test-kafka3")
-            ).first()).isVisible();
+            assertThat(clusterButton(page, "test-kafka1").first()).isVisible();
+            assertThat(clusterButton(page, "test-kafka2").first()).isVisible();
+            assertThat(clusterButton(page, "test-kafkaY").first()).isVisible();
         }
     }
 
@@ -55,33 +37,28 @@ class HomePageIT {
         try (Page page = context.newPage()) {
             page.navigate(home.toString());
 
-            page.getByPlaceholder("Filter by name")
-                    .fill("test-kafka2");
+            assertThat(clusterButton(page, "test-kafka1").first()).isVisible();
+            assertThat(clusterButton(page, "test-kafka2").first()).isVisible();
 
-            page.keyboard().press("Enter");
+            Locator filter = page.getByPlaceholder("Filter by name");
+            filter.fill("test-kafka2");
+            filter.press("Enter");
 
             // test-kafka1 should not be displayed
-            assertThat(page.getByRole(
-                    AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("test-kafka1")
-            )).hasCount(0);
+            assertThat(clusterButton(page, "test-kafka1")).hasCount(0);
 
             // test-kafka2 should be displayed
-            assertThat(page.getByRole(
-                    AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("test-kafka2")
-            ).first()).isVisible();
+            assertThat(clusterButton(page, "test-kafka2").first()).isVisible();
         }
     }
 
     @Test
-    void viewButtonNavigatesToCluster() {
+    void clusterNameButtonNavigatesToOverview() {
         try (Page page = context.newPage()) {
             page.navigate(home.toString());
-            page.getByRole(
-                    AriaRole.BUTTON,
-                    new Page.GetByRoleOptions().setName("test-kafka1")
-            ).first().click();
+
+            clusterButton(page, "test-kafka1").first().click();
+
             assertThat(page).hasURL(Pattern.compile(".*/kafka/[^/]+/overview/?$"));
         }
     }
