@@ -57,16 +57,33 @@ SKOPEO_TRANSPORT="$(skopeo_transport_for "${CONTAINER_RUNTIME}")"
 # above (which stays "localhost:<port>" everywhere else).
 PUSH_PREFIX="$(registry_host_for_push "${REGISTRY}")/${GROUP}"
 
+# Wrapper for skopeo that handles macOS + podman case where images are in the VM
+skopeo_copy_from_storage() {
+  local src_image="$1"
+  local dest_image="$2"
+
+  # On macOS with containers-storage: transport (podman), images are in the podman VM
+  if [[ "$(uname -s)" == "Darwin" ]] && [[ "${SKOPEO_TRANSPORT}" == "containers-storage:" ]]; then
+    podman machine ssh "skopeo copy --preserve-digests --dest-tls-verify=false \"${src_image}\" \"docker://${dest_image}\""
+  else
+    skopeo copy --preserve-digests --dest-tls-verify=false "${src_image}" "docker://${dest_image}"
+  fi
+}
+
 echo "Pushing images to ${REGISTRY} for kind cluster '${CLUSTER_NAME}'..."
 for img in console-api console-dexidp console-operator console-operator-bundle console-operator-catalog; do
-  echo "  ${IMAGE_PREFIX}/${img}:${TAG}"
+  # Images are stored as localhost:5000/streamshub/... in the podman VM
+  # We need to use the exact image name as it was built
+  SRC_IMAGE="localhost:5000/${GROUP}/${img}:${TAG}"
+
+  echo "  ${SRC_IMAGE} -> ${REGISTRY}/${GROUP}/${img}:${TAG}"
   # --preserve-digests matters: without it, skopeo re-serializes the
   # manifest on copy and the digest changes, which breaks the
   # console-operator/console-api image references modify-bundle-metadata.sh
   # already baked into the CSV by digest.
-  skopeo copy --preserve-digests --dest-tls-verify=false \
-    "${SKOPEO_TRANSPORT}${IMAGE_PREFIX}/${img}:${TAG}" \
-    "docker://${PUSH_PREFIX}/${img}:${TAG}"
+  skopeo_copy_from_storage \
+    "${SKOPEO_TRANSPORT}${SRC_IMAGE}" \
+    "${PUSH_PREFIX}/${img}:${TAG}"
 done
 
 echo ""

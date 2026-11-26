@@ -92,12 +92,12 @@ mvn clean package -Pcontainer-image -B --no-transfer-progress -DskipTests -Dskip
   -Dcontainer-image.group="${GROUP}" \
   -Dcontainer-image.tag="${TAG}" \
   -Dcontainer-image.push=false \
-  "${BUILDX_PLATFORM_ARGS[@]}"
+  "${BUILDX_PLATFORM_ARGS[@]+"${BUILDX_PLATFORM_ARGS[@]}"}"
 
 # Must be built before modify-bundle-metadata.sh, which resolves its digest
 echo "Building console-dexidp image..."
 "${CONTAINER_RUNTIME}" build \
-  "${BUILD_LOAD_ARGS[@]}" \
+  ${BUILD_LOAD_ARGS[@]+"${BUILD_LOAD_ARGS[@]}"} \
   -t "${IMAGE_PREFIX}/console-dexidp:${TAG}" \
   -f operator/src/main/docker/dex.Dockerfile \
   operator/src/main/docker
@@ -110,7 +110,7 @@ echo "Updating OLM bundle metadata..."
 
 echo "Building console-operator-bundle image..."
 "${CONTAINER_RUNTIME}" build \
-  "${BUILD_LOAD_ARGS[@]}" \
+  ${BUILD_LOAD_ARGS[@]+"${BUILD_LOAD_ARGS[@]}"} \
   -t "${IMAGE_PREFIX}/console-operator-bundle:${TAG}" \
   -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile \
   operator/target/bundle/streamshub-console-operator
@@ -120,7 +120,7 @@ echo "Generating OLM catalog..."
 
 echo "Building console-operator-catalog image..."
 "${CONTAINER_RUNTIME}" build \
-  "${BUILD_LOAD_ARGS[@]}" \
+  ${BUILD_LOAD_ARGS[@]+"${BUILD_LOAD_ARGS[@]}"} \
   -t "${IMAGE_PREFIX}/console-operator-catalog:${TAG}" \
   -f operator/src/main/docker/catalog.Dockerfile \
   operator/
