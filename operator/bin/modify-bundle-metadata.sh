@@ -28,6 +28,19 @@ fi
 
 source ${SCRIPT_PATH}/common.sh
 
+# Wrapper for skopeo that handles macOS + podman case where images are in the VM
+skopeo_inspect() {
+  local image_ref="$1"
+
+  # On macOS with containers-storage: transport (podman), images are in the podman VM
+  # so we need to run skopeo inside the VM, not on the host
+  if [[ "$(uname -s)" == "Darwin" ]] && [[ "${SKOPEO_TRANSPORT}" == "containers-storage:" ]]; then
+    podman machine ssh "skopeo inspect --tls-verify=false --override-os=linux --format '{{ .Digest }}' \"${image_ref}\""
+  else
+    ${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${image_ref}"
+  fi
+}
+
 OPERATOR_INSTANCE_NAME="${OPERATOR_NAME}-v${VERSION}"
 OPERATOR_CSV_NAME="${OPERATOR_NAME}.v${VERSION}"
 
@@ -61,7 +74,7 @@ echo "[DEBUG] Image registry = ${image_registry}"
 echo "[DEBUG] Image tag = ${image_tag}"
 
 # Get operator image digest
-operator_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${operator_image_with_tag}")
+operator_image_digest=$(skopeo_inspect "${SKOPEO_TRANSPORT}${operator_image_with_tag}")
 operator_image_with_digest="${image_registry}/${operator_name}:${image_tag}@${operator_image_digest}"
 
 # Create relatedImages section
@@ -144,12 +157,12 @@ ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.metadata.
 echo "[DEBUG] Add API and Dex IdP images to CSV"
 
 api_image_with_tag=${image_registry}/${api_name}:${image_tag}
-api_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${api_image_with_tag}")
+api_image_digest=$(skopeo_inspect "${SKOPEO_TRANSPORT}${api_image_with_tag}")
 api_image_with_digest="${image_registry}/${api_name}:${image_tag}@${api_image_digest}"
 echo "[DEBUG] Using API image: ${api_image_with_digest}"
 
 dex_image_with_tag=${image_registry}/${dex_name}:${image_tag}
-dex_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${dex_image_with_tag}")
+dex_image_digest=$(skopeo_inspect "${SKOPEO_TRANSPORT}${dex_image_with_tag}")
 dex_image_with_digest="${image_registry}/${dex_name}:${image_tag}@${dex_image_digest}"
 echo "[DEBUG] Using API image: ${dex_image_with_digest}"
 
