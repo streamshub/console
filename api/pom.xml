@@ -20,7 +20,7 @@
         <docker.push>false</docker.push>
 
         <!-- UI Libs -->
-        <quarkus-quinoa.version>2.9.3</quarkus-quinoa.version>
+        <quarkus-quinoa.version>4.0.0</quarkus-quinoa.version>
         <quarkus-playwright.version>2.5.0</quarkus-playwright.version>
 
     </properties>
