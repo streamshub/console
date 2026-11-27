@@ -28,7 +28,7 @@ updates:
     interval: weekly
 
 - package-ecosystem: "docker"
-  directory: "/operator/src/main/docker"
+  directory: "/operator/controller/src/main/docker"
   schedule:
     interval: weekly
 
