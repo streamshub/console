@@ -153,6 +153,12 @@ class SecurityST extends AbstractST {
         assertTrue(clusterRole != null && clusterRole.getRules() != null && !clusterRole.getRules().isEmpty(),
             "Expected ClusterRole " + clusterRoleName + " to exist with rules");
 
+        assertTrue(clusterRole.getRules().stream().anyMatch(rule -> {
+            List<String> apiGroups = rule.getApiGroups() == null ? List.of() : rule.getApiGroups();
+            List<String> resources = rule.getResources() == null ? List.of() : rule.getResources();
+            return apiGroups.contains("kroxylicious.io") && resources.contains("virtualkafkaclusters");
+        }), "Expected at least one rule granting get/list/watch on kroxylicious.io virtualkafkaclusters");
+
         for (PolicyRule rule : clusterRole.getRules()) {
             List<String> resources = rule.getResources() == null ? List.of() : rule.getResources();
             List<String> apiGroups = rule.getApiGroups() == null ? List.of() : rule.getApiGroups();
@@ -169,6 +175,15 @@ class SecurityST extends AbstractST {
                     .toList();
                 assertTrue(disallowedVerbs.isEmpty(),
                     "console-server ClusterRole must only read (and narrowly patch) Strimzi resources, "
+                        + "found disallowed verb(s) " + disallowedVerbs + " in rule: " + rule);
+            }
+
+            if (apiGroups.contains("kroxylicious.io")) {
+                List<String> disallowedVerbs = verbs.stream()
+                    .filter(v -> !List.of("get", "list", "watch").contains(v.toLowerCase(ROOT)))
+                    .toList();
+                assertTrue(disallowedVerbs.isEmpty(),
+                    "console-server ClusterRole must only read Kroxylicious VirtualKafkaCluster resources, "
                         + "found disallowed verb(s) " + disallowedVerbs + " in rule: " + rule);
             }
         }

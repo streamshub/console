@@ -19,8 +19,10 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.ws.rs.BadRequestException;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
@@ -43,6 +45,8 @@ import io.streamshub.console.api.support.Holder;
 import io.streamshub.console.api.support.KafkaContext;
 import io.streamshub.console.api.support.ListRequestContext;
 import io.streamshub.console.api.support.MetadataQuorumSupport;
+import io.streamshub.console.api.support.VirtualKafkaClusterMatcher;
+import io.streamshub.console.config.ClusterKind;
 import io.streamshub.console.config.ConsoleConfig;
 import io.streamshub.console.config.security.Privilege;
 import io.streamshub.console.config.security.ResourceTypes;
@@ -52,6 +56,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
+import io.kroxylicious.kubernetes.api.v1alpha1.VirtualKafkaCluster;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
@@ -94,6 +99,10 @@ public class KafkaClusterService {
 
     @Inject
     Holder<SharedIndexInformer<Kafka>> kafkaInformer;
+
+    @Inject
+    @Named("VirtualKafkaClusterInformer")
+    Holder<SharedIndexInformer<VirtualKafkaCluster>> virtualKafkaClusterInformer;
 
     @Inject
     ConsoleConfig consoleConfig;
@@ -254,6 +263,20 @@ public class KafkaClusterService {
         cluster.name(config.getName());
         cluster.namespace(config.getNamespace());
         cluster.kind(config.getKind());
+
+        // If kind isn't set - compares it's configured bootstrap with those from real VKC fetched by informer
+        // If one address matches, its kind is set to virtualkafkaclusters.kroxylicious.io
+        if (config.getKind() == null) {
+            String configuredBootstrapServers = config.getProperties().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
+
+            if (configuredBootstrapServers != null) {
+                virtualKafkaClusterInformer.map(informer -> informer.getStore().list().stream())
+                        .orElseGet(Stream::empty)
+                        .filter(vkc -> VirtualKafkaClusterMatcher.matches(configuredBootstrapServers, vkc))
+                        .findFirst()
+                        .ifPresent(vkc -> cluster.kind(ClusterKind.KROXYLICIOUS_VIRTUAL_KAFKA_CLUSTER));
+            }
+        }
 
         if (config.getId() != null) {
             // configuration has overridden the id

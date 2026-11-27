@@ -54,3 +54,14 @@ rules:
       - clusterversions
     resourceNames:
       - version
+  # API reads VirtualKafkaCluster resources cluster-wide to auto-derive the "virtual" kind
+  # of already-configured Kafka cluster - internal + read-only
+  # no new resources are shown to users from this rule alone
+  - verbs:
+      - get
+      - watch
+      - list
+    apiGroups:
+      - kroxylicious.io
+    resources:
+      - virtualkafkaclusters
