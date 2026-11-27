@@ -265,6 +265,16 @@ rules:
       - kafkas
       - kafkarebalances
 
+  # Granted to Console instances, to auto-derive the "virtual" kind of a configured Kafka cluster
+  - verbs:
+      - get
+      - watch
+      - list
+    apiGroups:
+      - kroxylicious.io
+    resources:
+      - virtualkafkaclusters
+
   # Granted to console API for listing pods to obtain the Kafka version annotation set by Strimzi
   - verbs:
       - get
