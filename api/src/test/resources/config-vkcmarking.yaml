@@ -1,0 +1,21 @@
+kubernetes:
+  enabled: true
+
+kafka:
+  clusters:
+    - name: marking-explicit-kind
+      namespace: default
+      id: marking-explicit-kind-id
+      kind: kafkas.kafka.strimzi.io
+      properties:
+        bootstrap.servers: localhost:59991
+        request.timeout.ms: "2000"
+        default.api.timeout.ms: "2000"
+
+    - name: marking-no-kind
+      namespace: default
+      id: marking-no-kind-id
+      properties:
+        bootstrap.servers: localhost:59992
+        request.timeout.ms: "2000"
+        default.api.timeout.ms: "2000"

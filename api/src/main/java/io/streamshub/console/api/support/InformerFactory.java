@@ -14,6 +14,7 @@ import jakarta.inject.Named;
 
 import org.jboss.logging.Logger;
 
+import io.streamshub.console.api.service.KroxyliciousResourceService;
 import io.streamshub.console.api.service.StrimziResourceService;
 import io.streamshub.console.config.ConsoleConfig;
 
@@ -21,6 +22,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.kroxylicious.kubernetes.api.v1alpha1.VirtualKafkaCluster;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
@@ -38,10 +40,18 @@ public class InformerFactory {
     @Inject
     StrimziResourceService strimziService;
 
+    @Inject
+    KroxyliciousResourceService kroxyliciousService;
+
     @Produces
     @ApplicationScoped
     @Named("KafkaInformer")
     Holder<SharedIndexInformer<Kafka>> kafkaInformer = Holder.empty();
+
+    @Produces
+    @ApplicationScoped
+    @Named("VirtualKafkaClusterInformer")
+    Holder<SharedIndexInformer<VirtualKafkaCluster>> virtualKafkaClusterInformer = Holder.empty();
 
     @Produces
     @ApplicationScoped
@@ -69,6 +79,12 @@ public class InformerFactory {
                 kafkaInformer = Holder.of(strimziService.informKafkas());
             } catch (KubernetesClientException e) {
                 LOGGER.warnf("Failed to create Strimzi Kafka informer: %s", e.getMessage());
+            }
+
+            try {
+                virtualKafkaClusterInformer = Holder.of(kroxyliciousService.informVirtualKafkaClusters());
+            } catch (KubernetesClientException e) {
+                LOGGER.warnf("Failed to create Kroxylicious VirtualKafkaCluster informer: %s", e.getMessage());
             }
 
             try {
