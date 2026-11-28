@@ -18,6 +18,7 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AlterConfigOp;
 import org.apache.kafka.clients.admin.AlterConfigOp.OpType;
 import org.apache.kafka.clients.admin.AlterConfigsOptions;
+import org.apache.kafka.clients.admin.DescribeConfigsOptions;
 import org.apache.kafka.common.config.ConfigResource;
 
 import io.streamshub.console.api.model.ConfigEntry;
@@ -30,10 +31,10 @@ public class ConfigService {
     @Inject
     KafkaContext kafkaContext;
 
-    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(ConfigResource.Type type, String name) {
+    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(ConfigResource.Type type, String name, boolean includeDocumentation) {
         ConfigResource nodeKey = new ConfigResource(type, name);
 
-        return describeConfigs(kafkaContext.admin(), List.of(nodeKey))
+        return describeConfigs(kafkaContext.admin(), List.of(nodeKey), includeDocumentation)
             .thenApply(configs -> configs.get(name))
             .thenApply(configs -> configs.getOrThrow(CompletionException::new));
     }
@@ -62,10 +63,15 @@ public class ConfigService {
             .toCompletionStage();
     }
 
-    CompletionStage<Map<String, Either<Map<String, ConfigEntry>, Throwable>>> describeConfigs(Admin adminClient, List<ConfigResource> keys) {
+    CompletionStage<Map<String, Either<Map<String, ConfigEntry>, Throwable>>> describeConfigs(
+            Admin adminClient,
+            List<ConfigResource> keys,
+            boolean includeDocumentation) {
+
         Map<String, Either<Map<String, ConfigEntry>, Throwable>> result = LinkedHashMap.newLinkedHashMap(keys.size());
 
-        var pendingDescribes = adminClient.describeConfigs(keys)
+        var pendingDescribes = adminClient.describeConfigs(keys, new DescribeConfigsOptions()
+                .includeDocumentation(includeDocumentation))
             .values()
             .entrySet()
             .stream()

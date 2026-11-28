@@ -114,12 +114,20 @@ public class TopicService {
         );
     }
 
-    public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
-        return topicDescribe.listTopics(fields, offsetSpec, listSupport);
+    public CompletionStage<List<Topic>> listTopics(
+            List<String> fields,
+            String offsetSpec,
+            ListRequestContext<Topic> listSupport,
+            boolean includeDocumentation) {
+        return topicDescribe.listTopics(fields, offsetSpec, listSupport, includeDocumentation);
     }
 
-    public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {
-        return topicDescribe.describeTopic(topicId, fields, offsetSpec);
+    public CompletionStage<Topic> describeTopic(
+            String topicId,
+            List<String> fields,
+            String offsetSpec,
+            boolean includeDocumentation) {
+        return topicDescribe.describeTopic(topicId, fields, offsetSpec, includeDocumentation);
     }
 
     /**
@@ -134,7 +142,7 @@ public class TopicService {
      * </ul>
      */
     public CompletionStage<Void> patchTopic(String topicId, TopicPatch patch, boolean validateOnly) {
-        return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST)
+        return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST, false)
             .thenComposeAsync(
                     topic -> validate(topic, patch),
                     threadContext.currentContextExecutor()
@@ -276,7 +284,8 @@ public class TopicService {
                 topicDescribe.describeTopic(
                         managedTopic.get().getStatus().getTopicId(),
                         List.of(Topic.Fields.CONFIGS, Topic.Fields.PARTITIONS),
-                        KafkaOffsetSpec.LATEST)
+                        KafkaOffsetSpec.LATEST,
+                        false)
                     .thenAccept(createdTopic -> {
                         if (createdTopic.partitions().isPrimaryEmpty()
                                 || createdTopic.configs().isPrimaryEmpty()) {

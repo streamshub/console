@@ -112,12 +112,23 @@ public class GroupService {
     @Inject
     ValidationProxy validationService;
 
-    public CompletionStage<List<Group>> listGroups(List<String> fields, ListRequestContext<Group> listSupport) {
-        return listGroups(Collections.emptyList(), fields, listSupport);
+    public CompletionStage<List<Group>> listGroups(
+            List<String> fields,
+            ListRequestContext<Group> listSupport,
+            boolean includeDocumentation) {
+        return listGroups(Collections.emptyList(), fields, listSupport, includeDocumentation);
     }
 
     public CompletionStage<List<Group>> listGroups(String topicId, List<String> fields,
             ListRequestContext<Group> listSupport) {
+        return listGroups(topicId, fields, listSupport, false);
+    }
+
+    public CompletionStage<List<Group>> listGroups(
+            String topicId,
+            List<String> fields,
+            ListRequestContext<Group> listSupport,
+            boolean includeDocumentation) {
 
         Admin adminClient = kafkaContext.admin();
         Uuid id = Uuid.fromString(topicId);
@@ -136,14 +147,17 @@ public class GroupService {
             }, asyncExec)
             .thenComposeAsync(topicGroups -> {
                 if (topicGroups.containsKey(topicId)) {
-                    return listGroups(topicGroups.get(topicId), fields, listSupport);
+                    return listGroups(topicGroups.get(topicId), fields, listSupport, includeDocumentation);
                 }
                 return CompletableFuture.completedStage(Collections.emptyList());
             }, asyncExec);
     }
 
-    private CompletionStage<List<Group>> listGroups(List<String> groupIds,
-            List<String> fields, ListRequestContext<Group> listSupport) {
+    private CompletionStage<List<Group>> listGroups(
+            List<String> groupIds,
+            List<String> fields,
+            ListRequestContext<Group> listSupport,
+            boolean includeDocumentation) {
 
         Admin adminClient = kafkaContext.admin();
         Set<GroupType> types = extractFilter(listSupport, "filter[type]", GroupType::parse);
@@ -173,7 +187,7 @@ public class GroupService {
                     .toList(),
                     threadContext.currentContextExecutor())
             .thenComposeAsync(
-                    groups -> augmentList(adminClient, groups, fields),
+                    groups -> augmentList(adminClient, groups, fields, includeDocumentation),
                     threadContext.currentContextExecutor());
     }
 
@@ -196,13 +210,17 @@ public class GroupService {
             .orElse(null);
     }
 
-    public CompletionStage<Group> describeGroup(String requestGroupId, List<String> includes) {
+    public CompletionStage<Group> describeGroup(
+            String requestGroupId,
+            List<String> includes,
+            boolean includeDocumentation) {
+
         Admin adminClient = kafkaContext.admin();
         String groupId = Group.decodeGroupId(requestGroupId);
 
         return findGroup(adminClient, groupId)
             .thenComposeAsync(
-                    group -> describeGroups(adminClient, List.of(group), includes),
+                    group -> describeGroups(adminClient, List.of(group), includes, includeDocumentation),
                     threadContext.currentContextExecutor())
             .thenApply(groups -> groups.get(groupId))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
@@ -231,7 +249,8 @@ public class GroupService {
                     threadContext.currentContextExecutor())
             .thenComposeAsync(groups -> augmentList(adminClient, groups, List.of(
                     Group.Fields.MEMBERS,
-                    Group.Fields.OFFSETS)),
+                    Group.Fields.OFFSETS),
+                    false),
                     threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
                     .map(group -> Map.entry(
@@ -427,7 +446,7 @@ public class GroupService {
             Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> alterRequest) {
         var pendingTopicsIds = fetchTopicIdMap();
 
-        return describeGroups(adminClient, List.of(group), Collections.emptyList())
+        return describeGroups(adminClient, List.of(group), Collections.emptyList(), false)
             .thenApply(groups -> groups.get(group.groupId()))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
             .thenCombine(pendingTopicsIds, (describedGroup, topicIds) -> {
@@ -511,21 +530,36 @@ public class GroupService {
                 .toCompletionStage();
     }
 
-    private CompletionStage<List<Group>> augmentList(Admin adminClient, List<Group> list, List<String> fields) {
+    CompletionStage<List<Group>> augmentList(
+            Admin adminClient,
+            List<Group> list,
+            List<String> fields,
+            boolean includeDocumentation) {
+
+        Map<String, Group> groups = list.stream()
+                .collect(Collectors.toMap(Group::groupId, Function.identity()));
+        boolean requiresDescribe = REQUIRE_DESCRIBE.stream().anyMatch(fields::contains);
+
         CompletableFuture<Void> describePromise;
 
-        if (REQUIRE_DESCRIBE.stream().anyMatch(fields::contains)) {
-            describePromise = describeGroups(adminClient, list, fields)
-                .thenAccept(descriptions -> {
-                    Map<String, Group> groups = list.stream().collect(Collectors.toMap(Group::groupId, Function.identity()));
-                    descriptions.forEach((name, either) -> mergeDescriptions(groups.get(name), either));
-                })
+        if (requiresDescribe) {
+            describePromise = describeGroups(adminClient, list, fields, includeDocumentation)
+                .thenAccept(descriptions ->
+                    descriptions.forEach((name, either) -> mergeDescriptions(groups.get(name), either)))
                 .toCompletableFuture();
         } else {
             describePromise = CompletableFuture.completedFuture(null);
         }
 
-        return describePromise.thenApply(nothing -> list);
+        CompletableFuture<Void> configPromise;
+
+        if (!requiresDescribe && fields.contains(Group.Fields.CONFIGS) && !groups.isEmpty()) {
+            configPromise = maybeDescribeConfigs(adminClient, groups, fields, includeDocumentation);
+        } else {
+            configPromise = CompletableFuture.completedFuture(null);
+        }
+
+        return CompletableFuture.allOf(describePromise, configPromise).thenApply(nothing -> list);
     }
 
     private void mergeDescriptions(Group group, Either<Group, Throwable> description) {
@@ -545,13 +579,15 @@ public class GroupService {
             group.offsets(describedGroup.offsets());
             group.coordinator(describedGroup.coordinator());
             group.authorizedOperations(describedGroup.authorizedOperations());
+            group.configs(describedGroup.configs());
         }
     }
 
     private CompletionStage<Map<String, Either<Group, Throwable>>> describeGroups(
             Admin adminClient,
             Collection<Group> groups,
-            List<String> fields) {
+            List<String> fields,
+            boolean includeDocumentation) {
 
         Map<String, Either<Group, Throwable>> result = new ConcurrentHashMap<>(groups.size());
 
@@ -594,7 +630,7 @@ public class GroupService {
                 .thenCompose(nothing -> pendingTopicsIds)
                 .thenCompose(topicIds -> CompletableFuture.allOf(
                         maybeFetchOffsets(adminClient, availableGroups.get(), topicIds, fields),
-                        maybeDescribeConfigs(adminClient, availableGroups.get(), fields)))
+                        maybeDescribeConfigs(adminClient, availableGroups.get(), fields, includeDocumentation)))
                 .thenApply(nothing -> result);
     }
 
@@ -915,7 +951,12 @@ public class GroupService {
         }
     }
 
-    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<String, Group> groups, List<String> fields) {
+    CompletableFuture<Void> maybeDescribeConfigs(
+            Admin adminClient,
+            Map<String, Group> groups,
+            List<String> fields,
+            boolean includeDocumentation) {
+
         if (!fields.contains(Group.Fields.CONFIGS)) {
             return CompletableFuture.completedFuture(null);
         }
@@ -934,7 +975,11 @@ public class GroupService {
                 .map(groupId -> new ConfigResource(ConfigResource.Type.GROUP, groupId))
                 .toList();
 
-        return configService.describeConfigs(adminClient, keys)
+        if (keys.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return configService.describeConfigs(adminClient, keys, includeDocumentation)
             .thenAccept(configs ->
                 configs.forEach((groupId, either) -> groups.get(groupId).addConfigs(either)))
             .toCompletableFuture();

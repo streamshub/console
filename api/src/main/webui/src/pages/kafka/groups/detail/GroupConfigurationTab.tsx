@@ -16,6 +16,7 @@ export function GroupConfigurationTab() {
     <ConfigurationTable
       configs={group.attributes.configs}
       ariaLabel="Group configuration table"
+      showDocumentation
     />
   );
 }

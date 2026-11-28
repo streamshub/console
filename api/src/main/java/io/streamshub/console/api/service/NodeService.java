@@ -133,7 +133,7 @@ public class NodeService {
             .thenComposeAsync(nothing -> getNodes(clusterResult, quorumResult), threadContext.currentContextExecutor());
     }
 
-    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId) {
+    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId, boolean includeDocumentation) {
         return kafkaContext.admin().describeCluster().nodes()
             .thenApply(nodes -> {
                 if (nodes.stream().map(n -> String.valueOf(n.id())).noneMatch(nodeId::equals)) {
@@ -143,7 +143,7 @@ public class NodeService {
             })
             .toCompletionStage()
             .thenComposeAsync(
-                    nothing -> configService.describeConfigs(ConfigResource.Type.BROKER, nodeId),
+                    nothing -> configService.describeConfigs(ConfigResource.Type.BROKER, nodeId, includeDocumentation),
                     threadContext.currentContextExecutor());
     }
 

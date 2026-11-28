@@ -80,9 +80,10 @@ const sortableConfigs = {
 };
 
 function propertyNames(canvasElement: HTMLElement): string[] {
-  return Array.from(canvasElement.querySelectorAll('tbody tr')).map((row) =>
-    row.querySelector('td')!.firstElementChild!.textContent!.trim()
-  );
+  return Array.from(canvasElement.querySelectorAll('tbody tr'))
+    .map((row) => row.querySelector('[data-label="Property"]'))
+    .filter((cell): cell is Element => Boolean(cell))
+    .map((cell) => cell.firstElementChild!.textContent!.trim());
 }
 
 const withGroup =

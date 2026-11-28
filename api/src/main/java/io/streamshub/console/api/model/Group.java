@@ -443,6 +443,14 @@ public class Group extends JsonApiResource<Group.Attributes, None> {
         attributes.protocol = protocol;
     }
 
+    public Either<Map<String, ConfigEntry>, JsonApiError> configs() {
+        return attributes.configs;
+    }
+
+    public void configs(Either<Map<String, ConfigEntry>, JsonApiError> configs) {
+        attributes.configs = configs;
+    }
+
     public void addConfigs(Either<Map<String, ConfigEntry>, Throwable> configs) {
         attributes.configs = configs.ifPrimaryOrElse(
                 Either::of,

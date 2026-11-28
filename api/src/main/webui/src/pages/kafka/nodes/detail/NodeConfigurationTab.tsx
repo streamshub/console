@@ -18,7 +18,9 @@ export function NodeConfigurationTab() {
   const { t } = useTranslation();
   const { kafkaId, nodeId } = useParams<{ kafkaId: string; nodeId: string }>();
 
-  const { data, isLoading, error } = useNodeConfig(kafkaId, nodeId);
+  const { data, isLoading, error } = useNodeConfig(kafkaId, nodeId, {
+    includeDocumentation: true,
+  });
 
   if (isLoading) {
     return (
@@ -52,6 +54,7 @@ export function NodeConfigurationTab() {
       ariaLabel="Node configuration table"
       ouiaId="node-configuration-listing"
       isFilled
+      showDocumentation
     />
   );
 }
