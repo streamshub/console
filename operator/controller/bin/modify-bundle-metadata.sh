@@ -126,7 +126,7 @@ EXAMPLES="$(
       }
     } as $item ireduce ([]; . + $item )' ${MANIFEST_PATH}/*.dex.coreos.com-v1.crd.yml | \
   ${YQ} -oj '.metadata.name = "console-standalone-prometheus" | [.] + load("/dev/stdin")' \
-    ${SCRIPT_PATH}/../../examples/console/console-standalone-prometheus.yaml | ${YQ} -oj)"
+    ${SCRIPT_PATH}/../../../examples/console/console-standalone-prometheus.yaml | ${YQ} -oj)"
 
 EXAMPLES=${EXAMPLES} ${YQ} -i '
   .metadata.annotations."alm-examples" = strenv(EXAMPLES) |

@@ -33,7 +33,7 @@ jobs:
         run: echo "NEXT_VERSION=$(echo ${{steps.metadata.outputs.next-version}} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Fetch Operator Framework Utilities
-        run: ./operator/bin/fetch-operator-utilities.sh
+        run: ./operator/controller/bin/fetch-operator-utilities.sh
 
       - name: Setup JDK
         uses: actions/setup-java@v6
@@ -85,11 +85,11 @@ jobs:
       - name: Build and Push Custom Dex IdP Image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: operator/src/main/docker/
+          context: operator/controller/src/main/docker/
           platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
-          file: operator/src/main/docker/dex.Dockerfile
+          file: operator/controller/src/main/docker/dex.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-dexidp:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-dexidp:snapshot-${{github.ref_name}}
@@ -98,16 +98,16 @@ jobs:
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
-        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.NEXT_VERSION }}" "PLATFORMS=${{ env.PLATFORMS }}"
+        run: ./operator/controller/bin/modify-bundle-metadata.sh "VERSION=${{ env.NEXT_VERSION }}" "PLATFORMS=${{ env.PLATFORMS }}"
 
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: operator/target/bundle/streamshub-console-operator/
+          context: operator/controller/target/bundle/streamshub-console-operator/
           platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
-          file: operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
+          file: operator/controller/target/bundle/streamshub-console-operator/bundle.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:snapshot-${{github.ref_name}}
@@ -117,18 +117,18 @@ jobs:
       # ==================== Operator-Catalog ====================
       - name: Generate Operator Catalog Config
         run: |
-          operator/bin/generate-catalog.sh \
+          operator/controller/bin/generate-catalog.sh \
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle
 
       - name: Build and Push Operator Catalog Image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: operator/
+          context: operator/controller/
           platforms: ${{ env.PLATFORMS }}
           network: none
           provenance: false
           push: true
-          file: operator/src/main/docker/catalog.Dockerfile
+          file: operator/controller/src/main/docker/catalog.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:snapshot-${{github.ref_name}}
@@ -141,6 +141,6 @@ jobs:
         with:
           name: k8s-resources
           path: |
-            operator/target/bundle/
-            operator/target/catalog/
-            operator/target/kubernetes/*.yml
+            operator/controller/target/bundle/
+            operator/controller/target/catalog/
+            operator/controller/target/kubernetes/*.yml

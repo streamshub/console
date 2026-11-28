@@ -33,18 +33,18 @@ container-image-api-push: container-image-api
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_API_IMAGE) docker://$(CONSOLE_API_IMAGE)
 
 container-image-dex:
-	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_DEX_IMAGE) -f operator/src/main/docker/dex.Dockerfile operator/src/main/docker
+	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_DEX_IMAGE) -f operator/controller/src/main/docker/dex.Dockerfile operator/controller/src/main/docker
 
 container-image-dex-push: container-image-dex
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_DEX_IMAGE) docker://$(CONSOLE_DEX_IMAGE)
 
 # The Dex image must exist before the bundle metadata is modified, the script resolves the image digest
 container-image-operator: container-image-dex
-	mvn package -am -pl operator -Pcontainer-image -DskipTests -DskipITs -Dquarkus.kubernetes.namespace='$${NAMESPACE}' -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
-	operator/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)" "PLATFORMS=$(PLATFORMS)"
-	operator/bin/generate-catalog.sh operator/target/bundle/streamshub-console-operator
-	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
-	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/src/main/docker/catalog.Dockerfile operator
+	mvn package -am -pl operator/controller -Pcontainer-image -DskipTests -DskipITs -Dquarkus.kubernetes.namespace='$${NAMESPACE}' -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
+	operator/controller/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)" "PLATFORMS=$(PLATFORMS)"
+	operator/controller/bin/generate-catalog.sh operator/controller/target/bundle/streamshub-console-operator
+	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/controller/target/bundle/streamshub-console-operator/bundle.Dockerfile
+	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/controller/src/main/docker/catalog.Dockerfile operator/controller
 
 container-image-operator-push: container-image-operator container-image-dex-push
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_IMAGE) docker://$(CONSOLE_OPERATOR_IMAGE)

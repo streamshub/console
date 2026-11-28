@@ -99,11 +99,11 @@ echo "Building console-dexidp image..."
 "${CONTAINER_RUNTIME}" build \
   "${BUILD_LOAD_ARGS[@]}" \
   -t "${IMAGE_PREFIX}/console-dexidp:${TAG}" \
-  -f operator/src/main/docker/dex.Dockerfile \
-  operator/src/main/docker
+  -f operator/controller/src/main/docker/dex.Dockerfile \
+  operator/controller/src/main/docker
 
 echo "Updating OLM bundle metadata..."
-./operator/bin/modify-bundle-metadata.sh \
+./operator/controller/bin/modify-bundle-metadata.sh \
   "VERSION=${TAG}" \
   "SKOPEO_TRANSPORT=${SKOPEO_TRANSPORT}" \
   "PLATFORMS=${PLATFORMS}"
@@ -112,18 +112,18 @@ echo "Building console-operator-bundle image..."
 "${CONTAINER_RUNTIME}" build \
   "${BUILD_LOAD_ARGS[@]}" \
   -t "${IMAGE_PREFIX}/console-operator-bundle:${TAG}" \
-  -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile \
-  operator/target/bundle/streamshub-console-operator
+  -f operator/controller/target/bundle/streamshub-console-operator/bundle.Dockerfile \
+  operator/controller/target/bundle/streamshub-console-operator
 
 echo "Generating OLM catalog..."
-./operator/bin/generate-catalog.sh ./operator/target/bundle/streamshub-console-operator true
+./operator/controller/bin/generate-catalog.sh ./operator/controller/target/bundle/streamshub-console-operator true
 
 echo "Building console-operator-catalog image..."
 "${CONTAINER_RUNTIME}" build \
   "${BUILD_LOAD_ARGS[@]}" \
   -t "${IMAGE_PREFIX}/console-operator-catalog:${TAG}" \
-  -f operator/src/main/docker/catalog.Dockerfile \
-  operator/
+  -f operator/controller/src/main/docker/catalog.Dockerfile \
+  operator/controller/
 
 echo ""
 echo "Built images (local only, not pushed):"

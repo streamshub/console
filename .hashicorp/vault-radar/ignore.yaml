@@ -1,0 +1,9 @@
+# Self-signed X.509 test fixtures used by the console-operator test suite's
+# mock Kubernetes API server (e.g. ConsoleReconcilerDexTest). Not live
+# credentials - pre-existing fixtures carried over by the operator/api +
+# operator/controller module restructure, flagged only because their path
+# changed, not their content.
+- paths:
+    - "operator/controller/src/test/resources/io/streamshub/console/kube-apiserver-lb-signer.pem"
+    - "operator/controller/src/test/resources/io/streamshub/console/kube-certs.pem"
+    - "operator/controller/src/test/resources/io/streamshub/console/kube-certs.jks"

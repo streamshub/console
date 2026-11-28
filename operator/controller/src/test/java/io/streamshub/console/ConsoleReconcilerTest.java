@@ -946,7 +946,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .withHostname("example.com")
                     .addNewKafkaCluster()
                         .withName("virtual-cluster")
-                        .withKind(ClusterKind.KROXYLICIOUS_VIRTUAL_KAFKA_CLUSTER)
+                        .withKind(io.streamshub.console.api.v1alpha1.spec.ClusterKind.KROXYLICIOUS_VIRTUAL_KAFKA_CLUSTER)
                         .withNewProperties()
                             .addNewValue()
                                 .withName(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
